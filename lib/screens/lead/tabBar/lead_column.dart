@@ -37,15 +37,14 @@ class _LeadColumnState extends State<LeadColumn> {
   late final LeadBloc _leadBloc;
 
   List<TargetFocus> targets = [];
-
   final GlobalKey keyLeadCard = GlobalKey();
   final GlobalKey keyStatusDropdown = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
 
-  bool _isTutorialShown = false; // Единый флаг для туториала
-  bool _isTutorialInProgress = false; // Защита от повторного вызова
-  int _tutorialStep = 0; // Шаги для порядка показа
-  bool _isInitialized = false; // Флаг для отслеживания инициализации
+  bool _isTutorialShown = false;
+  bool _isTutorialInProgress = false;
+  int _tutorialStep = 0;
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -55,25 +54,25 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   @override
-  void didChangeDependencies() async {
+  void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _initTutorialTargets(); // Переносим сюда
+      _initTutorialTargets();
+      _isInitialized = true;
+    }
+    if (widget.isLeadScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
+      _startTutorialLogic();
+    }
+  }
 
-      // Получаем SharedPreferences асинхронно
-      final prefs = await SharedPreferences.getInstance();
-      _isSwitch = prefs.getBool('switchContact') ?? false;
-
-      // Если туториал LeadScreen завершен, запускаем через 500мс
-      if (widget.isLeadScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
-        Future.delayed(Duration(milliseconds: 500), () {
-          if (mounted) {
-            _tutorialStep = 0;
-            showTutorial();
-          }
-        });
-      }
-      _isInitialized = true; // Устанавливаем флаг, чтобы не повторять
+  @override
+  void didUpdateWidget(covariant LeadColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLeadScreenTutorialCompleted != oldWidget.isLeadScreenTutorialCompleted &&
+        widget.isLeadScreenTutorialCompleted && 
+        !_isTutorialShown && 
+        !_isTutorialInProgress) {
+      _startTutorialLogic();
     }
   }
 
@@ -110,6 +109,17 @@ class _LeadColumnState extends State<LeadColumn> {
     ]);
   }
 
+  void _startTutorialLogic() async {
+    if (!_isTutorialShown && !_isTutorialInProgress) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) {
+          _tutorialStep = 0;
+          showTutorial();
+        }
+      });
+    }
+  }
+
   void showTutorial() async {
     if (_isTutorialInProgress) {
       print('Tutorial already in progress, skipping');
@@ -117,8 +127,9 @@ class _LeadColumnState extends State<LeadColumn> {
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, skipping');
-      return;
+      print('No targets available for tutorial, reinitializing');
+      _initTutorialTargets();
+      if (targets.isEmpty) return;
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -151,7 +162,6 @@ class _LeadColumnState extends State<LeadColumn> {
         break;
     }
 
-    // Если нет лидов, сразу показываем FAB
     if (_leadBloc.state is LeadDataLoaded) {
       final leads = (_leadBloc.state as LeadDataLoaded).leads.where((lead) => lead.statusId == widget.statusId).toList();
       if (leads.isEmpty && _tutorialStep == 0 && _hasPermissionToAddLead) {
@@ -184,16 +194,25 @@ class _LeadColumnState extends State<LeadColumn> {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
+        // Синхронная функция для onSkip
         prefs.setBool('isTutorialShownLeadColumn', true);
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
         });
+        // Вызываем асинхронную логику отдельно
+        _completeTutorialAsync();
         return true;
       },
-      onFinish: () {
+      onFinish: () async {
         if (isLastStep) {
-          prefs.setBool('isTutorialShownLeadColumn', true);
+          await prefs.setBool('isTutorialShownLeadColumn', true);
+          try {
+            await _apiService.markPageCompleted("leads", "index");
+            print('Sent markPageCompleted for leads/index after finishing LeadColumn');
+          } catch (e) {
+            print('Error marking page completed on finish: $e');
+          }
           setState(() {
             _isTutorialShown = true;
             _isTutorialInProgress = false;
@@ -207,6 +226,16 @@ class _LeadColumnState extends State<LeadColumn> {
         }
       },
     ).show(context: context);
+  }
+
+  // Отдельный метод для асинхронной логики завершения туториала
+  Future<void> _completeTutorialAsync() async {
+    try {
+      await _apiService.markPageCompleted("leads", "index");
+      print('Sent markPageCompleted for leads/index after skipping LeadColumn');
+    } catch (e) {
+      print('Error marking page completed on skip: $e');
+    }
   }
 
   Future<void> _checkPermission() async {

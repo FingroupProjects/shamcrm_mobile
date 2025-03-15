@@ -89,44 +89,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadSelectedOrganization();
     _checkPermission();
     _loadOrganizations();
-    _checkPermissionsAndTutorial();
+
+    // Даем время на инициализацию, затем проверяем разрешения и показываем туториал
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Дополнительная задержка для полной загрузки интерфейса
+      await Future.delayed(Duration(milliseconds: 500));
+      _checkPermissionsAndTutorial();
+    });
   }
 
-  Future<void> _checkPermissionsAndTutorial() async {
-    if (_isPermissionsChecked) return;
-
-    _isPermissionsChecked = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final progress = await _apiService.getTutorialProgress();
-      setState(() {
-        tutorialProgress = progress['result'];
-        _hasSettingsIndexPermission = progress['result']['settings']?['index'] ?? false;
-      });
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
-
-      bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
-      setState(() {
-        _isTutorialShown = isTutorialShown;
-      });
-
-      if (!isTutorialShown && !_hasSettingsIndexPermission && mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _initTutorialTargets();
-            showTutorial();
-          }
-        });
-      }
-    } catch (e) {
-      print('Error fetching tutorial progress: $e');
-    }
-  }
-
-  Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
+  Future<void> _saveOrganizationsToCache(
+      List<Organization> organizations) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
+    final jsonList =
+        jsonEncode(organizations.map((org) => org.toJson()).toList());
     await prefs.setString('cached_organizations', jsonList);
   }
 
@@ -149,7 +125,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (jsonEncode(newOrganizations) != jsonEncode(cachedOrganizations)) {
         await _saveOrganizationsToCache(newOrganizations);
         setState(() {
-          _selectedOrganization = newOrganizations.isNotEmpty ? newOrganizations.first.id.toString() : null;
+          _selectedOrganization = newOrganizations.isNotEmpty
+              ? newOrganizations.first.id.toString()
+              : null;
         });
       }
     } else {
@@ -158,206 +136,294 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _initTutorialTargets() {
-    targets.addAll([
-      createTarget(
-        identify: "profileOrganizationWidget",
-        keyTarget: keyOrganizationWidget,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_organization_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_organization_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "profileEditButton",
-        keyTarget: keyProfileEdit,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_edit_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_edit_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "profileLanguageButton",
-        keyTarget: keyLanguageButton,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_language_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_language_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "profilePinChange",
-        keyTarget: keyPinChange,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_pin_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_pin_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "profileLogoutButton",
-        keyTarget: keyLogoutButton,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_logout_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_logout_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "profileToggleFeature",
-        keyTarget: keyToggleFeature,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_description'),
-        align: ContentAlign.top,
-        context: context,
-        contentPosition: ContentPosition.below,
-      ),
-      createTarget(
-        identify: "profileUpdateWidget1C",
-        keyTarget: keyUpdateWidget1C,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_description'),
-        align: ContentAlign.top,
-        context: context,
-        contentPosition: ContentPosition.below,
-      ),
-      createTarget(
-        identify: "profileSupportChat",
-        keyTarget: keySupportChat,
-        title: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_description'),
-        align: ContentAlign.top,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-    ]);
+  // Сбрасываем список целей
+  targets = [];
+  
+  // Добавляем только те цели, которые должны быть видимы и существуют на экране
+  // Обратите внимание на проверку currentContext для каждой цели
+  
+  if (keyOrganizationWidget.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileOrganizationWidget",
+      keyTarget: keyOrganizationWidget,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_organization_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_organization_description'),
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
   }
+  
+  if (keyProfileEdit.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileEditButton",
+      keyTarget: keyProfileEdit,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_edit_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_edit_description'),
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  if (keyLanguageButton.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileLanguageButton",
+      keyTarget: keyLanguageButton,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_language_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_language_description'),
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  if (keyPinChange.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profilePinChange",
+      keyTarget: keyPinChange,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_pin_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_pin_description'),
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  if (keyLogoutButton.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileLogoutButton",
+      keyTarget: keyLogoutButton,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_logout_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_logout_description'),
+      align: ContentAlign.bottom,
+      context: context, 
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  // Проверка и разрешения И существования виджета в дереве
+  if (_hasPermissionToAddLeadAndSwitch && keyToggleFeature.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileToggleFeature",
+      keyTarget: keyToggleFeature,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_description'),
+      align: ContentAlign.top,
+      context: context,
+      contentPosition: ContentPosition.below,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  // Точно такой же подход для 1C - проверяем И разрешение И существование виджета
+  if (_hasPermissionForOneC && keyUpdateWidget1C.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileUpdateWidget1C",
+      keyTarget: keyUpdateWidget1C,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_description'),
+      align: ContentAlign.top,
+      context: context,
+      contentPosition: ContentPosition.below,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы
+      radius: 5,
+    ));
+  }
+  
+  // Проверяем наличие виджета техподдержки
+  if (keySupportChat.currentContext != null) {
+    targets.add(createTarget(
+      identify: "profileSupportChat",
+      keyTarget: keySupportChat,
+      title: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_description'),
+      align: ContentAlign.top,
+      context: context,
+      contentPosition: ContentPosition.above,
+      shape: ShapeLightFocus.RRect, // Явное указание прямоугольной формы с закругленными углами для кнопки
+      radius: 30, // Большее значение для FAB, так как он круглый
+    ));
+  }
+}
 
-  TargetFocus createTarget({
-    required String identify,
-    required GlobalKey keyTarget,
-    required String title,
-    required String description,
-    required ContentAlign align,
-    required BuildContext context,
-    required ContentPosition contentPosition,
-    EdgeInsets contentPadding = EdgeInsets.zero,
-  }) {
-    return TargetFocus(
-      identify: identify,
-      keyTarget: keyTarget,
-      contents: [
-        TargetContent(
-          align: align,
-          child: Container(
-            padding: contentPadding,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
+// Удаляем функцию createTarget, так как теперь параметры задаются прямо в _initTutorialTargets
+// Если эта функция используется в других местах, оставьте её с дополнительным параметром shape
+TargetFocus createTarget({
+  required String identify,
+  required GlobalKey keyTarget,
+  required String title,
+  required String description,
+  required ContentAlign align,
+  required BuildContext context,
+  required ContentPosition contentPosition,
+  ShapeLightFocus shape = ShapeLightFocus.RRect, // По умолчанию прямоугольная форма
+  double radius = 5,
+  EdgeInsets contentPadding = EdgeInsets.zero,
+}) {
+  return TargetFocus(
+    identify: identify,
+    keyTarget: keyTarget,
+    contents: [
+      TargetContent(
+        align: align,
+        child: Container(
+          padding: contentPadding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  description,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
                     color: Colors.white,
-                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
                     fontFamily: 'Gilroy',
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    description,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ],
-      shape: ShapeLightFocus.RRect,
-      radius: 5,
-    );
-  }
-
-  void showTutorial() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
-
-    if (isTutorialShown || _hasSettingsIndexPermission) return;
-
-    List<TargetFocus> visibleTargets = targets.where((target) {
-      // Условие для profileToggleFeature
-      if (target.identify == "profileToggleFeature" && !_hasPermissionToAddLeadAndSwitch) {
-        return false;
-      }
-      // Условие для profileUpdateWidget1C
-      if (target.identify == "profileUpdateWidget1C" && !_hasPermissionForOneC) {
-        return false;
-      }
-      // Проверяем, существует ли ключ в дереве виджетов
-      if (target.keyTarget?.currentContext == null) {
-        return false;
-      }
-      return true;
-    }).toList();
-
-    TutorialCoachMark(
-      targets: visibleTargets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
       ),
-      colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        print("Tutorial skipped");
-        prefs.setBool('isTutorialShownProfile', true);
-        _apiService.markPageCompleted("settings", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
-        });
-        setState(() {
-          _isTutorialShown = true;
-        });
-        return true;
-      },
-      onFinish: () async {
-        await prefs.setBool('isTutorialShownProfile', true);
-        await _apiService.markPageCompleted("settings", "index").catchError((e) {
-          print('Error marking page completed on finish: $e');
-        });
-        setState(() {
-          _isTutorialShown = true;
-        });
-      },
-      onClickTarget: (target) async {
-        int currentIndex = visibleTargets.indexWhere((t) => t.identify == target.identify);
-        if (currentIndex < visibleTargets.length - 1) {
-          final nextTarget = visibleTargets[currentIndex + 1];
-          if (nextTarget.keyTarget != null) {
-            await Future.delayed(Duration(milliseconds: 300));
-            _scrollToTarget(nextTarget.keyTarget!);
-          }
-        }
-      },
-    ).show(context: context);
+    ],
+    shape: shape, // Используем переданную форму
+    radius: radius, // Используем переданный радиус
+  );
+}
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
+
+  if (isTutorialShown || _hasSettingsIndexPermission) return;
+
+  // Теперь targets уже содержит только действительно видимые цели,
+  // поэтому дополнительная фильтрация не требуется
+  List<TargetFocus> visibleTargets = targets;
+
+  // Если нет видимых целей, отмечаем туториал как просмотренный и выходим
+  if (visibleTargets.isEmpty) {
+    await prefs.setBool('isTutorialShownProfile', true);
+    await _apiService.markPageCompleted("settings", "index").catchError((e) {
+      print('Error marking page completed - no visible targets: $e');
+    });
+    setState(() {
+      _isTutorialShown = true;
+    });
+    return;
   }
 
+  // Добавляем небольшую задержку, чтобы убедиться, что все элементы загрузились
+  await Future.delayed(Duration(milliseconds: 500));
+
+  TutorialCoachMark(
+    targets: visibleTargets,
+    textSkip: AppLocalizations.of(context)!.translate('skip'),
+    textStyleSkip: TextStyle(
+      color: Colors.white,
+      fontFamily: 'Gilroy',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      shadows: [
+        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+      ],
+    ),
+    colorShadow: Color(0xff1E2E52),
+    onSkip: () {
+      print("Tutorial skipped");
+      prefs.setBool('isTutorialShownProfile', true);
+      _apiService.markPageCompleted("settings", "index").catchError((e) {
+        print('Error marking page completed on skip: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+      });
+      return true;
+    },
+    onFinish: () async {
+      await prefs.setBool('isTutorialShownProfile', true);
+      await _apiService.markPageCompleted("settings", "index").catchError((e) {
+        print('Error marking page completed on finish: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+      });
+    },
+    onClickTarget: (target) async {
+      int currentIndex = visibleTargets.indexWhere((t) => t.identify == target.identify);
+      if (currentIndex < visibleTargets.length - 1) {
+        final nextTarget = visibleTargets[currentIndex + 1];
+        if (nextTarget.keyTarget != null) {
+          await Future.delayed(Duration(milliseconds: 300));
+          _scrollToTarget(nextTarget.keyTarget!);
+        }
+      }
+    },
+  ).show(context: context);
+}
+
+Future<void> _checkPermissionsAndTutorial() async {
+  if (_isPermissionsChecked) return;
+
+  _isPermissionsChecked = true;
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final progress = await _apiService.getTutorialProgress();
+    
+    setState(() {
+      tutorialProgress = progress['result'];
+      _hasSettingsIndexPermission = progress['result']['settings']?['index'] ?? false;
+    });
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
+
+    bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
+    setState(() {
+      _isTutorialShown = isTutorialShown;
+    });
+
+    if (!isTutorialShown && !_hasSettingsIndexPermission && mounted) {
+      // Критически важно: даем время на полное построение UI
+      await Future.delayed(Duration(milliseconds: 1500));
+      
+      if (mounted) {
+        // Инициализация будет делать проверку currentContext, 
+        // которая возможна только после построения UI
+        _initTutorialTargets();
+        showTutorial();
+      }
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+  }
+}
   void _scrollToTarget(GlobalKey key) {
     final RenderObject? renderObject = key.currentContext?.findRenderObject();
     if (renderObject != null && renderObject is RenderBox) {
@@ -370,7 +436,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _checkPermission() async {
-    bool hasLeadCreatePermission = await _apiService.hasPermission('lead.create');
+    bool hasLeadCreatePermission =
+        await _apiService.hasPermission('lead.create');
     bool hasLeadOneCPermission = await _apiService.hasPermission('lead.oneC');
     setState(() {
       _hasPermissionToAddLeadAndSwitch = hasLeadCreatePermission;
@@ -427,13 +494,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
       context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
       context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-      context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+      context
+          .read<DashboardConversionBlocManager>()
+          .add(LoadLeadConversionDataManager());
       context.read<DealStatsBloc>().add(LoadDealStatsData());
       context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
       context.read<UserBlocManager>().add(LoadUserData());
       context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
-      context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
-      context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+      context
+          .read<DashboardTaskChartBlocManager>()
+          .add(LoadTaskChartDataManager());
+      context
+          .read<ProcessSpeedBlocManager>()
+          .add(LoadProcessSpeedDataManager());
     }
   }
 
@@ -464,9 +537,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 20),
                         child: PlayStoreImageLoading(
-                          size: 80.0,
-                          duration: Duration(milliseconds: 1000),
-                        ),
+                            size: 80.0, duration: Duration(milliseconds: 1000)),
                       ),
                     );
                   } else if (state is OrganizationLoaded) {
@@ -492,17 +563,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ToggleFeatureButton(key: keyToggleFeature),
                         if (_hasPermissionForOneC)
                           UpdateWidget1C(
-                            key: keyUpdateWidget1C,
-                            organization: selectedOrg,
-                          ),
+                              organization: selectedOrg),
                       ],
                     );
                   } else if (state is OrganizationError) {
-                    if (state.message.contains(localizations.translate("unauthorized_access"))) {
+                    if (state.message.contains(
+                        localizations.translate("unauthorized_access"))) {
                       ApiService().logout().then((_) {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => LoginScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => LoginScreen()),
                           (Route<dynamic> route) => false,
                         );
                       });
@@ -513,11 +584,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(
                           '${state.message}',
                           style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
+                              fontFamily: 'Gilroy',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black),
                         ),
                       ),
                     );
@@ -533,11 +603,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         key: keySupportChat,
         onPressed: _openSupportChat,
         backgroundColor: Color(0xff1E2E52),
-        child: Image.asset(
-          'assets/icons/Profile/support_chat.png',
-          width: 36,
-          height: 36,
-        ),
+        child: Image.asset('assets/icons/Profile/support_chat.png',
+            width: 36, height: 36),
       ),
     );
   }
