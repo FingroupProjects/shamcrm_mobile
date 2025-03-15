@@ -5,6 +5,7 @@ import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/page_test.dart';
 import 'package:crm_task_manager/screens/placeholder_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -98,19 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
     activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
     inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
     hasAvailableScreens = true;
-    // PAGE 2
-    widgets.add(PlaceHolderTest(message: 'Страница 2',));
-    titleKeys.add('page_2');
-    navBarTitleKeys.add('page_2');
-    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    // Категории 
+    widgets.add(CategoryScreen());
+    titleKeys.add('Категории');
+    navBarTitleKeys.add('Категории');
+    activeIcons.add('assets/icons/MyNavBar/category_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/category_OFF.png');
     hasAvailableScreens = true;
     // PAGE 3
     widgets.add(PlaceHolderTest(message: 'Страница 3',));
     titleKeys.add('page_3');
     navBarTitleKeys.add('page_3');
-    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    activeIcons.add('assets/icons/MyNavBar/goods_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/goods_OFF.png');
     hasAvailableScreens = true;
     // PAGE 4
     widgets.add(PlaceHolderTest(message: 'Страница 4',));
