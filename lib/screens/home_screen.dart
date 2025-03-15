@@ -5,6 +5,7 @@ import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
+import 'package:crm_task_manager/screens/page_test.dart';
 import 'package:crm_task_manager/screens/placeholder_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
@@ -16,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = -1;  // Изначально пустой экран
+  int _selectedIndex = -1;  
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
@@ -90,7 +91,41 @@ class _HomeScreenState extends State<HomeScreen> {
     inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
     hasAvailableScreens = true;
 
-
+    // PAGE 1
+    widgets.add(PlaceHolderTest(message: 'Страница 1',));
+    titleKeys.add('page_1');
+    navBarTitleKeys.add('page_1');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+    // PAGE 2
+    widgets.add(PlaceHolderTest(message: 'Страница 2',));
+    titleKeys.add('page_2');
+    navBarTitleKeys.add('page_2');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+    // PAGE 3
+    widgets.add(PlaceHolderTest(message: 'Страница 3',));
+    titleKeys.add('page_3');
+    navBarTitleKeys.add('page_3');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+    // PAGE 4
+    widgets.add(PlaceHolderTest(message: 'Страница 4',));
+    titleKeys.add('page_4');
+    navBarTitleKeys.add('page_4');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+    // PAGE 5
+    widgets.add(PlaceHolderTest(message: 'Страница 5',));
+    titleKeys.add('page_5');
+    navBarTitleKeys.add('page_5');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
 
     if (mounted) {
       setState(() {
