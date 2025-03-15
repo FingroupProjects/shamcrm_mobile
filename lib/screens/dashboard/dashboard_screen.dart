@@ -222,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _initAdminTutorialTargets() {
+void _initAdminTutorialTargets() {
     targets.addAll([
       createTarget(
         identify: "dashboardNotificationIcon",
@@ -267,13 +267,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .translate('tutorial_dashboard_task_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: MediaQuery.of(context).size.height < 600
-            ? ContentPosition.above // На маленьких экранах текст выше
-            : ContentPosition.below,
+        contentPosition: ContentPosition.above, // Изменено на above для всех экранов
         contentPadding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.height < 600
-              ? 5
-              : 10, // Меньший отступ для маленьких экранов
+          top: 5, // Оставляем 5, как у "Задачи"
         ),
       ),
       createTarget(
@@ -298,9 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context: context,
         contentPosition: ContentPosition.above,
         contentPadding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.height < 600
-              ? 20
-              : 80, // Адаптивный отступ
+          top: 5, // Уже установлено 5, как нужно
         ),
       ),
       createTarget(
@@ -327,8 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contentPosition: ContentPosition.below,
       ),
     ]);
-  }
-
+}
   void _initTutorialTargetsManagers() {
     targets.addAll([
       createTarget(

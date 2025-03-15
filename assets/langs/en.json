@@ -802,5 +802,6 @@
   "pinned_message": "Pinned message",
   "department": "Department",
   "select_department": "Select a department",
-  "task_by_deal": "Deal:"
+  "task_by_deal": "Deal:",
+  "event_name":"Name"
 }
