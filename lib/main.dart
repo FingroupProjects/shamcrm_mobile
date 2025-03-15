@@ -108,7 +108,7 @@ void main() async {
   await getFCMTokens(apiService);
 
   FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
+  // await firebaseApi.initNotifications();
   RemoteMessage? initialMessage = firebaseApi.getInitialMessage();
 
 

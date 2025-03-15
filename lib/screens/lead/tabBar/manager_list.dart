@@ -56,15 +56,12 @@ void initState() {
   }
 
 void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
-  print('Auto-selecting manager...'); // Логируем начало процесса
   if (currentUserId == null || currentUserId!.isEmpty || _autoSelectionPerformed) {
-    print('Skipping auto-selection: currentUserId = $currentUserId, _autoSelectionPerformed = $_autoSelectionPerformed');
     return;
   }
   
   for (var manager in managers) {
     if (manager.id.toString() == currentUserId) {
-      print('Found matching manager: ${manager.name} ${manager.lastname}'); // Логируем найденного менеджера
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
@@ -72,7 +69,6 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
             _autoSelectionPerformed = true;
           });
           widget.onSelectManager(manager);
-          print('Auto-selected manager: ${manager.name} ${manager.lastname}');
         }
       });
       break;
