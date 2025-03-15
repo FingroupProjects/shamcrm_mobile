@@ -27,7 +27,7 @@ class _MyNavBarState extends State<MyNavBar> {
   final PageController _pageController = PageController(initialPage: 0);
 
   static const double _iconSize = 20;
-  static final double _navBarHeight = Platform.isIOS ? 95 : 60; 
+  static final double _navBarHeight = Platform.isIOS ? 90 : 60; 
 
   final TextStyle _titleStyle = const TextStyle(
     color: Colors.white,
