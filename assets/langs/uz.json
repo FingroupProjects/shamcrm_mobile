@@ -801,8 +801,8 @@
     "pinned_message": "Mahkamlangan xabar",
       "department": "Bo'lim",
   "select_department": "Bo'limni tanlang",
-  "task_by_deal": "Bitim:"
-
+  "task_by_deal": "Bitim:",
+  "event_name":"Nomi"
 
 
   }

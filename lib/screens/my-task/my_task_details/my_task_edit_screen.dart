@@ -580,9 +580,9 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       CustomTextField(
                         controller: nameController,
                         hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
+                            .translate('enter_title'),
                         label: AppLocalizations.of(context)!
-                            .translate('name_list'),
+                            .translate('event_name'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return AppLocalizations.of(context)!

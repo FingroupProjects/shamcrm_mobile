@@ -818,5 +818,6 @@
       "in_answer": "В ответ ",
       "pinned_message": "Закрепленное сообщение",
       "department":"Отдел",
-      "select_department":"Выберите отдел"
+      "select_department":"Выберите отдел",
+      "event_name":"Название"
     }

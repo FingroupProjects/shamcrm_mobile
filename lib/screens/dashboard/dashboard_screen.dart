@@ -222,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _initAdminTutorialTargets() {
+void _initAdminTutorialTargets() {
     targets.addAll([
       createTarget(
         identify: "dashboardNotificationIcon",
@@ -267,8 +267,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .translate('tutorial_dashboard_task_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: ContentPosition.below,
-        contentPadding: EdgeInsets.only(top: 10),
+        contentPosition: ContentPosition.above, // Изменено на above для всех экранов
+        contentPadding: EdgeInsets.only(
+          top: 5, // Оставляем 5, как у "Задачи"
+        ),
       ),
       createTarget(
         identify: "dashboardAdminTaskChart",
@@ -291,7 +293,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 80),
+        contentPadding: EdgeInsets.only(
+          top: 5, // Уже установлено 5, как нужно
+        ),
       ),
       createTarget(
         identify: "dashboardAdminProcessSpeed",
@@ -317,8 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contentPosition: ContentPosition.below,
       ),
     ]);
-  }
-
+}
   void _initTutorialTargetsManagers() {
     targets.addAll([
       createTarget(

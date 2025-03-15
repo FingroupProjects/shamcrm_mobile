@@ -42,46 +42,52 @@ class _DealColumnState extends State<DealColumn> {
   final GlobalKey keyFloatingActionButton = GlobalKey();
   final GlobalKey keyDropdown = GlobalKey();
   List<TargetFocus> targets = [];
-
-  // Флаги для подсказок
-  bool _isDealCardTutorialShown = false;
-  bool _isStatusTutorialShown = false;
-  bool _isFabTutorialShown = false;
-  bool _isFabTutorialInProgress = false;
+  bool _isTutorialShown = false;
   bool _isTutorialInProgress = false;
+  int _tutorialStep = 0;
+  bool _isInitialized = false;
 
-  bool _isTutorialShown = false; // Единый флаг для туториала
-  int _tutorialStep = 0; // Шаги для порядка показа
-bool _isInitialized = false; // Флаг для отслеживания инициализации
-@override
+  @override
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _checkCreatePermission();
-    // Убираем вызов _initTutorialTargets() и логику туториала из initState
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _initTutorialTargets(); // Переносим сюда
-
-      // Если туториал DealScreen завершен, запускаем через 500мс
-      if (widget.isDealScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
-        Future.delayed(Duration(milliseconds: 500), () {
-          if (mounted) {
-            _tutorialStep = 0;
-            showTutorial();
-          }
-        });
-      }
-      _isInitialized = true; // Устанавливаем флаг, чтобы не повторять
+      _initTutorialTargets();
+      _isInitialized = true;
+    }
+    if (widget.isDealScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
+      _startTutorialLogic();
     }
   }
-void _initTutorialTargets() {
+
+  @override
+  void didUpdateWidget(covariant DealColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isDealScreenTutorialCompleted != oldWidget.isDealScreenTutorialCompleted &&
+        widget.isDealScreenTutorialCompleted && 
+        !_isTutorialShown && 
+        !_isTutorialInProgress) {
+      _startTutorialLogic();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _dealBloc.close();
+    super.dispose();
+  }
+
+  void _initTutorialTargets() {
     targets.clear();
     targets.addAll([
       createTarget(
@@ -113,52 +119,28 @@ void _initTutorialTargets() {
         ),
     ]);
   }
-  // Загрузка состояния подсказок
-  Future<void> _loadFeatureState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isDealCardTutorialShown =
-          prefs.getBool('isDealCardTutorialShow') ?? false;
-      _isStatusTutorialShown = prefs.getBool('isDropdownTutorialShow') ?? false;
-      _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
-    });
+
+  void _startTutorialLogic() async {
+    if (!_isTutorialShown && !_isTutorialInProgress) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) {
+          _tutorialStep = 0;
+          showTutorial();
+        }
+      });
+    }
   }
 
-  // // Метод для запуска подсказок после DealScreen
-  // void _startColumnTutorial() async {
-  //   if (_isTutorialInProgress) return;
-
-  //   await Future.delayed(Duration(milliseconds: 500)); // Задержка 500 мс
-
-  //   // Проверяем состояние данных DealBloc
-  //   final currentState = _dealBloc.state;
-  //   if (currentState is DealDataLoaded) {
-  //     final deals = currentState.deals
-  //         .where((deal) => deal.statusId == widget.statusId)
-  //         .toList();
-  //     if (deals.isNotEmpty &&
-  //         !_isDealCardTutorialShown &&
-  //         !_isStatusTutorialShown) {
-  //       showTutorial("DealCardAndStatusDropdown");
-  //     } else if (deals.isEmpty &&
-  //         !_isFabTutorialShown &&
-  //         !_isFabTutorialInProgress &&
-  //         _canCreateDeal) {
-  //       showTutorial("FloatingActionButton");
-  //     }
-  //   }
-  // }
-
-  // Показ подсказок
- void showTutorial() async {
+  void showTutorial() async {
     if (_isTutorialInProgress) {
       print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, skipping');
-      return;
+      print('No targets available for tutorial, reinitializing');
+      _initTutorialTargets();
+      if (targets.isEmpty) return;
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -191,9 +173,11 @@ void _initTutorialTargets() {
         break;
     }
 
-    // Если нет карточек, сразу показываем FAB
     if (_dealBloc.state is DealDataLoaded) {
-      final deals = (_dealBloc.state as DealDataLoaded).deals.where((deal) => deal.statusId == widget.statusId).toList();
+      final deals = (_dealBloc.state as DealDataLoaded)
+          .deals
+          .where((deal) => deal.statusId == widget.statusId)
+          .toList();
       if (deals.isEmpty && _tutorialStep == 0 && _canCreateDeal) {
         currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
         isLastStep = true;
@@ -229,11 +213,18 @@ void _initTutorialTargets() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
         });
+        _completeTutorialAsync(); // Асинхронная логика вынесена
         return true;
       },
-      onFinish: () {
+      onFinish: () async {
         if (isLastStep) {
-          prefs.setBool('isTutorialShownDealColumn', true);
+          await prefs.setBool('isTutorialShownDealColumn', true);
+          try {
+            await _apiService.markPageCompleted("deals", "index");
+            print('Sent markPageCompleted for deals/index after finishing DealColumn');
+          } catch (e) {
+            print('Error marking page completed on finish: $e');
+          }
           setState(() {
             _isTutorialShown = true;
             _isTutorialInProgress = false;
@@ -243,17 +234,19 @@ void _initTutorialTargets() {
             _tutorialStep++;
             _isTutorialInProgress = false;
           });
-          showTutorial(); // Переходим к следующему шагу
+          showTutorial();
         }
       },
     ).show(context: context);
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _dealBloc.close();
-    super.dispose();
+  Future<void> _completeTutorialAsync() async {
+    try {
+      await _apiService.markPageCompleted("deals", "index");
+      print('Sent markPageCompleted for deals/index after skipping DealColumn');
+    } catch (e) {
+      print('Error marking page completed: $e');
+    }
   }
 
   Future<void> _checkCreatePermission() async {
@@ -270,15 +263,12 @@ void _initTutorialTargets() {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       final currentState = _dealBloc.state;
       if (currentState is DealDataLoaded) {
-        final hasMoreDeals = currentState.deals.length <
-            (currentState.dealCounts[widget.statusId] ?? 0);
+        final hasMoreDeals = currentState.deals.length < (currentState.dealCounts[widget.statusId] ?? 0);
         if (hasMoreDeals) {
-          _dealBloc
-              .add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+          _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
         }
       }
     }
@@ -300,9 +290,7 @@ void _initTutorialTargets() {
                 ),
               );
             } else if (state is DealDataLoaded) {
-              final deals = state.deals
-                  .where((deal) => deal.statusId == widget.statusId)
-                  .toList();
+              final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
 
               if (deals.isNotEmpty) {
                 return RefreshIndicator(
@@ -319,8 +307,7 @@ void _initTutorialTargets() {
                           itemCount: deals.length,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: DealCard(
                                 key: index == 0 ? keyDealCard : null,
                                 dropdownKey: index == 0 ? keyDropdown : null,
@@ -349,19 +336,14 @@ void _initTutorialTargets() {
                   child: ListView(
                     physics: AlwaysScrollableScrollPhysics(),
                     children: [
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4),
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
                       Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_deal_in_selected_status'),
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy'),
+                              AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
                             ),
                           ],
                         ),
@@ -385,9 +367,7 @@ void _initTutorialTargets() {
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -406,14 +386,12 @@ void _initTutorialTargets() {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          DealAddScreen(statusId: widget.statusId),
+                      builder: (context) => DealAddScreen(statusId: widget.statusId),
                     ),
                   ).then((_) => _dealBloc.add(FetchDeals(widget.statusId)));
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
+                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
               )
             : null,
       ),

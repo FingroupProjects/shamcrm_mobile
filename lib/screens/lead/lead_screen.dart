@@ -58,11 +58,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _showCustomTabBar = true;
   String _lastSearchQuery = "";
 
-
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
   List<SourceData> _selectedSources = [];
-  int? _selectedStatuses;  
+  int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
   bool? _hasSuccessDeals = false;
@@ -74,9 +73,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasDeal = false;
   int? _daysWithoutActivity;
 
-  List<ManagerData> _initialselectedManagers = []; 
-  List<RegionData> _initialselectedRegions = []; 
-  List<SourceData> _initialselectedSources = []; 
+  List<ManagerData> _initialselectedManagers = [];
+  List<RegionData> _initialselectedRegions = [];
+  List<SourceData> _initialselectedSources = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
@@ -89,24 +88,22 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasDeal;
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
+
+  final GlobalKey keySearchIcon = GlobalKey();
+  final GlobalKey keyMenuIcon = GlobalKey();
+
+List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  bool _isLeadScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
 
-      final GlobalKey keySearchIcon = GlobalKey(); 
-    final GlobalKey keyMenuIcon = GlobalKey(); 
-
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
-  bool _hasLeadIndexPermission = false;
-  bool _isPermissionsChecked = false;
-    bool _isLeadScreenTutorialCompleted = false;
-
-  @override
+ @override
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
-   _scrollController = ScrollController();
+    _scrollController = ScrollController();
     
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -114,8 +111,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
 
           _tabController.addListener(() {
@@ -126,149 +122,101 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           });
         });
       } else {
-        // Если статусов в кэше нет — запрос через API
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses());
       }
     });
 
-    // Проверка лидов в кэше для начального статуса
     LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
       if (cachedLeads.isNotEmpty) {
         print('Leads loaded from cache.');
       }
     });
-    // Проверка разрешений
     _checkPermissions();
-    _checkPermissionsAndTutorial();
-
-    }
-Future<void> _checkPermissionsAndTutorial() async {
-  if (_isPermissionsChecked) {
-    print('Permissions already checked for leads, skipping');
-    return;
-  }
-  _isPermissionsChecked = true;
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final progress = await _apiService.getTutorialProgress();
-    print('Tutorial Progress for leads: $progress');
-    
-    if (progress is List<dynamic>) {
-      print('Progress is a List, not a Map as expected');
-      setState(() {
-        tutorialProgress = null;
-        _hasLeadIndexPermission = false;
-      });
-    } 
-    else if (progress is Map<String, dynamic>) {
-      final result = progress['result'];
-      if (result is List<dynamic>) {
-        setState(() {
-          tutorialProgress = null;
-          _hasLeadIndexPermission = false;
-        });
-      } else if (result is Map<String, dynamic>) {
-        setState(() {
-          tutorialProgress = result;
-          _hasLeadIndexPermission = result['leads']?['index'] ?? false;
-        });
-      } else {
-        print('Unexpected result format: $result');
-        setState(() {
-          tutorialProgress = null;
-          _hasLeadIndexPermission = false;
-        });
-      }
-    } else {
-      print('Unexpected progress format: $progress');
-      setState(() {
-        tutorialProgress = null;
-        _hasLeadIndexPermission = false;
-      });
-    }
-    
-    await prefs.setString(
-        'tutorial_progress', json.encode(tutorialProgress ?? {}));
-    
-    bool isTutorialShown =
-        prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
-    print('isTutorialShown for leads: $isTutorialShown');
-    setState(() {
-      _isTutorialShown = isTutorialShown;
-    });
-    
-    if (!isTutorialShown &&
-        tutorialProgress != null &&
-        !_hasLeadIndexPermission &&
-        mounted) {
-      print('Scheduling tutorial display for leads');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _initTutorialTargets();
-          showTutorial();
-        } else {
-          print('Widget not mounted, skipping tutorial for leads');
-        }
-      });
-    } else {
-      print('Tutorial not shown for leads. Reasons:');
-      print('isTutorialShown: $isTutorialShown');
-      print('tutorialProgress: $tutorialProgress');
-      print('hasLeadIndexPermission: $_hasLeadIndexPermission');
-      print('mounted: $mounted');
-    }
-  } catch (e) {
-    print('Error fetching tutorial progress for leads: $e');
-  }
-}
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
   }
 
   void _initTutorialTargets() {
-  targets.addAll([
-    createTarget(
-      identify: "LeadSearchIcon",
-      keyTarget: keySearchIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_search_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "LeadMenuIcon",
-      keyTarget: keyMenuIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_menu_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-  ]);
-}
+    targets.clear();
+    targets.addAll([
+      createTarget(
+        identify: "LeadSearchIcon",
+        keyTarget: keySearchIcon,
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_search_description'), 
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "LeadMenuIcon",
+        keyTarget: keyMenuIcon,
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_menu_description'), 
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+    ]);
+  }
 
-void showTutorial() async {
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('leadStatus.read');
+    final canCreate = await _apiService.hasPermission('leadStatus.create');
+    final canDelete = await _apiService.hasPermission('leadStatus.delete');
+    setState(() {
+      _canReadLeadStatus = canRead;
+      _canCreateLeadStatus = canCreate;
+      _canDeleteLeadStatus = canDelete;
+    });
+
+    try {
+      final progress = await _apiService.getTutorialProgress();
+      print('Tutorial Progress for leads: $progress');
+      
+      if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+      } else {
+        setState(() {
+          tutorialProgress = null;
+        });
+      }
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      if (tutorialProgress != null && 
+          tutorialProgress!['leads']?['index'] == false && 
+          !_isTutorialShown && 
+          mounted) {
+        _initTutorialTargets();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            showTutorial();
+          }
+        });
+      } else {
+        print('Tutorial not shown for LeadScreen. Reasons:');
+        print('tutorialProgress: $tutorialProgress');
+        print('leads/index: ${tutorialProgress?['leads']?['index']}');
+        print('isTutorialShown: $_isTutorialShown');
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+    }
+  }
+
+  void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for leads, skipping');
+      print('Tutorial already shown for LeadScreen, skipping');
       return;
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
-
-    if (isTutorialShown || tutorialProgress == null || _hasLeadIndexPermission) {
-      print('Tutorial not shown in showTutorial for leads');
-      return;
-    }
-
-    print('Showing tutorial for leads');
     await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
@@ -288,151 +236,142 @@ void showTutorial() async {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Tutorial skipped for leads");
+        print('Tutorial skipped for LeadScreen');
         prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-        _apiService.markPageCompleted("leads", "index").catchError((e) {
-          print('Error marking page completed on skip for leads: $e');
-        });
         setState(() {
           _isTutorialShown = true;
-          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг
+          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг для LeadColumn
         });
         return true;
       },
-      onFinish: () async {
-        print("Tutorial finished for leads");
-        await prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-        try {
-          await _apiService.markPageCompleted("leads", "index");
-        } catch (e) {
-          print('Error marking page completed on finish for leads: $e');
-        }
+      onFinish: () {
+        print('Tutorial finished for LeadScreen');
+        prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг
+          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг для LeadColumn
         });
       },
     ).show(context: context);
   }
   
-Future<void> _searchLeads(String query, int currentStatusId) async {
-  final leadBloc = BlocProvider.of<LeadBloc>(context);
+  Future<void> _searchLeads(String query, int currentStatusId) async {
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
 
-  await LeadCache.clearAllLeads();
-  print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
+    await LeadCache.clearAllLeads();
+    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
 
-  leadBloc.add(FetchLeads(
-    currentStatusId,
-    query: query,
-    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-    regionsIds: _selectedRegions.map((region) => region.id).toList(),
-    sourcesIds: _selectedSources.map((sources) => sources.id).toList(),
-    statusIds: _selectedStatuses,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    hasSuccessDeals: _hasSuccessDeals,
-    hasInProgressDeals: _hasInProgressDeals,
-    hasFailureDeals: _hasFailureDeals,
-    hasNotices: _hasNotices,
-    hasContact: _hasContact,
-    hasChat: _hasChat,
-    hasDeal: _hasDeal,
-    daysWithoutActivity: _daysWithoutActivity,
-  ));
-}
+    leadBloc.add(FetchLeads(
+      currentStatusId,
+      query: query,
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      regionsIds: _selectedRegions.map((region) => region.id).toList(),
+      sourcesIds: _selectedSources.map((sources) => sources.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      hasSuccessDeals: _hasSuccessDeals,
+      hasInProgressDeals: _hasInProgressDeals,
+      hasFailureDeals: _hasFailureDeals,
+      hasNotices: _hasNotices,
+      hasContact: _hasContact,
+      hasChat: _hasChat,
+      hasDeal: _hasDeal,
+      daysWithoutActivity: _daysWithoutActivity,
+    ));
+  }
 
-void _resetFilters() {
-  setState(() {
-    _showCustomTabBar = true;
-    _selectedManagers = [];
-    _selectedRegions = [];
-    _selectedSources = [];
-    _selectedStatuses = null;
-    _fromDate = null;
-    _toDate = null;
-    _hasSuccessDeals = false;
-    _hasInProgressDeals = false;
-    _hasFailureDeals = false;
-    _hasNotices = false;
-    _hasContact = false;
-    _hasChat = false;
-    _hasDeal = false;
-    _daysWithoutActivity = null;
-    _initialselectedManagers = [];
-    _initialselectedRegions = [];
-    _initialselectedSources = [];
-    _initialSelStatus = null;
-    _intialFromDate = null;
-    _intialToDate = null;
-    _initialHasSuccessDeals = false;
-    _initialHasInProgressDeals = false;
-    _initialHasFailureDeals = false;
-    _initialHasNotices = false;
-    _initialHasContact = false;
-    _initialHasChat = false;
-    _initialHasDeal = false;
-    _initialDaysWithoutActivity = null;
-    _lastSearchQuery = '';
-    _searchController.clear();
-  });
-   final leadBloc = BlocProvider.of<LeadBloc>(context);
-   leadBloc.add(FetchLeadStatuses());
-}
-
+  void _resetFilters() {
+    setState(() {
+      _showCustomTabBar = true;
+      _selectedManagers = [];
+      _selectedRegions = [];
+      _selectedSources = [];
+      _selectedStatuses = null;
+      _fromDate = null;
+      _toDate = null;
+      _hasSuccessDeals = false;
+      _hasInProgressDeals = false;
+      _hasFailureDeals = false;
+      _hasNotices = false;
+      _hasContact = false;
+      _hasChat = false;
+      _hasDeal = false;
+      _daysWithoutActivity = null;
+      _initialselectedManagers = [];
+      _initialselectedRegions = [];
+      _initialselectedSources = [];
+      _initialSelStatus = null;
+      _intialFromDate = null;
+      _intialToDate = null;
+      _initialHasSuccessDeals = false;
+      _initialHasInProgressDeals = false;
+      _initialHasFailureDeals = false;
+      _initialHasNotices = false;
+      _initialHasContact = false;
+      _initialHasChat = false;
+      _initialHasDeal = false;
+      _initialDaysWithoutActivity = null;
+      _lastSearchQuery = '';
+      _searchController.clear();
+    });
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeadStatuses());
+  }
 
   Future<void> _handleManagerSelected(Map managers) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedManagers = managers['managers'];
-    _selectedRegions = managers['regions'];
-    _selectedSources= managers['sources'];
-    _selectedStatuses = managers['statuses'];
-    _fromDate = managers['fromDate'];
-    _toDate = managers['toDate'];
-    _hasSuccessDeals=managers['hasSuccessDeals'];
-    _hasInProgressDeals=managers['hasInProgressDeals'];
-    _hasFailureDeals=managers['hasFailureDeals'];
-    _hasNotices=managers['hasNotices'];
-    _hasContact=managers['hasContact'];
-    _hasChat=managers['hasChat'];
-    _hasDeal=managers['hasDeal'];
-    _daysWithoutActivity=managers['daysWithoutActivity'];
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedManagers = managers['managers'];
+      _selectedRegions = managers['regions'];
+      _selectedSources = managers['sources'];
+      _selectedStatuses = managers['statuses'];
+      _fromDate = managers['fromDate'];
+      _toDate = managers['toDate'];
+      _hasSuccessDeals = managers['hasSuccessDeals'];
+      _hasInProgressDeals = managers['hasInProgressDeals'];
+      _hasFailureDeals = managers['hasFailureDeals'];
+      _hasNotices = managers['hasNotices'];
+      _hasContact = managers['hasContact'];
+      _hasChat = managers['hasChat'];
+      _hasDeal = managers['hasDeal'];
+      _daysWithoutActivity = managers['daysWithoutActivity'];
 
-    _initialselectedManagers = managers['managers'];
-    _initialselectedRegions = managers['regions'];
-    _initialselectedSources = managers['sources'];
-    _initialSelStatus = managers['statuses'];
-    _intialFromDate = managers['fromDate'];
-    _intialToDate = managers['toDate'];
-    _initialHasSuccessDeals = managers['hasSuccessDeals'];
-    _initialHasInProgressDeals = managers['hasInProgressDeals'];
-    _initialHasFailureDeals = managers['hasFailureDeals'];
-    _initialHasNotices = managers['hasNotices'];
-    _initialHasContact = managers['hasContact'];
-    _initialHasChat = managers['hasChat'];
-    _initialHasDeal = managers['hasDeal'];
-    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
-  });
+      _initialselectedManagers = managers['managers'];
+      _initialselectedRegions = managers['regions'];
+      _initialselectedSources = managers['sources'];
+      _initialSelStatus = managers['statuses'];
+      _intialFromDate = managers['fromDate'];
+      _intialToDate = managers['toDate'];
+      _initialHasSuccessDeals = managers['hasSuccessDeals'];
+      _initialHasInProgressDeals = managers['hasInProgressDeals'];
+      _initialHasFailureDeals = managers['hasFailureDeals'];
+      _initialHasNotices = managers['hasNotices'];
+      _initialHasContact = managers['hasContact'];
+      _initialHasChat = managers['hasChat'];
+      _initialHasDeal = managers['hasDeal'];
+      _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+    });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeads(
-    currentStatusId,
-    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-    regionsIds: _selectedRegions.map((region) => region.id).toList(),
-    sourcesIds: _selectedSources.map((source) => source.id).toList(),
-    statusIds: _selectedStatuses, 
-    fromDate: _fromDate,
-    toDate: _toDate,
-    hasSuccessDeals: _hasSuccessDeals,
-    hasInProgressDeals: _hasInProgressDeals,
-    hasFailureDeals: _hasFailureDeals,
-    hasNotices: _hasNotices,
-    hasContact: _hasContact,
-    hasChat: _hasChat,
-    hasDeal: _hasDeal,
-    daysWithoutActivity: _daysWithoutActivity,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
+      currentStatusId,
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      regionsIds: _selectedRegions.map((region) => region.id).toList(),
+      sourcesIds: _selectedSources.map((source) => source.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      hasSuccessDeals: _hasSuccessDeals,
+      hasInProgressDeals: _hasInProgressDeals,
+      hasFailureDeals: _hasFailureDeals,
+      hasNotices: _hasNotices,
+      hasContact: _hasContact,
+      hasChat: _hasChat,
+      hasDeal: _hasDeal,
+      daysWithoutActivity: _daysWithoutActivity,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
 
@@ -443,30 +382,6 @@ void _resetFilters() {
   }
 
   // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('leadStatus.read');
-    final canCreate = await _apiService.hasPermission('leadStatus.create');
-    final canDelete = await _apiService.hasPermission('leadStatus.delete');
-    setState(() {
-      _canReadLeadStatus = canRead;
-      _canCreateLeadStatus = canCreate;
-      _canDeleteLeadStatus = canDelete;
-    });
-
-  //    WidgetsBinding.instance.addPostFrameCallback((_) {
-  //   _initTutorialTargets(); 
-  //       if (!_isTutorialShown) {
-  //      WidgetsBinding.instance.addPostFrameCallback((_) {
-  //        showTutorial();
-  //        setState(() {
-  //          _isTutorialShown = true; 
-  //        });
-  //      });
-  //     }
-  // });
-
-  }
-
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -474,7 +389,6 @@ void _resetFilters() {
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
-
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
@@ -523,17 +437,27 @@ void _resetFilters() {
           showMyTaskIcon: true,
           showFilterIconDeal: false,
           showEvent: true,
-         clearButtonClick: (value) {
-                if (value == false) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _lastSearchQuery = '';
-                  });
+          clearButtonClick: (value) {
+            if (value == false) {
+              setState(() {
+                _isSearching = false;
+                _searchController.clear();
+                _lastSearchQuery = '';
+              });
               if (_searchController.text.isEmpty) {
-                if (_selectedManagers.isEmpty && _selectedRegions.isEmpty && _selectedSources.isEmpty && _selectedStatuses == null && _fromDate == null
-                && _toDate == null  && _hasSuccessDeals == false && _hasInProgressDeals == false && _hasFailureDeals == false
-                && _hasNotices == false && _hasContact == false && _hasChat == false  && _hasDeal == false ) {
+                if (_selectedManagers.isEmpty &&
+                    _selectedRegions.isEmpty &&
+                    _selectedSources.isEmpty &&
+                    _selectedStatuses == null &&
+                    _fromDate == null &&
+                    _toDate == null &&
+                    _hasSuccessDeals == false &&
+                    _hasInProgressDeals == false &&
+                    _hasFailureDeals == false &&
+                    _hasNotices == false &&
+                    _hasContact == false &&
+                    _hasChat == false &&
+                    _hasDeal == false) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
@@ -546,9 +470,17 @@ void _resetFilters() {
                   final taskBloc = BlocProvider.of<LeadBloc>(context);
                   taskBloc.add(FetchLeads(
                     currentStatusId,
-                    managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
-                    regionsIds: _selectedRegions.isNotEmpty ? _selectedRegions.map((region) => region.id).toList() : null,
-                    sourcesIds: _selectedSources.isNotEmpty ? _selectedSources.map((source) => source.id).toList() : null,
+                    managerIds: _selectedManagers.isNotEmpty
+                        ? _selectedManagers
+                            .map((manager) => manager.id)
+                            .toList()
+                        : null,
+                    regionsIds: _selectedRegions.isNotEmpty
+                        ? _selectedRegions.map((region) => region.id).toList()
+                        : null,
+                    sourcesIds: _selectedSources.isNotEmpty
+                        ? _selectedSources.map((source) => source.id).toList()
+                        : null,
                     statusIds: _selectedStatuses,
                     fromDate: _fromDate,
                     toDate: _toDate,
@@ -562,21 +494,23 @@ void _resetFilters() {
                     daysWithoutActivity: _daysWithoutActivity,
                   ));
                 }
-                  } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-                    print("ELSE IF SEARCH NOT EMPTY");
+              } else if (_selectedManagerIds != null &&
+                  _selectedManagerIds!.isNotEmpty) {
+                print("ELSE IF SEARCH NOT EMPTY");
 
-                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                    final taskBloc = BlocProvider.of<LeadBloc>(context);
-                    taskBloc.add(FetchLeads(
-                      currentStatusId,
-                      managerIds: _selectedManagerIds,
-                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
-                    ));
-                  }
-                }
-              },
-
-          clearButtonClickFiltr: (value) { },
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final taskBloc = BlocProvider.of<LeadBloc>(context);
+                taskBloc.add(FetchLeads(
+                  currentStatusId,
+                  managerIds: _selectedManagerIds,
+                  query: _searchController.text.isNotEmpty
+                      ? _searchController.text
+                      : null,
+                ));
+              }
+            }
+          },
+          clearButtonClickFiltr: (value) {},
         ),
       ),
       body: isClickAvatarIcon
@@ -772,67 +706,66 @@ void _resetFilters() {
     }
   }
 
-void _showStatusOptions(BuildContext context, int index) {
-  final RenderBox renderBox =
-      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
-  final Offset position = renderBox.localToGlobal(Offset.zero);
+  void _showStatusOptions(BuildContext context, int index) {
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final Offset position = renderBox.localToGlobal(Offset.zero);
 
-  showMenu(
-    context: context,
-    position: RelativeRect.fromLTRB(
-      position.dx,
-      position.dy + renderBox.size.height,
-      position.dx + renderBox.size.width,
-      position.dy + renderBox.size.height * 2,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 4,
-    color: Colors.white,
-    items: [
-      PopupMenuItem(
-        value: 'edit',
-        child: ListTile(
-          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-          title: Text(
-            'Изменить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + renderBox.size.height,
+        position.dx + renderBox.size.width,
+        position.dy + renderBox.size.height * 2,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+            title: Text(
+              'Изменить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
             ),
           ),
         ),
-      ),
-      PopupMenuItem(
-        value: 'delete',
-        child: ListTile(
-          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-          title: Text(
-            'Удалить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+            title: Text(
+              'Удалить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
             ),
           ),
         ),
-      ),
-    ],
-  ).then((value) {
-    if (value == 'edit') {
-      _editLeadStatus(index);
-    } else if (value == 'delete') {
-      _showDeleteDialog(index);
-    }
-  });
-}
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        _editLeadStatus(index);
+      } else if (value == 'delete') {
+        _showDeleteDialog(index);
+      }
+    });
+  }
 
-// Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
- Widget _buildTabButton(int index) {
+  Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
     return BlocBuilder<LeadBloc, LeadState>(
@@ -848,61 +781,63 @@ void _showStatusOptions(BuildContext context, int index) {
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
 
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        onLongPress: () {
-          if (_canDeleteLeadStatus) {
-            _showStatusOptions(context, index);
-          }
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    leadCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteLeadStatus) {
+              _showStatusOptions(context, index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
-              ),
-            ],
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      leadCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   void _deleteLeadStatus(int index) {
     // Вызываем вашу существующую логику удаления
@@ -949,8 +884,6 @@ void _showStatusOptions(BuildContext context, int index) {
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
           leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
-
-    
         );
       },
     );
@@ -960,8 +893,9 @@ void _showStatusOptions(BuildContext context, int index) {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-
-          await LeadCache.cacheLeadStatuses(state.leadStatuses .map((status) => {'id': status.id, 'title': status.title}).toList());
+          await LeadCache.cacheLeadStatuses(state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
           setState(() {
             _tabTitles = state.leadStatuses
                 .where((status) => _canReadLeadStatus)
@@ -982,7 +916,8 @@ void _showStatusOptions(BuildContext context, int index) {
                   _scrollToActiveTab();
                 }
               });
-              int initialIndex = state.leadStatuses.indexWhere((status) => status.id == widget.initialStatusId);
+              int initialIndex = state.leadStatuses
+                  .indexWhere((status) => status.id == widget.initialStatusId);
               if (initialIndex != -1) {
                 _tabController.index = initialIndex;
                 _currentTabIndex = initialIndex;
@@ -1091,7 +1026,6 @@ void _showStatusOptions(BuildContext context, int index) {
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 
-
                     if (index != -1) {
                       _tabController.animateTo(index);
                     }
@@ -1132,4 +1066,3 @@ void _showStatusOptions(BuildContext context, int index) {
     }
   }
 }
-
