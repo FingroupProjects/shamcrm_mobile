@@ -9,9 +9,9 @@ class Goods {
   final String goodsName;
   final String goodsDescription;
   final double goodsPrice;
-  final double discountGoodsPrice;
-  final double stockQuantity;
-  final String imagePath;
+  final discountGoodsPrice;
+  final stockQuantity;
+  final List<String> imagePaths;
 
   Goods({
     required this.id,
@@ -20,7 +20,7 @@ class Goods {
     required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
-    required this.imagePath,
+    required this.imagePaths,
   });
 }
 class CategoryGoodsScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ final List<Goods> testGoods = [
     goodsPrice: 50,
     discountGoodsPrice: 10,
     stockQuantity: 500,
-    imagePath: 'assets/images/goods_photo.jpg', 
+    imagePaths: ['assets/images/goods_photo.jpg']
   ),
   Goods(
     id: 2,
@@ -49,7 +49,7 @@ final List<Goods> testGoods = [
     goodsPrice: 23,
     discountGoodsPrice: 0,
     stockQuantity: 1000,
-    imagePath: 'assets/images/goods_photo.jpg', 
+    imagePaths: ['assets/images/goods_photo.jpg']
   ),
   Goods(
     id: 3,
@@ -58,7 +58,7 @@ final List<Goods> testGoods = [
     goodsPrice: 125.3,
     discountGoodsPrice: 30,
     stockQuantity: 712,
-    imagePath: 'assets/images/goods_photo.jpg', 
+    imagePaths: ['assets/images/goods_photo.jpg']
   ),
   Goods(
     id: 4,
@@ -67,7 +67,7 @@ final List<Goods> testGoods = [
     goodsPrice: 23,
     discountGoodsPrice: 0,
     stockQuantity: 1000,
-    imagePath: 'assets/images/goods_photo.jpg', 
+    imagePaths: ['assets/images/goods_photo.jpg']
   ),
   Goods(
     id: 5,
@@ -76,7 +76,16 @@ final List<Goods> testGoods = [
     goodsPrice: 125.3,
     discountGoodsPrice: 30,
     stockQuantity: 712,
-    imagePath: 'assets/images/goods_photo.jpg', 
+    imagePaths: ['assets/images/goods_photo.jpg']
+  ),
+  Goods(
+    id: 6,
+    goodsName: 'Товар 6',
+    goodsDescription: 'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
+    goodsPrice: 555.3,
+    discountGoodsPrice: 15,
+    stockQuantity: 5444,
+    imagePaths: ['assets/images/goods_photo.jpg']
   ),
 ];
 
@@ -125,7 +134,7 @@ final List<Goods> testGoods = [
           )
         else
           Container(
-            height: 550,
+            height: MediaQuery.of(context).size.height * 0.7,
             child: ListView.builder(
               itemCount: goods.length,
               itemBuilder: (context, index) {
@@ -224,13 +233,26 @@ final List<Goods> testGoods = [
                 ),
               ),
             SizedBox(width: 16), 
-            ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  goods.imagePath, 
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
+              Container(
+                width: 100,
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: goods.imagePaths.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          goods.imagePaths[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
           ],
@@ -252,7 +274,7 @@ void _navigateToGoodsDetails(Goods goods) {
         goodsPrice: goods.goodsPrice,
         discountGoodsPrice: goods.discountGoodsPrice,
         stockQuantity: goods.stockQuantity,
-        imagePath: goods.imagePath,
+        imagePaths: goods.imagePaths,
         selectedCategory: goods.id.toString(), 
         isActive: true, 
       ),
@@ -274,7 +296,7 @@ void _navigateToGoodsDetails(Goods goods) {
            onPressed: () {
              Navigator.push(
                context,
-               MaterialPageRoute(builder: (context) => ProductAddScreen()),
+               MaterialPageRoute(builder: (context) => GoodsAddScreen()),
              );
            },
           style: TextButton.styleFrom(
@@ -322,24 +344,6 @@ class DeleteGoodsDialog extends StatelessWidget {
           child: Text('Удалить'),
         ),
       ],
-    );
-  }
-}
-
-// Заглушка для экрана добавления сделки
-class CategoryGoodsAddScreen extends StatelessWidget {
-
-  const CategoryGoodsAddScreen({Key? key,}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Добавить сделку'),
-      ),
-      body: Center(
-        child: Text('Экран добавления сделки'),
-      ),
     );
   }
 }

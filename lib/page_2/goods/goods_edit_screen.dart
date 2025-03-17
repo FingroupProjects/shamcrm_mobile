@@ -7,24 +7,41 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
-class GoodsAddScreen extends StatefulWidget {
+class GoodsEditScreen extends StatefulWidget {
+  final Map<String, dynamic> goods;
+
+  GoodsEditScreen({required this.goods});
+
   @override
-  _GoodsAddScreenState createState() => _GoodsAddScreenState();
+  _GoodsEditScreenState createState() => _GoodsEditScreenState();
 }
 
-class _GoodsAddScreenState extends State<GoodsAddScreen> {
+class _GoodsEditScreenState extends State<GoodsEditScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController goodsNameController = TextEditingController();
-  final TextEditingController goodsDescriptionController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
-  final TextEditingController discountPriceController = TextEditingController();
-  final TextEditingController stockQuantityController = TextEditingController();
-  
+  late TextEditingController goodsNameController;
+  late TextEditingController goodsDescriptionController;
+  late TextEditingController priceController;
+  late TextEditingController discountPriceController;
+  late TextEditingController stockQuantityController;
+
   String? selectedCategory;
   bool isActive = false;
-  
+
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
+
+  @override
+  void initState() {
+    super.initState();
+    goodsNameController = TextEditingController(text: widget.goods['name']);
+    goodsDescriptionController = TextEditingController(text: widget.goods['description']);
+    priceController = TextEditingController(text: widget.goods['price'].toString());
+    discountPriceController = TextEditingController(text: widget.goods['discountPrice'].toString());
+    stockQuantityController = TextEditingController(text: widget.goods['stockQuantity'].toString());
+    selectedCategory = widget.goods['category'];
+    isActive = widget.goods['isActive'];
+    _imagePaths = List<String>.from(widget.goods['imagePaths']);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +51,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('Добавить товар'),
+          AppLocalizations.of(context)!.translate('Редактировать товар'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -134,45 +151,44 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ],
                             ),
                           )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Stack(
-                              children: [
-                                PageView.builder(
-                                  itemCount: _imagePaths.length,
-                                  itemBuilder: (context, index) {
-                                    return Stack(
-                                      children: [
-                                        Center(
-                                          child: Image.file(
-                                            File(_imagePaths[index]),
-                                            fit: BoxFit.cover,
-                                            alignment: Alignment.center,
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Stack(
+                                children: [
+                                  PageView.builder(
+                                    itemCount: _imagePaths.length,
+                                    itemBuilder: (context, index) {
+                                      final path = _imagePaths[index];
+                                      return Stack(
+                                        children: [
+                                          Center(
+                                            child: path.startsWith('assets/')
+                                                ? Image.asset(path, fit: BoxFit.cover)
+                                                : Image.file(File(path), fit: BoxFit.cover),
                                           ),
-                                        ),
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: GestureDetector(
-                                            onTap: () => _removeImage(index),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withOpacity(0.5),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 20,
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: GestureDetector(
+                                              onTap: () => _removeImage(index),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.5),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.close,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 Positioned(
                                   top: 8,
                                   left: 8,
@@ -249,7 +265,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
                                       color: Color(0xFF1E1E1E),
-                                    ),
+                                  ),
                                   ),
                                 ],
                               ),
@@ -284,12 +300,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: CustomButton(
-                buttonText: 'Добавить',
+                buttonText: 'Сохранить',
                 buttonColor: const Color(0xff4759FF),
                 textColor: Colors.white,
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
-                    _createProduct();
+                    _updategoods();
                   }
                 },
               ),
@@ -299,6 +315,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
     );
   }
+
 
   Future<void> _showImagePickerOptions() async {
     showModalBottomSheet(
@@ -372,15 +389,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     });
   }
 
-  void _createProduct() {
-    // print('Название: ${goodsNameController.text}');
-    // print('Описание: ${goodsDescriptionController.text}');
-    // print('Цена: ${priceController.text}');
-    // print('Скидочная цена: ${discountPriceController.text}');
-    // print('Количество: ${stockQuantityController.text}');
-    // print('Категория: $selectedCategory');
-    // print('Статус: ${isActive ? "Активен" : "Неактивен"}');
-    // print('Фото товара: $_imagePath');
+  void _updategoods() {
+    print('Название: ${goodsNameController.text}');
+    print('Описание: ${goodsDescriptionController.text}');
+    print('Цена: ${priceController.text}');
+    print('Скидочная цена: ${discountPriceController.text}');
+    print('Количество: ${stockQuantityController.text}');
+    print('Категория: $selectedCategory');
+    print('Статус: ${isActive ? "Активен" : "Неактивен"}');
+    // print('Фото товара: $_imagePaths');
     
     Navigator.pop(context);
   }

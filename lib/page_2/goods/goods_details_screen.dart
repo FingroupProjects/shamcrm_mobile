@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
+import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -6,9 +8,9 @@ class GoodsDetailsScreen extends StatefulWidget {
   final String goodsName;
   final String goodsDescription;
   final double goodsPrice;
-  final double discountGoodsPrice;
-  final double stockQuantity;
-  final String imagePath;
+  final int discountGoodsPrice;
+  final int stockQuantity;
+  final List<String> imagePaths; 
   String? selectedCategory;
   bool isActive = false;
 
@@ -19,7 +21,7 @@ class GoodsDetailsScreen extends StatefulWidget {
     required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
-    required this.imagePath,
+    required this.imagePaths, 
     this.selectedCategory,
     this.isActive = false,
   });
@@ -30,7 +32,6 @@ class GoodsDetailsScreen extends StatefulWidget {
 
 class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   List<Map<String, String>> details = [];
-
 
   @override
   void initState() {
@@ -53,19 +54,41 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(
-          context,
-          AppLocalizations.of(context)!.translate('Просмотр товара'),
+      appBar: _buildAppBar(
+        context,
+        AppLocalizations.of(context)!.translate('Просмотр товара'),
+      ),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16,),
+        child: ListView(
+          children: [
+            _buildImageSlider(), 
+            _buildDetailsList(),
+          ],
         ),
-        backgroundColor: Colors.white,
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListView(
-            children: [
-              _buildDetailsList(),
-            ],
-          ),
-        ));
+      ),
+    );
+  }
+
+  Widget _buildImageSlider() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      height: 200, 
+      child: PageView.builder(
+        itemCount: widget.imagePaths.length,
+        itemBuilder: (context, index) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              widget.imagePaths[index],
+              width: double.infinity,
+              fit: BoxFit.contain,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
@@ -115,11 +138,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 width: 24,
                 height: 24,
               ),
-              onPressed: () async {
-                // CategoryEditBottomSheet.show(
+            onPressed: () {
+                // Navigator.push(
                 //   context,
-                //   initialName: widget.categoryName,
-                //   initialDescription: widget.categoryDescription,
+                //   MaterialPageRoute(
+                //     builder: (context) => GoodsEditScreen(
+                //       goods: {
+                //         'name': widget.goodsName,
+                //         'description': widget.goodsDescription,
+                //         'price': widget.goodsPrice,
+                //         'discountPrice': widget.discountGoodsPrice,
+                //         'stockQuantity': widget.stockQuantity,
+                //         'category': widget.selectedCategory,
+                //         'isActive': widget.isActive,
+                //         'imagePaths': widget.imagePaths,
+                //       },
+                //     ),
+                //   ),
                 // );
               },
             ),
@@ -132,10 +167,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 height: 24,
               ),
               onPressed: () {
-                // showDialog(
-                //   context: context,
-                //   builder: (context) => DeleteCategoryDialog(),
-                // );           
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteGoodsDialog(),
+                );                
               },
             ),
           ],
@@ -144,47 +179,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-Widget _buildDetailsList() {
-  return ListView(
-    shrinkWrap: true,
-    physics: NeverScrollableScrollPhysics(),
-    children: [
-      // Отображение изображения товара
-      Container(
-        margin: const EdgeInsets.only(bottom: 16), // Отступ снизу
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12), // Закругление углов
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+  Widget _buildDetailsList() {
+    return ListView(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      children: [
+        ...details.map((detail) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: _buildDetailItem(
+              detail['label']!,
+              detail['value']!,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12), // Закругление углов
-          child: Image.asset(
-            widget.imagePath, // Путь к изображению
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-      // Остальные детали
-      ...details.map((detail) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            detail['label']!,
-            detail['value']!,
-          ),
-        );
-      }).toList(),
-    ],
-  );
-}
+          );
+        }).toList(),
+      ],
+    );
+  }
 
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
