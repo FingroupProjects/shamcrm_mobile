@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
@@ -95,8 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // PAGE 1
     widgets.add(PlaceHolderTest(message: 'Страница 1',));
-    titleKeys.add('page_1');
-    navBarTitleKeys.add('page_1');
+    titleKeys.add('Дашборд');
+    navBarTitleKeys.add('Дашборд');
     activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
     inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
     hasAvailableScreens = true;
@@ -107,19 +108,21 @@ class _HomeScreenState extends State<HomeScreen> {
     activeIcons.add('assets/icons/MyNavBar/category_ON.png');
     inactiveIcons.add('assets/icons/MyNavBar/category_OFF.png');
     hasAvailableScreens = true;
+    
     // Товары
     widgets.add(GoodsScreen());
     titleKeys.add('Товары');
     navBarTitleKeys.add('Товары');
     activeIcons.add('assets/icons/MyNavBar/goods_ON.png');
+
     inactiveIcons.add('assets/icons/MyNavBar/goods_OFF.png');
     hasAvailableScreens = true;
     // PAGE 4
-    widgets.add(PlaceHolderTest(message: 'Страница 4',));
-    titleKeys.add('page_4');
-    navBarTitleKeys.add('page_4');
-    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    widgets.add(OrderScreen());
+    titleKeys.add('Заказы');
+    navBarTitleKeys.add('Заказы');
+    activeIcons.add('assets/icons/MyNavBar/orderon.png');
+    inactiveIcons.add('assets/icons/MyNavBar/order_OFF.png');
     hasAvailableScreens = true;
 
     if (mounted) {
