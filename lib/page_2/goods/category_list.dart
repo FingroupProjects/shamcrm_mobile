@@ -16,15 +16,18 @@ class CategoryDropdownWidget extends StatefulWidget {
 }
 
 class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
-  final List<String> categories = ['Категория 1', 'Категория 2', 'Категория 3'];
+  final List<String> categories = ['Электроника', 'Бытовая техника', 'Продукты питания'];
   String? selectedCategory;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  if (widget.selectedCategory != null && categories.contains(widget.selectedCategory)) {
     selectedCategory = widget.selectedCategory;
+  } else {
+    selectedCategory = null;
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Column(
