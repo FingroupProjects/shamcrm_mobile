@@ -411,7 +411,7 @@ Future<void> _checkPermissionsAndTutorial() async {
 
     if (!isTutorialShown && !_hasSettingsIndexPermission && mounted) {
       // Критически важно: даем время на полное построение UI
-      await Future.delayed(Duration(milliseconds: 1500));
+      await Future.delayed(Duration(milliseconds: 1000));
       
       if (mounted) {
         // Инициализация будет делать проверку currentContext, 
