@@ -327,7 +327,7 @@
     "region_history": "Регион: ",
     "manager_history": "Менеджер: ",
     "birthday_history": "Дата рождения: ",
-    "notice": "Заметки",
+    "notice": "События",
     "edit_notice": "Редактировать заметку",
     "note_updated_successfully": "Заметка успешно обновлена!",
     "new_deal": "Новая сделка",
@@ -677,7 +677,7 @@
       "111111": "",
       "welcome": "Добро пожаловать!",
       "conclusions":"Заключение:",
-      "notes":"Заметки",
+      "notes":"События",
       "deals":"Сделки",
       "history":"История",
       "tutorial_lead_card_title":"Карточка лида",
@@ -818,5 +818,6 @@
       "in_answer": "В ответ ",
       "pinned_message": "Закрепленное сообщение",
       "department":"Отдел",
-      "select_department":"Выберите отдел"
+      "select_department":"Выберите отдел",
+      "event_name":"Название"
     }
