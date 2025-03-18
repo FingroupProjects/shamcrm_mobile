@@ -19,23 +19,27 @@ class _CategoryScreenState extends State<CategoryScreen> {
   final List<Map<String, dynamic>> testCategories = [
     {
       'id': 1,
-      'name': 'Категория 1',
-      'description': 'Тест описание 11',
+      'name': 'Электроника',
+      'subCategory': 'Смартфоны',
+      'description': 'Смартфоны разных производителей',
     },
     {
       'id': 2,
-      'name': 'Категория 2',
-      'description': 'Тест описание 22',
+      'name': 'Одежда',
+      'subCategory': 'Футболки',
+      'description': 'Стильные футболки для мужчин и женщин',
     },
     {
       'id': 3,
-      'name': 'Категория 3',
-      'description': 'Тест описание 33',
+      'name': 'Бытовая техника',
+      'subCategory': 'Холодильники',
+      'description': 'Широкий выбор холодильников',
     },
     {
       'id': 4,
-      'name': 'Категория 4',
-      'description': 'Тест описание 44444',
+      'name': 'Книги',
+      'subCategory': 'Фантастика',
+      'description': 'Лучшие фантастические произведения',
     },
   ];
 
@@ -57,9 +61,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
-        title: isClickAvatarIcon
-          ? localizations!.translate('appbar_settings')
-          : localizations!.translate('Категории'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('Категории'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -67,7 +71,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
           },
           clearButtonClickFiltr: (isSearching) {},
           showSearchIcon: true,
-          showFilterIcon: true,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
           onChangedSearchInput: (input) {},
           textEditingController: TextEditingController(),
           focusNode: FocusNode(),
@@ -85,6 +90,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   child: CategoryCard(
                     categoryId: testCategories[index]['id']!,
                     categoryName: testCategories[index]['name']!,
+                    subCategoryName: testCategories[index]['subCategory']!,
                     categoryDescription: testCategories[index]['description']!,
                   ),
                 );

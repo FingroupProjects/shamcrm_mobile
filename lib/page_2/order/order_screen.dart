@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_column.dart';
 import 'package:flutter/material.dart';
@@ -81,14 +82,14 @@ class _OrderScreenState extends State<OrderScreen>
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        title: CustomAppBar(
+        title: CustomAppBarPage2(
           title: 'Заказы',
           onChangedSearchInput: (value) {
             _onSearch(value);
           },
-          showFilterIcon: true,
-          showMenuIcon: false,
-          showNotification: false,
+          showFilterOrderIcon: true,
+          showFilterIcon: false,
+          showSearchIcon: true,
           onClickProfileAvatar: () {
             // Логика перехода на профиль, если нужна
           },
@@ -146,8 +147,9 @@ class _OrderScreenState extends State<OrderScreen>
                       ? Color.fromARGB(255, 255, 255, 255)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),),
+                  border: Border.all(
+                    color: isActive ? Colors.black : const Color(0xff99A4BA),
+                  ),
                 ),
                 padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 child: Text(

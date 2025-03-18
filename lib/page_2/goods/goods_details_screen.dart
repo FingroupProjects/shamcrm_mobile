@@ -1,3 +1,6 @@
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
+import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -6,9 +9,9 @@ class GoodsDetailsScreen extends StatefulWidget {
   final String goodsName;
   final String goodsDescription;
   final double goodsPrice;
-  final double discountGoodsPrice;
-  final double stockQuantity;
-  final String imagePath;
+  final int discountGoodsPrice;
+  final int stockQuantity;
+  final List<String> imagePaths; 
   String? selectedCategory;
   bool isActive = false;
 
@@ -19,7 +22,7 @@ class GoodsDetailsScreen extends StatefulWidget {
     required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
-    required this.imagePath,
+    required this.imagePaths, 
     this.selectedCategory,
     this.isActive = false,
   });
@@ -30,7 +33,7 @@ class GoodsDetailsScreen extends StatefulWidget {
 
 class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   List<Map<String, String>> details = [];
-
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -53,19 +56,65 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(
-          context,
-          AppLocalizations.of(context)!.translate('Просмотр товара'),
+      appBar: _buildAppBar(
+        context,
+        AppLocalizations.of(context)!.translate('Просмотр товара'),
+      ),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16),
+        child: ListView(
+          children: [
+            _buildImageSlider(),
+            _buildDetailsList(),
+          ],
         ),
-        backgroundColor: Colors.white,
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListView(
-            children: [
-              _buildDetailsList(),
-            ],
+      ),
+    );
+  }
+
+  Widget _buildImageSlider() {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          height: 250,
+          child: PageView.builder(
+            itemCount: widget.imagePaths.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  widget.imagePaths[index],
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
           ),
-        ));
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            '${_currentPage + 1}/${widget.imagePaths.length}',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
@@ -115,12 +164,24 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 width: 24,
                 height: 24,
               ),
-              onPressed: () async {
-                // CategoryEditBottomSheet.show(
-                //   context,
-                //   initialName: widget.categoryName,
-                //   initialDescription: widget.categoryDescription,
-                // );
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GoodsEditScreen(
+                      goods: {
+                        'name': widget.goodsName,
+                        'description': widget.goodsDescription,
+                        'price': widget.goodsPrice,
+                        'discountPrice': widget.discountGoodsPrice,
+                        'stockQuantity': widget.stockQuantity,
+                        'category': widget.selectedCategory,
+                        'isActive': widget.isActive,
+                        'imagePaths': widget.imagePaths,
+                      },
+                    ),
+                  ),
+                );
               },
             ),
             IconButton(
@@ -132,10 +193,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 height: 24,
               ),
               onPressed: () {
-                // showDialog(
-                //   context: context,
-                //   builder: (context) => DeleteCategoryDialog(),
-                // );           
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteGoodsDialog(),
+                );
               },
             ),
           ],
@@ -144,47 +205,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-Widget _buildDetailsList() {
-  return ListView(
-    shrinkWrap: true,
-    physics: NeverScrollableScrollPhysics(),
-    children: [
-      // Отображение изображения товара
-      Container(
-        margin: const EdgeInsets.only(bottom: 16), // Отступ снизу
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12), // Закругление углов
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+  Widget _buildDetailsList() {
+    return ListView(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      children: [
+        ...details.map((detail) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: _buildDetailItem(
+              detail['label']!,
+              detail['value']!,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12), // Закругление углов
-          child: Image.asset(
-            widget.imagePath, // Путь к изображению
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-      // Остальные детали
-      ...details.map((detail) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            detail['label']!,
-            detail['value']!,
-          ),
-        );
-      }).toList(),
-    ],
-  );
-}
+          );
+        }).toList(),
+      ],
+    );
+  }
 
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
@@ -195,7 +232,14 @@ Widget _buildDetailsList() {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: _buildValue(value, label),
+              child: label == 'Описание:'
+                  ? GestureDetector(
+                      onTap: () {
+                        _showFullTextDialog( 'Описание', value );
+                      },
+                      child: _buildValue(value, label, maxLines: 2),
+                    )
+                  : _buildValue(value, label),
             ),
           ],
         );
@@ -215,7 +259,7 @@ Widget _buildDetailsList() {
     );
   }
 
-  Widget _buildValue(String value, String label) {
+  Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) return Container();
 
     return Text(
@@ -225,8 +269,66 @@ Widget _buildDetailsList() {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
+        decoration: label == 'Описание:' ? TextDecoration.underline : TextDecoration.none,
       ),
-      overflow: TextOverflow.visible,
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
+    );
+  }
+
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

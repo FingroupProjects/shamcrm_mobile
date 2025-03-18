@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1086,34 +1087,87 @@ Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
   }
 }
 
-  void _onPickFilePressed() async {
-  FilePickerResult? result = await FilePicker.platform.pickFiles(
-    allowMultiple: false,
-  );
-  if (result != null) {
-    debugPrint('------------------ select file');
-    debugPrint(result.files.first.path!);
+void _onPickFilePressed() async {
+  final source = await _showPickerDialog();
+  if (source == null) return;
 
-    final localMessage = Message(
-      id: -DateTime.now().millisecondsSinceEpoch, 
-      text: result.files.first.name,
-      type: 'file',
-      createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
-      isMyMessage: true,
-      senderName: "Вы",
-      filePath: result.files.first.path!,
-    );
-
-    context.read<MessagingCubit>().addLocalMessage(localMessage);
-
-    await _playSound();
-
-    // context.read<ListenSenderFileCubit>().updateValue(true);
-    await widget.apiService.sendChatFile(widget.chatId, result.files.first.path!);
-
-    // Обновляем состояние после отправки
-    context.read<ListenSenderFileCubit>().updateValue(false);
+  if (source == 'gallery') {
+    final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      _handlePickedFile(image.path, image.name);
+    }
+  } else if (source == 'file') {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: false);
+    if (result != null && result.files.single.path != null) {
+      _handlePickedFile(result.files.single.path!, result.files.single.name);
+    }
   }
+}
+
+Future<String?> _showPickerDialog() async {
+  return await showModalBottomSheet<String>(
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    context: context,
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
+              title: Text(
+                'Выбрать из галереи',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xFF1E1E1E),
+                ),
+              ),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            ListTile(
+              leading: Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
+              title: Text(
+                'Выбрать файл',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xFF1E1E1E),
+                ),
+              ),
+              onTap: () => Navigator.pop(context, 'file'),
+            ),
+            SizedBox(height: 10),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+
+void _handlePickedFile(String path, String name) async {
+  final localMessage = Message(
+    id: -DateTime.now().millisecondsSinceEpoch,
+    text: name,
+    type: 'file',
+    createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+    isMyMessage: true,
+    senderName: "Вы",
+    filePath: path,
+  );
+
+  context.read<MessagingCubit>().addLocalMessage(localMessage);
+  await _playSound();
+
+  await widget.apiService.sendChatFile(widget.chatId, path);
+  context.read<ListenSenderFileCubit>().updateValue(false);
 }
 
 

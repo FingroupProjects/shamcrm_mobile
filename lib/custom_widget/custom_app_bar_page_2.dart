@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_orders.dart';
 
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
@@ -20,6 +22,10 @@ class CustomAppBarPage2 extends StatefulWidget {
   Function(bool) clearButtonClickFiltr;
   final bool showSearchIcon;
   final bool showFilterIcon;
+  final bool showFilterOrderIcon;
+
+  final Function(Map)? onFilterGoodsSelected;
+  final VoidCallback? onGoodsResetFilters;
 
   CustomAppBarPage2({
     super.key,
@@ -32,6 +38,9 @@ class CustomAppBarPage2 extends StatefulWidget {
     required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
+    this.showFilterOrderIcon = true,
+    this.onFilterGoodsSelected,
+    this.onGoodsResetFilters,
   });
 
   @override
@@ -397,7 +406,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 focusNode: focusNode,
                 onChanged: widget.onChangedSearchInput,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: TextStyle(fontSize: 16),
@@ -455,8 +465,62 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 },
               ),
             ),
-          )
+          ),
+        if (widget.showFilterIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                // color: _iconColor,
+              ),
+            ),
+            onPressed: () {
+              navigateToLeadManagerFilterScreen(context);
+            },
+          ),
+        if (widget.showFilterOrderIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                // color: _iconColor,
+              ),
+            ),
+            onPressed: () {
+              navigateToOrderFilterScreen(context);
+            },
+          ),
       ]),
+    );
+  }
+
+  void navigateToLeadManagerFilterScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GoodsFilterScreen(
+          onSelectedDataFilter: widget.onFilterGoodsSelected,
+          onResetFilters: widget.onGoodsResetFilters,
+        ),
+      ),
+    );
+  }
+
+  void navigateToOrderFilterScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrdersFilterScreen(
+          onSelectedDataFilter: widget.onFilterGoodsSelected,
+          onResetFilters: widget.onGoodsResetFilters,
+        ),
+      ),
     );
   }
 }

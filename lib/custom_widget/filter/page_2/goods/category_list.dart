@@ -61,7 +61,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             searchHintText: 'Поиск',
             overlayHeight: 300,
             decoration: CustomDropdownDecoration(
-              closedFillColor: Color(0xffF4F7FD),
+              closedFillColor: Colors.white,
               expandedFillColor: Colors.white,
               closedBorder: Border.all(
                 color: const Color(0xffF4F7FD),

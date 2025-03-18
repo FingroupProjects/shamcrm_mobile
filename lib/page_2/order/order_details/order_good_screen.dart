@@ -10,9 +10,9 @@ class Goods {
   final String goodsName;
   final String goodsDescription;
   final double goodsPrice;
-  final double discountGoodsPrice;
-  final double stockQuantity;
-  final String imagePath;
+  final int discountGoodsPrice;
+  final int stockQuantity;
+  final List<String> imagePaths;
 
   Goods({
     required this.id,
@@ -21,7 +21,7 @@ class Goods {
     required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
-    required this.imagePath,
+    required this.imagePaths,
   });
 }
 
@@ -44,7 +44,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 50,
       discountGoodsPrice: 10,
       stockQuantity: 500,
-      imagePath: 'assets/images/goods_photo.jpg',
+      imagePaths: ['assets/images/goods_photo.jpg'],
     ),
     Goods(
       id: 2,
@@ -53,7 +53,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePath: 'assets/images/goods_photo.jpg',
+      imagePaths: ['assets/images/goods_photo.jpg'],
     ),
     Goods(
       id: 3,
@@ -63,7 +63,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePath: 'assets/images/goods_photo.jpg',
+      imagePaths: ['assets/images/goods_photo.jpg'],
     ),
     Goods(
       id: 4,
@@ -72,7 +72,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePath: 'assets/images/goods_photo.jpg',
+      imagePaths: ['assets/images/goods_photo.jpg'],
     ),
     Goods(
       id: 5,
@@ -82,7 +82,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePath: 'assets/images/goods_photo.jpg',
+      imagePaths: ['assets/images/goods_photo.jpg'],
     ),
   ];
 
@@ -234,14 +234,30 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                 ),
                 SizedBox(width: 16),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    goods.imagePath,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,   
+                    itemCount: goods.imagePaths.length,  
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),   
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            goods.imagePaths[index],   
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
+              ),
               ],
             ),
           ),
@@ -261,7 +277,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           goodsPrice: goods.goodsPrice,
           discountGoodsPrice: goods.discountGoodsPrice,
           stockQuantity: goods.stockQuantity,
-          imagePath: goods.imagePath,
+          imagePaths: goods.imagePaths,
           selectedCategory: goods.id.toString(),
           isActive: true,
         ),
@@ -283,8 +299,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           onPressed: () {
             showModalBottomSheet(
               context: context,
-              isScrollControlled:
-                  true, // Позволяет управлять высотой и прокруткой
+              isScrollControlled: true, 
               builder: (context) => ProductSelectionSheet(),
             );
           },

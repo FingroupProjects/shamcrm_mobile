@@ -13,9 +13,10 @@ class CustomTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int maxLines;
   final String? Function(String?)? validator;
-  final Function(String)? onChanged; // Add onChanged parameter
-  final String? errorText; // Add errorText support
-  final bool hasError; // New parameter to manage error state
+  final Function(String)? onChanged;
+  final String? errorText;
+  final bool hasError;
+  final Color backgroundColor; 
 
   CustomTextField({
     required this.controller,
@@ -29,9 +30,10 @@ class CustomTextField extends StatefulWidget {
     this.inputFormatters,
     this.maxLines = 1,
     this.validator,
-    this.onChanged, // Add to constructor
-    this.errorText, // Add errorText support
+    this.onChanged,
+    this.errorText,
     this.hasError = false,
+    this.backgroundColor = const Color(0xffF4F7FD), 
   });
 
   @override
@@ -43,7 +45,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine if the field has an error
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
         widget.hasError;
 
@@ -56,7 +57,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: const Color(0xfff1E2E52),
+            color: const Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
@@ -80,9 +81,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            fillColor: widget.backgroundColor, 
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(
@@ -104,7 +104,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
             errorText: widget.errorText,
             errorStyle: const TextStyle(
               fontSize: 14,
-              // fontFamily: 'Gilroy',
               color: Colors.red,
               fontWeight: FontWeight.w400,
             ),

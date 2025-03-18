@@ -998,7 +998,6 @@ List<TargetFocus> targets = [];
           // print('state: ${state.runtimeType}');
           if (state is LeadDataLoaded) {
             final List<Lead> leads = state.leads;
-            print(leads);
             return searchWidget(leads);
           }
           if (state is LeadLoading) {
