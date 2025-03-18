@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 class CategoryDetailsScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
+  final String subCategoryName;
   final String categoryDescription;
 
   CategoryDetailsScreen({
     required this.categoryId,
     required this.categoryName,
+    required this.subCategoryName,
     required this.categoryDescription,
   });
 
@@ -31,6 +33,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   void _updateDetails() {
     details = [
       {'label': 'Название:', 'value': widget.categoryName},
+      {'label': 'Подкатегория:', 'value': widget.subCategoryName},
       {'label': 'Описание:', 'value': widget.categoryDescription},
     ];
   }

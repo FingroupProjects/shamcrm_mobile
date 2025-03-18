@@ -16,28 +16,33 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-  final List<Map<String, dynamic>> testCategories = [
-    {
-      'id': 1,
-      'name': 'Категория 1',
-      'description': 'Тест описание 11',
-    },
-    {
-      'id': 2,
-      'name': 'Категория 2',
-      'description': 'Тест описание 22',
-    },
-    {
-      'id': 3,
-      'name': 'Категория 3',
-      'description': 'Тест описание 33',
-    },
-    {
-      'id': 4,
-      'name': 'Категория 4',
-      'description': 'Тест описание 44444',
-    },
-  ];
+final List<Map<String, dynamic>> testCategories = [
+  {
+    'id': 1,
+    'name': 'Электроника',
+    'subCategory': 'Смартфоны',
+    'description': 'Смартфоны разных производителей',
+  },
+  {
+    'id': 2,
+    'name': 'Одежда',
+    'subCategory': 'Футболки',
+    'description': 'Стильные футболки для мужчин и женщин',
+  },
+  {
+    'id': 3,
+    'name': 'Бытовая техника',
+    'subCategory': 'Холодильники',
+    'description': 'Широкий выбор холодильников',
+  },
+  {
+    'id': 4,
+    'name': 'Книги',
+    'subCategory': 'Фантастика',
+    'description': 'Лучшие фантастические произведения',
+  },
+];
+
 
   // void _onSearchChanged(String value) {}
 
@@ -85,6 +90,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   child: CategoryCard(
                     categoryId: testCategories[index]['id']!,
                     categoryName: testCategories[index]['name']!,
+                    subCategoryName: testCategories[index]['subCategory']!,
                     categoryDescription: testCategories[index]['description']!,
                   ),
                 );

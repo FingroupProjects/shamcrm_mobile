@@ -50,6 +50,17 @@ final List<Map<String, dynamic>> testGoods = [
     'imagePaths': ['assets/images/goods_photo.jpg','assets/images/goods_photo1.jpg','assets/images/goods_photo2.jpg'],
     'status': true,
   },
+  {
+  'id': 4,
+  'name': 'Смартфон XYZ Pro',
+  'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
+  'category': 'Электроника',
+  'price': 799.99,
+  'discount': 15,
+  'stockQuantity': 500,
+  'imagePaths': ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo1.jpg'],
+  'status': true,
+},
 ];
 
 
@@ -95,7 +106,7 @@ final List<Map<String, dynamic>> testGoods = [
               itemCount: testGoods.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 0),
                   child: GoodsCard(
                     goodsId: testGoods[index]['id']!,
                     goodsName: testGoods[index]['name']!,

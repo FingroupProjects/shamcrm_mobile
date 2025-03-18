@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -32,6 +33,7 @@ class GoodsDetailsScreen extends StatefulWidget {
 
 class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   List<Map<String, String>> details = [];
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -60,10 +62,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16,),
+        padding: const EdgeInsets.only(left: 16, right: 16),
         child: ListView(
           children: [
-            _buildImageSlider(), 
+            _buildImageSlider(),
             _buildDetailsList(),
           ],
         ),
@@ -72,22 +74,46 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildImageSlider() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      height: 200, 
-      child: PageView.builder(
-        itemCount: widget.imagePaths.length,
-        itemBuilder: (context, index) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              widget.imagePaths[index],
-              width: double.infinity,
-              fit: BoxFit.contain,
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          height: 250,
+          child: PageView.builder(
+            itemCount: widget.imagePaths.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  widget.imagePaths[index],
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            '${_currentPage + 1}/${widget.imagePaths.length}',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -138,7 +164,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 width: 24,
                 height: 24,
               ),
-            onPressed: () {
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -170,7 +196,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 showDialog(
                   context: context,
                   builder: (context) => DeleteGoodsDialog(),
-                );                
+                );
               },
             ),
           ],
@@ -206,7 +232,14 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: _buildValue(value, label),
+              child: label == 'Описание:'
+                  ? GestureDetector(
+                      onTap: () {
+                        _showFullTextDialog( 'Описание', value );
+                      },
+                      child: _buildValue(value, label, maxLines: 2),
+                    )
+                  : _buildValue(value, label),
             ),
           ],
         );
@@ -226,7 +259,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  Widget _buildValue(String value, String label) {
+  Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) return Container();
 
     return Text(
@@ -236,8 +269,66 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
+        decoration: label == 'Описание:' ? TextDecoration.underline : TextDecoration.none,
       ),
-      overflow: TextOverflow.visible,
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
+    );
+  }
+
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
