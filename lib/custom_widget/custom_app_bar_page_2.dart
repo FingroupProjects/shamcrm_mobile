@@ -455,8 +455,51 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 },
               ),
             ),
-          )
+          ),
+           if (widget.showFilterIcon)
+            IconButton(
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Image.asset(
+                  'assets/icons/AppBar/filter.png',
+                  width: 24,
+                  height: 24,
+                  // color: _iconColor,
+                ),
+              ),
+              onPressed: () {
+                navigateToLeadManagerFilterScreen(context);
+              },
+            ),
       ]),
     );
   }
 }
+
+ void navigateToLeadManagerFilterScreen(BuildContext context) {
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => ManagerFilterScreen(
+    //       onManagersSelected: widget.onManagersLeadSelected,
+    //       initialManagers: widget.initialManagersLead,
+    //       initialRegions: widget.initialManagersLeadRegions,
+    //       initialSources: widget.initialManagersLeadSources,
+    //       initialStatuses: widget.initialManagerLeadStatuses,
+    //       initialFromDate: widget.initialManagerLeadFromDate,
+    //       initialToDate: widget.initialManagerLeadToDate,
+    //       initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
+    //       initialHasInProgressDeals:
+    //           widget.initialManagerLeadHasInProgressDeals,
+    //       initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
+    //       initialHasNotices: widget.initialManagerLeadHasNotices,
+    //       initialHasContact: widget.initialManagerLeadHasContact,
+    //       initialHasChat: widget.initialManagerLeadHasChat,
+    //       initialHasDeal: widget.initialManagerLeadHasDeal,
+    //       initialDaysWithoutActivity:
+    //           widget.initialManagerLeadDaysWithoutActivity,
+    //       onResetFilters: widget.onLeadResetFilters,
+    //     ),
+    //   ),
+    // );
+  }
