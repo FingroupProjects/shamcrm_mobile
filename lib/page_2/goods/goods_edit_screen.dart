@@ -133,24 +133,24 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       border: Border.all(color: const Color(0xffF4F7FD), width: 1),
                     ),
                     child: _imagePaths.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.camera_alt, color: Colors.grey, size: 40),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Нажмите для загрузки фото',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Colors.grey.shade600,
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.camera_alt,color: Color(0xff99A4BA), size: 40),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Нажмите для загрузки фото',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff99A4BA),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
+                                ],
+                              ),
+                            )
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Stack(

@@ -73,7 +73,7 @@ void initState() {
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
-            'Выберите подкатегория',
+            'Выберите подкатегорию',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

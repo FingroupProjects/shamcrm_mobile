@@ -24,8 +24,9 @@ class Goods {
   });
 }
 class CategoryGoodsScreen extends StatefulWidget {
+  final categoryName;
 
-  const CategoryGoodsScreen({Key? key, }) : super(key: key);
+  const CategoryGoodsScreen({Key? key, required this.categoryName }) : super(key: key);
 
   @override
   _CategoryGoodsState createState() => _CategoryGoodsState();
@@ -35,59 +36,60 @@ class _CategoryGoodsState extends State<CategoryGoodsScreen> {
 final List<Goods> testGoods = [
   Goods(
     id: 1,
-    goodsName: 'Товар 1',
-    goodsDescription: '🌟 Забудьте о компромиссах! Смартфон Nova X создан для тех, кто хочет максимум возможностей. Сверхчеткий экран, профессиональная камера и батарея, которая не подведёт. Воплотите мечты в реальность',
-    goodsPrice: 50,
-    discountGoodsPrice: 10,
-    stockQuantity: 500,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Смартфон Galaxy S22',
+    goodsDescription: 'Флагманский смартфон с мощным процессором, AMOLED-экраном 6.5" и камерой 108 МП.',
+    goodsPrice: 899.99,
+    discountGoodsPrice: 799,
+    stockQuantity: 350,
+    imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo1.jpg'],
   ),
   Goods(
     id: 2,
-    goodsName: 'Товар 2',
-    goodsDescription: 'Тест описание тест тест тест  ',
-    goodsPrice: 23,
-    discountGoodsPrice: 0,
-    stockQuantity: 1000,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Ноутбук UltraBook X1',
+    goodsDescription: 'Легкий и мощный ноутбук с процессором i7, 16 ГБ ОЗУ и SSD 512 ГБ. Отличный выбор для работы и развлечений.',
+    goodsPrice: 1200.00,
+    discountGoodsPrice: 1099,
+    stockQuantity: 150,
+    imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
   ),
   Goods(
     id: 3,
-    goodsName: 'Товар 3',
-    goodsDescription: 'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
-    goodsPrice: 125.3,
-    discountGoodsPrice: 30,
-    stockQuantity: 712,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Игровая консоль NextGen X',
+    goodsDescription: 'Новая консоль с поддержкой 4K-гейминга, мощной графикой и библиотекой эксклюзивных игр.',
+    goodsPrice: 499.99,
+    discountGoodsPrice: 459,
+    stockQuantity: 500,
+    imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo.jpg'],
   ),
   Goods(
     id: 4,
-    goodsName: 'Товар 4',
-    goodsDescription: 'Тест описание тест тест тест  ',
-    goodsPrice: 23,
-    discountGoodsPrice: 0,
-    stockQuantity: 1000,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Умные часы FitPro 3',
+    goodsDescription: 'Следите за своим здоровьем и активностью с FitPro 3! Мониторинг сна, шагомер, датчик ЧСС и водонепроницаемость.',
+    goodsPrice: 199.99,
+    discountGoodsPrice: 179,
+    stockQuantity: 800,
+    imagePaths: ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
   ),
   Goods(
     id: 5,
-    goodsName: 'Товар 5',
-    goodsDescription: 'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
-    goodsPrice: 125.3,
-    discountGoodsPrice: 30,
-    stockQuantity: 712,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Беспроводные наушники SoundBeat Pro',
+    goodsDescription: 'Высокое качество звука, активное шумоподавление и до 30 часов работы на одном заряде.',
+    goodsPrice: 249.99,
+    discountGoodsPrice: 219,
+    stockQuantity: 1000,
+    imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
   ),
   Goods(
     id: 6,
-    goodsName: 'Товар 6',
-    goodsDescription: 'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
-    goodsPrice: 555.3,
-    discountGoodsPrice: 15,
-    stockQuantity: 5444,
-    imagePaths: ['assets/images/goods_photo.jpg']
+    goodsName: 'Электросамокат SpeedRide X',
+    goodsDescription: 'Складной электросамокат с запасом хода до 40 км, максимальной скоростью 25 км/ч и мощным аккумулятором.',
+    goodsPrice: 650.00,
+    discountGoodsPrice: 599,
+    stockQuantity: 200,
+    imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo.jpg'],
   ),
 ];
+
 
   @override
   void initState() {
@@ -275,7 +277,7 @@ void _navigateToGoodsDetails(Goods goods) {
         discountGoodsPrice: goods.discountGoodsPrice,
         stockQuantity: goods.stockQuantity,
         imagePaths: goods.imagePaths,
-        selectedCategory: goods.id.toString(), 
+        selectedCategory: widget.categoryName, 
         isActive: true, 
       ),
     ),
