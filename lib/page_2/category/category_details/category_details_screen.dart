@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_goods_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
@@ -51,7 +52,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
           child: ListView(
             children: [
               _buildDetailsList(),
-              CategoryGoodsScreen(),
+              CategoryGoodsScreen(categoryName: widget.categoryName,),
             ],
           ),
         ));
@@ -108,7 +109,8 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                 CategoryEditBottomSheet.show(
                   context,
                   initialName: widget.categoryName,
-                  initialDescription: widget.categoryDescription,
+                  initialDescription: widget.categoryDescription, 
+                  initialSubCategory: widget.subCategoryName,
                 );
               },
             ),
@@ -159,7 +161,13 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: _buildValue(value, label),
+              child: label == 'Описание:' ? GestureDetector(
+                onTap: () {
+                  _showFullTextDialog( 'Описание', value );
+                },
+                child: _buildValue(value, label,maxLines: 2),
+              )
+              : _buildValue(value, label,maxLines: 2)
             ),
           ],
         );
@@ -179,9 +187,8 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     );
   }
 
-  Widget _buildValue(String value, String label) {
+  Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) return Container();
-
     return Text(
       value,
       style: TextStyle(
@@ -189,10 +196,69 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
+        decoration: label == 'Описание:' ? TextDecoration.underline : TextDecoration.none,
       ),
-      overflow: TextOverflow.visible,
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
     );
   }
+
+   void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
   @override
   void dispose() {
