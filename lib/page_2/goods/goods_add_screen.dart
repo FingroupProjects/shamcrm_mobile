@@ -124,7 +124,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt, color: Colors.grey, size: 40),
+                                  Icon(Icons.camera_alt,color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Нажмите для загрузки фото',
@@ -132,7 +132,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: Colors.grey.shade600,
+                                      color: Color(0xff99A4BA),
                                     ),
                                   ),
                                 ],

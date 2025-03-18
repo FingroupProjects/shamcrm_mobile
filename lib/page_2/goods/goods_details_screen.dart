@@ -239,7 +239,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       },
                       child: _buildValue(value, label, maxLines: 2),
                     )
-                  : _buildValue(value, label),
+                  : _buildValue(value, label, maxLines: 2),
             ),
           ],
         );
@@ -261,7 +261,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) return Container();
-
     return Text(
       value,
       style: TextStyle(

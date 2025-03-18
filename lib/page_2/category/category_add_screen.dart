@@ -33,8 +33,17 @@ class CategoryAddBottomSheet {
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                   Container(
+                      width: 100,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 7),
+                      decoration: BoxDecoration(
+                        color: Color(0xfffDFE3EC),
+                        borderRadius: BorderRadius.circular(1200),
+                      ),
+                    ),
                     Text(
                       AppLocalizations.of(context)!.translate('Новая категория'),
                       style: const TextStyle(
