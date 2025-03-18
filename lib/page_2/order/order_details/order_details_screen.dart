@@ -29,11 +29,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       {'label': 'Клиент', 'value': widget.order['client']},
       {'label': 'Ответственный менеджер', 'value': widget.order['manager']},
       {'label': 'Сумма заказа', 'value': '${widget.order['total']} ₽'},
-      {'label': 'Статус заказа', 'value': _getStatusName(widget.order['statusId'])},
+      {
+        'label': 'Статус заказа',
+        'value': _getStatusName(widget.order['statusId'])
+      },
       {'label': 'Способ оплаты', 'value': widget.order['paymentMethod']},
       {'label': 'Способ доставки', 'value': widget.order['deliveryMethod']},
       if (widget.order['deliveryMethod'] != 'Самовывоз')
-        {'label': 'Адрес доставки', 'value': widget.order['deliveryAddress'] ?? 'Не указан'},
+        {
+          'label': 'Адрес доставки',
+          'value': widget.order['deliveryAddress'] ?? 'Не указан'
+        },
       {'label': 'Комментарий клиента', 'value': widget.order['comment'] ?? ''},
     ];
   }
@@ -57,7 +63,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -94,7 +101,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xff1E2E52),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text(
                     'Закрыть',
@@ -150,7 +158,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.edit, color: Color(0xff1E2E52)),
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(),
+          icon: Image.asset(
+            'assets/icons/edit.png',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () async {
             final updatedOrder = await Navigator.push(
               context,
@@ -168,11 +182,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           },
         ),
         IconButton(
-          icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+          padding: EdgeInsets.only(right: 8),
+          constraints: BoxConstraints(),
+          icon: Image.asset(
+            'assets/icons/delete.png',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () {
             showDialog(
               context: context,
-              builder: (context) => DeleteOrderDialog(orderId: widget.order['id']),
+              builder: (context) =>
+                  DeleteOrderDialog(orderId: widget.order['id']),
             ).then((shouldDelete) {
               if (shouldDelete == true) {
                 Navigator.pop(context, true); // Указываем, что заказ удален
@@ -192,7 +213,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       itemBuilder: (context, index) {
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(details[index]['label']!, details[index]['value']!),
+          child: _buildDetailItem(
+              details[index]['label']!, details[index]['value']!),
         );
       },
     );
@@ -217,7 +239,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

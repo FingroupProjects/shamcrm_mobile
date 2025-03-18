@@ -1,14 +1,15 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_column.dart';
 import 'package:flutter/material.dart';
-
 
 class OrderScreen extends StatefulWidget {
   @override
   _OrderScreenState createState() => _OrderScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin {
+class _OrderScreenState extends State<OrderScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -52,7 +53,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
       double targetOffset = _scrollController.offset +
           position.dx -
@@ -140,18 +142,20 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
               onTap: () => _tabController.animateTo(index),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isActive ? Color(0xff1E2E52) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Color(0xff99A4BA)),
+                  color: isActive
+                      ? Color.fromARGB(255, 255, 255, 255)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),),
                 ),
                 padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 child: Text(
                   _tabTitles[index]['title'],
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isActive ? Colors.white : Color(0xff1E2E52),
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
               ),
