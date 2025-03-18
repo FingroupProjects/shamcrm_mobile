@@ -87,7 +87,6 @@ class _OrderScreenState extends State<OrderScreen>
           onChangedSearchInput: (value) {
             _onSearch(value);
           },
-          showFilterOrderIcon: true,
           showFilterIcon: false,
           showSearchIcon: true,
           onClickProfileAvatar: () {
