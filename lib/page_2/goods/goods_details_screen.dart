@@ -139,23 +139,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 height: 24,
               ),
             onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => GoodsEditScreen(
-                //       goods: {
-                //         'name': widget.goodsName,
-                //         'description': widget.goodsDescription,
-                //         'price': widget.goodsPrice,
-                //         'discountPrice': widget.discountGoodsPrice,
-                //         'stockQuantity': widget.stockQuantity,
-                //         'category': widget.selectedCategory,
-                //         'isActive': widget.isActive,
-                //         'imagePaths': widget.imagePaths,
-                //       },
-                //     ),
-                //   ),
-                // );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GoodsEditScreen(
+                      goods: {
+                        'name': widget.goodsName,
+                        'description': widget.goodsDescription,
+                        'price': widget.goodsPrice,
+                        'discountPrice': widget.discountGoodsPrice,
+                        'stockQuantity': widget.stockQuantity,
+                        'category': widget.selectedCategory,
+                        'isActive': widget.isActive,
+                        'imagePaths': widget.imagePaths,
+                      },
+                    ),
+                  ),
+                );
               },
             ),
             IconButton(

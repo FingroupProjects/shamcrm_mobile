@@ -67,7 +67,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           },
           clearButtonClickFiltr: (isSearching) {},
           showSearchIcon: true,
-          showFilterIcon: true,
+          showFilterIcon: false,
           onChangedSearchInput: (input) {},
           textEditingController: TextEditingController(),
           focusNode: FocusNode(),

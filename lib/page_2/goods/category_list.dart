@@ -67,6 +67,7 @@ void initState() {
                 fontFamily: 'Gilroy',
               ),
             );
+            
           },
           hintBuilder: (context, hint, enabled) => Text(
             'Выберите категорию',

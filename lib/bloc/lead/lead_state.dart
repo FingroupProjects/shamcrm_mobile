@@ -18,7 +18,6 @@ class LeadLoaded extends LeadState {
     List<LeadStatus>? leadStatuses,
     Map<int, int>? leadCounts,
   }) {
-    print(leadCounts);
     print("-------------------------TaskLoaded------------------");
     return LeadLoaded(
       leadStatuses ?? this.leadStatuses,
