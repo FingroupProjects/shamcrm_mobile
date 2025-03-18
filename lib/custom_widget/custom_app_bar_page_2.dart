@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
@@ -20,6 +21,11 @@ class CustomAppBarPage2 extends StatefulWidget {
   Function(bool) clearButtonClickFiltr;
   final bool showSearchIcon;
   final bool showFilterIcon;
+  
+  final Function(Map)? onFilterGoodsSelected;
+  final VoidCallback? onGoodsResetFilters;
+
+
 
   CustomAppBarPage2({
     super.key,
@@ -32,6 +38,9 @@ class CustomAppBarPage2 extends StatefulWidget {
     required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
+    this.onFilterGoodsSelected,
+    this.onGoodsResetFilters,
+
   });
 
   @override
@@ -474,32 +483,17 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       ]),
     );
   }
+
+   void navigateToLeadManagerFilterScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GoodsFilterScreen(
+          onSelectedDataFilter: widget.onFilterGoodsSelected,
+          onResetFilters: widget.onGoodsResetFilters,
+        ),
+      ),
+    );
+  }
 }
 
- void navigateToLeadManagerFilterScreen(BuildContext context) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => ManagerFilterScreen(
-    //       onManagersSelected: widget.onManagersLeadSelected,
-    //       initialManagers: widget.initialManagersLead,
-    //       initialRegions: widget.initialManagersLeadRegions,
-    //       initialSources: widget.initialManagersLeadSources,
-    //       initialStatuses: widget.initialManagerLeadStatuses,
-    //       initialFromDate: widget.initialManagerLeadFromDate,
-    //       initialToDate: widget.initialManagerLeadToDate,
-    //       initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
-    //       initialHasInProgressDeals:
-    //           widget.initialManagerLeadHasInProgressDeals,
-    //       initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
-    //       initialHasNotices: widget.initialManagerLeadHasNotices,
-    //       initialHasContact: widget.initialManagerLeadHasContact,
-    //       initialHasChat: widget.initialManagerLeadHasChat,
-    //       initialHasDeal: widget.initialManagerLeadHasDeal,
-    //       initialDaysWithoutActivity:
-    //           widget.initialManagerLeadDaysWithoutActivity,
-    //       onResetFilters: widget.onLeadResetFilters,
-    //     ),
-    //   ),
-    // );
-  }

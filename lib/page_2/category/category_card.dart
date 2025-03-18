@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 class CategoryCard extends StatefulWidget {
   final int categoryId;
   final String categoryName;
+  final String subCategoryName;
   final String categoryDescription;
 
   CategoryCard({
     Key? key,
     required this.categoryId,
     required this.categoryName,
+    required this.subCategoryName,
     required this.categoryDescription,
   }) : super(key: key);
 
@@ -38,6 +40,7 @@ class _CategoryCardState extends State<CategoryCard> {
             builder: (context) => CategoryDetailsScreen(
               categoryId: widget.categoryId,
               categoryName: widget.categoryName,
+              subCategoryName: widget.subCategoryName,
               categoryDescription: widget.categoryDescription,
             ),
           ),
@@ -88,7 +91,7 @@ class _CategoryCardState extends State<CategoryCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        widget.categoryId.toString(),
+                        widget.subCategoryName,
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',

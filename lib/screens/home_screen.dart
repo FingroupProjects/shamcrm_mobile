@@ -98,8 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
     widgets.add(PlaceHolderTest(message: 'Страница 1',));
     titleKeys.add('Дашборд');
     navBarTitleKeys.add('Дашборд');
-    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
     hasAvailableScreens = true;
     // Категории 
     widgets.add(CategoryScreen());
