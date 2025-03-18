@@ -46,12 +46,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
     _fetchTutorialProgress(); // Загружаем прогресс туториалов
-    
+    _fetchSettings(); // Добавляем новый метод для получения настроек
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _shakeAnimation = Tween<double>(begin: 0, end: 10).chain(CurveTween(curve: Curves.elasticIn))
+    _shakeAnimation = Tween<double>(begin: 0, end: 10)
+        .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
 
@@ -60,7 +61,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       final prefs = await SharedPreferences.getInstance();
       // Проверяем, был ли пользователь уже зарегистрирован
       bool isNewUser = prefs.getString('user_pin') == null;
-      
+
       if (isNewUser) {
         // Если новый пользователь - получаем прогресс туториалов
         final progress = await _apiService.getTutorialProgress();
@@ -68,7 +69,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           tutorialProgress = progress['result'];
         });
         // Сохраняем прогресс в SharedPreferences
-        await prefs.setString('tutorial_progress', json.encode(progress['result']));
+        await prefs.setString(
+            'tutorial_progress', json.encode(progress['result']));
       } else {
         // Если старый пользователь - берем прогресс из SharedPreferences
         final savedProgress = prefs.getString('tutorial_progress');
@@ -80,6 +82,24 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       }
     } catch (e) {
       print('Error fetching tutorial progress: $e');
+    }
+  }
+
+// Новый метод для получения настроек
+  Future<void> _fetchSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await _apiService.getSelectedOrganization();
+
+      final response = await _apiService.getSettings(organizationId);
+
+      if (response['result'] != null) {
+        // Сохраняем только department в SharedPreferences
+        await prefs.setBool(
+            'department_enabled', response['result']['department'] ?? false);
+      }
+    } catch (e) {
+      print('Error fetching settings: $e');
     }
   }
 
@@ -144,7 +164,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       setState(() {
         userRoleId = userProfile.role!.first.id;
       });
@@ -230,7 +251,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0, 0),
+                    offset:
+                        Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0, 0),
                     child: Column(
                       children: [
                         _buildPinRow(_pin),
@@ -252,7 +274,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       onPressed: () => _onNumberPressed(i.toString()),
                       child: Text(
                         i.toString(),
-                        style: const TextStyle(fontSize: 24, color: Colors.black),
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
                   TextButton(

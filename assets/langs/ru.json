@@ -571,7 +571,7 @@
       "new_notice":"Добавление заметки",
       "enter_notice_title":"Введите название",
       "notice_title":"Тематика",
-      "reminder_date":"ание",
+      "reminder_date":"Напоминание",
       "delete_notice":"Удалить заметку",
       "confirm_delete_notice":"Хотите удалить заметку?",
       "notice_deleted_successfully":"События успешно удален",
@@ -819,5 +819,14 @@
       "pinned_message": "Закрепленное сообщение",
       "department":"Отдел",
       "select_department":"Выберите отдел",
-      "event_name":"Название"
+      "event_name":"Название",
+      "delivery_method":"Способ доставки",
+      "payment_method":"Способ оплаты",
+      "select_delivery_method":"Выберите способ доставки",
+      "select_payment_method":"Выберите способ оплаты",
+      "status_method":"Статус",
+      "select_status_method":"Выберите статус"
+
+
+
     }

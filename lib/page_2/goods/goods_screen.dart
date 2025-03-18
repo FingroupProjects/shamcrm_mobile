@@ -16,53 +16,66 @@ class _GoodsScreenState extends State<GoodsScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-final List<Map<String, dynamic>> testGoods = [
-  {
-    'id': 1,
-    'name': 'Смартфон XYZ Pro',
-    'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
-    'category': 'Электроника',
-    'price': 799.99,
-    'discount': 15,
-    'stockQuantity': 500,
-    'imagePaths': ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo1.jpg'],
-    'status': true,
-  },
-  {
-    'id': 2,
-    'name': 'Стиральная машина Модель A100',
-    'description': 'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
-    'category': 'Бытовая техника',
-    'price': 450.00,
-    'discount': 10,
-    'stockQuantity': 150,
-    'imagePaths': ['assets/images/goods_photo1.jpg'],
-    'status': false,
-  },
-  {
-    'id': 3,
-    'name': 'Органический хлеб из цельного зерна',
-    'description': 'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
-    'category': 'Продукты питания',
-    'price': 3.50,
-    'discount': 5,
-    'stockQuantity': 2000,
-    'imagePaths': ['assets/images/goods_photo.jpg','assets/images/goods_photo1.jpg','assets/images/goods_photo2.jpg'],
-    'status': true,
-  },
-  {
-  'id': 4,
-  'name': 'Смартфон XYZ Pro',
-  'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
-  'category': 'Электроника',
-  'price': 799.99,
-  'discount': 15,
-  'stockQuantity': 500,
-  'imagePaths': ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo1.jpg'],
-  'status': true,
-},
-];
-
+  final List<Map<String, dynamic>> testGoods = [
+    {
+      'id': 1,
+      'name': 'Смартфон XYZ Pro',
+      'description':
+          'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
+      'category': 'Электроника',
+      'price': 799.99,
+      'discount': 15,
+      'stockQuantity': 500,
+      'imagePaths': [
+        'assets/images/goods_photo2.jpg',
+        'assets/images/goods_photo1.jpg'
+      ],
+      'status': true,
+    },
+    {
+      'id': 2,
+      'name': 'Стиральная машина Модель A100',
+      'description':
+          'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
+      'category': 'Бытовая техника',
+      'price': 450.00,
+      'discount': 10,
+      'stockQuantity': 150,
+      'imagePaths': ['assets/images/goods_photo1.jpg'],
+      'status': false,
+    },
+    {
+      'id': 3,
+      'name': 'Органический хлеб из цельного зерна',
+      'description':
+          'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
+      'category': 'Продукты питания',
+      'price': 3.50,
+      'discount': 5,
+      'stockQuantity': 2000,
+      'imagePaths': [
+        'assets/images/goods_photo.jpg',
+        'assets/images/goods_photo1.jpg',
+        'assets/images/goods_photo2.jpg'
+      ],
+      'status': true,
+    },
+    {
+      'id': 4,
+      'name': 'Смартфон XYZ Pro',
+      'description':
+          'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
+      'category': 'Электроника',
+      'price': 799.99,
+      'discount': 15,
+      'stockQuantity': 500,
+      'imagePaths': [
+        'assets/images/goods_photo2.jpg',
+        'assets/images/goods_photo1.jpg'
+      ],
+      'status': true,
+    },
+  ];
 
   // void _onSearchChanged(String value) {}
 
@@ -82,9 +95,9 @@ final List<Map<String, dynamic>> testGoods = [
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
-        title: isClickAvatarIcon
-          ? localizations!.translate('appbar_settings')
-          : localizations!.translate('Товары'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('Товары'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -92,6 +105,7 @@ final List<Map<String, dynamic>> testGoods = [
           },
           clearButtonClickFiltr: (isSearching) {},
           showSearchIcon: true,
+          showFilterOrderIcon: false,
           showFilterIcon: true,
           onChangedSearchInput: (input) {},
           textEditingController: TextEditingController(),
@@ -123,11 +137,11 @@ final List<Map<String, dynamic>> testGoods = [
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-             Navigator.push(
-               context,
-               MaterialPageRoute(builder: (context) => GoodsAddScreen()),
-             );
-           },
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => GoodsAddScreen()),
+          );
+        },
         backgroundColor: const Color(0xff1E2E52),
         child: Icon(Icons.add, color: Colors.white),
       ),

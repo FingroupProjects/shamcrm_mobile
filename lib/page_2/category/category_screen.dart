@@ -63,9 +63,9 @@ final List<Map<String, dynamic>> testCategories = [
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
-        title: isClickAvatarIcon
-          ? localizations!.translate('appbar_settings')
-          : localizations!.translate('Категории'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('Категории'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -74,6 +74,7 @@ final List<Map<String, dynamic>> testCategories = [
           clearButtonClickFiltr: (isSearching) {},
           showSearchIcon: true,
           showFilterIcon: false,
+          showFilterOrderIcon: false,
           onChangedSearchInput: (input) {},
           textEditingController: TextEditingController(),
           focusNode: FocusNode(),

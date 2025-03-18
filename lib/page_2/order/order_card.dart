@@ -1,10 +1,28 @@
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-class OrderCard extends StatelessWidget {
+class OrderCard extends StatefulWidget {
   final Map<String, dynamic> order;
+  final Function(int)? onStatusUpdated; // Callback для обновления статуса
 
-  OrderCard({required this.order});
+  const OrderCard({required this.order, this.onStatusUpdated});
+
+  @override
+  _OrderCardState createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<OrderCard> {
+  late String dropdownValue;
+  late int statusId;
+
+  @override
+  void initState() {
+    super.initState();
+    statusId = widget.order['statusId'];
+    dropdownValue = _getStatusName(statusId);
+  }
 
   // Получение названия статуса
   String _getStatusName(int statusId) {
@@ -24,19 +42,19 @@ class OrderCard extends StatelessWidget {
   Color _getStatusTextColor(int statusId) {
     switch (statusId) {
       case 1:
-        return Colors.grey[800]!; // Новый
+        return Colors.green[800]!;
       case 2:
-        return Colors.amber[900]!; // Ожидает оплаты
+        return Colors.amber[900]!;
       case 3:
-        return Colors.green[800]!; // Оплачен
+        return Colors.green[800]!;
       case 4:
-        return Colors.blue[800]!; // В обработке
+        return Colors.blue[800]!;
       case 5:
-        return Colors.orange[900]!; // Отправлен
+        return Colors.orange[900]!;
       case 6:
-        return Colors.teal[700]!; // Завершен
+        return Colors.teal[700]!;
       case 7:
-        return Colors.red[900]!; // Отменен
+        return Colors.red[900]!;
       default:
         return Colors.grey[800]!;
     }
@@ -46,19 +64,19 @@ class OrderCard extends StatelessWidget {
   Color _getStatusBackgroundColor(int statusId) {
     switch (statusId) {
       case 1:
-        return Colors.grey[100]!; // Новый
+        return Colors.green[100]!;
       case 2:
-        return Colors.amber[50]!; // Ожидает оплаты
+        return Colors.amber[50]!;
       case 3:
-        return Colors.green[50]!; // Оплачен
+        return Colors.green[50]!;
       case 4:
-        return Colors.blue[50]!; // В обработке
+        return Colors.blue[50]!;
       case 5:
-        return Colors.orange[50]!; // Отправлен
+        return Colors.orange[50]!;
       case 6:
-        return Colors.teal[50]!; // Завершен
+        return Colors.teal[50]!;
       case 7:
-        return Colors.red[50]!; // Отменен
+        return Colors.red[50]!;
       default:
         return Colors.grey[100]!;
     }
@@ -71,22 +89,22 @@ class OrderCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(order: order),
+            builder: (context) => OrderDetailsScreen(order: widget.order),
           ),
         );
       },
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-        padding: EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color.fromARGB(255, 244, 247, 254),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 3,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -97,8 +115,8 @@ class OrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '№${order['number']}',
-                  style: TextStyle(
+                  '№${widget.order['number']}',
+                  style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -106,8 +124,8 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  order['date'],
-                  style: TextStyle(
+                  widget.order['date'],
+                  style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -116,59 +134,90 @@ class OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 10), // Gap 10px
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: EdgeInsets.fromLTRB(12, 8, 12,
-                      8), // Left 12px, Top 8px, Right 12px, Bottom 8px
-                  decoration: BoxDecoration(
-                    color: _getStatusBackgroundColor(order['statusId']),
-                    borderRadius: BorderRadius.circular(8), // Radius 8px
-                  ),
-
-                  child: Text(
-                    _getStatusName(order['statusId']),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _getStatusTextColor(order['statusId']),
+                GestureDetector(
+                  onTap: () {
+                    OrderDropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId;
+                        });
+                        if (widget.onStatusUpdated != null) {
+                          widget.onStatusUpdated!(newStatusId);
+                        }
+                      },
+                      widget.order,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xff1E2E52),
+                        width: 0.2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          constraints: BoxConstraints(maxWidth: 200),
+                          child: Text(
+                            dropdownValue,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Image.asset(
+                          'assets/icons/tabBar/dropdown.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                SizedBox(width: 10), // Gap 10px
                 Expanded(
                   child: Text(
-                    '${order['total'].toString().replaceAll('.0', '')} сом',
-                    style: TextStyle(
+                    '${widget.order['total'].toString().replaceAll('.0', '')} сом',
+                    style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 26,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
                     ),
-                    textAlign:
-                        TextAlign.right, // Выравнивание текста по правому краю
-                    overflow: TextOverflow
-                        .ellipsis, // Обрезка текста, если он слишком длинный
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 10), // Gap 10px
+            const SizedBox(height: 10),
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.person,
                   color: Color(0xff99A4BA),
                   size: 16,
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    order['client'],
-                    style: TextStyle(
+                    widget.order['client'],
+                    style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,

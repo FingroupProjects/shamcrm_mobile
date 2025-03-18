@@ -33,7 +33,8 @@ class PinScreen extends StatefulWidget {
   _PinScreenState createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -70,7 +71,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     });
 
     _fetchTutorialProgress(); // Добавлено
-
+    _fetchSettings(); // Добавляем новый метод для получения настроек
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -87,6 +88,24 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     });
   }
 
+// Новый метод для получения настроек
+  Future<void> _fetchSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await _apiService.getSelectedOrganization();
+
+      final response = await _apiService.getSettings(organizationId);
+
+      if (response['result'] != null) {
+        // Обновляем значение department в SharedPreferences
+        await prefs.setBool(
+            'department_enabled', response['result']['department'] ?? false);
+      }
+    } catch (e) {
+      print('Error fetching settings: $e');
+    }
+  }
+
   Future<void> _fetchTutorialProgress() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -94,7 +113,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
       print('Tutorial progress updated from server: $tutorialProgress');
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -113,7 +133,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
-      
+
       if (userId.isEmpty) {
         if (mounted) {
           setState(() {
@@ -124,7 +144,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
       await prefs.remove('userRoles');
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
           userRoleId = userProfile.role!.first.id;
@@ -158,7 +179,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     String? savedUserNameProfile = prefs.getString('userNameProfile');
     String? savedUserImage = prefs.getString('userImage');
 
-    if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+    if (savedUserName != null &&
+        savedUserNameProfile != null &&
+        savedUserImage != null) {
       if (mounted) {
         setState(() {
           _userName = savedUserName;
@@ -174,7 +197,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       String UUID = prefs.getString('userID') ?? '';
       print('userID : $UUID');
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       await prefs.setString('userName', userProfile.name);
       await prefs.setString('userNameProfile', userProfile.name ?? '');
@@ -208,9 +232,11 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS &&
+              _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
+          } else if (Platform.isAndroid &&
+              _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }
@@ -440,7 +466,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                         onPressed: () => _onNumberPressed(i.toString()),
                         child: Text(
                           i.toString(),
-                          style: const TextStyle(fontSize: 24, color: Colors.black),
+                          style: const TextStyle(
+                              fontSize: 24, color: Colors.black),
                         ),
                       ),
                     TextButton(
@@ -482,7 +509,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                 },
                 child: Text(
                   localizations.translate('forgot_pin'),
-                  style: const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
+                  style:
+                      const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
                 ),
               ),
             ],

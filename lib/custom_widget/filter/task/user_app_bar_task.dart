@@ -11,7 +11,8 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart'; // Импорт BLoC для Department
-import 'package:crm_task_manager/api/service/api_service.dart'; // Импорт ApiService
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Импорт ApiService
 
 class UserFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;
@@ -70,7 +71,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   bool _hasDeal = false;
   bool _isUrgent = false;
   String? _selectedDepartment; // Добавлено для хранения выбранного отдела
-
+  bool _isDepartmentEnabled =
+      false; // Новое поле для отслеживания доступности department
   @override
   void initState() {
     super.initState();
@@ -86,6 +88,14 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
     _selectedDepartment = widget.initialDepartment; // Инициализация отдела
+    _loadDepartmentStatus(); // Загружаем статус department
+  }
+
+  Future<void> _loadDepartmentStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDepartmentEnabled = prefs.getBool('department_enabled') ?? false;
+    });
   }
 
   void _selectDateRange() async {
@@ -425,7 +435,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Добавляем DepartmentWidget после AuthorMultiSelectWidget
+                    if (_isDepartmentEnabled)
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),

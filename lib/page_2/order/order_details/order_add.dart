@@ -1,4 +1,12 @@
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -28,12 +36,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   final TextEditingController _clientController = TextEditingController();
   final TextEditingController _managerController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+
   List<Map<String, dynamic>> _items = [];
-  String? _paymentMethod = 'Наличные';
-  String? _deliveryMethod = 'Самовывоз';
   final TextEditingController _deliveryAddressController =
       TextEditingController();
-
+  String? selectedLead;
+  String? selectedManager;
+  String? _deliveryMethod;
+  String? _paymentMethod;
   @override
   void initState() {
     super.initState();
@@ -145,231 +156,53 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Клиент',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
+                    const SizedBox(height: 8),
+                    LeadRadioGroupWidget(
+                      selectedLead: selectedLead,
+                      onSelectLead: (LeadData selectedRegionData) {
+                        setState(() {
+                          selectedLead = selectedRegionData.id.toString();
+                        });
+                      },
                     ),
-                    SizedBox(height: 8),
-                    TextFormField(
-                      controller: _clientController,
-                      decoration: InputDecoration(
-                        hintText: 'Введите имя клиента',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xff4759FF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                      ),
-                      validator: (value) =>
-                          value!.isEmpty ? 'Укажите клиента' : null,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Менеджер',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    TextFormField(
-                      controller: _managerController,
-                      decoration: InputDecoration(
-                        hintText: 'Введите имя менеджера',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xff4759FF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                      ),
-                      validator: (value) =>
-                          value!.isEmpty ? 'Укажите менеджера' : null,
+                    const SizedBox(height: 8),
+                    ManagerRadioGroupWidget(
+                      selectedManager: selectedManager,
+                      onSelectManager: (ManagerData selectedManagerData) {
+                        setState(() {
+                          selectedManager = selectedManagerData.id.toString();
+                        });
+                      },
                     ),
                     SizedBox(height: 16),
                     _buildItemsSection(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Способ оплаты',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
+                    const SizedBox(height: 16),
+                    DeliveryMethodDropdown(
+                      selectedDeliveryMethod: _deliveryMethod,
+                      onSelectDeliveryMethod: (value) {
+                        setState(() {
+                          _deliveryMethod = value;
+                        });
+                      },
                     ),
-                    SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _paymentMethod,
-                      decoration: InputDecoration(
-                        hintText: 'Выберите способ оплаты',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xff4759FF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                      ),
-                      items: ['Наличные', 'Онлайн', 'Карта']
-                          .map((method) => DropdownMenuItem(
-                                value: method,
-                                child: Text(method,
-                                    style: TextStyle(fontFamily: 'Gilroy')),
-                              ))
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _paymentMethod = value),
+                    const SizedBox(height: 16),
+                    PaymentMethodDropdown(
+                      selectedPaymentMethod: _paymentMethod,
+                      onSelectPaymentMethod: (value) {
+                        setState(() {
+                          _paymentMethod = value;
+                        });
+                      },
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Способ доставки',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _deliveryMethod,
-                      decoration: InputDecoration(
-                        hintText: 'Выберите способ доставки',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xff4759FF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                      ),
-                      items: ['Самовывоз', 'Курьер', 'Почта']
-                          .map((method) => DropdownMenuItem(
-                                value: method,
-                                child: Text(method,
-                                    style: TextStyle(fontFamily: 'Gilroy')),
-                              ))
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _deliveryMethod = value),
-                    ),
-                    if (_deliveryMethod != 'Самовывоз') ...[
-                      SizedBox(height: 16),
-                      Text(
-                        'Адрес доставки',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      TextFormField(
-                        controller: _deliveryAddressController,
-                        decoration: InputDecoration(
-                          hintText: 'Введите адрес доставки',
-                          hintStyle: TextStyle(
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff99A4BA),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xff4759FF)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                          ),
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? 'Укажите адрес доставки' : null,
-                      ),
-                    ],
-                    SizedBox(height: 16),
-                    Text(
-                      'Комментарий клиента',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    TextFormField(
-                      controller: _commentController,
-                      decoration: InputDecoration(
-                        hintText: 'Введите комментарий',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xff4759FF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xffE0E7FF)),
-                        ),
-                      ),
-                      maxLines: 3,
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: descriptionController,
+                      hintText: AppLocalizations.of(context)!
+                          .translate('Введите комментарий'),
+                      label: AppLocalizations.of(context)!
+                          .translate('Комментарий клиента'),
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
                     ),
                   ],
                 ),
