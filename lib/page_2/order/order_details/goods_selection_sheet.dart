@@ -14,7 +14,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       'imageUrl': 'assets/images/pesto.png',
       'price': 54.080,
       'isSelected': false,
-      'quantity': 1, // Добавляем количество для каждого товара
+      'quantity': 1, 
     },
     {
       'id': '4312322',
@@ -211,24 +211,24 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
               ),
             ),
           ),
-          SizedBox(height: 12),
-          // Статусы вместо фильтров
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _statuses.map((status) {
-                  return Row(
-                    children: [
-                      _buildFilterChip(status['title']),
-                      SizedBox(width: 8),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
+          // SizedBox(height: 12),
+          // // Статусы вместо фильтров
+          // Padding(
+          //   padding: EdgeInsets.symmetric(horizontal: 16),
+          //   child: SingleChildScrollView(
+          //     scrollDirection: Axis.horizontal,
+          //     child: Row(
+          //       children: _statuses.map((status) {
+          //         return Row(
+          //           children: [
+          //             _buildFilterChip(status['title']),
+          //             SizedBox(width: 8),
+          //           ],
+          //         );
+          //       }).toList(),
+          //     ),
+          //   ),
+          // ),
           SizedBox(height: 12),
           // Список товаров
           Expanded(

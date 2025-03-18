@@ -16,33 +16,32 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-final List<Map<String, dynamic>> testCategories = [
-  {
-    'id': 1,
-    'name': 'Электроника',
-    'subCategory': 'Смартфоны',
-    'description': 'Смартфоны разных производителей',
-  },
-  {
-    'id': 2,
-    'name': 'Одежда',
-    'subCategory': 'Футболки',
-    'description': 'Стильные футболки для мужчин и женщин',
-  },
-  {
-    'id': 3,
-    'name': 'Бытовая техника',
-    'subCategory': 'Холодильники',
-    'description': 'Широкий выбор холодильников',
-  },
-  {
-    'id': 4,
-    'name': 'Книги',
-    'subCategory': 'Фантастика',
-    'description': 'Лучшие фантастические произведения',
-  },
-];
-
+  final List<Map<String, dynamic>> testCategories = [
+    {
+      'id': 1,
+      'name': 'Электроника',
+      'subCategory': 'Смартфоны',
+      'description': 'Смартфоны разных производителей',
+    },
+    {
+      'id': 2,
+      'name': 'Одежда',
+      'subCategory': 'Футболки',
+      'description': 'Стильные футболки для мужчин и женщин',
+    },
+    {
+      'id': 3,
+      'name': 'Бытовая техника',
+      'subCategory': 'Холодильники',
+      'description': 'Широкий выбор холодильников',
+    },
+    {
+      'id': 4,
+      'name': 'Книги',
+      'subCategory': 'Фантастика',
+      'description': 'Лучшие фантастические произведения',
+    },
+  ];
 
   // void _onSearchChanged(String value) {}
 
@@ -62,9 +61,9 @@ final List<Map<String, dynamic>> testCategories = [
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
-        title: isClickAvatarIcon
-          ? localizations!.translate('appbar_settings')
-          : localizations!.translate('Категории'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('Категории'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -73,6 +72,7 @@ final List<Map<String, dynamic>> testCategories = [
           clearButtonClickFiltr: (isSearching) {},
           showSearchIcon: true,
           showFilterIcon: false,
+          showFilterOrderIcon: false,
           onChangedSearchInput: (input) {},
           textEditingController: TextEditingController(),
           focusNode: FocusNode(),
