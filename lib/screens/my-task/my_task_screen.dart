@@ -658,7 +658,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           // print('state: ${state.runtimeType}');
           if (state is MyTaskDataLoaded) {
             final List<MyTask> tasks = state.tasks;
-            print(tasks);
             return searchWidget(tasks);
           }
           if (state is MyTaskLoading) {

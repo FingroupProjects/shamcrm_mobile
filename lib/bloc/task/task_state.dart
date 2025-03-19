@@ -17,8 +17,7 @@ class TaskLoaded extends TaskState {
   TaskLoaded copyWith({
     List<TaskStatus>? taskStatuses,
     Map<int, int>? taskCounts,
-  }) {print(taskCounts);
-  print("-------------------------TaskLoaded------------------");
+  }) {
     return TaskLoaded(
       taskStatuses ?? this.taskStatuses,
       taskCounts: taskCounts ?? this.taskCounts,
@@ -33,34 +32,46 @@ class TaskStatusLoaded extends TaskState {
 class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
   final int currentPage;
-  final bool allTasksFetched;
   final Map<int, int> taskCounts;
 
-  TaskDataLoaded(this.tasks,
-      {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
-      : taskCounts = taskCounts ?? {};
+  TaskDataLoaded(this.tasks, {this.currentPage = 1, required this.taskCounts});
 
-  TaskDataLoaded merge(List<Task> newTasks) {print(taskCounts);
-  print("-------------------------TaskLoaded------------------");
-    return TaskDataLoaded(
-      tasks + newTasks,
-      currentPage: currentPage,
-      taskCounts: taskCounts,    
-        allTasksFetched: newTasks.isEmpty, // Обновляем флаг, если новые задачи пусты
-
-    );
-  }
-
-  // Метод для обновления taskCounts
-  TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
-    
-    return TaskDataLoaded(
-      tasks,
-      currentPage: currentPage,
-      taskCounts: newTaskCounts,
-    );
+  TaskDataLoaded merge(List<Task> newtasks) {
+    return TaskDataLoaded([...tasks, ...newtasks],
+        currentPage: currentPage + 1, taskCounts: taskCounts);
   }
 }
+
+// class TaskDataLoaded extends TaskState {
+//   final List<Task> tasks;
+//   final int currentPage;
+//   final bool allTasksFetched;
+//   final Map<int, int> taskCounts;
+
+//   TaskDataLoaded(this.tasks,
+//       {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
+//       : taskCounts = taskCounts ?? {};
+
+//   TaskDataLoaded merge(List<Task> newTasks) {print(taskCounts);
+//     return TaskDataLoaded(
+//       tasks + newTasks,
+//       currentPage: currentPage,
+//       taskCounts: taskCounts,    
+//         allTasksFetched: newTasks.isEmpty, // Обновляем флаг, если новые задачи пусты
+
+//     );
+//   }
+
+  // Метод для обновления taskCounts
+//   TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
+    
+//     return TaskDataLoaded(
+//       tasks,
+//       currentPage: currentPage,
+//       taskCounts: newTaskCounts,
+//     );
+//   }
+// }
 
 class TaskError extends TaskState {
   final String message;

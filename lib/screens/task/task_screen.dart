@@ -23,8 +23,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
-import 'dart:convert';
-
 class TaskScreen extends StatefulWidget {
   final int? initialStatusId;
 
@@ -100,6 +98,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     super.initState();
     context.read<GetAllClientBloc>().add(GetAllClientEv());
     _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     _loadUserRoles();
     TaskCache.getTaskStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -124,6 +123,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
     _checkPermissions();
   }
+
+  void _onScroll() {
+  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    if (taskBloc.state is TaskDataLoaded) {
+      final state = taskBloc.state as TaskDataLoaded;
+      if (!taskBloc.allTasksFetched) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        taskBloc.add(FetchMoreTasks(currentStatusId, state.currentPage));
+      }
+    }
+  }
+}
 
   @override
   void dispose() {
@@ -281,9 +293,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Future _handleUserSelected(Map filterData) async {
     setState(() {
-      print("DEAdline$_intialDeadlineFromDate");
-      print('Filter Data received: $filterData'); // В начале метода
-      print('Selected Authors: $_selectedAuthors'); // После установки значений
       _showCustomTabBar = false;
       _selectedUsers = filterData['users'] ?? [];
       _selectedStatuses = filterData['statuses'];
@@ -313,10 +322,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialSelectedAuthors = filterData['authors'] ?? [];
       _selectedDepartment = filterData['department'];
       _initialSelectedDepartment = filterData['department'];
-      print('Selected Department: $_selectedDepartment'); // Добавьте это
     });
-    print('Filter Data received: $filterData'); // В начале метода
-    print('Selected Authors: $_selectedAuthors'); // После установки значений
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
 
@@ -1007,7 +1013,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           // print('state: ${state.runtimeType}');
           if (state is TaskDataLoaded) {
             final List<Task> tasks = state.tasks;
-            print(tasks);
             return searchWidget(tasks);
           }
           if (state is TaskLoading) {

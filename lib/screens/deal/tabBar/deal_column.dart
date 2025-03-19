@@ -87,6 +87,7 @@ class _DealColumnState extends State<DealColumn> {
     super.dispose();
   }
 
+
   void _initTutorialTargets() {
     targets.clear();
     targets.addAll([
@@ -262,17 +263,17 @@ class _DealColumnState extends State<DealColumn> {
     return Future.delayed(Duration(milliseconds: 1));
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      final currentState = _dealBloc.state;
-      if (currentState is DealDataLoaded) {
-        final hasMoreDeals = currentState.deals.length < (currentState.dealCounts[widget.statusId] ?? 0);
-        if (hasMoreDeals) {
-          _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
-        }
+void _onScroll() {
+  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    final currentState = _dealBloc.state;
+    if (currentState is DealDataLoaded) {
+      // Проверяем, загружены ли все сделки
+      if (!_dealBloc.allDealsFetched) {
+        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
       }
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

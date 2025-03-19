@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -88,6 +86,7 @@ List<ManagerData> _selectedManagers = [];
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
 
     DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -118,6 +117,19 @@ List<ManagerData> _selectedManagers = [];
     });
     _checkPermissions();
   }
+
+  void _onScroll() {
+  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+    if (dealBloc.state is DealDataLoaded) {
+      final state = dealBloc.state as DealDataLoaded;
+      if (!dealBloc.allDealsFetched) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id']; 
+        dealBloc.add(FetchMoreDeals(currentStatusId, state.currentPage));
+      }
+    }
+  }
+}
 
   @override
   void dispose() {
@@ -163,8 +175,6 @@ List<ManagerData> _selectedManagers = [];
 
     try {
       final progress = await _apiService.getTutorialProgress();
-      print('Tutorial Progress for deals: $progress');
-
       if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
         setState(() {
           tutorialProgress = progress['result'];
@@ -192,10 +202,10 @@ List<ManagerData> _selectedManagers = [];
           }
         });
       } else {
-        print('Tutorial not shown for DealScreen. Reasons:');
-        print('tutorialProgress: $tutorialProgress');
-        print('deals/index: ${tutorialProgress?['deals']?['index']}');
-        print('isTutorialShown: $_isTutorialShown');
+        // print('Tutorial not shown for DealScreen. Reasons:');
+        // print('tutorialProgress: $tutorialProgress');
+        // print('deals/index: ${tutorialProgress?['deals']?['index']}');
+        // print('isTutorialShown: $_isTutorialShown');
       }
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -282,8 +292,8 @@ List<ManagerData> _selectedManagers = [];
       _initialHasTasks = false;
       _initialDaysWithoutActivity = null;
     });
-    final leadBloc = BlocProvider.of<DealBloc>(context);
-    leadBloc.add(FetchDealStatuses());
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+    dealBloc.add(FetchDealStatuses());
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
@@ -310,8 +320,8 @@ List<ManagerData> _selectedManagers = [];
     });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final leadBloc = BlocProvider.of<DealBloc>(context);
-    leadBloc.add(FetchDeals(
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+    dealBloc.add(FetchDeals(
       currentStatusId,
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
       statusIds: _selectedStatuses,
@@ -386,7 +396,7 @@ List<ManagerData> _selectedManagers = [];
   }
 
   void _onSearch(String query) {
-    _lastSearchQuery = query; // Сохраняем последний поисковый запрос
+    _lastSearchQuery = query; 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchDeals(query, currentStatusId);
   }
@@ -584,7 +594,6 @@ List<ManagerData> _selectedManagers = [];
           itemCount: deals.length,
           itemBuilder: (context, index) {
             final deal = deals[index];
-            print('Отображение сделки: $deal');
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: DealCard(
@@ -963,8 +972,8 @@ List<ManagerData> _selectedManagers = [];
         dealStatusId: dealStatus['id'],
       ),
     ).then((_) =>
-        // final leadBloc = BlocProvider.of<DealBloc>(context);
-        // leadBloc.add(FetchDealStatuses());
+        // final dealBloc = BlocProvider.of<DealBloc>(context);
+        // dealBloc.add(FetchDealStatuses());
 
         _dealBloc.add(FetchDeals(dealStatus['id'])));
   }
@@ -1105,7 +1114,6 @@ List<ManagerData> _selectedManagers = [];
           // print('state: ${state.runtimeType}');
           if (state is DealDataLoaded) {
             final List<Deal> deals = state.deals;
-            print(deals);
             return searchWidget(deals);
           }
           if (state is DealLoading) {

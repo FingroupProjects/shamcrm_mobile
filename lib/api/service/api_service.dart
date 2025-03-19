@@ -2306,6 +2306,13 @@ class ApiService {
     if (department != null && department.isNotEmpty) {
       path += '&department_id=$department';
     }
+
+          if (hasFilters) {
+    print('-----------------------------------------------------------');
+    print('Отправка запроса с фильтрами: $path');
+    print('-----------------------------------------------------------');
+    
+  }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

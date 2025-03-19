@@ -233,16 +233,13 @@ class _TaskColumnState extends State<TaskColumn> {
     super.dispose();
   }
 
-  void _onScroll() {
-    // Если до конца списка осталось меньше 50 пикселей и пагинация не запущена
-    if (_scrollController.position.extentAfter < 50) {
-      final currentState = _taskBloc.state;
-      if (currentState is TaskDataLoaded &&
-          !currentState.allTasksFetched &&
-          !_isFetchingMore) {
-        _isFetchingMore = true;
-        _taskBloc
-            .add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+ void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      if (_taskBloc.state is TaskDataLoaded) {
+        final state = _taskBloc.state as TaskDataLoaded;
+        if (!_taskBloc.allTasksFetched) {
+        _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
+        }
       }
     }
   }

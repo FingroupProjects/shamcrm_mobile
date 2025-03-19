@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,10 +8,16 @@ import 'deal_state.dart';
 
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
-  bool allDealsFetched =
-      false; // Переменная для отслеживания завершения загрузки
-  Map<int, int> _dealCounts =
-      {}; // Приватное поле для хранения количества сделок
+  bool allDealsFetched = false; 
+  Map<int, int> _dealCounts = {}; 
+  String? _currentQuery;
+  List<int>? _currentManagerIds;
+  int? _currentStatusId;
+  DateTime? _currentFromDate;
+  DateTime? _currentToDate;
+  List<int>? _currentLeadIds;
+  bool? _currentHasTasks;
+  int? _currentDaysWithoutActivity;
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -38,6 +43,15 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
   // Метод для загрузки сделок с учётом кэша
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     emit(DealLoading());
+
+     _currentQuery = event.query;
+     _currentManagerIds = event.managerIds;
+     _currentStatusId = event.statusIds;
+     _currentFromDate = event.fromDate;
+     _currentToDate = event.toDate;
+     _currentLeadIds = event.leadIds;
+     _currentHasTasks = event.hasTasks;
+     _currentDaysWithoutActivity = event.daysWithoutActivity;
 
     if (!await _checkInternetConnection()) {
       final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
@@ -136,31 +150,42 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
     }
   }
 
-  Future<void> _fetchMoreDeals(
-      FetchMoreDeals event, Emitter<DealState> emit) async {
-    if (allDealsFetched)
-      return; // Если все сделки уже загружены, ничего не делаем
+Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) async {
+  if (allDealsFetched) return;
 
-    if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+  if (!await _checkInternetConnection()) {
+    emit(DealError('Нет подключения к интернету'));
+    return;
+  }
+
+  try {
+    final deals = await apiService.getDeals(
+      _currentStatusId ?? event.statusId, 
+      page: event.currentPage + 1,
+      perPage: 20,
+      search: _currentQuery,
+      managers: _currentManagerIds,
+      statuses: _currentStatusId,
+      fromDate: _currentFromDate,
+      toDate: _currentToDate,
+      leads: _currentLeadIds,
+      hasTasks: _currentHasTasks,
+      daysWithoutActivity: _currentDaysWithoutActivity,
+    );
+
+    if (deals.isEmpty) {
+      allDealsFetched = true;
       return;
     }
 
-    try {
-      final deals = await apiService.getDeals(event.statusId,
-          page: event.currentPage + 1);
-      if (deals.isEmpty) {
-        allDealsFetched = true;
-        return;
-      }
-      if (state is DealDataLoaded) {
-        final currentState = state as DealDataLoaded;
-        emit(currentState.merge(deals)); // Объединяем старые и новые сделки
-      }
-    } catch (e) {
-      emit(DealError('Не удалось загрузить дополнительные сделки!'));
+    if (state is DealDataLoaded) {
+      final currentState = state as DealDataLoaded;
+      emit(currentState.merge(deals));
     }
+  } catch (e) {
+    emit(DealError('Не удалось загрузить дополнительные сделки!'));
   }
+}
 
   Future<void> _createDealStatus(
       CreateDealStatus event, Emitter<DealState> emit) async {
