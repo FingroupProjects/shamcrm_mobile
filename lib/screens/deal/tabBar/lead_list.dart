@@ -28,41 +28,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
-            // Обработка ошибок
-            if (state is GetAllLeadError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              });
-            }
-
-            // Обновление данных при успешной загрузке
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
               if (widget.selectedLead != null && leadsList.isNotEmpty) {
@@ -70,6 +41,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   selectedLeadData = leadsList.firstWhere(
                     (lead) => lead.id.toString() == widget.selectedLead,
                   );
+                  // Автоматический выбор менеджера при инициализации
+                  if (selectedLeadData?.managerId != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      widget.onSelectLead(selectedLeadData!);
+                    });
+                  }
                 } catch (e) {
                   selectedLeadData = null;
                 }

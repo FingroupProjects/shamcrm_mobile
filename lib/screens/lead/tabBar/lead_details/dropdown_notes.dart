@@ -14,8 +14,9 @@ import 'package:intl/intl.dart';
 
 class NotesWidget extends StatefulWidget {
   final int leadId;
-
-  NotesWidget({Key? key, required this.leadId}) : super(key: key);
+  final int? managerId; // Добавляем managerId
+  NotesWidget({Key? key, required this.leadId, this.managerId})
+      : super(key: key);
 
   @override
   _NotesWidgetState createState() => _NotesWidgetState();
@@ -183,7 +184,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                   color: Color(0xff1E2E52),
                 ),
                 SizedBox(width: 16),
-             Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -193,14 +194,18 @@ class _NotesWidgetState extends State<NotesWidget> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        AppLocalizations.of(context)!.translate('date') +" "+ formattedDate,
+                        AppLocalizations.of(context)!.translate('date') +
+                            " " +
+                            formattedDate,
                         style: TaskCardStyles.priorityStyle.copyWith(
                           color: Color(0xff1E2E52),
                         ),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        AppLocalizations.of(context)!.translate('created_at_contact') + createDate,
+                        AppLocalizations.of(context)!
+                                .translate('created_at_contact') +
+                            createDate,
                         style: TaskCardStyles.priorityStyle.copyWith(
                           color: Color(0xff1E2E52),
                         ),
@@ -265,7 +270,10 @@ class _NotesWidgetState extends State<NotesWidget> {
         return Padding(
           padding:
               EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: CreateNotesDialog(leadId: widget.leadId),
+          child: CreateNotesDialog(
+            leadId: widget.leadId,
+            managerId: widget.managerId, // Передаем managerId
+          ),
         );
       },
     );

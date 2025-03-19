@@ -173,13 +173,6 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
                     builder: (context, state) {
                       if (state is GetAllManagerLoading) {
-                        // return Center(
-                        //   child: Padding(
-                        //     padding: EdgeInsets.all(16),
-                        //     child: CircularProgressIndicator(
-                        //         color: Color(0xff1E2E52)),
-                        //   ),
-                        // );
                       } else if (state is GetAllManagerError) {
                         return Center(
                           child: Padding(
@@ -218,7 +211,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                 widget.onSelectManagers(newSelection);
                               },
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(

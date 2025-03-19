@@ -96,7 +96,7 @@ class CreateLead extends LeadEvent {
   final String? waPhone;
   final List<Map<String, String>>? customFields;
   final AppLocalizations localizations;
-
+  final bool isSystemManager;
   CreateLead({
     required this.name,
     required this.leadStatusId,
@@ -112,6 +112,7 @@ class CreateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    this.isSystemManager = false,
     required this.localizations,
   });
 }
@@ -133,6 +134,7 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
+  final bool isSystemManager; // Добавляем флаг для "Системы"
   final AppLocalizations localizations;
 
   UpdateLead({
@@ -152,6 +154,7 @@ class UpdateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     required this.localizations,
+    this.isSystemManager = false, // По умолчанию false
   });
 }
 

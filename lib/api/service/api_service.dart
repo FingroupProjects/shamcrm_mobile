@@ -1104,167 +1104,219 @@ class ApiService {
     }
   }
 
-  // Метод для Создания Лида
-  Future<Map<String, dynamic>> createLead({
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? managerId,
-    int? sourceId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+// Обновленный метод createLead
+Future<Map<String, dynamic>> createLead({
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? managerId,
+  int? sourceId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, String>>? customFields,
+  String? manager, // Добавляем параметр для "system"
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-        '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'name': name,
-          'lead_status_id': leadStatusId,
-          'phone': phone,
-          'position': 1,
-          if (regionId != null) 'region_id': regionId,
-          if (managerId != null) 'manager_id': managerId,
-          if (sourceId != null) 'source_id': sourceId,
-          if (instaLogin != null) 'insta_login': instaLogin,
-          if (facebookLogin != null) 'facebook_login': facebookLogin,
-          if (tgNick != null) 'tg_nick': tgNick,
-          if (birthday != null)
-            'birthday': birthday.toIso8601String(), // Конвертация в строку
-          if (email != null) 'email': email,
-          if (description != null) 'description': description,
-          if (waPhone != null) 'wa_phone': waPhone,
-          // Здесь добавляем deal_custom_fields
-          'lead_custom_fields': customFields?.map((field) {
-                // Изменяем структуру для соответствия новому формату
-                return {
-                  'key': field.keys.first,
-                  'value': field.values.first,
-                };
-              }).toList() ??
-              [],
-        });
+  final Map<String, dynamic> requestData = {
+    'name': name,
+    'lead_status_id': leadStatusId,
+    'phone': phone,
+    'position': 1,
+    if (regionId != null) 'region_id': regionId,
+    if (managerId != null) 'manager_id': managerId,
+    if (manager != null) 'manager': manager, // Добавляем "manager" если он есть
+    if (sourceId != null) 'source_id': sourceId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(),
+    if (email != null) 'email': email,
+    if (description != null) 'description': description,
+    if (waPhone != null) 'wa_phone': waPhone,
+    'lead_custom_fields': customFields?.map((field) {
+      return {
+        'key': field.keys.first,
+        'value': field.values.first,
+      };
+    }).toList() ?? [],
+  };
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      // Обработка ошибки дублирования номера телефона
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      // Обработка ошибки дублирования логина Instagram
-      else if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      } else if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      } else if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      } else if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      } else if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      } else {
-        return {'success': false, 'message': 'unknown_error'};
-      }
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+  final response = await _postRequest(
+    '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    requestData,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
     }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body.contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    else if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    } else if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    } else if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    } else if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    } else if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    } else {
+      return {'success': false, 'message': 'unknown_error'};
+    }
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
   }
+}
+
+// Новый метод для работы с динамическими данными
+Future<Map<String, dynamic>> createLeadWithData(Map<String, dynamic> data) async {
+  final organizationId = await getSelectedOrganization();
+  if (organizationId != null) {
+    data['organization_id'] = organizationId;
+  }
+
+  final response = await _postRequest(
+    '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    data,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body.contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    else if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    } else if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    } else if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    } else if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    } else if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    } else {
+      return {'success': false, 'message': 'unknown_error'};
+    }
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
+  }
+}
 
   // Метод для Обновления Лида
   Future<Map<String, dynamic>> updateLead({
-    required int leadId,
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? managerId,
-    int? sourceId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    int? organizationId,
-    String? waPhone,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  required int leadId,
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? sourceId, // Исправлено с sourseId на sourceId
+  int? managerId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, String>>? customFields,
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _patchRequest(
-        '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'name': name,
-          'lead_status_id': leadStatusId,
-          'phone': phone,
-          if (regionId != null) 'region_id': regionId,
-          if (sourceId != null) 'source_id': sourceId,
-          if (managerId != null) 'manager_id': managerId,
-          if (instaLogin != null) 'insta_login': instaLogin,
-          if (facebookLogin != null) 'facebook_login': facebookLogin,
-          if (tgNick != null) 'tg_nick': tgNick,
-          if (birthday != null) 'birthday': birthday.toIso8601String(),
-          if (email != null) 'email': email,
-          if (description != null) 'description': description,
-          if (organizationId != null) 'organization_id': organizationId,
-          if (waPhone != null) 'wa_phone': waPhone,
-          'lead_custom_fields': customFields?.map((field) {
-                return {
-                  'key': field.keys.first,
-                  'value': field.values.first,
-                };
-              }).toList() ??
-              [],
-        });
+  final Map<String, dynamic> requestData = {
+    'name': name,
+    'lead_status_id': leadStatusId,
+    'phone': phone,
+    if (regionId != null) 'region_id': regionId,
+    if (sourceId != null) 'source_id': sourceId,
+    if (managerId != null) 'manager_id': managerId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(),
+    if (email != null) 'email': email,
+    if (description != null) 'description': description,
+    if (waPhone != null) 'wa_phone': waPhone,
+    'lead_custom_fields': customFields?.map((field) => {
+          'key': field.keys.first,
+          'value': field.values.first,
+        }).toList() ?? [],
+  };
 
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'lead_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('phone')) {
-        return {
-          'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
-        };
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      // Другие проверки на ошибки...
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+  final response = await _patchRequest(
+    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    requestData,
+  );
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
     }
+    return {'success': false, 'message': 'unknown_error'};
+  } else {
+    return {'success': false, 'message': 'error_update_lead'};
   }
+}
+
+Future<Map<String, dynamic>> updateLeadWithData({
+  required int leadId,
+  required Map<String, dynamic> data,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  if (organizationId != null) {
+    data['organization_id'] = organizationId;
+  }
+
+  final response = await _patchRequest(
+    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    data,
+  );
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else {
+    return {'success': false, 'message': 'error_update_lead'};
+  }
+}
 
   //Метод для получения региона
   Future<RegionsDataResponse> getAllRegion() async {

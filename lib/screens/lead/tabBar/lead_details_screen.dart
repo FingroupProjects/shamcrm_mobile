@@ -96,58 +96,40 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false; // Добавлено для защиты от повторного вызова
+  bool _isTutorialInProgress =
+      false; // Добавлено для защиты от повторного вызова
   Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
   @override
-
-@override
-void initState() {
-  super.initState();
-  _scrollController = ScrollController();
-  _checkPermissions().then((_) {
-    context.read<OrganizationBloc>().add(FetchOrganizations());
-    _loadSelectedOrganization();
-    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-  });
-}
-Future<void> _fetchTutorialProgress() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final progress = await _apiService.getTutorialProgress();
-    setState(() {
-      tutorialProgress = progress['result'];
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _checkPermissions().then((_) {
+      context.read<OrganizationBloc>().add(FetchOrganizations());
+      _loadSelectedOrganization();
+      context
+          .read<LeadByIdBloc>()
+          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
     });
-    await prefs.setString('tutorial_progress', json.encode(progress['result']));
+  }
 
-    bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
-    setState(() {
-      _isTutorialShown = isTutorialShown;
-    });
-
-    // Инициализируем targets с актуальными значениями разрешений
-    _initTutorialTargets();
-
-    if (tutorialProgress != null &&
-        tutorialProgress!['leads']?['view'] == false &&
-        !isTutorialShown &&
-        !_isTutorialInProgress &&
-        targets.isNotEmpty &&
-        mounted) {
-      showTutorial();
-    }
-  } catch (e) {
-    print('Error fetching tutorial progress: $e');
-    final prefs = await SharedPreferences.getInstance();
-    final savedProgress = prefs.getString('tutorial_progress');
-    if (savedProgress != null) {
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
       setState(() {
-        tutorialProgress = json.decode(savedProgress);
+        tutorialProgress = progress['result'];
       });
-      bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
+
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownLeadDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
 
+      // Инициализируем targets с актуальными значениями разрешений
       _initTutorialTargets();
 
       if (tutorialProgress != null &&
@@ -158,158 +140,201 @@ Future<void> _fetchTutorialProgress() async {
           mounted) {
         showTutorial();
       }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final savedProgress = prefs.getString('tutorial_progress');
+      if (savedProgress != null) {
+        setState(() {
+          tutorialProgress = json.decode(savedProgress);
+        });
+        bool isTutorialShown =
+            prefs.getBool('isTutorialShownLeadDetails') ?? false;
+        setState(() {
+          _isTutorialShown = isTutorialShown;
+        });
+
+        _initTutorialTargets();
+
+        if (tutorialProgress != null &&
+            tutorialProgress!['leads']?['view'] == false &&
+            !isTutorialShown &&
+            !_isTutorialInProgress &&
+            targets.isNotEmpty &&
+            mounted) {
+          showTutorial();
+        }
+      }
     }
   }
-}
-void _initTutorialTargets() {
-  targets.clear(); // Очищаем список перед добавлением
-  targets.addAll([
-    createTarget(
-      identify: "LeadHistory",
-      keyTarget: keyLeadHistory,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-  if (_canEditLead)
-    createTarget(
-      identify: "LeadEdit",
-      keyTarget: keyLeadEdit,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-  if (_canDeleteLead)
-    createTarget(
-      identify: "LeadDelete",
-      keyTarget: keyLeadDelete,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "keyNavigateChat",
-      keyTarget: keyLeadNavigateChat,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_description'),
-      align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-      context: context,
-    ),
-  if (_canReadNotes)
-    createTarget(
-      identify: "keyLeadNotice",
-      keyTarget: keyLeadNotice,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_description'),
-      align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-      context: context,
-    ),
-  if (_canReadDeal)
-    createTarget(
-      identify: "keyLeadDeal",
-      keyTarget: keyLeadDeal,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_description'),
-      align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-      context: context,
-    ),
-    createTarget(
-      identify: "keyLeadContactPerson",
-      keyTarget: keyLeadContactPerson,
-      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_description'),
-      align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-      context: context,
-    ),
-  ]);
-}
 
-
-void showTutorial() async {
-  if (_isTutorialInProgress) {
-    print('Tutorial already in progress, skipping');
-    return;
+  void _initTutorialTargets() {
+    targets.clear(); // Очищаем список перед добавлением
+    targets.addAll([
+      createTarget(
+        identify: "LeadHistory",
+        keyTarget: keyLeadHistory,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_history_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      if (_canEditLead)
+        createTarget(
+          identify: "LeadEdit",
+          keyTarget: keyLeadEdit,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_edit_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_edit_description'),
+          align: ContentAlign.bottom,
+          context: context,
+          contentPosition: ContentPosition.above,
+        ),
+      if (_canDeleteLead)
+        createTarget(
+          identify: "LeadDelete",
+          keyTarget: keyLeadDelete,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_delete_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_delete_description'),
+          align: ContentAlign.bottom,
+          context: context,
+          contentPosition: ContentPosition.above,
+        ),
+      createTarget(
+        identify: "keyNavigateChat",
+        keyTarget: keyLeadNavigateChat,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_chat_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_chat_description'),
+        align: ContentAlign.top,
+        extraSpacing:
+            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+        context: context,
+      ),
+      if (_canReadNotes)
+        createTarget(
+          identify: "keyLeadNotice",
+          keyTarget: keyLeadNotice,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_notice_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_notice_description'),
+          align: ContentAlign.top,
+          extraSpacing:
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          context: context,
+        ),
+      if (_canReadDeal)
+        createTarget(
+          identify: "keyLeadDeal",
+          keyTarget: keyLeadDeal,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_deal_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_deal_description'),
+          align: ContentAlign.top,
+          extraSpacing:
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          context: context,
+        ),
+      createTarget(
+        identify: "keyLeadContactPerson",
+        keyTarget: keyLeadContactPerson,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_contact_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_contact_description'),
+        align: ContentAlign.top,
+        extraSpacing:
+            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        context: context,
+      ),
+    ]);
   }
 
-  if (targets.isEmpty) {
-    print('No targets available for tutorial, skipping');
-    return;
+  void showTutorial() async {
+    if (_isTutorialInProgress) {
+      print('Tutorial already in progress, skipping');
+      return;
+    }
+
+    if (targets.isEmpty) {
+      print('No targets available for tutorial, skipping');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+
+    if (tutorialProgress == null ||
+        tutorialProgress!['leads']?['view'] == true ||
+        isTutorialShown ||
+        _isTutorialShown) {
+      print('Tutorial conditions not met');
+      return;
+    }
+
+    setState(() {
+      _isTutorialInProgress = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onClickTarget: (target) {
+        if (target.identify == "keyNavigateChat") {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      onSkip: () {
+        prefs.setBool('isTutorialShownLeadDetails', true);
+        _apiService.markPageCompleted("leads", "view").catchError((e) {
+          print('Error marking page completed on skip: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
+        });
+        return true;
+      },
+      onFinish: () {
+        prefs.setBool('isTutorialShownLeadDetails', true);
+        _apiService.markPageCompleted("leads", "view").catchError((e) {
+          print('Error marking page completed on finish: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
+        });
+      },
+    ).show(context: context);
   }
 
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
-
-  if (tutorialProgress == null ||
-      tutorialProgress!['leads']?['view'] == true ||
-      isTutorialShown ||
-      _isTutorialShown) {
-    print('Tutorial conditions not met');
-    return;
-  }
-
-  setState(() {
-    _isTutorialInProgress = true;
-  });
-  await Future.delayed(const Duration(milliseconds: 700));
-
-  TutorialCoachMark(
-    targets: targets,
-    textSkip: AppLocalizations.of(context)!.translate('skip'),
-    textStyleSkip: TextStyle(
-      color: Colors.white,
-      fontFamily: 'Gilroy',
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      shadows: [
-        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-      ],
-    ),
-    colorShadow: Color(0xff1E2E52),
-    onClickTarget: (target) {
-      if (target.identify == "keyNavigateChat") {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
-    },
-    onSkip: () {
-      prefs.setBool('isTutorialShownLeadDetails', true);
-      _apiService.markPageCompleted("leads", "view").catchError((e) {
-        print('Error marking page completed on skip: $e');
-      });
-      setState(() {
-        _isTutorialShown = true;
-        _isTutorialInProgress = false;
-      });
-      return true;
-    },
-    onFinish: () {
-      prefs.setBool('isTutorialShownLeadDetails', true);
-      _apiService.markPageCompleted("leads", "view").catchError((e) {
-        print('Error marking page completed on finish: $e');
-      });
-      setState(() {
-        _isTutorialShown = true;
-        _isTutorialInProgress = false;
-      });
-    },
-  ).show(context: context);
-}
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -329,12 +354,12 @@ void showTutorial() async {
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
 
- await _fetchTutorialProgress();
+    await _fetchTutorialProgress();
   }
 
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
-    currentLead = lead; 
+    currentLead = lead;
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('name_details'),
@@ -426,17 +451,17 @@ void showTutorial() async {
 
   @override
   Widget build(BuildContext context) {
-             if (!_isTutorialShown) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showTutorial();
-              setState(() {
-                _isTutorialShown = true; 
-              });
-            });
-          }
+    if (!_isTutorialShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
+        setState(() {
+          _isTutorialShown = true;
+        });
+      });
+    }
     return Scaffold(
         appBar: _buildAppBar(
-        context, AppLocalizations.of(context)!.translate('view_lead')),
+            context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
@@ -446,7 +471,7 @@ void showTutorial() async {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      AppLocalizations.of(context)!.translate(state.message), 
+                      AppLocalizations.of(context)!.translate(state.message),
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -499,19 +524,27 @@ void showTutorial() async {
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 8),
                       if (_canReadNotes)
-                        NotesWidget(leadId: int.parse(widget.leadId), key: keyLeadNotice),
+                        NotesWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadNotice,
+                          managerId:
+                              lead.manager?.id, // Передаем managerId из лида
+                        ),
                       // const SizedBox(height: 16),
                       if (_canReadDeal)
-                        DealsWidget(leadId: int.parse(widget.leadId), key: keyLeadDeal),
+                        DealsWidget(
+                            leadId: int.parse(widget.leadId), key: keyLeadDeal),
                       // const SizedBox(height: 16),
-                      ContactPersonWidget(leadId: int.parse(widget.leadId), key: keyLeadContactPerson),
+                      ContactPersonWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadContactPerson),
                     ],
                   ),
                 );
               } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
-                    AppLocalizations.of(context)!.translate(state.message), 
+                    AppLocalizations.of(context)!.translate(state.message),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -569,7 +602,7 @@ void showTutorial() async {
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(),
           icon: Icon(
-            Icons.history, 
+            Icons.history,
             size: 30,
             color: Color.fromARGB(224, 0, 0, 0),
           ),
@@ -671,15 +704,17 @@ void showTutorial() async {
       ],
     );
   }
- Future<void> _addContact(String name, String phone) async {
-  showDialog(
-    context: context,
-    builder: (context) => ExportContactDialog(
-      leadName: name,
-      phoneNumber: phone,
-    ),
-  );
-}
+
+  Future<void> _addContact(String name, String phone) async {
+    showDialog(
+      context: context,
+      builder: (context) => ExportContactDialog(
+        leadName: name,
+        phoneNumber: phone,
+      ),
+    );
+  }
+
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -711,7 +746,7 @@ void showTutorial() async {
                       label.contains(AppLocalizations.of(context)!
                           .translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value,label),
+                  : _buildValue(value, label),
             ),
           ],
         );
@@ -719,7 +754,6 @@ void showTutorial() async {
     );
   }
 
-  
   // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
@@ -730,7 +764,6 @@ void showTutorial() async {
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
-
 
   // Построение метки
   Widget _buildLabel(String label) {
@@ -745,73 +778,72 @@ void showTutorial() async {
     );
   }
 
-Widget _buildValue(String value, String label) {
-  if (value.isEmpty) return Container();
+  Widget _buildValue(String value, String label) {
+    if (value.isEmpty) return Container();
 
-  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        GestureDetector(
-          onTap: () => _makePhoneCall(value),
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1E2E52),
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        ),
-        if (_canExportContact && _isExportContactEnabled)
+    if (label == AppLocalizations.of(context)!.translate('phone_use')) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           GestureDetector(
-            onTap: () => _addContact(widget.leadName, value),
-            child: Icon(
-              Icons.contacts,
-              size: 24,
-              color: Color(0xFF1E2E52),
+            onTap: () => _makePhoneCall(value),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1E2E52),
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
-      ],
-    );
-  }
+          if (_canExportContact && _isExportContactEnabled)
+            GestureDetector(
+              onTap: () => _addContact(widget.leadName, value),
+              child: Icon(
+                Icons.contacts,
+                size: 24,
+                color: Color(0xFF1E2E52),
+              ),
+            ),
+        ],
+      );
+    }
 
-  if (label == 'WhatsApp:') {
-    return GestureDetector(
-      onTap: () => _openWhatsApp(value),
-      child: Text(
-        value,
-        style: TextStyle(
-          fontSize: 16,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF1E2E52),
-          decoration: TextDecoration.underline,
+    if (label == 'WhatsApp:') {
+      return GestureDetector(
+        onTap: () => _openWhatsApp(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52),
+            decoration: TextDecoration.underline,
+          ),
         ),
+      );
+    }
+
+    return Text(
+      value,
+      style: TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF1E2E52),
       ),
+      overflow: TextOverflow.visible,
     );
   }
 
-  return Text(
-    value,
-    style: TextStyle(
-      fontSize: 16,
-      fontFamily: 'Gilroy',
-      fontWeight: FontWeight.w500,
-      color: Color(0xFF1E2E52),
-    ),
-    overflow: TextOverflow.visible,
-  );
-}
-
-@override
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
-
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -960,4 +992,3 @@ Widget _buildValue(String value, String label) {
     }
   }
 }
-

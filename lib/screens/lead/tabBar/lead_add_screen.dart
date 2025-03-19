@@ -74,7 +74,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка!');
+      print('Ошибка при получении пользовательских полей: $e');
     }
   }
 
@@ -127,7 +127,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               ),
               onPressed: () {
                 Navigator.pop(context, widget.statusId);
-            context.read<LeadBloc>().add(FetchLeadStatuses());
+                context.read<LeadBloc>().add(FetchLeadStatuses());
               },
             ),
           ),
@@ -141,7 +141,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -160,7 +160,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -184,152 +184,151 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
-                        controller: phoneController,
-                        onInputChanged: (String number) {
-                          setState(() {
-                            selectedDialCode = number;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                        label: AppLocalizations.of(context)!.translate('phone'), 
-                      ),
-                      const SizedBox(height: 8),
-                      RegionRadioGroupWidget(
-                        selectedRegion: selectedRegion,
-                        onSelectRegion: (RegionData selectedRegionData) {
-                          setState(() {
-                            selectedRegion = selectedRegionData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerRadioGroupWidget(
-                        selectedManager: selectedManager,
-                        onSelectManager: (ManagerData selectedManagerData) {
-                          setState(() {
-                            selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      SourceLeadWidget(
-                        selectedSourceLead: selectedSourceLead,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedSourceLead = newValue;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: instaLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                        label: AppLocalizations.of(context)!.translate('instagram'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: facebookLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                        label: AppLocalizations.of(context)!.translate('Facebook'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: tgNickController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                        label: AppLocalizations.of(context)!.translate('telegram'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
-                        controller: whatsappController,
-                        onInputChanged: (String number) {
-                          setState(() {
-                            selectedDialCodeWhatsapp = number;
-                          });
-                        },
-                        label: 'Whatsapp',
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: emailController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                        label: AppLocalizations.of(context)!.translate('email'),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: birthdayController,
-                        label: AppLocalizations.of(context)!.translate('birth_date'),
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
-                        maxLines: 5,
-                                                keyboardType: TextInputType.multiline,
-
-                      ),
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomTextField(
+                          controller: titleController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!.translate('name_list'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!.translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomPhoneNumberInput(
+                          controller: phoneController,
+                          onInputChanged: (String number) {
+                            setState(() {
+                              selectedDialCode = number;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!.translate('field_required');
+                            }
+                            return null;
+                          },
+                          label: AppLocalizations.of(context)!.translate('phone'),
+                        ),
+                        const SizedBox(height: 8),
+                        RegionRadioGroupWidget(
+                          selectedRegion: selectedRegion,
+                          onSelectRegion: (RegionData selectedRegionData) {
+                            setState(() {
+                              selectedRegion = selectedRegionData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager = selectedManagerData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        SourceLeadWidget(
+                          selectedSourceLead: selectedSourceLead,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedSourceLead = newValue;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: instaLoginController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+                          label: AppLocalizations.of(context)!.translate('instagram'),
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: facebookLoginController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+                          label: AppLocalizations.of(context)!.translate('Facebook'),
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: tgNickController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+                          label: AppLocalizations.of(context)!.translate('telegram'),
+                        ),
+                        const SizedBox(height: 8),
+                        CustomPhoneNumberInput(
+                          controller: whatsappController,
+                          onInputChanged: (String number) {
+                            setState(() {
+                              selectedDialCodeWhatsapp = number;
+                            });
+                          },
+                          label: 'Whatsapp',
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: emailController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                          label: AppLocalizations.of(context)!.translate('email'),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: birthdayController,
+                          label: AppLocalizations.of(context)!.translate('birth_date'),
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                          label: AppLocalizations.of(context)!.translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
@@ -433,8 +432,24 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.translate('enter_valid_birth_date')),
+            content: Text(
+              AppLocalizations.of(context)!.translate('enter_valid_birth_date'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
           ),
         );
         return;
@@ -450,29 +465,33 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       }
     }
 
-  final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
+
+    // Определяем, является ли выбранный менеджер "Системой"
+    bool isSystemManager = selectedManager == "-1";
 
     context.read<LeadBloc>().add(CreateLead(
-          name: name,
-          leadStatusId: widget.statusId,
-          phone: phone,
-          regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
-          managerId:
-              selectedManager != null ? int.parse(selectedManager!) : null,
-          sourceId: selectedSourceLead != null
-              ? int.parse(selectedSourceLead!)
-              : null,
-          instaLogin: instaLogin,
-          facebookLogin: facebookLogin,
-          tgNick: tgNick,
-          waPhone: whatsapp,
-          birthday: birthday,
-          email: email,
-          description: description,
-          customFields: customFieldMap,
-          localizations: localizations,  
-
-        ));
+      name: name,
+      leadStatusId: widget.statusId,
+      phone: phone,
+      regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
+      managerId: !isSystemManager && selectedManager != null
+          ? int.parse(selectedManager!)
+          : null,
+      sourceId: selectedSourceLead != null
+          ? int.parse(selectedSourceLead!)
+          : null,
+      instaLogin: instaLogin,
+      facebookLogin: facebookLogin,
+      tgNick: tgNick,
+      waPhone: whatsapp,
+      birthday: birthday,
+      email: email,
+      description: description,
+      customFields: customFieldMap,
+      localizations: localizations,
+      isSystemManager: isSystemManager, // Добавляем флаг для "Системы"
+    ));
   }
 }
 
