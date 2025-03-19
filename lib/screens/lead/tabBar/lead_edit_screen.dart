@@ -513,6 +513,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                           .add({fieldName: fieldValue});
                                     }
                                   }
+                                  bool isSystemManager = selectedManager == "-1" || selectedManager == "0"; // "Система" для id = -1 или 0
                                   final leadBloc = context.read<LeadBloc>();
                                   context
                                       .read<LeadBloc>()
@@ -536,6 +537,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
                                     localizations: localizations,
+                                    isSystemManager: isSystemManager,
                                   ));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(

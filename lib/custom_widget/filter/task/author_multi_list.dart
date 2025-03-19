@@ -36,6 +36,13 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
     context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
   }
 
+  void _selectAllAuthors() {
+    setState(() {
+      selectedAuthorsData = List.from(authorsList); // Выбираем всех авторов
+    });
+    widget.onSelectAuthors(selectedAuthorsData); // Передаем выбранных авторов
+  }
+
   @override
   Widget build(BuildContext context) {
     return FormField<List<AuthorData>>(
@@ -100,44 +107,45 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
+                      // Добавляем кнопку "Выбрать всех" как первый элемент списка
+                      if (authorsList.indexOf(item) == 0) {
+                        return Column(
                           children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xff1E2E52),
-                                  width: 1,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                                color: isSelected
-                                    ? const Color(0xff1E2E52)
-                                    : Colors.transparent,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.white,
-                                      size: 14,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                '${item.name!} ${item.lastname ?? ''}', // Добавляем фамилию
-                                style: authorTextStyle,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _selectAllAuthors,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF4F7FD),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: const Color(0xFFE5E7EB),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.check,
+                                        color: Color(0xff1E2E52),
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            _buildListItem(item, isSelected, onItemSelect),
                           ],
-                        ),
-                      );
+                        );
+                      }
+                      return _buildListItem(item, isSelected, onItemSelect);
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedAuthorsNames = selectedAuthorsData.isEmpty
@@ -146,7 +154,6 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                           : selectedAuthorsData
                               .map((e) => '${e.name} ${e.lastname ?? ''}')
                               .join(', ');
-
                       return Text(
                         selectedAuthorsNames,
                         style: authorTextStyle,
@@ -187,6 +194,42 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildListItem(AuthorData item, bool isSelected, Function() onItemSelect) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: const Color(0xff1E2E52),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(4),
+              color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+            ),
+            child: isSelected
+                ? const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 14,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '${item.name!} ${item.lastname ?? ''}',
+              style: authorTextStyle,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
