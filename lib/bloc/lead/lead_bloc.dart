@@ -9,7 +9,22 @@ import 'lead_state.dart';
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
   bool allLeadsFetched = false;
-  Map<int, int> _leadCounts = {}; // Хранение количества лидов
+  Map<int, int> _leadCounts = {};
+  String? _currentQuery;
+  List<int>? _currentManagerIds;
+  List<int>? _currentRegionIds;
+  List<int>? _currentSourceIds;
+  int? _currentStatusId;
+  DateTime? _currentFromDate;
+  DateTime? _currentToDate;
+  bool? _currentHasSuccessDeals;
+  bool? _currentHasInProgressDeals;
+  bool? _currentHasFailureDeals;
+  bool? _currentHasNotices;
+  bool? _currentHasContact;
+  bool? _currentHasChat;
+  bool? _currentHasDeal;
+  int? _currentDaysWithoutActivity;
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -38,6 +53,23 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
+
+     _currentQuery = event.query;
+     _currentManagerIds = event.managerIds;
+     _currentRegionIds = event.regionsIds;
+     _currentSourceIds = event.sourcesIds;
+     _currentStatusId = event.statusIds;
+     _currentFromDate = event.fromDate;
+     _currentToDate = event.toDate;
+     _currentHasSuccessDeals = event.hasSuccessDeals;
+     _currentHasInProgressDeals = event.hasInProgressDeals;
+     _currentHasFailureDeals = event.hasFailureDeals;
+     _currentHasNotices = event.hasNotices;
+     _currentHasContact = event.hasContact;
+     _currentHasChat = event.hasChat;
+     _currentHasDeal = event.hasDeal;
+     _currentDaysWithoutActivity = event.daysWithoutActivity;
+
 
     if (!await _checkInternetConnection()) {
       // Если интернета нет, пробуем загрузить лиды из кэша
@@ -157,31 +189,50 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  Future<void> _fetchMoreLeads(
-      FetchMoreLeads event, Emitter<LeadState> emit) async {
-    if (allLeadsFetched)
-      return; // Если все лиды уже загружены, ничего не делаем
+ Future<void> _fetchMoreLeads(FetchMoreLeads event, Emitter<LeadState> emit) async {
+  if (allLeadsFetched) return;
 
-    if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
+  if (!await _checkInternetConnection()) {
+    emit(LeadError('Нет подключения к интернету'));
+    return;
+  }
+
+  try {
+    final leads = await apiService.getLeads(
+      _currentStatusId ?? event.statusId,
+      page: event.currentPage + 1,
+      perPage: 20,
+      search: _currentQuery,
+      managers: _currentManagerIds,
+      regions: _currentRegionIds,
+      sources: _currentSourceIds,
+      statuses: _currentStatusId,
+      fromDate: _currentFromDate,
+      toDate: _currentToDate,
+      hasSuccessDeals: _currentHasSuccessDeals,
+      hasInProgressDeals: _currentHasInProgressDeals,
+      hasFailureDeals: _currentHasFailureDeals,
+      hasNotices: _currentHasNotices,
+      hasContact: _currentHasContact,
+      hasChat: _currentHasChat,
+      hasDeal: _currentHasDeal,
+      daysWithoutActivity: _currentDaysWithoutActivity,
+    );
+
+    if (leads.isEmpty) {
+      allLeadsFetched = true;
       return;
     }
 
-    try {
-      final leads = await apiService.getLeads(event.statusId,
-          page: event.currentPage + 1);
-      if (leads.isEmpty) {
-        allLeadsFetched = true; // Если пришли пустые данные, устанавливаем флаг
-        return; // Выходим, так как данных больше нет
-      }
-      if (state is LeadDataLoaded) {
-        final currentState = state as LeadDataLoaded;
-        emit(currentState.merge(leads)); // Объединяем старые и новые лиды
-      }
-    } catch (e) {
-      emit(LeadError('Не удалось загрузить дополнительные лиды!'));
+    if (state is LeadDataLoaded) {
+      final currentState = state as LeadDataLoaded;
+      emit(currentState.merge(leads));
     }
+  } catch (e) {
+    emit(LeadError('Не удалось загрузить дополнительные лиды!'));
   }
+}
+
 
  Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
   emit(LeadLoading());

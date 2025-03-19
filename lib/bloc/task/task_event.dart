@@ -19,9 +19,8 @@ class FetchTasks extends TaskEvent {
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
   final String? project;
-  final List<String>?
-      authors; // Изменено с String? author на List<String>? authors
-  final String? department; // Добавьте это
+  final List<String>? authors;
+  final String? department; 
   FetchTasks(
     this.statusId, {
     this.query,

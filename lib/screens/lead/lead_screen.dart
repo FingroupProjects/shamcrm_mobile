@@ -104,6 +104,8 @@ List<TargetFocus> targets = [];
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
     _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
     
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -134,6 +136,18 @@ List<TargetFocus> targets = [];
     });
     _checkPermissions();
   }
+  void _onScroll() {
+  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    if (leadBloc.state is LeadDataLoaded) {
+      final state = leadBloc.state as LeadDataLoaded;
+      if (!leadBloc.allLeadsFetched) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        leadBloc.add(FetchMoreLeads(currentStatusId, state.currentPage));
+      }
+    }
+  }
+}
 
   void _initTutorialTargets() {
     targets.clear();
@@ -171,8 +185,6 @@ List<TargetFocus> targets = [];
 
     try {
       final progress = await _apiService.getTutorialProgress();
-      print('Tutorial Progress for leads: $progress');
-      
       if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
         setState(() {
           tutorialProgress = progress['result'];
@@ -200,10 +212,10 @@ List<TargetFocus> targets = [];
           }
         });
       } else {
-        print('Tutorial not shown for LeadScreen. Reasons:');
-        print('tutorialProgress: $tutorialProgress');
-        print('leads/index: ${tutorialProgress?['leads']?['index']}');
-        print('isTutorialShown: $_isTutorialShown');
+        // print('Tutorial not shown for LeadScreen. Reasons:');
+        // print('tutorialProgress: $tutorialProgress');
+        // print('leads/index: ${tutorialProgress?['leads']?['index']}');
+        // print('isTutorialShown: $_isTutorialShown');
       }
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -582,7 +594,6 @@ List<TargetFocus> targets = [];
         itemCount: leads.length,
         itemBuilder: (context, index) {
           final lead = leads[index];
-          print('Отображение лида: $lead');
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: LeadCard(
@@ -603,67 +614,62 @@ List<TargetFocus> targets = [];
   }
 
 // Обновляем метод _buildManagerView для корректной обработки обоих случаев
-  Widget _buildManagerView() {
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        if (state is LeadDataLoaded) {
-          final List<Lead> leads = state.leads;
+ Widget _buildManagerView() {
+  return BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      if (state is LeadDataLoaded) {
+        final List<Lead> leads = state.leads;
 
-          // Filtrujeme podle vybraného statusu
-          final statusId = _tabTitles[_tabController.index]['id'];
-          final filteredLeads =
-              leads.where((lead) => lead.statusId == statusId).toList();
+        // Фильтрация по выбранному статусу
+        final statusId = _tabTitles[_tabController.index]['id'];
+        final filteredLeads = leads.where((lead) => lead.statusId == statusId).toList();
 
-          if (filteredLeads.isEmpty) {
-            return Center(
-              child: Text(
-                _selectedManagers != null
-                    ? AppLocalizations.of(context)!
-                        .translate('selected_manager_has_any_lead')
-                    : AppLocalizations.of(context)!.translate('nothing_found'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
-                ),
+        if (filteredLeads.isEmpty) {
+          return Center(
+            child: Text(
+              _selectedManagers != null
+                  ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
+                  : AppLocalizations.of(context)!.translate('nothing_found'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          controller: _scrollController, 
+          itemCount: filteredLeads.length,
+          itemBuilder: (context, index) {
+            final lead = filteredLeads[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: LeadCard(
+                lead: lead,
+                title: lead.leadStatus?.title ?? "",
+                statusId: lead.statusId,
+                onStatusUpdated: () {},
+                onStatusId: (StatusLeadId) {},
               ),
             );
-          }
-
-          return Flexible(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: filteredLeads.length,
-              itemBuilder: (context, index) {
-                final lead = filteredLeads[index];
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: LeadCard(
-                    lead: lead,
-                    title: lead.leadStatus?.title ?? "",
-                    statusId: lead.statusId,
-                    onStatusUpdated: () {},
-                    onStatusId: (StatusLeadId) {},
-                  ),
-                );
-              },
-            ),
-          );
-        }
-        if (state is LeadLoading) {
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
-            ),
-          );
-        }
-        return const SizedBox();
-      },
-    );
-  }
+          },
+        );
+      }
+      if (state is LeadLoading) {
+        return const Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        );
+      }
+      return const SizedBox();
+    },
+  );
+}
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(

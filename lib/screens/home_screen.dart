@@ -101,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
     activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
     inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
     hasAvailableScreens = true;
+    
     // Категории 
     widgets.add(CategoryScreen());
     titleKeys.add('Категории');
@@ -114,10 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
     titleKeys.add('Товары');
     navBarTitleKeys.add('Товары');
     activeIcons.add('assets/icons/MyNavBar/goods_ON.png');
-
     inactiveIcons.add('assets/icons/MyNavBar/goods_OFF.png');
     hasAvailableScreens = true;
-    // PAGE 4
+    // Заказы
     widgets.add(OrderScreen());
     titleKeys.add('Заказы');
     navBarTitleKeys.add('Заказы');

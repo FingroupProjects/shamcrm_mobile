@@ -23,26 +23,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _updateDetails() {
-    details = [
-      {'label': 'Номер заказа', 'value': widget.order['number']},
-      {'label': 'Дата заказа', 'value': widget.order['date']},
-      {'label': 'Клиент', 'value': widget.order['client']},
-      {'label': 'Ответственный менеджер', 'value': widget.order['manager']},
-      {'label': 'Сумма заказа', 'value': '${widget.order['total']} ₽'},
+  details = [
+    {'label': 'Номер заказа', 'value': widget.order['number'] ?? 'Не указан'},
+    {'label': 'Дата заказа', 'value': widget.order['date'] ?? 'Не указана'},
+    {'label': 'Клиент', 'value': widget.order['client'] ?? 'Не указан'},
+    {'label': 'Ответственный менеджер', 'value': widget.order['manager'] ?? 'Не указан'},
+    {'label': 'Сумма заказа', 'value': '${widget.order['total'] ?? 0} ₽'},
+    {
+      'label': 'Статус заказа',
+      'value': _getStatusName(widget.order['statusId'] ?? 1) 
+    },
+    {'label': 'Способ оплаты', 'value': widget.order['paymentMethod'] ?? 'Не указан'},
+    {'label': 'Способ доставки', 'value': widget.order['deliveryMethod'] ?? 'Не указан'},
+    if (widget.order['deliveryMethod'] != 'Самовывоз')
       {
-        'label': 'Статус заказа',
-        'value': _getStatusName(widget.order['statusId'])
+        'label': 'Адрес доставки',
+        'value': widget.order['deliveryAddress'] ?? 'Не указан'
       },
-      {'label': 'Способ оплаты', 'value': widget.order['paymentMethod']},
-      {'label': 'Способ доставки', 'value': widget.order['deliveryMethod']},
-      if (widget.order['deliveryMethod'] != 'Самовывоз')
-        {
-          'label': 'Адрес доставки',
-          'value': widget.order['deliveryAddress'] ?? 'Не указан'
-        },
-      {'label': 'Комментарий клиента', 'value': widget.order['comment'] ?? ''},
-    ];
-  }
+    {'label': 'Комментарий клиента', 'value': widget.order['comment'] ?? ''},
+  ];
+}
 
   String _getStatusName(int statusId) {
     const statusMap = {

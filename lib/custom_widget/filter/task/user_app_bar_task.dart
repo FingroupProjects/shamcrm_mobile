@@ -249,10 +249,6 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           SizedBox(width: 10),
           TextButton(
             onPressed: () async {
-              print('Applying filters with authors: $_selectedAuthors');
-              print('Applying filters with deadline: $_deadlinetoDate');
-              print('Applying filters with department: $_selectedDepartment');
-              // Очищаем кэш перед применением фильтров
               await TaskCache.clearAllTasks();
 
               // Собираем все параметры фильтров в один объект

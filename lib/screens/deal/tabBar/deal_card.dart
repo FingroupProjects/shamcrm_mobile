@@ -71,7 +71,7 @@
   Color borderColor;
   if (widget.deal.dealStatus?.isSuccess == true &&
       widget.deal.dealStatus?.isFailure == false &&
-      widget.deal.outDated == true) {
+      widget.deal.outDated == false) {
     borderColor = Colors.green;
   } else if (widget.deal.dealStatus?.isSuccess == false &&
       widget.deal.dealStatus?.isFailure == true) {

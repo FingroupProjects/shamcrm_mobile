@@ -582,7 +582,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Кнопки действий
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           Expanded(

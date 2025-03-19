@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'task_event.dart';
@@ -11,8 +10,21 @@ import 'task_state.dart';
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiService apiService;
   bool allTasksFetched = false;
-  Map<int, int> _taskCounts =
-      {}; // Добавляем приватное поле для хранения количества
+  Map<int, int> _taskCounts = {};
+  String? _currentQuery;
+  List<int>? _currentUserIds;
+  int? _currentStatusIds;
+  DateTime? _currentFromDate;
+  DateTime? _currentToDate;
+  bool? _currentOverdue;
+  bool? _currentHasFile;
+  bool? _currentHasDeal;
+  bool? _currentUrgent;
+  String? _currentProject;
+  List<String>? _currentAuthors;
+  DateTime? _currentDeadlineFromDate;
+  DateTime? _currentDeadlineToDate;
+  String? _currentDepartment;
 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
@@ -38,21 +50,14 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
 // Метод для загрузки статусов задач с учётом кэша
-  Future<void> _fetchTaskStatuses(
-      FetchTaskStatuses event, Emitter<TaskState> emit) async {
+  Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
-    // Проверка интернета
     if (!await _checkInternetConnection()) {
-      // Если интернета нет, пробуем загрузить статусы задач из кэша
       final cachedStatuses = await TaskCache.getTaskStatuses();
       if (cachedStatuses.isNotEmpty) {
-        emit(TaskLoaded(
-            cachedStatuses
-                .map((status) => TaskStatus.fromJson(status))
-                .toList(),
-            taskCounts:
-                Map.from(_taskCounts) // Используйте обновленные _taskCounts
+        emit(TaskLoaded(cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+        taskCounts: Map.from(_taskCounts) 
             ));
       } else {
         emit(TaskError('Нет подключения к интернету и нет данных в кэше!'));
@@ -64,13 +69,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       // Сначала пробуем загрузить статусы задач из кэша
       final cachedStatuses = await TaskCache.getTaskStatuses();
       if (cachedStatuses.isNotEmpty) {
-        emit(TaskLoaded(
-            cachedStatuses
-                .map((status) => TaskStatus.fromJson(status))
-                .toList(),
-            taskCounts:
-                Map.from(_taskCounts) // Передавайте актуальные _taskCounts
-            ));
+        emit(TaskLoaded( cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+        taskCounts: Map.from(_taskCounts) 
+        ));
       }
 
       // Затем запрашиваем данные из API
@@ -81,15 +82,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
 
       // Сохраняем статусы задач в кэш
-      await TaskCache.cacheTaskStatuses(response
-          .map((status) =>
-              {'id': status.id, 'title': status.taskStatus!.name ?? ""})
-          .toList());
+      await TaskCache.cacheTaskStatuses(response.map((status) => {'id': status.id, 'title': status.taskStatus!.name ?? ""}).toList());
 
       // Параллельно загружаем количество задач для каждого статуса
-      final futures = response.map((status) {
-        return apiService.getTasks(status.id,
-            page: 1, perPage: 1); // Загружаем только количество задач
+      final futures = response.map((status) { return apiService.getTasks(status.id, page: 1, perPage: 1); 
       }).toList();
 
       final taskCountsResults = await Future.wait(futures);
@@ -106,9 +102,23 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
 // Метод для загрузки задач с учётом кэша
-  
 Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
   emit(TaskLoading());
+
+  _currentQuery = event.query;
+  _currentUserIds = event.userIds;
+  _currentStatusIds = event.statusIds;
+  _currentFromDate = event.fromDate;
+  _currentToDate = event.toDate;
+  _currentOverdue = event.overdue;
+  _currentHasFile = event.hasFile;
+  _currentHasDeal = event.hasDeal;
+  _currentUrgent = event.urgent;
+  _currentProject = event.project;
+  _currentAuthors = event.authors;
+  _currentDeadlineFromDate = event.deadlinefromDate;
+  _currentDeadlineToDate = event.deadlinetoDate;
+  _currentDepartment = event.department;
 
   // Проверка интернет-соединения
   if (!await _checkInternetConnection()) {
@@ -147,7 +157,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       authors: event.authors,
       deadlinefromDate: event.deadlinefromDate,
       deadlinetoDate: event.deadlinetoDate,
-      department: event.department, // Добавляем передачу department
+      department: event.department, 
     );
 
     // Сохраняем задачи в кэш
@@ -180,11 +190,31 @@ Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) asyn
   }
 
   try {
-    final tasks = await apiService.getTasks(event.statusId, page: event.currentPage + 1);
-   if (tasks.isEmpty) {
-        allTasksFetched = true; // Если пришли пустые данные, устанавливаем флаг
-        return; // Выходим, так как данных больше нет
-      }
+    final tasks = await apiService.getTasks(
+      event.statusId,
+      page: event.currentPage + 1,
+      perPage: 20,
+      search: _currentQuery,
+      users: _currentUserIds,
+      statuses: _currentStatusIds,
+      fromDate: _currentFromDate,
+      toDate: _currentToDate,
+      overdue: _currentOverdue,
+      hasFile: _currentHasFile,
+      hasDeal: _currentHasDeal,
+      urgent: _currentUrgent,
+      project: _currentProject,
+      authors: _currentAuthors,
+      deadlinefromDate: _currentDeadlineFromDate,
+      deadlinetoDate: _currentDeadlineToDate,
+      department: _currentDepartment,
+    );
+
+    if (tasks.isEmpty) {
+      allTasksFetched = true;
+      return;
+    }
+
     if (state is TaskDataLoaded) {
       final currentState = state as TaskDataLoaded;
       emit(currentState.merge(tasks));
@@ -194,39 +224,6 @@ Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) asyn
   }
 }
 
- /* Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
-
-    if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      final result = await apiService.createTask(
-        name: event.name,
-        statusId: event.statusId,
-        taskStatusId: event.taskStatusId,
-        priority: event.priority,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        projectId: event.projectId,
-        userId: event.userId,
-        description: event.description,
-        customFields: event.customFields,
-        filePath: event.filePath,
-      );
-
-      if (result['success']) {
-        emit(TaskSuccess(
-            event.localizations.translate('task_create_successfully')));
-      } else {
-        emit(TaskError(result['message']));
-      }
-    } catch (e) {
-      emit(TaskError(event.localizations.translate('task_creation_error')));
-    }
-  }*/
 Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
