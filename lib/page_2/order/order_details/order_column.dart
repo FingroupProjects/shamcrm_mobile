@@ -130,7 +130,7 @@ class _OrderColumnState extends State<OrderColumn> {
               child: Text(
                 widget.searchQuery != null && widget.searchQuery!.isNotEmpty
                     ? 'Ничего не найдено'
-                    : 'Нет заказов в статусе "${widget.name}"',
+                    : 'Нет заказов в этом статусе',
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,

@@ -2,10 +2,11 @@ import 'package:crm_task_manager/page_2/order/order_details/order_details_screen
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Для форматирования даты
 
 class OrderCard extends StatefulWidget {
   final Map<String, dynamic> order;
-  final Function(int)? onStatusUpdated; // Callback для обновления статуса
+  final Function(int)? onStatusUpdated;
 
   const OrderCard({required this.order, this.onStatusUpdated});
 
@@ -24,7 +25,6 @@ class _OrderCardState extends State<OrderCard> {
     dropdownValue = _getStatusName(statusId);
   }
 
-  // Получение названия статуса
   String _getStatusName(int statusId) {
     const statusMap = {
       1: 'Новый',
@@ -38,7 +38,6 @@ class _OrderCardState extends State<OrderCard> {
     return statusMap[statusId] ?? 'Неизвестный статус';
   }
 
-  // Цвет текста для статуса
   Color _getStatusTextColor(int statusId) {
     switch (statusId) {
       case 1:
@@ -60,7 +59,6 @@ class _OrderCardState extends State<OrderCard> {
     }
   }
 
-  // Цвет фона для статуса
   Color _getStatusBackgroundColor(int statusId) {
     switch (statusId) {
       case 1:
@@ -79,6 +77,16 @@ class _OrderCardState extends State<OrderCard> {
         return Colors.red[50]!;
       default:
         return Colors.grey[100]!;
+    }
+  }
+
+  // Форматирование даты в dd.MM.yyyy
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd.MM.yyyy').format(date);
+    } catch (e) {
+      return dateStr;
     }
   }
 
@@ -124,7 +132,7 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 Text(
-                  widget.order['date'],
+                  _formatDate(widget.order['date']),
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -134,7 +142,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14), // Увеличил с 10 до 14
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -205,7 +213,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 24), // Увеличил с 10 до 14
             Row(
               children: [
                 const Icon(

@@ -12,41 +12,60 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   final String? currentUserId;
 
   ManagerRadioGroupWidget({
-    super.key, 
-    required this.onSelectManager, 
+    super.key,
+    required this.onSelectManager,
     this.selectedManager,
     this.currentUserId,
   });
 
   @override
-  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
+  State<ManagerRadioGroupWidget> createState() =>
+      _ManagerRadioGroupWidgetState();
 }
+
 class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
   bool _autoSelectionPerformed = false;
 
-@override
-void initState() {
-  super.initState();
-  print('ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}'); // Логируем значение
-  if (widget.currentUserId != null) {
-    currentUserId = widget.currentUserId;
-  } else {
-    _loadCurrentUserId();
+  @override
+  void initState() {
+    super.initState();
+    // Инициализируем список с "Системой"
+    managersList = [
+      ManagerData(
+        id: -1,
+        name: "Система",
+        lastname: "",
+      ),
+    ];
+    selectedManagerData =
+        managersList.first; // Устанавливаем "Систему" по умолчанию
+
+    print(
+        'ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}');
+    if (widget.currentUserId != null) {
+      currentUserId = widget.currentUserId;
+    } else {
+      _loadCurrentUserId();
+    }
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
-  context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-}
 
   Future<void> _loadCurrentUserId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
-      
       if (mounted) {
         setState(() {
           currentUserId = userId;
+        });
+        // Вызываем автовыбор после загрузки ID асинхронно
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_autoSelectionPerformed) {
+            _autoSelectCurrentUserAsManager(managersList);
+          }
         });
       }
       print('Current userID: $userId');
@@ -55,26 +74,25 @@ void initState() {
     }
   }
 
-void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
-  if (currentUserId == null || currentUserId!.isEmpty || _autoSelectionPerformed) {
-    return;
-  }
-  
-  for (var manager in managers) {
-    if (manager.id.toString() == currentUserId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            selectedManagerData = manager;
-            _autoSelectionPerformed = true;
-          });
-          widget.onSelectManager(manager);
-        }
-      });
-      break;
+  void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
+    if (currentUserId == null ||
+        currentUserId!.isEmpty ||
+        _autoSelectionPerformed) {
+      return;
+    }
+
+    for (var manager in managers) {
+      if (manager.id.toString() == currentUserId) {
+        setState(() {
+          selectedManagerData = manager;
+          _autoSelectionPerformed = true;
+        });
+        widget.onSelectManager(manager);
+        break;
+      }
     }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -83,7 +101,7 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
           builder: (context, state) {
             // Обработка ошибок
             if (state is GetAllManagerError) {
-              
+              // Показ ошибки через addPostFrameCallback - это правильно
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -109,28 +127,74 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
               });
             }
 
-            // Обновление данных при успешной загрузке
+            // Обработка данных - НЕ МЕНЯЙТЕ состояние здесь
+            List<ManagerData> currentManagersList = managersList;
+            ManagerData? currentSelectedManagerData = selectedManagerData;
+
+            // Обновление списка менеджеров
             if (state is GetAllManagerSuccess) {
-              managersList = state.dataManager.result ?? [];
-                    print('Managers loaded: ${state.dataManager.result?.length}'); // Логируем количество менеджеров
-      managersList = state.dataManager.result ?? [];
-      _autoSelectCurrentUserAsManager(managersList);
-              // Если у нас уже есть выбранный менеджер от пользователя, используем его
-              if (widget.selectedManager != null && managersList.isNotEmpty) {
+              currentManagersList = [
+                ManagerData(
+                  id: -1,
+                  name: "Система",
+                  lastname: "",
+                ),
+                ...?state.dataManager.result
+              ];
+
+              // Вместо setState() просто обновляем локальную переменную
+              if (widget.selectedManager != null &&
+                  currentManagersList.isNotEmpty) {
                 try {
-                  selectedManagerData = managersList.firstWhere(
-                    (manager) => manager.id.toString() == widget.selectedManager,
+                  currentSelectedManagerData = currentManagersList.firstWhere(
+                    (manager) =>
+                        manager.id.toString() == widget.selectedManager,
                   );
                 } catch (e) {
-                  selectedManagerData = null;
+                  currentSelectedManagerData = currentManagersList[0];
                 }
-              } 
-              else if (selectedManagerData == null && !_autoSelectionPerformed) {
-                _autoSelectCurrentUserAsManager(managersList);
+              } else if (currentSelectedManagerData == null ||
+                  !currentManagersList.contains(currentSelectedManagerData)) {
+                currentSelectedManagerData = currentManagersList[0];
+                // Вызов onSelectManager перенесем в отложенный колбэк
               }
+
+              // Выносим обновление состояния после build
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    managersList = currentManagersList;
+                    selectedManagerData = currentSelectedManagerData;
+                    // Если managerId = 0, выбираем "Систему"
+                    if (widget.selectedManager == "0") {
+                      selectedManagerData = managersList[0]; // "Система"
+                    } else if (widget.selectedManager != null &&
+                        managersList.isNotEmpty) {
+                      try {
+                        selectedManagerData = managersList.firstWhere(
+                          (manager) =>
+                              manager.id.toString() == widget.selectedManager,
+                        );
+                      } catch (e) {
+                        selectedManagerData =
+                            managersList[0]; // По умолчанию "Система"
+                      }
+                    } else if (selectedManagerData == null ||
+                        !managersList.contains(selectedManagerData)) {
+                      selectedManagerData = managersList[0];
+                      widget.onSelectManager(managersList[0]);
+                    }
+                    // Если это первая загрузка, и нет выбора, устанавливаем значение по умолчанию
+                    if (!_autoSelectionPerformed) {
+                      widget.onSelectManager(currentSelectedManagerData!);
+                      _autoSelectCurrentUserAsManager(currentManagersList);
+                    }
+                  });
+                }
+              });
             }
 
-            // Всегда отображаем поле, независимо от состояния загрузки
+            // Отображаем UI на основе текущих данных
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -140,18 +204,18 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xfff1E2E52),
+                    color: Color(0xff1E2E52),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Container(
                   child: CustomDropdown<ManagerData>.search(
                     closeDropDownOnClearFilterSearch: true,
-                    items: managersList,
+                    items: currentManagersList,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    enabled: true, // Всегда enabled
+                    enabled: true,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: Color(0xffF4F7FD),
                       expandedFillColor: Colors.white,
@@ -168,7 +232,7 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Text(
-                        '${item.name!} ${item.lastname ?? ''}',
+                        '${item.name!} ${item.lastname ?? ''}'.trim(),
                         style: TextStyle(
                           color: Color(0xff1E2E52),
                           fontSize: 14,
@@ -220,7 +284,14 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
                       ),
                     ),
                     excludeSelected: false,
-                    initialItem: selectedManagerData,
+                    initialItem: currentManagersList.isNotEmpty &&
+                            currentSelectedManagerData != null &&
+                            currentManagersList
+                                .contains(currentSelectedManagerData)
+                        ? currentSelectedManagerData
+                        : currentManagersList.isNotEmpty
+                            ? currentManagersList[0]
+                            : null,
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectManager(value);

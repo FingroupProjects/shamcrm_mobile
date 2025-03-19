@@ -13,8 +13,9 @@ import 'package:intl/intl.dart';
 
 class CreateNotesDialog extends StatefulWidget {
   final int leadId;
+  final int? managerId; // Добавляем managerId
 
-  CreateNotesDialog({required this.leadId});
+  CreateNotesDialog({required this.leadId, this.managerId});
 
   @override
   _CreateNotesDialogState createState() => _CreateNotesDialogState();
@@ -27,6 +28,17 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final TextEditingController titleController = TextEditingController();
   List<int> selectedManagers = [];
   String? selectedSubject;
+  bool hasAutoSelectedManager = false; // Флаг для отслеживания автоселекта
+
+  @override
+  void initState() {
+    super.initState();
+    // Устанавливаем менеджера лида автоматически, если он есть
+    if (widget.managerId != null && !hasAutoSelectedManager) {
+      selectedManagers = [widget.managerId!];
+      hasAutoSelectedManager = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +48,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!
-                    .translate(state.message), // Локализация сообщения
+                AppLocalizations.of(context)!.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -50,7 +61,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.red, // Исправлено на красный для ошибки
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -58,136 +69,148 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           );
         }
       },
-        child: GestureDetector(
+      child: GestureDetector(
         onTap: () {
-            FocusScope.of(context).unfocus();
-         },
-          child: SingleChildScrollView(       
+          FocusScope.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
           child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('add_note'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.translate('add_note'),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                SubjectSelectionWidget(
-                  selectedSubject: selectedSubject,
-                  onSelectSubject: (String subject) {
-                    setState(() {
-                      selectedSubject = subject;
-                    });
-                  },
-                ),
-                SizedBox(height: 8),
-                CustomTextField(
-                  controller: bodyController,
-                  hintText:
-                      AppLocalizations.of(context)!.translate('enter_text'),
-                  label: AppLocalizations.of(context)!
-                      .translate('description_list'),
-                  maxLines: 5,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context)!.translate('field_required');
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 8),
-                CustomTextFieldDate(
-                  controller: dateController,
-                  label: AppLocalizations.of(context)!.translate('reminder'),
-                  withTime: true,
-                ),
-                const SizedBox(height: 8),
-                ManagerMultiSelectWidget(
-                  selectedManagers: selectedManagers, 
-                  onSelectManagers: (List<int> managers) {
-                    setState(() {
-                      selectedManagers = managers;
-                    });
-                  },
-                ),
-                SizedBox(height: 8),
-                CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('save'),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final String title = titleController.text;
-                      final String body = bodyController.text;
-                      final String? dateString = dateController.text.isEmpty
-                          ? null
-                          : dateController.text;
-
-                      DateTime? date;
-                      if (dateString != null && dateString.isNotEmpty) {
-                        try {
-                          date =
-                              DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
-                        } catch (e) {
+                  SizedBox(height: 8),
+                  SubjectSelectionWidget(
+                    selectedSubject: selectedSubject,
+                    onSelectSubject: (String subject) {
+                      setState(() {
+                        selectedSubject = subject;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 8),
+                  CustomTextField(
+                    controller: bodyController,
+                    hintText: AppLocalizations.of(context)!.translate('enter_text'),
+                    label: AppLocalizations.of(context)!.translate('description_list'),
+                    maxLines: 5,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppLocalizations.of(context)!.translate('field_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 8),
+                  CustomTextFieldDate(
+                    controller: dateController,
+                    label: AppLocalizations.of(context)!.translate('reminder'),
+                    withTime: true,
+                  ),
+                  const SizedBox(height: 8),
+                  ManagerMultiSelectWidget(
+                    selectedManagers: selectedManagers,
+                    onSelectManagers: (List<int> managers) {
+                      setState(() {
+                        selectedManagers = managers;
+                        // Если пользователь вручную изменил список менеджеров
+                        if (widget.managerId != null && !managers.contains(widget.managerId)) {
+                          hasAutoSelectedManager = true; // Отключаем автоселект
+                        }
+                      });
+                    },
+                  ),
+                  SizedBox(height: 8),
+                  CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('save'),
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        if (selectedSubject == null || selectedSubject!.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('enter_valid_datetime'),
-                            )),
+                              content: Text(
+                                AppLocalizations.of(context)!.translate('select_subject'),
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
                           );
                           return;
                         }
-                      }
 
-                      context.read<NotesBloc>().add(CreateNotes(
-                            leadId: widget.leadId,
-                            title: selectedSubject!.trim(), 
-                            body: body,
-                            date: date,
-                            users: selectedManagers,
-                          ));
+                        final String body = bodyController.text;
+                        final String? dateString = dateController.text.isEmpty
+                            ? null
+                            : dateController.text;
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!.translate('note_created_successfully'),
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                        DateTime? date;
+                        if (dateString != null && dateString.isNotEmpty) {
+                          try {
+                            date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
+                        context.read<NotesBloc>().add(CreateNotes(
+                              leadId: widget.leadId,
+                              title: selectedSubject!.trim(),
+                              body: body,
+                              date: date,
+                              users: selectedManagers,
+                            ));
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)!.translate('note_created_successfully'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
                             ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 3),
                           ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
-                ),
-                SizedBox(height: 8),
-              ],
+                        );
+                        Navigator.pop(context);
+                      }
+                    },
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                  ),
+                  SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
