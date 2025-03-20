@@ -121,8 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
     widgets.add(OrderScreen());
     titleKeys.add('Заказы');
     navBarTitleKeys.add('Заказы');
-    activeIcons.add('assets/icons/MyNavBar/orderon.png');
-    inactiveIcons.add('assets/icons/MyNavBar/order_OFF.png');
+    activeIcons.add('assets/icons/MyNavBar/order_off (2).png');
+    inactiveIcons.add('assets/icons/MyNavBar/order_on (2).png');
     hasAvailableScreens = true;
 
     if (mounted) {

@@ -825,7 +825,8 @@
       "select_delivery_method":"Выберите способ доставки",
       "select_payment_method":"Выберите способ оплаты",
       "status_method":"Статус",
-      "select_status_method":"Выберите статус"
+      "select_status_method":"Выберите статус",
+      "select_all":"Выделить всех"
 
 
 

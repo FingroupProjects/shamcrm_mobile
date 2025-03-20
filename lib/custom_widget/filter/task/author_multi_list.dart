@@ -22,6 +22,7 @@ class AuthorMultiSelectWidget extends StatefulWidget {
 class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
   List<AuthorData> authorsList = [];
   List<AuthorData> selectedAuthorsData = [];
+  bool allSelected = false;
 
   final TextStyle authorTextStyle = const TextStyle(
     fontSize: 16,
@@ -36,11 +37,17 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
     context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
   }
 
-  void _selectAllAuthors() {
+  // Функция для выделения/снятия выделения всех авторов
+  void _toggleSelectAll() {
     setState(() {
-      selectedAuthorsData = List.from(authorsList); // Выбираем всех авторов
+      allSelected = !allSelected;
+      if (allSelected) {
+        selectedAuthorsData = List.from(authorsList); // Выбираем всех
+      } else {
+        selectedAuthorsData = []; // Снимаем выделение
+      }
+      widget.onSelectAuthors(selectedAuthorsData);
     });
-    widget.onSelectAuthors(selectedAuthorsData); // Передаем выбранных авторов
   }
 
   @override
@@ -83,6 +90,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                           .where((author) => widget.selectedAuthors!
                               .contains(author.id.toString()))
                           .toList();
+                      allSelected = selectedAuthorsData.length == authorsList.length;
                     }
                   }
 
@@ -107,7 +115,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      // Добавляем кнопку "Выбрать всех" как первый элемент списка
+                      // Добавляем "Выделить всех" как первый элемент
                       if (authorsList.indexOf(item) == 0) {
                         return Column(
                           children: [
@@ -116,35 +124,50 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                                 horizontal: 16,
                                 vertical: 8,
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  GestureDetector(
-                                    onTap: _selectAllAuthors,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
+                              child: GestureDetector(
+                                onTap: _toggleSelectAll,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF4F7FD),
-                                        borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
-                                          color: const Color(0xFFE5E7EB),
-                                          width: 1,
-                                        ),
+                                            color: const Color(0xff1E2E52),
+                                            width: 1),
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: allSelected
+                                            ? const Color(0xff1E2E52)
+                                            : Colors.transparent,
                                       ),
-                                      child: const Icon(
-                                        Icons.check,
-                                        color: Color(0xff1E2E52),
-                                        size: 18,
+                                      child: allSelected
+                                          ? const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 14,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
+                                        style: authorTextStyle,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
+                            Divider(
+                                height: 20,
+                                color: const Color(0xFFE5E7EB)), // Разделитель
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
                       }
+                      // Обычные элементы списка
                       return _buildListItem(item, isSelected, onItemSelect);
                     },
                     headerListBuilder: (context, hint, enabled) {
@@ -172,6 +195,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                       widget.onSelectAuthors(values);
                       setState(() {
                         selectedAuthorsData = values;
+                        allSelected = values.length == authorsList.length;
                       });
                       field.didChange(values);
                     },
@@ -200,35 +224,38 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
   Widget _buildListItem(AuthorData item, bool isSelected, Function() onItemSelect) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: const Color(0xff1E2E52),
-                width: 1,
+      child: GestureDetector(
+        onTap: onItemSelect,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color(0xff1E2E52),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
               ),
-              borderRadius: BorderRadius.circular(4),
-              color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    )
+                  : null,
             ),
-            child: isSelected
-                ? const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 14,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '${item.name!} ${item.lastname ?? ''}',
-              style: authorTextStyle,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${item.name!} ${item.lastname ?? ''}',
+                style: authorTextStyle,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
