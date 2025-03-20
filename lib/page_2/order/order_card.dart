@@ -142,7 +142,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 14), // Увеличил с 10 до 14
+            const SizedBox(height: 36),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -213,26 +213,39 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 24), // Увеличил с 10 до 14
+            const SizedBox(height: 36),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.person,
-                  color: Color(0xff99A4BA),
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    widget.order['client'],
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.person,
+                      color: Color(0xff99A4BA),
+                      size: 24,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 4),
+                    Text(
+                      'Лид: ${widget.order['client']}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                Text(
+                  '${widget.order['manager']}',
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
