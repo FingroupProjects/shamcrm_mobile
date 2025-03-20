@@ -874,8 +874,8 @@
       "delete_goods":"Удалить товар",
       "confrim_delete_goods":"Подтвердите удаление товара!",
       "price":"Цена: ",
-      "category_card":"Категория: "
-
+      "category_card":"Категория: ",
+      "select_all":"Выделить всех"
 
 
 

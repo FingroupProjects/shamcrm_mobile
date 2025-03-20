@@ -208,7 +208,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomPhoneNumberInput(
                           controller: phoneController,
                           onInputChanged: (String number) {
@@ -224,7 +224,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           },
                           label: AppLocalizations.of(context)!.translate('phone'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         RegionRadioGroupWidget(
                           selectedRegion: selectedRegion,
                           onSelectRegion: (RegionData selectedRegionData) {
@@ -233,7 +233,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         ManagerRadioGroupWidget(
                           selectedManager: selectedManager,
                           onSelectManager: (ManagerData selectedManagerData) {
@@ -242,7 +242,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         SourceLeadWidget(
                           selectedSourceLead: selectedSourceLead,
                           onChanged: (String? newValue) {
@@ -251,25 +251,25 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextField(
                           controller: instaLoginController,
                           hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
                           label: AppLocalizations.of(context)!.translate('instagram'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextField(
                           controller: facebookLoginController,
                           hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
                           label: AppLocalizations.of(context)!.translate('Facebook'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextField(
                           controller: tgNickController,
                           hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
                           label: AppLocalizations.of(context)!.translate('telegram'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomPhoneNumberInput(
                           controller: whatsappController,
                           onInputChanged: (String number) {
@@ -279,20 +279,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           },
                           label: 'Whatsapp',
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextField(
                           controller: emailController,
                           hintText: AppLocalizations.of(context)!.translate('enter_email'),
                           label: AppLocalizations.of(context)!.translate('email'),
                           keyboardType: TextInputType.emailAddress,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextFieldDate(
                           controller: birthdayController,
                           label: AppLocalizations.of(context)!.translate('birth_date'),
                           withTime: false,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         CustomTextField(
                           controller: descriptionController,
                           hintText: AppLocalizations.of(context)!.translate('enter_description'),
@@ -300,7 +300,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           maxLines: 5,
                           keyboardType: TextInputType.multiline,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 15),
                         ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
