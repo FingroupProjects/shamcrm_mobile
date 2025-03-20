@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -110,7 +111,7 @@ void _navigateToGoodsDetails() {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Категория: ',
+                            text: AppLocalizations.of(context)!.translate('category_card'), 
                             style: TaskCardStyles.priorityStyle.copyWith(
                             color: Color(0xff99A4BA),
                             ),
@@ -130,7 +131,7 @@ void _navigateToGoodsDetails() {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Цена: ',
+                            text: AppLocalizations.of(context)!.translate('price'), 
                             style: TaskCardStyles.priorityStyle.copyWith(
                             color: Color(0xff99A4BA),
                             ),

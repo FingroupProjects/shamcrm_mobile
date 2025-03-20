@@ -184,24 +184,24 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: priceController,
-                    hintText: 'Введите основную цену',
-                    label: 'Основная цена',
+                  hintText: AppLocalizations.of(context)!.translate('enter_goods_price'),
+                  label: AppLocalizations.of(context)!.translate('goods_price'),
                     keyboardType: TextInputType.number,
                     backgroundColor: Colors.white, 
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: discountPriceController,
-                    hintText: 'Введите скидочную цену',
-                    label: 'Скидочная цена',
+                  hintText: AppLocalizations.of(context)!.translate('enter_discount_price'),
+                  label: AppLocalizations.of(context)!.translate('discount_price'),
                     keyboardType: TextInputType.number,
                     backgroundColor: Colors.white,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: stockQuantityController,
-                    hintText: 'Введите количество в наличии',
-                    label: 'Количество в наличии',
+                  hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
+                  label: AppLocalizations.of(context)!.translate('stock_quantity'),
                     keyboardType: TextInputType.number,
                     backgroundColor: Colors.white, 
                   ),
@@ -212,8 +212,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Статус',
+                            Text(
+                              AppLocalizations.of(context)!.translate('status_goods'), 
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -250,7 +250,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? 'Активен' : 'Неактивен',
+                                      isActive ? AppLocalizations.of(context)!.translate('active') : AppLocalizations.of(context)!.translate('inactive'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,

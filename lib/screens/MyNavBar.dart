@@ -4,18 +4,28 @@ import 'package:crm_task_manager/widgets/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 
 class MyNavBar extends StatefulWidget {
-  final Function(int) onItemSelected;
-  final List<String> navBarTitles;
-  final List<String> activeIcons;
-  final List<String> inactiveIcons;
-  final int currentIndex;
+  final Function(int) onItemSelectedGroup1;
+  final Function(int) onItemSelectedGroup2;
+  final List<String> navBarTitlesGroup1;
+  final List<String> navBarTitlesGroup2;
+  final List<String> activeIconsGroup1;
+  final List<String> activeIconsGroup2;
+  final List<String> inactiveIconsGroup1;
+  final List<String> inactiveIconsGroup2;
+  final int currentIndexGroup1;
+  final int currentIndexGroup2;
 
   MyNavBar({
-    required this.onItemSelected,
-    required this.navBarTitles,
-    required this.activeIcons,
-    required this.inactiveIcons,
-    this.currentIndex = 0,
+    required this.onItemSelectedGroup1,
+    required this.onItemSelectedGroup2,
+    required this.navBarTitlesGroup1,
+    required this.navBarTitlesGroup2,
+    required this.activeIconsGroup1,
+    required this.activeIconsGroup2,
+    required this.inactiveIconsGroup1,
+    required this.inactiveIconsGroup2,
+    this.currentIndexGroup1 = -1,
+    this.currentIndexGroup2 = -1,
   });
 
   @override
@@ -23,11 +33,12 @@ class MyNavBar extends StatefulWidget {
 }
 
 class _MyNavBarState extends State<MyNavBar> {
-  late int currentIndex = widget.currentIndex;
+  late int currentIndexGroup1 = widget.currentIndexGroup1;
+  late int currentIndexGroup2 = widget.currentIndexGroup2;
   final PageController _pageController = PageController(initialPage: 0);
 
   static const double _iconSize = 20;
-  static final double _navBarHeight = Platform.isIOS ? 90 : 60; 
+  static final double _navBarHeight = Platform.isIOS ? 90 : 60;
 
   final TextStyle _titleStyle = const TextStyle(
     color: Colors.white,
@@ -36,21 +47,8 @@ class _MyNavBarState extends State<MyNavBar> {
     fontSize: 14,
   );
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null && args['screenIndex'] != null) {
-        setState(() {
-          currentIndex = args['screenIndex'];
-        });
-      }
-    });
-  }
-
   BottomNavyBarItem _buildNavBarItem(
-      int index, String title, String activeIconPath, String inactiveIconPath) {
+      int index, String title, String activeIconPath, String inactiveIconPath, bool isActive) {
     return BottomNavyBarItem(
       icon: Row(
         children: [
@@ -58,7 +56,7 @@ class _MyNavBarState extends State<MyNavBar> {
             width: _iconSize,
             height: _iconSize,
             child: Image.asset(
-              currentIndex == index ? activeIconPath : inactiveIconPath,
+              isActive ? activeIconPath : inactiveIconPath,
             ),
           ),
           SizedBox(width: 3),
@@ -73,59 +71,84 @@ class _MyNavBarState extends State<MyNavBar> {
     );
   }
 
- @override
+  @override
 Widget build(BuildContext context) {
-  bool allItemsAvailable = widget.navBarTitles.length == widget.activeIcons.length &&
-      widget.navBarTitles.length == widget.inactiveIcons.length;
   return Container(
-    height: _navBarHeight, 
+    height: _navBarHeight,
     child: Column(
       children: [
         Expanded(
           child: PageView(
             controller: _pageController,
-            onPageChanged: (index) {
+            onPageChanged: (page) {
               setState(() {
-                currentIndex = index == 1 ? 5 : 0;
+                if (page == 0) {
+                  currentIndexGroup1 = 0;
+                  currentIndexGroup2 = -1;
+                  widget.onItemSelectedGroup1(0);
+                } else {
+                  currentIndexGroup1 = -1;
+                  currentIndexGroup2 = 0; 
+                  widget.onItemSelectedGroup2(0);
+                }
               });
-              widget.onItemSelected(currentIndex); 
             },
             children: [
-              _buildNavBarPage(0, 5), 
-              if (widget.navBarTitles.length > 5)
-                _buildNavBarPage(5, widget.navBarTitles.length), 
+              BottomNavyBar(
+                backgroundColor: Color(0xffF4F7FD),
+                selectedIndex: currentIndexGroup1 == -1 ? -1 : currentIndexGroup1,
+                onItemSelected: (index) {
+                  setState(() {
+                    currentIndexGroup1 = index;
+                    currentIndexGroup2 = -1;
+                  });
+                  widget.onItemSelectedGroup1(index);
+                },
+                items: List.generate(
+                  widget.navBarTitlesGroup1.length,
+                  (index) => _buildNavBarItem(
+                    index,
+                    widget.navBarTitlesGroup1[index],
+                    widget.activeIconsGroup1[index],
+                    widget.inactiveIconsGroup1[index],
+                    currentIndexGroup1 == index,
+                  ),
+                ),
+                iconSize: _iconSize,
+                containerHeight: _navBarHeight,
+                curve: Curves.ease,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              ),
+              BottomNavyBar(
+                backgroundColor: Color(0xffF4F7FD),
+                selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
+                onItemSelected: (index) {
+                  setState(() {
+                    currentIndexGroup2 = index;
+                    currentIndexGroup1 = -1;
+                  });
+                  widget.onItemSelectedGroup2(index);
+                },
+                items: List.generate(
+                  widget.navBarTitlesGroup2.length,
+                  (index) => _buildNavBarItem(
+                    index,
+                    widget.navBarTitlesGroup2[index],
+                    widget.activeIconsGroup2[index],
+                    widget.inactiveIconsGroup2[index],
+                    currentIndexGroup2 == index,
+                  ),
+                ),
+                iconSize: _iconSize,
+                containerHeight: _navBarHeight,
+                curve: Curves.ease,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              ),
             ],
           ),
         ),
       ],
     ),
-  );
-}
-
-Widget _buildNavBarPage(int startIndex, int endIndex) {
-  return BottomNavyBar(
-    backgroundColor: Color(0xffF4F7FD),
-    selectedIndex: currentIndex == -1 ? -1 : currentIndex % 5, 
-    onItemSelected: (index) {
-      setState(() {
-        currentIndex = startIndex + index;
-      });
-      widget.onItemSelected(startIndex + index);
-      _pageController.jumpToPage(currentIndex ~/ 5); 
-    },
-    items: List.generate(
-      endIndex - startIndex,
-      (index) => _buildNavBarItem(
-        startIndex + index,
-        widget.navBarTitles[startIndex + index],
-        widget.activeIcons[startIndex + index],
-        widget.inactiveIcons[startIndex + index],
-      ),
-    ),
-    iconSize: _iconSize,
-    containerHeight: _navBarHeight,
-    curve: Curves.ease,
-    mainAxisAlignment: MainAxisAlignment.spaceAround,
   );
 }
 }

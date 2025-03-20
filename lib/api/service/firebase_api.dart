@@ -140,48 +140,62 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'eventId', message);
         break;
+      
+      case 'orders':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 3;
+        await navigateToScreen(screenIndex, id, 'orders', message);
+        break;
       default:
         print('handleMessage: Неизвестный тип: $type');
     }
   }
 
-  Future<void> navigateToScreen(
-      int screenIndex, String id, String type, RemoteMessage message) async {
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('hasNewNotification', false);
-    });
-    navigatorKey.currentState?.pushReplacementNamed(
-      '/home',
-      arguments: {'id': id, 'screenIndex': screenIndex},
-    );
+Future<void> navigateToScreen(
+    int screenIndex, String id, String type, RemoteMessage message) async {
+  SharedPreferences.getInstance().then((prefs) {
+    prefs.setBool('hasNewNotification', false);
+  });
 
-    switch (type) {
-      case 'message':
-        await navigateToChatScreen(id, message);
-        break;
-
-      case 'task':
-        await navigateToTaskScreen(id, message);
-        break;
-
-      case 'lead':
-        await navigateToLeadScreen(id, message);
-        break;
-      case 'myTask':
-        await navigateToMyTaskScreen(id, message);
-        break;
-      case 'eventId':
-        await navigateToMyTaskScreen(id, message);
-        break;
-
-      case 'dealDeadLineNotification':
-        await navigateToDealScreen(id, message);
-        break;
-
-      default:
-        print('Не удалось перейти на экран: $type');
-    }
+  int group = 1; // По умолчанию группа 1
+  if (type == 'message' || type == 'task' || type == 'lead' || type == 'dealDeadLineNotification') {
+    group = 1;
+  } else {
+    group = 2;
   }
+
+  navigatorKey.currentState?.pushReplacementNamed(
+    '/home',
+    arguments: {'id': id, 'screenIndex': screenIndex, 'group': group},
+  );
+
+  switch (type) {
+    case 'message':
+      await navigateToChatScreen(id, message);
+      break;
+
+    case 'task':
+      await navigateToTaskScreen(id, message);
+      break;
+
+    case 'lead':
+      await navigateToLeadScreen(id, message);
+      break;
+    case 'myTask':
+      await navigateToMyTaskScreen(id, message);
+      break;
+    case 'eventId':
+      await navigateToMyTaskScreen(id, message);
+      break;
+
+    case 'dealDeadLineNotification':
+      await navigateToDealScreen(id, message);
+      break;
+
+    default:
+      print('Не удалось перейти на экран: $type');
+  }
+}
 
   Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
     final chatId = int.tryParse(id) ?? 0;

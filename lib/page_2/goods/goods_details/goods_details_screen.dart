@@ -38,18 +38,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _updateDetails();
   }
 
   void _updateDetails() {
     details = [
-      {'label': 'Название:', 'value': widget.goodsName},
-      {'label': 'Описание:', 'value': widget.goodsDescription},
-      {'label': 'Цена:', 'value': widget.goodsPrice.toString()},
-      {'label': 'Скидка:', 'value': widget.discountGoodsPrice.toString()},
-      {'label': 'Количество:', 'value': widget.stockQuantity.toString()},
-      {'label': 'Категория:', 'value': widget.selectedCategory.toString()},
-      {'label': 'Статус:', 'value': widget.isActive ? 'Активно' : 'Неактивно'},
+      {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': widget.goodsName},
+      {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': widget.goodsDescription},
+      {'label': AppLocalizations.of(context)!.translate('goods_price_details'), 'value': widget.goodsPrice.toString()},
+      {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
+      {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
+      {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
+      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? 'Активно' : 'Неактивно'},
     ];
   }
 
@@ -58,7 +63,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     return Scaffold(
       appBar: _buildAppBar(
         context,
-        AppLocalizations.of(context)!.translate('Просмотр товара'),
+        AppLocalizations.of(context)!.translate('view_goods'),
       ),
       backgroundColor: Colors.white,
       body: Padding(
@@ -223,6 +228,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
+
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -232,14 +238,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: label == 'Описание:'
-                  ? GestureDetector(
-                      onTap: () {
-                        _showFullTextDialog( 'Описание', value );
-                      },
-                      child: _buildValue(value, label, maxLines: 2),
-                    )
-                  : _buildValue(value, label, maxLines: 2),
+              child: label ==  AppLocalizations.of(context)!.translate('description_details') ? GestureDetector(
+                onTap: () {
+                  _showFullTextDialog(  AppLocalizations.of(context)!.translate('description_details'), value );
+                },
+                child: _buildValue(value, label,maxLines: 2),
+              )
+              : _buildValue(value, label,maxLines: 2)
             ),
           ],
         );
@@ -268,7 +273,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
-        decoration: label == 'Описание:' ? TextDecoration.underline : TextDecoration.none,
+        decoration: label ==  AppLocalizations.of(context)!.translate('description_details') ? TextDecoration.underline : TextDecoration.none,
       ),
       maxLines: maxLines,
       overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
-import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_orders.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
 
 import 'package:crm_task_manager/models/user_byId_model..dart';
 

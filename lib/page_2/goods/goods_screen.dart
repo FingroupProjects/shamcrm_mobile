@@ -20,8 +20,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     {
       'id': 1,
       'name': 'Смартфон XYZ Pro',
-      'description':
-          'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
+      'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
       'category': 'Электроника',
       'price': 799.99,
       'discount': 15,
@@ -35,8 +34,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     {
       'id': 2,
       'name': 'Стиральная машина Модель A100',
-      'description':
-          'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
+      'description': 'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
       'category': 'Бытовая техника',
       'price': 450.00,
       'discount': 10,
@@ -47,13 +45,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
     {
       'id': 3,
       'name': 'Органический хлеб из цельного зерна',
-      'description':
-          'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
+      'description': 'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
       'category': 'Продукты питания',
       'price': 3.50,
       'discount': 5,
       'stockQuantity': 2000,
       'imagePaths': [
+        'assets/images/goods_photo.jpg',
+        'assets/images/goods_photo.jpg',
         'assets/images/goods_photo.jpg',
         'assets/images/goods_photo1.jpg',
         'assets/images/goods_photo2.jpg'
@@ -63,8 +62,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     {
       'id': 4,
       'name': 'Смартфон XYZ Pro',
-      'description':
-          'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
+      'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
       'category': 'Электроника',
       'price': 799.99,
       'discount': 15,
@@ -97,7 +95,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : localizations!.translate('Товары'),
+              : localizations!.translate('appbar_goods'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
