@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class SubCategoryDropdownWidget extends StatefulWidget {
@@ -38,7 +39,7 @@ void initState() {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Подкатегория',
+          AppLocalizations.of(context)!.translate('list_subcategories'), 
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -50,7 +51,7 @@ void initState() {
         CustomDropdown<String>.search(
           closeDropDownOnClearFilterSearch: true,
           items: subCategories,
-          searchHintText: 'Поиск',
+          searchHintText: AppLocalizations.of(context)!.translate('search'), 
           overlayHeight: 300,
           enabled: true,
           decoration: CustomDropdownDecoration(
@@ -73,7 +74,7 @@ void initState() {
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
-            'Выберите подкатегорию',
+          AppLocalizations.of(context)!.translate('list_select_subcategories'), 
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

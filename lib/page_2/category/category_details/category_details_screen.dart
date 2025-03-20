@@ -28,14 +28,20 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _updateDetails();
   }
 
   void _updateDetails() {
     details = [
-      {'label': 'Название:', 'value': widget.categoryName},
-      {'label': 'Подкатегория:', 'value': widget.subCategoryName},
-      {'label': 'Описание:', 'value': widget.categoryDescription},
+      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': widget.categoryName},
+      {'label': AppLocalizations.of(context)!.translate('subcategories_details'), 'value': widget.subCategoryName},
+      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': widget.categoryDescription},
     ];
   }
 
@@ -44,7 +50,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     return Scaffold(
         appBar: _buildAppBar(
           context,
-          AppLocalizations.of(context)!.translate('Просмотр категории'),
+          AppLocalizations.of(context)!.translate('view_category'),
         ),
         backgroundColor: Colors.white,
         body: Padding(
@@ -161,9 +167,9 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: label == 'Описание:' ? GestureDetector(
+              child: label ==  AppLocalizations.of(context)!.translate('description_details') ? GestureDetector(
                 onTap: () {
-                  _showFullTextDialog( 'Описание', value );
+                  _showFullTextDialog(  AppLocalizations.of(context)!.translate('description_details'), value );
                 },
                 child: _buildValue(value, label,maxLines: 2),
               )
@@ -196,7 +202,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
-        decoration: label == 'Описание:' ? TextDecoration.underline : TextDecoration.none,
+        decoration: label ==  AppLocalizations.of(context)!.translate('description_details') ? TextDecoration.underline : TextDecoration.none,
       ),
       maxLines: maxLines,
       overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,

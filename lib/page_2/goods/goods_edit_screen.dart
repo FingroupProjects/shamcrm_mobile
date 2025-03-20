@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:reorderables/reorderables.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Map<String, dynamic> goods;
@@ -51,7 +52,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('Редактировать товар'),
+          AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -79,37 +80,37 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               children: [
                 CustomTextField(
                   controller: goodsNameController,
-                  hintText: 'Введите название товара',
-                  label: 'Название товара',
-                  validator: (value) => value == null || value.isEmpty ? 'Поле обязательно' : null,
+                  hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                  label: AppLocalizations.of(context)!.translate('goods_name'),
+                  validator: (value) => value == null || value.isEmpty ? AppLocalizations.of(context)!.translate('field_required') : null,
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: goodsDescriptionController,
-                  hintText: 'Введите описание товара',
-                  label: 'Описание товара',
+                  hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                  label: AppLocalizations.of(context)!.translate('goods_description'),
                   maxLines: 5,
                   keyboardType: TextInputType.multiline,
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: priceController,
-                  hintText: 'Введите основную цену',
-                  label: 'Основная цена',
+                  hintText: AppLocalizations.of(context)!.translate('enter_goods_price'),
+                  label: AppLocalizations.of(context)!.translate('goods_price'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: discountPriceController,
-                  hintText: 'Введите скидочную цену',
-                  label: 'Скидочная цена',
+                  hintText: AppLocalizations.of(context)!.translate('enter_discount_price'),
+                  label: AppLocalizations.of(context)!.translate('discount_price'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: stockQuantityController,
-                  hintText: 'Введите количество в наличии',
-                  label: 'Количество в наличии',
+                  hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
+                  label: AppLocalizations.of(context)!.translate('stock_quantity'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
@@ -123,97 +124,113 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 ),
                 const SizedBox(height: 12),
                 GestureDetector(
-                  onTap: _showImagePickerOptions,
-                  child: Container(
-                    width: double.infinity,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    ),
-                    child: _imagePaths.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.camera_alt,color: Color(0xff99A4BA), size: 40),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Нажмите для загрузки фото',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff99A4BA),
-                                    ),
-                                  ),
-                                ],
+                onTap: _showImagePickerOptions,
+                child: Container(
+                  width: double.infinity,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF4F7FD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                  ),
+                  child: _imagePaths.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                AppLocalizations.of(context)!.translate('pick_image'),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff99A4BA),
+                                ),
                               ),
-                            )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Stack(
-                                children: [
-                                  PageView.builder(
-                                    itemCount: _imagePaths.length,
-                                    itemBuilder: (context, index) {
-                                      final path = _imagePaths[index];
-                                      return Stack(
-                                        children: [
-                                          Center(
-                                            child: path.startsWith('assets/')
-                                                ? Image.asset(path, fit: BoxFit.cover)
-                                                : Image.file(File(path), fit: BoxFit.cover),
-                                          ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: GestureDetector(
-                                              onTap: () => _removeImage(index),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withOpacity(0.5),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.close,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
+                            ],
+                          ),
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            children: [
+                              ReorderableWrap(
+                                spacing: 20,
+                                runSpacing: 10,
+                                padding: const EdgeInsets.all(8),
+                                children: _imagePaths.map((imagePath) {
+                                  return Container(
+                                    key: ValueKey(imagePath), 
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: DecorationImage(
+                                        image: imagePath.startsWith('assets/')
+                                            ? AssetImage(imagePath) as ImageProvider
+                                            : FileImage(File(imagePath)),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: GestureDetector(
+                                            onTap: () => _removeImage(imagePath),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.5),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                Icons.close,
+                                                color: Colors.white,
+                                                size: 16,
                                               ),
                                             ),
                                           ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                Positioned(
-                                  top: 8,
-                                  left: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ],
                                     ),
-                                    child: Text(
-                                      '${_imagePaths.length} фото',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Colors.white,
-                                      ),
+                                  );
+                                }).toList(),
+                                onReorder: (int oldIndex, int newIndex) {
+                                  setState(() {
+                                    final item = _imagePaths.removeAt(oldIndex);
+                                    _imagePaths.insert(newIndex, item);
+                                  });
+                                },
+                              ),
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                  ),
+                        ),
                 ),
+              ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -221,8 +238,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Статус',
+                          Text(
+                            AppLocalizations.of(context)!.translate('status_goods'), 
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -259,7 +276,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    isActive ? 'Активен' : 'Неактивен',
+                                    isActive ? AppLocalizations.of(context)!.translate('active') : AppLocalizations.of(context)!.translate('inactive'),
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
@@ -291,7 +308,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 buttonColor: const Color(0xffF4F7FD),
                 textColor: Colors.black,
                 onPressed: () => Navigator.pop(context),
@@ -300,7 +317,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: CustomButton(
-                buttonText: 'Сохранить',
+                buttonText: AppLocalizations.of(context)!.translate('save'),
                 buttonColor: const Color(0xff4759FF),
                 textColor: Colors.white,
                 onPressed: () {
@@ -329,7 +346,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
             children: [
               ListTile(
                 leading: Icon(Icons.camera_alt),
-                title: Text('Сделать фото',
+                title: Text(AppLocalizations.of(context)!.translate('make_photo'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -344,7 +361,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library),
-                title: Text('Выбрать из галереи',
+                title: Text(AppLocalizations.of(context)!.translate('select_from_gallery'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -357,7 +374,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   _pickMultipleImages();
                 },
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 0),
             ],
           ),
         );
@@ -383,11 +400,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
   }
 
-  void _removeImage(int index) {
-    setState(() {
-      _imagePaths.removeAt(index);
-    });
-  }
+void _removeImage(String imagePath) {
+  setState(() {
+    _imagePaths.remove(imagePath);
+  });
+}
 
   void _updategoods() {
     print('Название: ${goodsNameController.text}');

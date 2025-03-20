@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -110,7 +110,7 @@ final List<Goods> testGoods = [
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('Товары')),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('goods')),
         SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -136,7 +136,7 @@ final List<Goods> testGoods = [
           )
         else
           Container(
-            height: MediaQuery.of(context).size.height * 0.7,
+            height: MediaQuery.of(context).size.height * 0.65,
             child: ListView.builder(
               itemCount: goods.length,
               itemBuilder: (context, index) {
@@ -196,7 +196,7 @@ final List<Goods> testGoods = [
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Количество: ',
+                            text: AppLocalizations.of(context)!.translate('counts'),
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
@@ -216,7 +216,7 @@ final List<Goods> testGoods = [
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Цена: ',
+                            text: AppLocalizations.of(context)!.translate('price'),
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
@@ -332,18 +332,18 @@ class DeleteGoodsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Удалить сделку?'),
+      title: Text(AppLocalizations.of(context)!.translate('delete_category')),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Отмена'),
+          child: Text(AppLocalizations.of(context)!.translate('cancel')),
         ),
         TextButton(
           onPressed: () {
             // Логика удаления
             Navigator.pop(context);
           },
-          child: Text('Удалить'),
+          child: Text(AppLocalizations.of(context)!.translate('delete')),
         ),
       ],
     );
