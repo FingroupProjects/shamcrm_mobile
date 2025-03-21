@@ -36,25 +36,25 @@ class CategoryAddBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-   void _addCustomField(String fieldName, String fieldType) {
-  setState(() {
-    customFields.add(CustomField(fieldName: fieldName, fieldType: fieldType));
-  });
-}
 
+            void _addCustomField(String fieldName,) {
+              setState(() {
+                customFields.add(CustomField(fieldName: fieldName,));
+              });
+            }
 
-void _showAddCharacterCustomFieldDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AddCustomCharacterFieldDialog(
-        onAddField: (fieldName, fieldType) { 
-          _addCustomField(fieldName, fieldType); 
-        },
-      );
-    },
-  );
-}
+            void _showAddCharacterCustomFieldDialog() {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AddCustomCharacterFieldDialog(
+                    onAddField: (fieldName) { 
+                      _addCustomField(fieldName); 
+                    },
+                  );
+                },
+              );
+            }
             return FractionallySizedBox(
               heightFactor: 0.95,
               child: Padding(
@@ -62,7 +62,7 @@ void _showAddCharacterCustomFieldDialog() {
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                   left: 16,
                   right: 16,
-                  top: 20,
+                  top: 8,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
@@ -71,7 +71,7 @@ void _showAddCharacterCustomFieldDialog() {
                     Container(
                       width: 100,
                       height: 4,
-                      margin: const EdgeInsets.only(bottom: 7),
+                      margin: const EdgeInsets.only(bottom: 5),
                       decoration: BoxDecoration(
                         color: Color(0xfffDFE3EC),
                         borderRadius: BorderRadius.circular(1200),
@@ -124,97 +124,101 @@ void _showAddCharacterCustomFieldDialog() {
                               ),
                               const SizedBox(height: 16),
                               GestureDetector(
-                                onTap: () async {
-                                  await _pickImage();
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffF4F7FD),
-                                    borderRadius: BorderRadius.circular(12), 
-                                    border: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                                  ),
-                                  child: _image == null
-                                      ? Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.camera_alt,
-                                                color: Color(0xff99A4BA), 
-                                                size: 40, 
-                                              ),
-                                              const SizedBox(height: 8), 
-                                              Text(
-                                                AppLocalizations.of(context)!.translate('pick_image'),
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff99A4BA),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      : Stack(
+                              onTap: () async {
+                                await _pickImage();
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF4F7FD),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                                ),
+                                child: _image == null
+                                    ? Center(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(12),
-                                                image: DecorationImage(
-                                                  image: FileImage(_image!),
-                                                  fit: BoxFit.contain,
-                                                ),
-                                              ),
+                                            Icon(
+                                              Icons.camera_alt,
+                                              color: Color(0xff99A4BA),
+                                              size: 24,
                                             ),
-                                            Positioned(
-                                              top: 4,
-                                              right: 4,
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    _image = null; 
-                                                  });
-                                                },
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.5),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                    size: 16,
-                                                  ),
-                                                ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              AppLocalizations.of(context)!.translate('pick_image'),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff99A4BA),
                                               ),
                                             ),
                                           ],
                                         ),
-                                ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+                                                image: DecorationImage(
+                                                  image: FileImage(_image!),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              _image!.path.split('/').last,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 30),
+                                            IconButton(
+                                              icon: Icon(Icons.close, color: Color(0xff1E2E52)),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _image = null;
+                                                });
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                               ),
+                            ),
                               const SizedBox(height: 10),
                               CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                                buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
                                 buttonColor: Color(0xff1E2E52),
                                 textColor: Colors.white,
                                 onPressed: _showAddCharacterCustomFieldDialog,
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 5),
                               Column(
                               children: customFields.map((field) {
                                 return Card(
                                   color: const Color(0xffF4F7FD),
                                   margin: const EdgeInsets.symmetric(vertical: 4),
                                   child: ListTile(
-                                    title: Text(field.fieldName),
-                                    subtitle: Text(field.fieldType),
+                                    contentPadding: EdgeInsets.only(left: 16, right: 16),
+                                    title: Text(
+                                      field.fieldName,
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                                    ),
                                     trailing: IconButton(
-                                      icon: Icon(Icons.delete, color: Colors.red),
+                                      icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
                                       onPressed: () {
                                         setState(() {
                                           customFields.remove(field);
@@ -225,13 +229,12 @@ void _showAddCharacterCustomFieldDialog() {
                                 );
                               }).toList(),
                             ),
-                              const SizedBox(height: 20),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -263,7 +266,7 @@ void _showAddCharacterCustomFieldDialog() {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 0),
                   ],
                 ),
               ),
@@ -281,6 +284,5 @@ void _showAddCharacterCustomFieldDialog() {
 
 class CustomField {
   final String fieldName;
-  final String fieldType; // Добавлено поле для типа
-  CustomField({required this.fieldName, required this.fieldType});
+  CustomField({required this.fieldName});
 }

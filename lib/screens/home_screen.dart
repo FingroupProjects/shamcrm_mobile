@@ -130,12 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
     hasAvailableScreens = true;
 
     // Заказы
-
-    widgets.add(OrderScreen());
-    titleKeys.add('Заказы');
-    navBarTitleKeys.add('Заказы');
-    activeIcons.add('assets/icons/MyNavBar/order_off (2).png');
-    inactiveIcons.add('assets/icons/MyNavBar/order_on (2).png');
+    widgetsGroup2.add(OrderScreen());
+    titleKeysGroup2.add('Заказы');
+    navBarTitleKeysGroup2.add('Заказы');
+    activeIconsGroup2.add('assets/icons/MyNavBar/order_on.png');
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/order_off.png');
     hasAvailableScreens = true;
 
     if (mounted) {
