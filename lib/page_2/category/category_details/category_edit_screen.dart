@@ -1,16 +1,37 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CategoryEditBottomSheet {
-  static void show(BuildContext context, {required String initialName, required String initialDescription, required String? initialSubCategory}) {
+  static void show(BuildContext context, {
+    required String initialName,
+    required String initialDescription,
+    required String? initialSubCategory,
+
+    File? initialImage,
+    List<CustomField>? initialCustomFields,
+    
+  }) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController(text: initialName);
     final TextEditingController categoryDescriptionController = TextEditingController(text: initialDescription);
     
     String? subSelectedCategory = initialSubCategory;
+    File? _image = initialImage;
+    List<CustomField> customFields = initialCustomFields ?? [];
+
+    Future<void> _pickImage() async {
+      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -22,9 +43,29 @@ class CategoryEditBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+
+            void _addCustomField(String fieldName) {
+              setState(() {
+                customFields.add(CustomField(fieldName: fieldName));
+              });
+            }
+
+            void _showAddCharacterCustomFieldDialog() {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AddCustomCharacterFieldDialog(
+                    onAddField: (fieldName) { 
+                      _addCustomField(fieldName); 
+                    },
+                  );
+                },
+              );
+            }
+
             return FractionallySizedBox(
               heightFactor: 0.95,
-            child: Padding(
+              child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                   left: 16,
@@ -35,7 +76,7 @@ class CategoryEditBottomSheet {
                   mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                   Container(
+                    Container(
                       width: 100,
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 7),
@@ -89,13 +130,119 @@ class CategoryEditBottomSheet {
                                 maxLines: 5,
                                 keyboardType: TextInputType.multiline,
                               ),
-                              const SizedBox(height: 0),
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () async {
+                                  await _pickImage();
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xffF4F7FD),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                                  ),
+                                  child: _image == null
+                                      ? Center(
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.camera_alt,
+                                                color: Color(0xff99A4BA),
+                                                size: 24,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                AppLocalizations.of(context)!.translate('pick_image'),
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff99A4BA),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  image: DecorationImage(
+                                                    image: FileImage(_image!),
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                _image!.path.split('/').last,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff1E2E52),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 30),
+                                              IconButton(
+                                                icon: Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _image = null;
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              CustomButton(
+                                buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
+                                buttonColor: Color(0xff1E2E52),
+                                textColor: Colors.white,
+                                onPressed: _showAddCharacterCustomFieldDialog,
+                              ),
+                              const SizedBox(height: 5),
+                              Column(
+                                children: customFields.map((field) {
+                                  return Card(
+                                    color: const Color(0xffF4F7FD),
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.only(left: 16, right: 16),
+                                      title: Text(
+                                        field.fieldName,
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                                      ),
+                                      trailing: IconButton(
+                                        icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                        onPressed: () {
+                                          setState(() {
+                                            customFields.remove(field);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -117,7 +264,9 @@ class CategoryEditBottomSheet {
                                 _updateCategory(
                                   categoryNameController.text,
                                   categoryDescriptionController.text,
-                                  subSelectedCategory, 
+                                  subSelectedCategory,
+                                  _image,
+                                  customFields,
                                   context,
                                 );
                               }
@@ -126,7 +275,7 @@ class CategoryEditBottomSheet {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 0),
                   ],
                 ),
               ),
@@ -137,11 +286,18 @@ class CategoryEditBottomSheet {
     );
   }
 
-  static void _updateCategory(String name, String description, String? subcategory, BuildContext context) {
+  static void _updateCategory(String name, String description, String? subcategory, File? image, List<CustomField> customFields, BuildContext context) {
     final String? desc = description.isEmpty ? null : description;
     print('Обновленное название категории: $name');
     print('Обновленное описание категории: $desc');
     print('Обновленная подкатегория: $subcategory');
+    print('Обновленное изображение: ${image?.path}');
+    print('Обновленные пользовательские поля: ${customFields.map((field) => field.fieldName).toList()}');
     Navigator.pop(context);
   }
+}
+
+class CustomField {
+  final String fieldName;
+  CustomField({required this.fieldName});
 }
