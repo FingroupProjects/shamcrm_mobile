@@ -23,13 +23,13 @@ class CategoryEditBottomSheet {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return FractionallySizedBox(
-              heightFactor: 0.7,
-              child: Padding(
+              heightFactor: 0.95,
+            child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                   left: 16,
                   right: 16,
-                  top: 20,
+                  top: 8,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
