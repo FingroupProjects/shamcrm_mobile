@@ -10,12 +10,15 @@ class CategoryDetailsScreen extends StatefulWidget {
   final String categoryName;
   final String subCategoryName;
   final String categoryDescription;
+  final List<Map<String, dynamic>> characterCustomFields;
+
 
   CategoryDetailsScreen({
     required this.categoryId,
     required this.categoryName,
     required this.subCategoryName,
     required this.categoryDescription,
+    required this.characterCustomFields,
   });
 
   @override
@@ -117,6 +120,9 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                   initialName: widget.categoryName,
                   initialDescription: widget.categoryDescription, 
                   initialSubCategory: widget.subCategoryName,
+                  initialCustomFields: widget.characterCustomFields.map((field) {
+                     return CustomField(fieldName: field['fieldName']);
+                   }).toList(),
                 );
               },
             ),

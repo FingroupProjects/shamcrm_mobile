@@ -9,6 +9,7 @@ class CategoryCard extends StatefulWidget {
   final String categoryName;
   final String subCategoryName;
   final String categoryDescription;
+  final List<Map<String, dynamic>> characterCustomFields;
 
   CategoryCard({
     Key? key,
@@ -16,6 +17,7 @@ class CategoryCard extends StatefulWidget {
     required this.categoryName,
     required this.subCategoryName,
     required this.categoryDescription,
+    required this.characterCustomFields,
   }) : super(key: key);
 
   @override
@@ -44,6 +46,7 @@ class _CategoryCardState extends State<CategoryCard> {
               categoryName: widget.categoryName,
               subCategoryName: widget.subCategoryName,
               categoryDescription: widget.categoryDescription,
+              characterCustomFields: widget.characterCustomFields,
             ),
           ),
         );
