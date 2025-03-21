@@ -851,12 +851,14 @@
     "delete_goods": "Mahsulotni o‘chirish",
     "confrim_delete_goods": "Mahsulotni o‘chirishni tasdiqlang!",
     "price": "Narx: ",
-    "category_card": "Kategoriya: "
-
-
-
-
-
+    "category_card": "Kategoriya: ",
+    "delivery_method": "Yetkazib berish usuli",
+    "payment_method": "To'lov usuli",
+    "select_delivery_method": "Yetkazib berish usulini tanlang",
+    "select_payment_method": "To'lov usulini tanlang",
+    "status_method": "Holat",
+    "select_status_method": "Holatni tanlang",
+    "select_all": "Hammasini tanlash"
   }
 
 
