@@ -12,7 +12,7 @@ class DeleteGoodsDialog extends StatelessWidget {
       backgroundColor: Colors.white,
       title: Center(
         child: Text(
-          AppLocalizations.of(context)!.translate('Удалить товар'),
+          AppLocalizations.of(context)!.translate('delete_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -22,7 +22,7 @@ class DeleteGoodsDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        AppLocalizations.of(context)!.translate('Подтвердите удаление товара!'),
+        AppLocalizations.of(context)!.translate('confrim_delete_goods'),
         style: const TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',

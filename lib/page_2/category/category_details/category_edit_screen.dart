@@ -23,13 +23,13 @@ class CategoryEditBottomSheet {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return FractionallySizedBox(
-              heightFactor: 0.7,
-              child: Padding(
+              heightFactor: 0.95,
+            child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                   left: 16,
                   right: 16,
-                  top: 20,
+                  top: 8,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
@@ -45,7 +45,7 @@ class CategoryEditBottomSheet {
                       ),
                     ),
                     Text(
-                      AppLocalizations.of(context)!.translate('Редактировать категорию'),
+                      AppLocalizations.of(context)!.translate('edit_category'),
                       style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -63,8 +63,8 @@ class CategoryEditBottomSheet {
                             children: [
                               CustomTextField(
                                 controller: categoryNameController,
-                                hintText: AppLocalizations.of(context)!.translate('Введите название'),
-                                label: AppLocalizations.of(context)!.translate('Название'),
+                                hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
+                                label: AppLocalizations.of(context)!.translate('category_name'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return AppLocalizations.of(context)!.translate('field_required');

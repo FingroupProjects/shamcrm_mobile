@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class CategoryDropdownWidget extends StatefulWidget {
@@ -42,7 +43,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Категория',
+          AppLocalizations.of(context)!.translate('category'), 
           style: categoryTextStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 4),
@@ -58,7 +59,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
           child: CustomDropdown<String>.search(
             closeDropDownOnClearFilterSearch: true,
             items: categories,
-            searchHintText: 'Поиск',
+            searchHintText: AppLocalizations.of(context)!.translate('search'), 
             overlayHeight: 300,
             decoration: CustomDropdownDecoration(
               closedFillColor: Colors.white,
@@ -82,12 +83,12 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             },
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
-                selectedItem ?? 'Выберите категорию',
+                selectedItem ?? AppLocalizations.of(context)!.translate('select_category'), 
                 style: categoryTextStyle,
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
-              'Выберите категорию',
+               AppLocalizations.of(context)!.translate('select_category'), 
               style: categoryTextStyle.copyWith(fontSize: 14),
             ),
             excludeSelected: false,

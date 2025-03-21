@@ -63,7 +63,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          AppLocalizations.of(context)!.translate('all_notifications_deleted_successfully'),
+          AppLocalizations.of(context)!
+              .translate('all_notifications_deleted_successfully'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
@@ -93,8 +94,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title:  Text(
-           AppLocalizations.of(context)!.translate('notifications'),
+        title: Text(
+          AppLocalizations.of(context)!.translate('notifications'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -154,8 +155,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               //     duration: Duration(seconds: 3),
               //   ),
               // );
-            }
-            );
+            });
           } else if (state is NotificationDataLoaded) {
             final notifications = state.notifications;
             return RefreshIndicator(
@@ -168,7 +168,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4),
-                        Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
+                        Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('no_notifications_yet'))),
                       ],
                     )
                   : ListView.builder(
@@ -215,7 +217,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             setState(() {
                               notifications.removeAt(index);
                             });
-                            notificationBloc.add(DeleteNotification(notification.id));
+                            notificationBloc
+                                .add(DeleteNotification(notification.id));
                           },
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -231,68 +234,102 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 ),
                               ],
                             ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(
-                                Icons.notifications,
-                                color: Color(0xff1E2E52),
-                                size: 24,
-                              ),
-                              title: Text(
-                                notification.type == 'message'
-                                    ? AppLocalizations.of(context)!.translate('new_message')
-                                    : notification.type == 'dealDeadLineNotification'
-                                        ? AppLocalizations.of(context)!.translate('deal_reminder')
-                                        : notification.type == 'notice'
-                                            ? AppLocalizations.of(context)!.translate('note_reminder')
-                                            : notification.type == 'task'
-                                                ? AppLocalizations.of(context)!.translate('task_new')
-                                                : notification.type ==  'taskFinished'
-                                                    ? AppLocalizations.of(context)!.translate('task_closed')
-                                                    : notification.type =='taskOutDated'
-                                                        ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                        : notification.type == 'lead'
-                                                          ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                          : notification.type == 'updateLeadStatus'
-                                                            ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
-                                                            : notification.type,
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52)),
-                              ),
-                              subtitle: Row(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0, vertical: 4.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      notification.message,
-                                      maxLines: 2,
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color(0xff5A6B87)),
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
-                                    ),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.notifications,
+                                        color: Color(0xff1E2E52),
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          notification.type == 'message'
+                                              ? AppLocalizations.of(context)!
+                                                  .translate('new_message')
+                                              : notification.type ==
+                                                      'dealDeadLineNotification'
+                                                  ? AppLocalizations.of(context)!
+                                                      .translate(
+                                                          'deal_reminder')
+                                                  : notification.type ==
+                                                          'notice'
+                                                      ? AppLocalizations.of(context)!
+                                                          .translate(
+                                                              'note_reminder')
+                                                      : notification.type ==
+                                                              'task'
+                                                          ? AppLocalizations.of(context)!
+                                                              .translate(
+                                                                  'task_new')
+                                                          : notification.type ==
+                                                                  'taskFinished'
+                                                              ? AppLocalizations.of(
+                                                                      context)!
+                                                                  .translate(
+                                                                      'task_closed')
+                                                              : notification.type ==
+                                                                      'taskOutDated'
+                                                                  ? AppLocalizations.of(
+                                                                          context)!
+                                                                      .translate(
+                                                                          'task_deadline_reminder')
+                                                                  : notification.type ==
+                                                                          'lead'
+                                                                      ? AppLocalizations.of(context)!
+                                                                          .translate('task_deadline_reminder')
+                                                                      : notification.type == 'updateLeadStatus'
+                                                                          ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
+                                                                          : notification.type,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    DateFormat('dd.MM.yyyy HH:mm').format(
-                                        notification.createdAt
-                                            .add(Duration(hours: 5))),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment
+                                        .end, // Aligns children to the bottom
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          notification.message,
+                                          maxLines: 2,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                            color: Color(0xff5A6B87),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        DateFormat('dd.MM.yyyy HH:mm').format(
+                                          notification.createdAt
+                                              .add(Duration(hours: 5)),
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Gilroy',
+                                          color: Color(0xff1E2E52),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              onTap: () {
-                                navigateToScreen(notification.type,
-                                    notification.id, notification.modelId);
-                              },
                             ),
                           ),
                         );
@@ -387,21 +424,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         } else if (getChatById.type == "corporate") {
           final getChatById = await ApiService().getChatById(chatId);
           String? chatName;
-            final prefs = await SharedPreferences.getInstance();
-            String userId = prefs.getString('userID').toString();
-            if (getChatById.group != null) {
-              chatName = getChatById.group!.name;
+          final prefs = await SharedPreferences.getInstance();
+          String userId = prefs.getString('userID').toString();
+          if (getChatById.group != null) {
+            chatName = getChatById.group!.name;
+          } else {
+            int userIndex = getChatById.chatUsers
+                .indexWhere((user) => user.participant.id.toString() == userId);
+            if (userIndex != -1) {
+              int otherUserIndex = (userIndex == 0) ? 1 : 0;
+              chatName =
+                  '${getChatById.chatUsers[otherUserIndex].participant.name}';
             } else {
-              int userIndex = getChatById.chatUsers.indexWhere(
-                  (user) => user.participant.id.toString() == userId);
-              if (userIndex != -1) {
-                int otherUserIndex = (userIndex == 0) ? 1 : 0;
-                chatName =
-                    '${getChatById.chatUsers[otherUserIndex].participant.name}';
-              } else {
-                chatName = getChatById.chatUsers[0].participant.name;
-              }
+              chatName = getChatById.chatUsers[0].participant.name;
             }
+          }
           navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => BlocProvider(
@@ -506,7 +543,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
-    } else if (type == 'lead' || type =='updateLeadStatus') {
+    } else if (type == 'lead' || type == 'updateLeadStatus') {
       List<LeadCustomField> defaultCustomFields = [
         LeadCustomField(id: 1, key: '', value: ''),
         LeadCustomField(id: 2, key: '', value: ''),

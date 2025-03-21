@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_details_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -78,7 +79,7 @@ class _CategoryCardState extends State<CategoryCard> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Подкатегория: ',
+                              text: AppLocalizations.of(context)!.translate('subcategory_card'), 
                               style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
@@ -101,15 +102,14 @@ class _CategoryCardState extends State<CategoryCard> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: Color(0xFFE9EDF5),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        widget.categoryId.toString(),
+                      child: Text("${AppLocalizations.of(context)!.translate('goods_count')}${widget.categoryId.toString()}",
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                           color: Color(0xff99A4BA),

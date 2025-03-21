@@ -12,7 +12,7 @@ class DeleteCategoryDialog extends StatelessWidget {
       backgroundColor: Colors.white,
       title: Center(
         child: Text(
-          AppLocalizations.of(context)!.translate('Удалить категорию'),
+          AppLocalizations.of(context)!.translate('delete_category_title'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -22,7 +22,7 @@ class DeleteCategoryDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        AppLocalizations.of(context)!.translate('Подтвердите удаление категории!'),
+        AppLocalizations.of(context)!.translate('confrim_delete_category'),
         style: const TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',

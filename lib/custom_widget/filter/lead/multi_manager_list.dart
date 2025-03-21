@@ -25,6 +25,14 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   bool isSystemSelected = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.selectedManagers != null) {
+      isSystemSelected = widget.selectedManagers!.contains("0");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -37,30 +45,25 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
               return Text(state.message);
             }
             if (state is GetAllManagerSuccess) {
-              // Создаем системного менеджера
               final systemManager = ManagerData(
-                id: 0, 
-                name: AppLocalizations.of(context)!.translate('system'), 
+                id: 0,
+                name: AppLocalizations.of(context)!.translate('system_text'),
                 lastname: ""
               );
               
-              // Добавляем "Система" с id = 0 в начало списка менеджеров
               managersList = [
                 systemManager,
                 ...state.dataManager.result ?? []
               ];
               
-              if (widget.selectedManagers != null && managersList.isNotEmpty) {
-                // Проверяем, есть ли "0" в списке выбранных ID
-                if (widget.selectedManagers!.contains("0")) {
-                  isSystemSelected = true;
-                }
-                
-                // Получаем выбранных менеджеров из списка
+              if (widget.selectedManagers != null && widget.selectedManagers!.isNotEmpty) {
                 selectedManagersData = managersList
-                    .where((manager) =>
-                        widget.selectedManagers!.contains(manager.id.toString()))
+                    .where((manager) => widget.selectedManagers!.contains(manager.id.toString()))
                     .toList();
+                isSystemSelected = widget.selectedManagers!.contains("0");
+              } else {
+                selectedManagersData = [];
+                isSystemSelected = false;
               }
               
               return Column(
@@ -80,8 +83,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     child: CustomDropdown<ManagerData>.multiSelectSearch(
                       items: managersList,
                       initialItems: selectedManagersData,
-                      searchHintText:
-                          AppLocalizations.of(context)!.translate('search'),
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -97,11 +99,9 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
-                        // Особая обработка для системного менеджера
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
                         if (item.id == 0) {
-                          isSelected = isSelected || isSystemSelected;
+                          isSelected = isSystemSelected;
                         }
                         
                         return ListTile(
@@ -130,18 +130,19 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(item.id == 0 ? item.name : '${item.name} ${item.lastname}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    )),
+                                Text(
+                                  item.id == 0 ? item.name : '${item.name} ${item.lastname}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           onTap: () {
-                            // Особая обработка клика по системному менеджеру
                             if (item.id == 0) {
                               setState(() {
                                 isSystemSelected = !isSystemSelected;
@@ -152,7 +153,6 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                 } else {
                                   selectedManagersData.removeWhere((m) => m.id == 0);
                                 }
-                                // Обновляем список выбранных менеджеров
                                 widget.onSelectManagers(selectedManagersData);
                               });
                             } else {
@@ -164,11 +164,9 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       },
                       headerListBuilder: (context, hint, enabled) {
                         int selectedManagersCount = selectedManagersData.length;
-
                         return Text(
                           selectedManagersCount == 0
-                              ? AppLocalizations.of(context)!
-                                  .translate('select_manager')
+                              ? AppLocalizations.of(context)!.translate('select_manager')
                               : '${AppLocalizations.of(context)!.translate('select_manager')} $selectedManagersCount',
                           style: TextStyle(
                             fontSize: 16,
@@ -179,23 +177,20 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                          AppLocalizations.of(context)!
-                              .translate('select_manager'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          )),
+                        AppLocalizations.of(context)!.translate('select_manager'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
                       onListChanged: (values) {
-                        // Убедимся, что системный менеджер сохраняется, если был выбран
-                        if (isSystemSelected && !values.any((m) => m.id == 0)) {
-                          values.add(systemManager);
-                        }
-                        widget.onSelectManagers(values);
                         setState(() {
                           selectedManagersData = values;
+                          isSystemSelected = values.any((m) => m.id == 0);
                         });
+                        widget.onSelectManagers(values);
                       },
                     ),
                   ),

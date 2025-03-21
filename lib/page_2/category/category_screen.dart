@@ -65,7 +65,7 @@ final List<Map<String, dynamic>> testCategories = [
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : localizations!.translate('Категории'),
+              : localizations!.translate('appbar_categories'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
