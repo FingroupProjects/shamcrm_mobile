@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -26,6 +27,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
+
+    List<ProductCharacteristic>? selectedCharacteristics; 
+  Map<String, TextEditingController> characteristicControllers = {}; 
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +110,60 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     onSelectCategory: (category) {
                       setState(() {
                         selectedCategory = category;
+                        selectedCharacteristics = categoryCharacteristics[category]; 
+                        characteristicControllers.clear(); 
+                        if (selectedCharacteristics != null) {
+                          for (var characteristic in selectedCharacteristics!) {
+                            characteristicControllers[characteristic.name] = TextEditingController();
+                          }
+                        }
                       });
                     },
                   ),
-                  const SizedBox(height: 12),
+                 const SizedBox(height: 8),
+                if (selectedCharacteristics != null && selectedCharacteristics!.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                       Divider(color: Color(0xff1E2E52)),
+                      Center(
+                        child: Text(
+                          'Характеристика товара',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                      Divider( color: Color(0xff1E2E52)),
+                      ...selectedCharacteristics!.map((characteristic) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            Text(
+                              characteristic.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                              ),
+                            const SizedBox(height: 4),
+                            CustomCharacteristicField(
+                              controller: characteristicControllers[characteristic.name]!,
+                              hintText: characteristic.hintText,
+                              keyboardType: characteristic.keyboardType,
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   GestureDetector(
                     onTap: _showImagePickerOptions,
                     child: Container(
@@ -389,14 +443,6 @@ void _removeImage(String imagePath) {
 }
 
   void _createProduct() {
-    print('Название: ${goodsNameController.text}');
-    print('Описание: ${goodsDescriptionController.text}');
-    print('Цена: ${priceController.text}');
-    print('Скидочная цена: ${discountPriceController.text}');
-    print('Количество: ${stockQuantityController.text}');
-    print('Категория: $selectedCategory');
-    print('Статус: ${isActive ? "Активен" : "Неактивен"}');
-    // print('Фото товара: $_imagePath');
     
     Navigator.pop(context);
   }

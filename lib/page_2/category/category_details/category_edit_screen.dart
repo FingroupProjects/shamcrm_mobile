@@ -173,8 +173,8 @@ class CategoryEditBottomSheet {
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Container(
-                                                width: 40,
-                                                height: 40,
+                                                width: 54,
+                                                height: 54,
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(8),
                                                   image: DecorationImage(
