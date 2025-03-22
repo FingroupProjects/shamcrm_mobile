@@ -91,17 +91,33 @@ class FirebaseApi {
     bool hasLeadRead = await _apiService.hasPermission('lead.read');
     bool hasTaskRead = await _apiService.hasPermission('task.read');
 
-        if (hasDashboard && hasLeadRead && hasDealRead && hasTaskRead){
-          screenIndex = 4;
-          await navigateToScreen(screenIndex, id, 'message', message);
-        } else if (hasDashboard && hasTaskRead && hasLeadRead || hasDealRead) {
-          screenIndex = 4;
-          await navigateToScreen(screenIndex, id, 'message', message);
-        } else {
-          screenIndex = 2;
-          await navigateToScreen(screenIndex, id, 'message', message);
-        }
-        break;
+ int permissionCount = 0;
+    if (hasDealRead) permissionCount++;
+    if (hasDashboard) permissionCount++;
+    if (hasLeadRead) permissionCount++;
+    if (hasTaskRead) permissionCount++;
+
+    if (permissionCount == 0) {
+      screenIndex = 0;
+      await navigateToScreen(screenIndex, id, 'message', message);
+    }
+    else if (permissionCount == 2) {
+      screenIndex = 2; 
+      await navigateToScreen(screenIndex, id, 'message', message);
+    }
+    else if (permissionCount == 3) {
+      screenIndex = 3; 
+      await navigateToScreen(screenIndex, id, 'message', message);
+    }
+    else if (permissionCount == 4) {
+      screenIndex = 4;
+      await navigateToScreen(screenIndex, id, 'message', message);
+    }
+    else {
+      screenIndex = 1;
+      await navigateToScreen(screenIndex, id, 'message', message);
+    }
+    break;
 
       case 'task':
       case 'taskFinished':
@@ -141,11 +157,11 @@ class FirebaseApi {
         await navigateToScreen(screenIndex, id, 'eventId', message);
         break;
       
-      case 'orders':
-        print('Переход на экран лида с ID: $id');
-        screenIndex = 3;
-        await navigateToScreen(screenIndex, id, 'orders', message);
-        break;
+      // case 'orders':
+      //   print('Переход на экран лида с ID: $id');
+      //   screenIndex = 3;
+      //   await navigateToScreen(screenIndex, id, 'orders', message);
+      //   break;
       default:
         print('handleMessage: Неизвестный тип: $type');
     }
@@ -382,3 +398,4 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Заголовок: ${message.notification?.title}');
   print('Сообщение: ${message.notification?.body}');
 }
+

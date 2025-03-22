@@ -359,13 +359,6 @@ Future<void> _fetchTutorialProgress() async {
       _canEditTask = canEdit;
       _canDeleteTask = canDelete;
     });
-
-
-  // WidgetsBinding.instance.addPostFrameCallback((_) {
-  //   _initTutorialTargets(); 
-  // });
-
-
   }
 
   // Обновление данных задачи
@@ -760,14 +753,14 @@ Widget build(BuildContext context) {
           }
   return AppBar(
     backgroundColor: Colors.white,
-    forceMaterialTransparency: true, // Добавлено
+    forceMaterialTransparency: true, 
     elevation: 0,
     centerTitle: false,
     leadingWidth: 40,
     leading: Padding(
       padding: const EdgeInsets.only(left: 0),
       child: Transform.translate(
-        offset: const Offset(0, -2),  // Добавлен правильный offset как в первом варианте
+        offset: const Offset(0, -2), 
         child: IconButton(
           icon: Image.asset(
             'assets/icons/arrow-left.png',
@@ -781,7 +774,7 @@ Widget build(BuildContext context) {
       ),
     ),
     title: Transform.translate(
-      offset: const Offset(-10, 0),  // Добавлен правильный offset как в первом варианте
+      offset: const Offset(-10, 0), 
       child: Text(
         title,
         style: const TextStyle(
@@ -796,6 +789,7 @@ Widget build(BuildContext context) {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+        if (_canEditTask)
           IconButton(
             key: keyTaskEdit,
             padding: EdgeInsets.zero,
