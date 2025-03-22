@@ -27,12 +27,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
-  bool _autoSelectionPerformed = false;
 
   @override
   void initState() {
     super.initState();
-    // Инициализируем список с "Системой"
+    // Инициализируем список с "Системой", но не выбираем ничего автоматически
     managersList = [
       ManagerData(
         id: -1,
@@ -40,8 +39,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
         lastname: "",
       ),
     ];
-    selectedManagerData =
-        managersList.first; // Устанавливаем "Систему" по умолчанию
+    // Не устанавливаем selectedManagerData по умолчанию
 
     print(
         'ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}');
@@ -61,35 +59,10 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
         setState(() {
           currentUserId = userId;
         });
-        // Вызываем автовыбор после загрузки ID асинхронно
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_autoSelectionPerformed) {
-            _autoSelectCurrentUserAsManager(managersList);
-          }
-        });
       }
       print('Current userID: $userId');
     } catch (e) {
       print('Error getting current user ID: $e');
-    }
-  }
-
-  void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
-    if (currentUserId == null ||
-        currentUserId!.isEmpty ||
-        _autoSelectionPerformed) {
-      return;
-    }
-
-    for (var manager in managers) {
-      if (manager.id.toString() == currentUserId) {
-        setState(() {
-          selectedManagerData = manager;
-          _autoSelectionPerformed = true;
-        });
-        widget.onSelectManager(manager);
-        break;
-      }
     }
   }
 
@@ -101,7 +74,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
           builder: (context, state) {
             // Обработка ошибок
             if (state is GetAllManagerError) {
-              // Показ ошибки через addPostFrameCallback - это правильно
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -127,11 +99,10 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               });
             }
 
-            // Обработка данных - НЕ МЕНЯЙТЕ состояние здесь
+            // Обработка данных
             List<ManagerData> currentManagersList = managersList;
             ManagerData? currentSelectedManagerData = selectedManagerData;
 
-            // Обновление списка менеджеров
             if (state is GetAllManagerSuccess) {
               currentManagersList = [
                 ManagerData(
@@ -142,33 +113,13 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                 ...?state.dataManager.result
               ];
 
-              // Вместо setState() просто обновляем локальную переменную
-              if (widget.selectedManager != null &&
-                  currentManagersList.isNotEmpty) {
-                try {
-                  currentSelectedManagerData = currentManagersList.firstWhere(
-                    (manager) =>
-                        manager.id.toString() == widget.selectedManager,
-                  );
-                } catch (e) {
-                  currentSelectedManagerData = currentManagersList[0];
-                }
-              } else if (currentSelectedManagerData == null ||
-                  !currentManagersList.contains(currentSelectedManagerData)) {
-                currentSelectedManagerData = currentManagersList[0];
-                // Вызов onSelectManager перенесем в отложенный колбэк
-              }
-
-              // Выносим обновление состояния после build
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   setState(() {
                     managersList = currentManagersList;
-                    selectedManagerData = currentSelectedManagerData;
-                    // Если managerId = 0, выбираем "Систему"
-                    if (widget.selectedManager == "0") {
-                      selectedManagerData = managersList[0]; // "Система"
-                    } else if (widget.selectedManager != null &&
+                    // Не устанавливаем selectedManagerData автоматически
+                    // Оставляем выбор только на основе widget.selectedManager, если он передан
+                    if (widget.selectedManager != null &&
                         managersList.isNotEmpty) {
                       try {
                         selectedManagerData = managersList.firstWhere(
@@ -176,25 +127,15 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                               manager.id.toString() == widget.selectedManager,
                         );
                       } catch (e) {
-                        selectedManagerData =
-                            managersList[0]; // По умолчанию "Система"
+                        selectedManagerData = null; // Ничего не выбрано
                       }
-                    } else if (selectedManagerData == null ||
-                        !managersList.contains(selectedManagerData)) {
-                      selectedManagerData = managersList[0];
-                      widget.onSelectManager(managersList[0]);
-                    }
-                    // Если это первая загрузка, и нет выбора, устанавливаем значение по умолчанию
-                    if (!_autoSelectionPerformed) {
-                      widget.onSelectManager(currentSelectedManagerData!);
-                      _autoSelectCurrentUserAsManager(currentManagersList);
                     }
                   });
                 }
               });
             }
 
-            // Отображаем UI на основе текущих данных
+            // Отображаем UI
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -243,27 +184,20 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     },
                     headerBuilder: (context, selectedItem, enabled) {
                       if (state is GetAllManagerLoading) {
-                        return Row(
-                          children: [
-                            SizedBox(),
-                            Text(
-                              AppLocalizations.of(context)!
-                                  .translate('select_manager'),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                          ],
+                        return Text(
+                          AppLocalizations.of(context)!
+                              .translate('select_manager'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
                         );
                       }
                       return Text(
-                        '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
-                                .trim()
-                                .isNotEmpty
-                            ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                        selectedItem != null
+                            ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
                             : AppLocalizations.of(context)!
                                 .translate('select_manager'),
                         style: TextStyle(
@@ -284,21 +218,13 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       ),
                     ),
                     excludeSelected: false,
-                    initialItem: currentManagersList.isNotEmpty &&
-                            currentSelectedManagerData != null &&
-                            currentManagersList
-                                .contains(currentSelectedManagerData)
-                        ? currentSelectedManagerData
-                        : currentManagersList.isNotEmpty
-                            ? currentManagersList[0]
-                            : null,
+                    initialItem: currentSelectedManagerData,
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectManager(value);
                         setState(() {
                           selectedManagerData = value;
                         });
-                        // FocusScope.of(context).unfocus();
                       }
                     },
                   ),

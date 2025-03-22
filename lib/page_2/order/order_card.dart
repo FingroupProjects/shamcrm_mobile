@@ -97,7 +97,7 @@ class _OrderCardState extends State<OrderCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(order: widget.order),
+            builder: (context) => OrderDetailsScreen(order: widget.order, categoryName: '',),
           ),
         );
       },

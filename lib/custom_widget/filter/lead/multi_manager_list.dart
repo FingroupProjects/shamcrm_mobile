@@ -166,8 +166,8 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         int selectedManagersCount = selectedManagersData.length;
                         return Text(
                           selectedManagersCount == 0
-                              ? AppLocalizations.of(context)!.translate('select_manager')
-                              : '${AppLocalizations.of(context)!.translate('select_manager')} $selectedManagersCount',
+                              ? AppLocalizations.of(context)!.translate('selected_manager')
+                              : '${AppLocalizations.of(context)!.translate('selected_manager')} $selectedManagersCount',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,

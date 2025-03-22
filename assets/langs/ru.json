@@ -875,7 +875,8 @@
       "confrim_delete_goods":"Подтвердите удаление товара!",
       "price":"Цена: ",
       "category_card":"Категория: ",
-      "select_all":"Выбрать всех"
+      "select_all":"Выбрать всех",
+      "selected_manager":"Выбрано менеджеров:"
 
 
 
