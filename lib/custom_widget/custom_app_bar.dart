@@ -236,13 +236,14 @@ class _CustomAppBarState extends State<CustomAppBar>
   late Animation<double> _blinkAnimation;
   bool _hasOverdueTasks = false;
 
-  bool _canReadNotice = true;
+  bool _canReadNotice = false;
   Color _iconColor = Colors.red;
   late Timer _timer;
 
   @override
   void initState() {
     super.initState();
+  _checkPermissions();
 
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
@@ -782,26 +783,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                     MaterialPageRoute(
                       builder: (context) => EventManagerFilterScreen(
                         onManagersSelected: widget.onManagersEventSelected,
-                        onStatusSelected: widget.onStatusEventSelected,
-                        onDateRangeSelected: widget.onDateRangeEventSelected,
-                        onStatusAndDateRangeSelected:
-                            widget.onStatusAndDateRangeEventSelected,
-                        onNoticeDateRangeSelected:
-                            widget.onNoticeDateRangeEventSelected,
-                        onNoticeStatusAndDateRangeSelected:
-                            widget.onNoticeStatusAndDateRangeEventSelected,
-                        onDateNoticeStatusAndDateRangeSelected:
-                            widget.onDateNoticeStatusAndDateRangeSelected,
-                        onDateNoticeAndDateRangeSelected:
-                            widget.onDateNoticeAndDateRangeSelected,
                         initialManagers: widget.initialManagersEvent,
                         initialStatuses: widget.initialManagerEventStatuses,
                         initialFromDate: widget.initialManagerEventFromDate,
                         initialToDate: widget.initialManagerEventToDate,
-                        initialNoticeFromDate:
-                            widget.initialNoticeManagerEventFromDate,
-                        initialNoticeToDate:
-                            widget.initialNoticeManagerEventToDate,
+                        initialNoticeFromDate: widget.initialNoticeManagerEventFromDate,
+                        initialNoticeToDate: widget.initialNoticeManagerEventToDate,
                         onResetFilters: widget.onEventResetFilters,
                       ),
                     ),

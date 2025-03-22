@@ -7,13 +7,6 @@ import 'package:flutter/material.dart';
 
 class EventManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
-  final Function(int?)? onStatusSelected;
-  final Function(DateTime?, DateTime?)? onDateRangeSelected;
-  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
-  final Function(DateTime?, DateTime?)? onNoticeDateRangeSelected;
-  final Function(int?, DateTime?, DateTime?)? onNoticeStatusAndDateRangeSelected;
-  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeStatusAndDateRangeSelected;
-  final Function(DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeAndDateRangeSelected;
   final List? initialManagers;
   final int? initialStatuses;
   final DateTime? initialFromDate;
@@ -25,13 +18,6 @@ class EventManagerFilterScreen extends StatefulWidget {
   EventManagerFilterScreen({
     Key? key,
     this.onManagersSelected,
-    this.onStatusSelected,
-    this.onDateRangeSelected,
-    this.onStatusAndDateRangeSelected,
-    this.onNoticeDateRangeSelected,
-    this.onNoticeStatusAndDateRangeSelected,
-    this.onDateNoticeStatusAndDateRangeSelected,
-    this.onDateNoticeAndDateRangeSelected,
     this.initialManagers,
     this.initialStatuses,
     this.initialFromDate,
@@ -144,52 +130,31 @@ void _selectNoticeDateRange() async {
           ),
           SizedBox(width: 10),
           TextButton(
-            onPressed: () async {
-              if (_selectedManagers.isNotEmpty) {
-                print('MANAGER');
-                widget.onManagersSelected?.call({
-                  'managers': _selectedManagers,
-                  'statuses': _selectedStatuses,
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                  'noticefromDate': _NoticefromDate,
-                  'noticetoDate': _NoticetoDate,
-                });
-              } else if (_selectedStatuses != null && _fromDate == null && _toDate == null && _NoticefromDate == null && _NoticetoDate == null) {
-                print('STATUS');
-          
-                widget.onStatusSelected?.call(_selectedStatuses);
-              } else if (_fromDate != null && _toDate != null && _selectedStatuses == null && _NoticefromDate == null && _NoticetoDate == null) {
-                print('DATE');
-          
-                widget.onDateRangeSelected?.call(_fromDate, _toDate);
+          onPressed: () async {
+            bool isAnyFilterSelected = 
+                _selectedManagers.isNotEmpty ||
+                _selectedStatuses != null ||
+                _fromDate != null ||
+                _toDate != null ||
+                _NoticefromDate != null ||
+                _NoticetoDate != null;
 
-              } else if (_NoticefromDate != null && _NoticetoDate != null && _selectedStatuses == null && _fromDate == null && _toDate == null) {
-                print('DATE NOTICE');
-          
-                widget.onNoticeDateRangeSelected?.call(_NoticefromDate, _NoticetoDate);
-              } else if (_fromDate != null && _toDate != null && _selectedStatuses != null && _NoticefromDate == null && _NoticetoDate == null) {
-                print('STATUS + DATE');
+            if (isAnyFilterSelected) {
 
-                widget.onStatusAndDateRangeSelected?.call(_selectedStatuses, _toDate, _fromDate);
-              } else if (_NoticefromDate != null && _NoticetoDate != null && _selectedStatuses != null && _fromDate == null && _toDate == null) {
-                print('STATUS + NOTICE DATE');
-
-                widget.onNoticeStatusAndDateRangeSelected?.call(_selectedStatuses, _NoticefromDate, _NoticetoDate);
-              } else if (_NoticefromDate != null && _NoticetoDate != null && _selectedStatuses != null && _fromDate != null && _toDate != null) {
-                print('STATUS + DATE+ NOTICE DATE');
-
-                widget.onDateNoticeStatusAndDateRangeSelected?.call(_selectedStatuses, _fromDate,_toDate ,_NoticefromDate, _NoticetoDate);
-              } else if (_NoticefromDate != null && _NoticetoDate != null && _selectedStatuses == null && _fromDate != null && _toDate != null) {
-                print('DATE + NOTICE DATE');
-
-                widget.onDateNoticeAndDateRangeSelected?.call(_fromDate,_toDate ,_NoticefromDate, _NoticetoDate);
-              } else {
-                
-                print('NOTHING!!!!!!');
-              }
-              Navigator.pop(context);
-            },
+              print('Start Filter');
+              widget.onManagersSelected?.call({
+                'managers': _selectedManagers,
+                'statuses': _selectedStatuses,
+                'fromDate': _fromDate,
+                'toDate': _toDate,
+                'noticefromDate': _NoticefromDate,
+                'noticetoDate': _NoticetoDate,
+              });
+            } else {
+              print('NOTHING!!!!!!');
+            }
+            Navigator.pop(context);
+          },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),

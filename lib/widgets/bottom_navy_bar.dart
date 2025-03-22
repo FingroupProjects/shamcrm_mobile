@@ -27,9 +27,8 @@ class BottomNavyBar extends StatelessWidget {
     this.showInactiveTitle = false,
     required this.items,
     required this.onItemSelected,
-    this.curve = Curves.linear,
-  })  : assert(items.length >= 1 && items.length <= 9),
-        super(key: key);
+  this.curve = Curves.linear,
+}) : super(key: key); // Убрали assert
 
   /// The selected item is index. Changing this property will change and animate
   /// the item being selected. Defaults to zero.

@@ -332,9 +332,9 @@ class _PinScreenState extends State<PinScreen>
         if (widget.initialMessage != null) {
           handleMessage(widget.initialMessage!);
         }
-        Navigator.of(context).pushReplacementNamed('/home');
       });
     });
+   Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _triggerErrorEffect() async {

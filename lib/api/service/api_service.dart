@@ -1004,7 +1004,6 @@ class ApiService {
     DateTime? date,
     required List<int> users,
   }) async {
-    date ??= DateTime.now();
     final organizationId = await getSelectedOrganization();
 
     final response = await _postRequest(
@@ -1013,7 +1012,7 @@ class ApiService {
           'title': title,
           'body': body,
           'lead_id': leadId,
-          'date': date.toIso8601String(),
+          'date': date?.toIso8601String(),
           'users': users,
         });
 
@@ -1340,7 +1339,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
 
     if (kDebugMode) {
-      print('getAll region!');
+      // print('getAll region!');
     }
 
     return dataRegion;
@@ -5750,7 +5749,7 @@ Future<Map<String, dynamic>> createMyTask({
     };
 
     final response = await _postRequest(
-        '/notices?organization_id=${organizationId ?? "2"}', requestBody);
+        '/notices?organization_id=${organizationId ?? ""}', requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'notice_create_successfully'};

@@ -434,143 +434,6 @@ int _tutorialStep = 0; // Добавляем шаг туториала
     ));
   }
 
-  Future _handleStatusSelected(int? selectedStatusId) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedStatuses = selectedStatusId;
-      _initialSelStatus = selectedStatusId;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      statusIds: _selectedStatuses,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _fromDate = fromDate;
-      _toDate = toDate;
-      _intialFromDate = fromDate;
-      _intialToDate = toDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      fromDate: _fromDate,
-      toDate: _toDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleNoticeDateSelected(DateTime? noticefromDate, DateTime? noticetoDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _NoticefromDate = noticefromDate;
-      _NoticetoDate = noticetoDate;
-      _intialNoticeFromDate = noticefromDate;
-      _intialNoticeToDate = noticetoDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      noticefromDate: _NoticefromDate,
-      noticetoDate: _NoticetoDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleStatusAndDateSelected(int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedStatuses = selectedStatus;
-      _fromDate = fromDate;
-      _toDate = toDate;
-      _initialSelStatus = selectedStatus;
-      _intialFromDate = fromDate;
-      _intialToDate = toDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      statusIds: selectedStatus,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleNoticeStatusAndDateSelected(int? selectedStatus, DateTime? noticefromDate, DateTime? noticetoDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedStatuses = selectedStatus;
-      _NoticefromDate = noticefromDate;
-      _NoticetoDate = noticetoDate;
-      _initialSelStatus = selectedStatus;
-      _intialNoticeFromDate = noticefromDate;
-      _intialNoticeToDate = noticetoDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      statusIds: selectedStatus,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleDateNoticeStatusAndDateSelected(int? selectedStatus, DateTime? noticefromDate, DateTime? noticetoDate, DateTime? fromDate, DateTime? toDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedStatuses = selectedStatus;
-      _fromDate = fromDate;
-      _toDate = toDate;
-      _NoticefromDate = noticefromDate;
-      _NoticetoDate = noticetoDate;
-      _initialSelStatus = selectedStatus;
-      _intialFromDate = fromDate;
-      _intialToDate = toDate;
-      _intialNoticeFromDate = noticefromDate;
-      _intialNoticeToDate = noticetoDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      statusIds: selectedStatus,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      noticefromDate: _NoticefromDate,
-      noticetoDate: _NoticetoDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
-  Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate, DateTime? noticetoDate, DateTime? fromDate, DateTime? toDate) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _fromDate = fromDate;
-      _toDate = toDate;
-      _NoticefromDate = noticefromDate;
-      _NoticetoDate = noticetoDate;
-      _intialFromDate = fromDate;
-      _intialToDate = toDate;
-      _intialNoticeFromDate = noticefromDate;
-      _intialNoticeToDate = noticetoDate;
-    });
-
-    final taskBloc = BlocProvider.of<EventBloc>(context);
-    taskBloc.add(FetchEvents(
-      fromDate: _fromDate,
-      toDate: _toDate,
-      noticefromDate: _NoticefromDate,
-      noticetoDate: _NoticetoDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
-
   void _onSearch(String query) {
     _lastSearchQuery = query;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -609,13 +472,6 @@ int _tutorialStep = 0; // Добавляем шаг туториала
             _onSearch(value);
           },
           onManagersEventSelected: _handleManagerSelected,
-          onStatusEventSelected: _handleStatusSelected,
-          onDateRangeEventSelected: _handleDateSelected,
-          onNoticeDateRangeEventSelected: _handleNoticeDateSelected,
-          onStatusAndDateRangeEventSelected: _handleStatusAndDateSelected,
-          onNoticeStatusAndDateRangeEventSelected: _handleNoticeStatusAndDateSelected,
-          onDateNoticeStatusAndDateRangeSelected: _handleDateNoticeStatusAndDateSelected,
-          onDateNoticeAndDateRangeSelected: _handleDateNoticeAndDateSelected,
           initialManagersEvent: _initialselectedManagers,
           initialManagerEventStatuses: _initialSelStatus,
           initialManagerEventFromDate: _intialFromDate,
@@ -763,7 +619,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       if (events.isEmpty) {
         return Center(
           child: Text(
-            localizations?.translate('no_events') ?? 'Нет событий',
+            localizations?.translate('Нет событий') ?? 'Нет событий',
             style: TextStyle(
               color: Color(0xff99A4BA),
               fontSize: 14,
