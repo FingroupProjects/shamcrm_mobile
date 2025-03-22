@@ -6,8 +6,12 @@ import 'package:flutter/material.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> order;
+  final String categoryName;
 
-  OrderDetailsScreen({required this.order});
+  OrderDetailsScreen({
+    required this.order,
+    required this.categoryName,
+  });
 
   @override
   _OrderDetailsScreenState createState() => _OrderDetailsScreenState();
@@ -23,26 +27,35 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _updateDetails() {
-  details = [
-    {'label': 'Номер заказа', 'value': widget.order['number'] ?? 'Не указан'},
-    {'label': 'Дата заказа', 'value': widget.order['date'] ?? 'Не указана'},
-    {'label': 'Клиент', 'value': widget.order['client'] ?? 'Не указан'},
-    {'label': 'Ответственный менеджер', 'value': widget.order['manager'] ?? 'Не указан'},
-    {'label': 'Сумма заказа', 'value': '${widget.order['total'] ?? 0} ₽'},
-    {
-      'label': 'Статус заказа',
-      'value': _getStatusName(widget.order['statusId'] ?? 1) 
-    },
-    {'label': 'Способ оплаты', 'value': widget.order['paymentMethod'] ?? 'Не указан'},
-    {'label': 'Способ доставки', 'value': widget.order['deliveryMethod'] ?? 'Не указан'},
-    if (widget.order['deliveryMethod'] != 'Самовывоз')
+    details = [
+      {'label': 'Номер заказа', 'value': widget.order['number'] ?? 'Не указан'},
+      {'label': 'Дата заказа', 'value': widget.order['date'] ?? 'Не указана'},
+      {'label': 'Клиент', 'value': widget.order['client'] ?? 'Не указан'},
       {
-        'label': 'Адрес доставки',
-        'value': widget.order['deliveryAddress'] ?? 'Не указан'
+        'label': 'Ответственный менеджер',
+        'value': widget.order['manager'] ?? 'Не указан'
       },
-    {'label': 'Комментарий клиента', 'value': widget.order['comment'] ?? ''},
-  ];
-}
+      {'label': 'Сумма заказа', 'value': '${widget.order['total'] ?? 0} ₽'},
+      {
+        'label': 'Статус заказа',
+        'value': _getStatusName(widget.order['statusId'] ?? 1)
+      },
+      {
+        'label': 'Способ оплаты',
+        'value': widget.order['paymentMethod'] ?? 'Не указан'
+      },
+      {
+        'label': 'Способ доставки',
+        'value': widget.order['deliveryMethod'] ?? 'Не указан'
+      },
+      if (widget.order['deliveryMethod'] != 'Самовывоз')
+        {
+          'label': 'Адрес доставки',
+          'value': widget.order['deliveryAddress'] ?? 'Не указан'
+        },
+      {'label': 'Комментарий клиента', 'value': widget.order['comment'] ?? ''},
+    ];
+  }
 
   String _getStatusName(int statusId) {
     const statusMap = {
@@ -131,7 +144,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         child: ListView(
           children: [
             _buildDetailsList(),
-            OrderGoodsScreen(),
+            CategoryGoodsScreen(
+              categoryName: widget.categoryName,
+            ),
           ],
         ),
       ),

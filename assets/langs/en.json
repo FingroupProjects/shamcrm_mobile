@@ -852,7 +852,14 @@
   "delete_goods": "Delete product",
   "confrim_delete_goods": "Confirm product deletion!",
   "price": "Price: ",
-  "category_card": "Category: "
+  "category_card": "Category: ",
+  "delivery_method": "Delivery method",
+  "payment_method": "Payment method",
+  "select_delivery_method": "Select delivery method",
+  "select_payment_method": "Select payment method",
+  "status_method": "Status",
+  "select_status_method": "Select status",
+  "select_all": "Select all"
 
 
 
