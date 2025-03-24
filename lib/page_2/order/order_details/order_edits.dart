@@ -453,7 +453,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Итого',
+                  'Итого:',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',

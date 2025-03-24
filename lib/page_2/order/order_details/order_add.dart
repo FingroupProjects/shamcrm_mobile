@@ -454,7 +454,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Итого',
+                  'Итого:',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',

@@ -44,7 +44,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 50,
       discountGoodsPrice: 10,
       stockQuantity: 500,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
     Goods(
       id: 2,
@@ -53,7 +53,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
     ),
     Goods(
       id: 3,
@@ -63,7 +63,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
     Goods(
       id: 4,
@@ -72,7 +72,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
     ),
     Goods(
       id: 5,
@@ -82,7 +82,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
   ];
 
@@ -233,21 +233,19 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                   ),
                 ),
                 SizedBox(width: 16),
-                ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
+                Container(
                   width: 100,
                   height: 100,
                   child: ListView.builder(
-                    scrollDirection: Axis.horizontal,   
-                    itemCount: goods.imagePaths.length,  
+                    scrollDirection: Axis.horizontal,
+                    itemCount: goods.imagePaths.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),   
+                        padding: const EdgeInsets.only(right: 8),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                           child: Image.asset(
-                            goods.imagePaths[index],   
+                            goods.imagePaths[index],
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
@@ -257,7 +255,6 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                     },
                   ),
                 ),
-              ),
               ],
             ),
           ),
@@ -299,7 +296,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           onPressed: () {
             showModalBottomSheet(
               context: context,
-              isScrollControlled: true, 
+              isScrollControlled: true,
               builder: (context) => ProductSelectionSheet(),
             );
           },
