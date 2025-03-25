@@ -51,7 +51,16 @@ class _LeadColumnState extends State<LeadColumn> {
     super.initState();
     _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
     _checkPermission();
+    _loadFeatureState(); 
   }
+
+  Future<void> _loadFeatureState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isSwitch = prefs.getBool('switchContact') ?? false; 
+    });
+  }
+
 
   @override
   void didChangeDependencies() {

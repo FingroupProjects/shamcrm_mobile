@@ -274,7 +274,6 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           id: goods.id,
           goodsName: goods.goodsName,
           goodsDescription: goods.goodsDescription,
-          goodsPrice: goods.goodsPrice,
           discountGoodsPrice: goods.discountGoodsPrice,
           stockQuantity: goods.stockQuantity,
           imagePaths: goods.imagePaths,

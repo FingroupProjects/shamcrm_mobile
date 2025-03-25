@@ -3,9 +3,9 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 
 class ProductCharacteristic {
-  final String name; // Название характеристики (например, "Модель")
-  final String hintText; // Подсказка для поля ввода (например, "Введите модель")
-  final TextInputType keyboardType; // Тип клавиатуры (по умолчанию текстовый)
+  final String name;
+  final String hintText; 
+  final TextInputType keyboardType; 
 
   ProductCharacteristic({
     required this.name,
@@ -140,7 +140,8 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('category'), 
+          AppLocalizations.of(context)!.translate('Подкатегория'), 
+          // AppLocalizations.of(context)!.translate('category'), 
           style: categoryTextStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 4),
@@ -185,7 +186,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
-              AppLocalizations.of(context)!.translate('select_category'), 
+              AppLocalizations.of(context)!.translate('Выберите подкатегорию'), 
               style: categoryTextStyle.copyWith(fontSize: 14),
             ),
             excludeSelected: false,

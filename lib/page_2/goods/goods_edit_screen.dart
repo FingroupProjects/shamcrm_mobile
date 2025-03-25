@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -21,7 +22,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   late TextEditingController goodsNameController;
   late TextEditingController goodsDescriptionController;
-  late TextEditingController priceController;
   late TextEditingController discountPriceController;
   late TextEditingController stockQuantityController;
 
@@ -31,17 +31,42 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
 
+  List<ProductCharacteristic>? selectedCharacteristics;
+  Map<String, TextEditingController> characteristicControllers = {};
+
   @override
   void initState() {
     super.initState();
     goodsNameController = TextEditingController(text: widget.goods['name']);
     goodsDescriptionController = TextEditingController(text: widget.goods['description']);
-    priceController = TextEditingController(text: widget.goods['price'].toString());
     discountPriceController = TextEditingController(text: widget.goods['discountPrice'].toString());
     stockQuantityController = TextEditingController(text: widget.goods['stockQuantity'].toString());
     selectedCategory = widget.goods['category'];
     isActive = widget.goods['isActive'];
     _imagePaths = List<String>.from(widget.goods['imagePaths']);
+
+    if (selectedCategory != null) {
+      _updateCharacteristicsForCategory(selectedCategory!);
+    }
+  }
+
+  void _updateCharacteristicsForCategory(String category) {
+    // Очищаем старые контроллеры
+    characteristicControllers.clear();
+    
+    // Получаем новые характеристики для выбранной категории
+    selectedCharacteristics = categoryCharacteristics[category];
+    
+    // Создаем новые контроллеры для характеристик
+    if (selectedCharacteristics != null) {
+      for (var characteristic in selectedCharacteristics!) {
+        characteristicControllers[characteristic.name] = TextEditingController(
+          text: widget.goods['characteristics']?[characteristic.name] ?? '',
+        );
+      }
+    }
+    
+    setState(() {});
   }
 
   @override
@@ -94,13 +119,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
-                  controller: priceController,
-                  hintText: AppLocalizations.of(context)!.translate('enter_goods_price'),
-                  label: AppLocalizations.of(context)!.translate('goods_price'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 8),
-                CustomTextField(
                   controller: discountPriceController,
                   hintText: AppLocalizations.of(context)!.translate('enter_discount_price'),
                   label: AppLocalizations.of(context)!.translate('discount_price'),
@@ -119,118 +137,162 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   onSelectCategory: (category) {
                     setState(() {
                       selectedCategory = category;
+                      _updateCharacteristicsForCategory(category);
                     });
                   },
                 ),
+                const SizedBox(height: 8),
+                if (selectedCharacteristics != null && selectedCharacteristics!.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Divider(color: Color(0xff1E2E52)),
+                      Center(
+                        child: Text(
+                          'Характеристика товара',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                      Divider(color: Color(0xff1E2E52)),
+                      ...selectedCharacteristics!.map((characteristic) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            Text(
+                              characteristic.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            CustomCharacteristicField(
+                              controller: characteristicControllers[characteristic.name]!,
+                              hintText: characteristic.hintText,
+                              keyboardType: characteristic.keyboardType,
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
                 const SizedBox(height: 12),
                 GestureDetector(
-                onTap: _showImagePickerOptions,
-                child: Container(
-                  width: double.infinity,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    color: const Color(0xffF4F7FD),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                  ),
-                  child: _imagePaths.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
-                              const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!.translate('pick_image'),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff99A4BA),
+                  onTap: _showImagePickerOptions,
+                  child: Container(
+                    width: double.infinity,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    ),
+                    child: _imagePaths.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                const SizedBox(height: 8),
+                                Text(
+                                  AppLocalizations.of(context)!.translate('pick_image'),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff99A4BA),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Stack(
-                            children: [
-                              ReorderableWrap(
-                                spacing: 20,
-                                runSpacing: 10,
-                                padding: const EdgeInsets.all(8),
-                                children: _imagePaths.map((imagePath) {
-                                  return Container(
-                                    key: ValueKey(imagePath), 
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      image: DecorationImage(
-                                        image: imagePath.startsWith('assets/')
-                                            ? AssetImage(imagePath) as ImageProvider
-                                            : FileImage(File(imagePath)),
-                                        fit: BoxFit.cover,
+                              ],
+                            ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              children: [
+                                ReorderableWrap(
+                                  spacing: 20,
+                                  runSpacing: 10,
+                                  padding: const EdgeInsets.all(8),
+                                  children: _imagePaths.map((imagePath) {
+                                    return Container(
+                                      key: ValueKey(imagePath), 
+                                      width: 100,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        image: DecorationImage(
+                                          image: imagePath.startsWith('assets/')
+                                              ? AssetImage(imagePath) as ImageProvider
+                                              : FileImage(File(imagePath)),
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        Positioned(
-                                          top: 4,
-                                          right: 4,
-                                          child: GestureDetector(
-                                            onTap: () => _removeImage(imagePath),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withOpacity(0.5),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 16,
+                                      child: Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: GestureDetector(
+                                              onTap: () => _removeImage(imagePath),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.5),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.close,
+                                                  color: Colors.white,
+                                                  size: 16,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onReorder: (int oldIndex, int newIndex) {
+                                    setState(() {
+                                      final item = _imagePaths.removeAt(oldIndex);
+                                      _imagePaths.insert(newIndex, item);
+                                    });
+                                  },
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  );
-                                }).toList(),
-                                onReorder: (int oldIndex, int newIndex) {
-                                  setState(() {
-                                    final item = _imagePaths.removeAt(oldIndex);
-                                    _imagePaths.insert(newIndex, item);
-                                  });
-                                },
-                              ),
-                              Positioned(
-                                top: 8,
-                                left: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Colors.white,
+                                    child: Text(
+                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -282,7 +344,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
                                       color: Color(0xFF1E1E1E),
-                                  ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -332,7 +394,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       ),
     );
   }
-
 
   Future<void> _showImagePickerOptions() async {
     showModalBottomSheet(
@@ -400,22 +461,31 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
   }
 
-void _removeImage(String imagePath) {
-  setState(() {
-    _imagePaths.remove(imagePath);
-  });
-}
+  void _removeImage(String imagePath) {
+    setState(() {
+      _imagePaths.remove(imagePath);
+    });
+  }
 
   void _updategoods() {
-    print('Название: ${goodsNameController.text}');
-    print('Описание: ${goodsDescriptionController.text}');
-    print('Цена: ${priceController.text}');
-    print('Скидочная цена: ${discountPriceController.text}');
-    print('Количество: ${stockQuantityController.text}');
-    print('Категория: $selectedCategory');
-    print('Статус: ${isActive ? "Активен" : "Неактивен"}');
-    // print('Фото товара: $_imagePaths');
-    
-    Navigator.pop(context);
+    if (formKey.currentState!.validate()) {
+      Map<String, String> characteristics = {};
+      if (selectedCharacteristics != null) {
+        for (var characteristic in selectedCharacteristics!) {
+          characteristics[characteristic.name] = characteristicControllers[characteristic.name]!.text;
+        }
+      }
+
+      print('Название: ${goodsNameController.text}');
+      print('Описание: ${goodsDescriptionController.text}');
+      print('Скидочная цена: ${discountPriceController.text}');
+      print('Количество: ${stockQuantityController.text}');
+      print('Категория: $selectedCategory');
+      print('Статус: ${isActive ? "Активен" : "Неактивен"}');
+      print('Характеристики: $characteristics');
+      print('Фото товара: $_imagePaths');
+
+      Navigator.pop(context);
+    }
   }
 }

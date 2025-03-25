@@ -88,7 +88,6 @@ import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized(); 
   await AppTrackingTransparency.requestTrackingAuthorization();
