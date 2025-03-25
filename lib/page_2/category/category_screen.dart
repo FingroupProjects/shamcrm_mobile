@@ -16,12 +16,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
+  String? _image;
+
 final List<Map<String, dynamic>> testCategories = [
   {
     'id': 1,
     'name': 'Электроника',
     'subCategory': 'Смартфоны',
     'description': 'Современные смартфоны от ведущих производителей, включая Apple, Samsung, Xiaomi, OnePlus и другие. Здесь вы найдете устройства с мощными процессорами, качественными камерами, инновационными дисплеями и длительным временем автономной работы. Подберите модель, соответствующую вашим потребностям – от бюджетных до флагманских решений.',
+    'image' : 'assets/images/goods_photo.jpg',
     'characterCustomFields': [
       {'fieldName': 'Производитель', 'value': 'Apple'},
       {'fieldName': 'Модель', 'value': 'iPhone 13'},
@@ -33,6 +36,8 @@ final List<Map<String, dynamic>> testCategories = [
     'id': 2,
     'name': 'Одежда',
     'subCategory': 'Футболки',
+        'image' : 'assets/images/goods_photo.jpg',
+
     'description': 'Футболки для мужчин, женщин и детей в различных стилях и расцветках. У нас представлены модели из натурального хлопка, с удобной посадкой и модным дизайном. В ассортименте – классические однотонные варианты, принтованные модели с оригинальными рисунками, а также спортивные футболки для активного образа жизни.',
     'characterCustomFields': [
       {'fieldName': 'Материал', 'value': 'Хлопок'},
@@ -44,6 +49,7 @@ final List<Map<String, dynamic>> testCategories = [
     'id': 3,
     'name': 'Бытовая техника',
     'subCategory': 'Холодильники',
+    'image' : 'assets/images/goods_photo.jpg',
     'description': 'Широкий выбор холодильников для дома, офиса и дачи. Представлены модели различных типов: однокамерные, двухкамерные, с функцией No Frost, встраиваемые, мини-холодильники и профессиональные холодильные камеры. Техника с энергоэффективными технологиями, продуманной системой охлаждения и удобной организацией внутреннего пространства.',
     'characterCustomFields': [
       {'fieldName': 'Тип', 'value': 'Двухкамерный'},
@@ -55,6 +61,7 @@ final List<Map<String, dynamic>> testCategories = [
     'id': 4,
     'name': 'Книги',
     'subCategory': 'Фантастика',
+    'image' : 'assets/images/goods_photo.jpg',
     'description': 'Погрузитесь в удивительный мир фантастики! В этой категории собраны произведения лучших авторов жанра – от классических антиутопий и космических приключений до эпических фэнтезийных саг. Здесь вы найдете книги Айзека Азимова, Рэя Брэдбери, Джорджа Мартина, Анджея Сапковского и многих других. Насладитесь увлекательными историями о дальних мирах, загадочных существах и невероятных технологиях будущего.',
     'characterCustomFields': [
       {'fieldName': 'Автор', 'value': 'Айзек Азимов'},
@@ -116,6 +123,7 @@ final List<Map<String, dynamic>> testCategories = [
                     subCategoryName: testCategories[index]['subCategory']!,
                     categoryDescription: testCategories[index]['description']!,
                     characterCustomFields: testCategories[index]['characterCustomFields'],
+                    image: testCategories[index]['image']!,
                   ),
                 );
               },

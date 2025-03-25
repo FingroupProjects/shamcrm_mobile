@@ -22,7 +22,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
       'name': 'Смартфон XYZ Pro',
       'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
       'category': 'Электроника',
-      'price': 799.99,
       'discount': 15,
       'stockQuantity': 500,
       'imagePaths': [
@@ -36,7 +35,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
       'name': 'Стиральная машина Модель A100',
       'description': 'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
       'category': 'Бытовая техника',
-      'price': 450.00,
       'discount': 10,
       'stockQuantity': 150,
       'imagePaths': ['assets/images/goods_photo1.jpg'],
@@ -47,7 +45,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
       'name': 'Органический хлеб из цельного зерна',
       'description': 'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
       'category': 'Продукты питания',
-      'price': 3.50,
       'discount': 5,
       'stockQuantity': 2000,
       'imagePaths': [
@@ -64,7 +61,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
       'name': 'Смартфон XYZ Pro',
       'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
       'category': 'Электроника',
-      'price': 799.99,
       'discount': 15,
       'stockQuantity': 500,
       'imagePaths': [
@@ -124,7 +120,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     goodsName: testGoods[index]['name']!,
                     goodsDescription: testGoods[index]['description']!,
                     goodsCategory: testGoods[index]['category']!,
-                    goodsPrice: testGoods[index]['price']!,
                     goodsDiscountPrice: testGoods[index]['discount']!,
                     goodsStockQuantity: testGoods[index]['stockQuantity']!,
                     goodsImagePath: testGoods[index]['imagePaths']!,

@@ -144,9 +144,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         child: ListView(
           children: [
             _buildDetailsList(),
-            CategoryGoodsScreen(
-              categoryName: widget.categoryName,
-            ),
+           OrderGoodsScreen(),
           ],
         ),
       ),

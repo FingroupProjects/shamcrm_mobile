@@ -10,6 +10,7 @@ class CategoryCard extends StatefulWidget {
   final String subCategoryName;
   final String categoryDescription;
   final List<Map<String, dynamic>> characterCustomFields;
+  final String? image;
 
   CategoryCard({
     Key? key,
@@ -18,6 +19,7 @@ class CategoryCard extends StatefulWidget {
     required this.subCategoryName,
     required this.categoryDescription,
     required this.characterCustomFields,
+    required this.image,
   }) : super(key: key);
 
   @override

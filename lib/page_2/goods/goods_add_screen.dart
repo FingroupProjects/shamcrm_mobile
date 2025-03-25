@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +19,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController goodsNameController = TextEditingController();
   final TextEditingController goodsDescriptionController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   
@@ -82,13 +82,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
-                  ),
-                  const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: priceController,
-                  hintText: AppLocalizations.of(context)!.translate('enter_goods_price'),
-                  label: AppLocalizations.of(context)!.translate('goods_price'),
-                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
@@ -442,8 +435,42 @@ void _removeImage(String imagePath) {
   });
 }
 
-  void _createProduct() {
-    
+void _createProduct() {
+  if (formKey.currentState!.validate()) {
+    String goodsName = goodsNameController.text;
+    String goodsDescription = goodsDescriptionController.text;
+    String discountPrice = discountPriceController.text;
+    String stockQuantity = stockQuantityController.text;
+
+    List<Map<String, String>> characteristics = [];
+    if (selectedCharacteristics != null) {
+      for (var characteristic in selectedCharacteristics!) {
+        characteristics.add({
+          'name': characteristic.name,
+          'value': characteristicControllers[characteristic.name]!.text,
+        });
+      }
+    }
+
+    Map<String, dynamic> productData = {
+      'name': goodsName,
+      'description': goodsDescription,
+      'discountPrice': discountPrice,
+      'stockQuantity': stockQuantity,
+      'category': selectedCategory,
+      'isActive': isActive,
+      'characteristics': characteristics,
+      'imagePaths': _imagePaths,
+    };
+
+    JsonEncoder encoder = JsonEncoder.withIndent('  '); 
+    String prettyJson = encoder.convert(productData);
+    print('Данные товара в JSON:');
+    print(prettyJson);
+
+    // Закрытие экрана
     Navigator.pop(context);
   }
+
+}
 }

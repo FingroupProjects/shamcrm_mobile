@@ -8,7 +8,6 @@ class GoodsDetailsScreen extends StatefulWidget {
   final int id;
   final String goodsName;
   final String goodsDescription;
-  final double goodsPrice;
   final int discountGoodsPrice;
   final int stockQuantity;
   final List<String> imagePaths; 
@@ -19,7 +18,6 @@ class GoodsDetailsScreen extends StatefulWidget {
     required this.id,
     required this.goodsName,
     required this.goodsDescription,
-    required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
     required this.imagePaths, 
@@ -50,7 +48,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     details = [
       {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': widget.goodsName},
       {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': widget.goodsDescription},
-      {'label': AppLocalizations.of(context)!.translate('goods_price_details'), 'value': widget.goodsPrice.toString()},
       {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
       {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
       {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
@@ -177,7 +174,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       goods: {
                         'name': widget.goodsName,
                         'description': widget.goodsDescription,
-                        'price': widget.goodsPrice,
                         'discountPrice': widget.discountGoodsPrice,
                         'stockQuantity': widget.stockQuantity,
                         'category': widget.selectedCategory,

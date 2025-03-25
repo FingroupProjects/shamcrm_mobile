@@ -8,7 +8,6 @@ class Goods {
   final int id;
   final String goodsName;
   final String goodsDescription;
-  final double goodsPrice;
   final discountGoodsPrice;
   final stockQuantity;
   final List<String> imagePaths;
@@ -17,7 +16,6 @@ class Goods {
     required this.id,
     required this.goodsName,
     required this.goodsDescription,
-    required this.goodsPrice,
     required this.discountGoodsPrice,
     required this.stockQuantity,
     required this.imagePaths,
@@ -38,7 +36,6 @@ final List<Goods> testGoods = [
     id: 1,
     goodsName: 'Смартфон Galaxy S22',
     goodsDescription: 'Флагманский смартфон с мощным процессором, AMOLED-экраном 6.5" и камерой 108 МП.',
-    goodsPrice: 899.99,
     discountGoodsPrice: 799,
     stockQuantity: 350,
     imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo1.jpg'],
@@ -47,7 +44,6 @@ final List<Goods> testGoods = [
     id: 2,
     goodsName: 'Ноутбук UltraBook X1',
     goodsDescription: 'Легкий и мощный ноутбук с процессором i7, 16 ГБ ОЗУ и SSD 512 ГБ. Отличный выбор для работы и развлечений.',
-    goodsPrice: 1200.00,
     discountGoodsPrice: 1099,
     stockQuantity: 150,
     imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
@@ -56,7 +52,6 @@ final List<Goods> testGoods = [
     id: 3,
     goodsName: 'Игровая консоль NextGen X',
     goodsDescription: 'Новая консоль с поддержкой 4K-гейминга, мощной графикой и библиотекой эксклюзивных игр.',
-    goodsPrice: 499.99,
     discountGoodsPrice: 459,
     stockQuantity: 500,
     imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo.jpg'],
@@ -65,7 +60,6 @@ final List<Goods> testGoods = [
     id: 4,
     goodsName: 'Умные часы FitPro 3',
     goodsDescription: 'Следите за своим здоровьем и активностью с FitPro 3! Мониторинг сна, шагомер, датчик ЧСС и водонепроницаемость.',
-    goodsPrice: 199.99,
     discountGoodsPrice: 179,
     stockQuantity: 800,
     imagePaths: ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
@@ -74,7 +68,6 @@ final List<Goods> testGoods = [
     id: 5,
     goodsName: 'Беспроводные наушники SoundBeat Pro',
     goodsDescription: 'Высокое качество звука, активное шумоподавление и до 30 часов работы на одном заряде.',
-    goodsPrice: 249.99,
     discountGoodsPrice: 219,
     stockQuantity: 1000,
     imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
@@ -83,7 +76,6 @@ final List<Goods> testGoods = [
     id: 6,
     goodsName: 'Электросамокат SpeedRide X',
     goodsDescription: 'Складной электросамокат с запасом хода до 40 км, максимальной скоростью 25 км/ч и мощным аккумулятором.',
-    goodsPrice: 650.00,
     discountGoodsPrice: 599,
     stockQuantity: 200,
     imagePaths: ['assets/images/goods_photo2.jpg', 'assets/images/goods_photo.jpg'],
@@ -212,25 +204,7 @@ final List<Goods> testGoods = [
                       ),
                     ),
                     SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: AppLocalizations.of(context)!.translate('price'),
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          TextSpan(
-                            text: '${goods.goodsPrice % 1 == 0 ? goods.goodsPrice.toInt() : goods.goodsPrice}',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    
                   ],
                 ),
               ),
@@ -273,7 +247,6 @@ void _navigateToGoodsDetails(Goods goods) {
         id: goods.id,
         goodsName: goods.goodsName,
         goodsDescription: goods.goodsDescription,
-        goodsPrice: goods.goodsPrice,
         discountGoodsPrice: goods.discountGoodsPrice,
         stockQuantity: goods.stockQuantity,
         imagePaths: goods.imagePaths,

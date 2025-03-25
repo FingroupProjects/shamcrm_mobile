@@ -39,7 +39,8 @@ void initState() {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('list_subcategories'), 
+          AppLocalizations.of(context)!.translate('Категория'), 
+          // AppLocalizations.of(context)!.translate('list_subcategories'), 
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
