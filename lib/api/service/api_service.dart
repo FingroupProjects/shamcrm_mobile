@@ -38,6 +38,8 @@ import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
@@ -5938,5 +5940,124 @@ Future<Map<String, dynamic>> createMyTask({
       throw Exception('Failed to mark page completed: ${response.statusCode}');
     }
   }
-  //_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//a
+
+  //_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//
+
+
+  //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
+  
+  
+  Future<CharacteristicListDataResponse> getAllCharacteristics() async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest('/attribute${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+
+      return CharacteristicListDataResponse.fromJson(data);
+    } else {
+      throw ('Ошибка загрузки списка характеритсикии');
+    }
+  }
+
+
+Future<List<CategoryData>> getCategory() async {
+  final organizationId = await getSelectedOrganization();
+  // final String path = '/category/organization_id=$organizationId';
+  final String path = '/category';
+
+  final response = await _getRequest(path); // Ваш метод запроса
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+      print("{====================================================");
+      print(data);
+      print("====================================================}");
+
+    if (data.containsKey('result') && data['result'] is List) {
+      
+      return (data['result'] as List)
+          .map((category) => CategoryData.fromJson(category as Map<String, dynamic>))
+          .toList();
+          
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки категории: ${response.statusCode}');
+  }
+}
+
+
+Future<Map<String, dynamic>> createCategory({
+  required String name,
+  required int parentId,
+  required List<int> attributeIds,
+  File? image,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Add fields
+    request.fields['name'] = name;
+    if (parentId != 0) {
+      request.fields['parent_id'] = parentId.toString();
+    }
+
+    // Add attributes
+    for (int i = 0; i < attributeIds.length; i++) {
+      request.fields['attributes[$i][attribute_id]'] = attributeIds[i].toString();
+    }
+
+    // Add image if exists
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath(
+        'image', 
+        image.path
+      );
+      request.files.add(imageFile);
+    }
+
+    // Send request
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'category_created_successfully',
+        'data': CategoryData.fromJson(responseBody), // Убрали ['result']
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to create category',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
+
+
+  //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 }

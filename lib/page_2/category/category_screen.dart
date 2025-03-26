@@ -1,8 +1,12 @@
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/category/category_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:flutter/material.dart';
 import 'category_card.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -16,73 +20,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-  String? _image;
-
-final List<Map<String, dynamic>> testCategories = [
-  {
-    'id': 1,
-    'name': 'Электроника',
-    'subCategory': 'Смартфоны',
-    'description': 'Современные смартфоны от ведущих производителей, включая Apple, Samsung, Xiaomi, OnePlus и другие. Здесь вы найдете устройства с мощными процессорами, качественными камерами, инновационными дисплеями и длительным временем автономной работы. Подберите модель, соответствующую вашим потребностям – от бюджетных до флагманских решений.',
-    'image' : 'assets/images/goods_photo.jpg',
-    'characterCustomFields': [
-      {'fieldName': 'Производитель', 'value': 'Apple'},
-      {'fieldName': 'Модель', 'value': 'iPhone 13'},
-      {'fieldName': 'Оперативная память', 'value': '4 ГБ'},
-      {'fieldName': 'Встроенная память', 'value': '128 ГБ'},
-    ],
-  },
-  {
-    'id': 2,
-    'name': 'Одежда',
-    'subCategory': 'Футболки',
-        'image' : 'assets/images/goods_photo.jpg',
-
-    'description': 'Футболки для мужчин, женщин и детей в различных стилях и расцветках. У нас представлены модели из натурального хлопка, с удобной посадкой и модным дизайном. В ассортименте – классические однотонные варианты, принтованные модели с оригинальными рисунками, а также спортивные футболки для активного образа жизни.',
-    'characterCustomFields': [
-      {'fieldName': 'Материал', 'value': 'Хлопок'},
-      {'fieldName': 'Размер', 'value': 'L'},
-      {'fieldName': 'Цвет', 'value': 'Черный'},
-    ],
-  },
-  {
-    'id': 3,
-    'name': 'Бытовая техника',
-    'subCategory': 'Холодильники',
-    'image' : 'assets/images/goods_photo.jpg',
-    'description': 'Широкий выбор холодильников для дома, офиса и дачи. Представлены модели различных типов: однокамерные, двухкамерные, с функцией No Frost, встраиваемые, мини-холодильники и профессиональные холодильные камеры. Техника с энергоэффективными технологиями, продуманной системой охлаждения и удобной организацией внутреннего пространства.',
-    'characterCustomFields': [
-      {'fieldName': 'Тип', 'value': 'Двухкамерный'},
-      {'fieldName': 'Общий объем', 'value': '350 л'},
-      {'fieldName': 'Энергопотребление', 'value': 'A+'},
-    ],
-  },
-  {
-    'id': 4,
-    'name': 'Книги',
-    'subCategory': 'Фантастика',
-    'image' : 'assets/images/goods_photo.jpg',
-    'description': 'Погрузитесь в удивительный мир фантастики! В этой категории собраны произведения лучших авторов жанра – от классических антиутопий и космических приключений до эпических фэнтезийных саг. Здесь вы найдете книги Айзека Азимова, Рэя Брэдбери, Джорджа Мартина, Анджея Сапковского и многих других. Насладитесь увлекательными историями о дальних мирах, загадочных существах и невероятных технологиях будущего.',
-    'characterCustomFields': [
-      {'fieldName': 'Автор', 'value': 'Айзек Азимов'},
-      {'fieldName': 'Жанр', 'value': 'Научная фантастика'},
-      {'fieldName': 'Год издания', 'value': '1950'},
-    ],
-  },
-];
-
-
-
-  // void _onSearchChanged(String value) {}
-
-  // void _onClearSearch() {
-  //   setState(() {
-  //     _isSearching = false;
-  //     _searchController.clear();
-  //   });
-  // }
-
-  // void _onProfileAvatarClick() {}
+  @override
+  void initState() {
+    super.initState();
+    context.read<CategoryBloc>().add(FetchCategories());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,21 +53,34 @@ final List<Map<String, dynamic>> testCategories = [
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : ListView.builder(
-              padding: EdgeInsets.only(left: 16, right: 16, top: 8),
-              itemCount: testCategories.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: CategoryCard(
-                    categoryId: testCategories[index]['id']!,
-                    categoryName: testCategories[index]['name']!,
-                    subCategoryName: testCategories[index]['subCategory']!,
-                    categoryDescription: testCategories[index]['description']!,
-                    characterCustomFields: testCategories[index]['characterCustomFields'],
-                    image: testCategories[index]['image']!,
-                  ),
-                );
+          : BlocBuilder<CategoryBloc, CategoryState>(
+              builder: (context, state) {
+                if (state is CategoryLoading) {
+                  return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                } else if (state is CategoryError) {
+                  return Center(child: Text(state.message));
+                } else if (state is CategoryLoaded) {
+                    return ListView.builder(
+                      padding: EdgeInsets.only(left: 16, right: 16, top: 8),
+                      itemCount: state.categories.length,
+                      itemBuilder: (context, index) {
+                        final category = state.categories[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: CategoryCard(
+                            categoryId: category.id ?? 0,
+                            categoryName: category.name,
+                            subCategoryName: category.subcategories.isNotEmpty
+                                ? category.subcategories[0].name
+                                : '',
+                            attributes: [],
+                            image: category.image ?? 'assets/images/user1.jpg',
+                          ),
+                        );
+                      },
+                    );
+                  }
+                return Center(child: Text('No categories found'));
               },
             ),
       floatingActionButton: FloatingActionButton(

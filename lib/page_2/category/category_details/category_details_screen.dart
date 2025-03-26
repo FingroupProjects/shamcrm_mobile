@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_goods_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
@@ -9,16 +10,15 @@ class CategoryDetailsScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
   final String subCategoryName;
-  final String categoryDescription;
-  final List<Map<String, dynamic>> characterCustomFields;
-
+  // final String categoryDescription;
+ final List<Attribute> attributes;
 
   CategoryDetailsScreen({
     required this.categoryId,
     required this.categoryName,
     required this.subCategoryName,
-    required this.categoryDescription,
-    required this.characterCustomFields,
+    // required this.categoryDescription,
+    required this.attributes,
   });
 
   @override
@@ -44,7 +44,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     details = [
       {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': widget.categoryName},
       {'label': AppLocalizations.of(context)!.translate('subcategories_details'), 'value': widget.subCategoryName},
-      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': widget.categoryDescription},
+      // {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': widget.categoryDescription},
     ];
   }
 
@@ -61,7 +61,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
           child: ListView(
             children: [
               _buildDetailsList(),
-              CategoryGoodsScreen(categoryName: widget.categoryName,),
+              // CategoryGoodsScreen(categoryName: widget.categoryName,),
             ],
           ),
         ));
@@ -118,11 +118,11 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                 CategoryEditBottomSheet.show(
                   context,
                   initialName: widget.categoryName,
-                  initialDescription: widget.categoryDescription, 
+                  // initialDescription: widget.categoryDescription, 
                   initialSubCategory: widget.subCategoryName,
-                  initialCustomFields: widget.characterCustomFields.map((field) {
-                     return CustomField(fieldName: field['fieldName']);
-                   }).toList(),
+                  // initialCustomFields: widget.attributes.map((field) {
+                  //    return CustomField();
+                  //  }).toList(),
                 );
               },
             ),

@@ -1,17 +1,13 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/material.dart';
+
 class CharacteristicData {
   final String title;
 
-  CharacteristicData({required this.title});
+  CharacteristicData({
+    required this.title,
+  });
 }
-
-List<CharacteristicData> testCharacteristics = [
-  CharacteristicData(title: "Цвет"),
-  CharacteristicData(title: "Размер"),
-  CharacteristicData(title: "Материал"),
-  CharacteristicData(title: "Вес"),
-  CharacteristicData(title: "Производитель"),
-];
 
 class CharacteristicSelectionWidget extends StatefulWidget {
   final String? selectedCharacteristic;
@@ -41,12 +37,27 @@ class _CharacteristicSelectionWidgetState
   @override
   void initState() {
     super.initState();
-    characteristicList = testCharacteristics;
-    filteredList = List.from(characteristicList);
     _textController.text = widget.selectedCharacteristic ?? '';
     _textController.addListener(() {
       widget.onSelectCharacteristic(_textController.text);
     });
+    _loadCharacteristics();
+  }
+
+Future<void> _loadCharacteristics() async {
+    try {
+      final response = await ApiService().getAllCharacteristics();
+      setState(() {
+        characteristicList = response.result.map((item) => 
+          CharacteristicData(title: item.name)
+        ).toList();
+        filteredList = List.from(characteristicList);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не удалось загрузить характеристики!')),
+      );
+    }
   }
 
   void filterSearchResults(String query) {
@@ -90,146 +101,146 @@ class _CharacteristicSelectionWidgetState
     );
   }
 
- Widget _buildTextField() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        decoration: BoxDecoration(
-          color: Color(0xffF4F7FD),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Color(0xffF4F7FD),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                focusNode: _focusNode,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52), 
-                ),
-                decoration: InputDecoration(
-                  hintText: "Выберите характеристику",
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52).withOpacity(0.6),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                onChanged: (value) {
-                  widget.onSelectCharacteristic(value);
-                },
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.arrow_drop_down),
-              onPressed: () {
-                setState(() {
-                  _isDropdownVisible = !_isDropdownVisible;
-                  if (!_isDropdownVisible) {
-                    _searchController.clear();
-                  }
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-      if (_isDropdownVisible)
+Widget _buildTextField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Container(
-          margin: EdgeInsets.only(top: 2),
-          constraints: BoxConstraints(maxHeight: 350,maxWidth: 270),
           decoration: BoxDecoration(
-          color: Color(0xffF4F7FD),
+            color: Color(0xffF4F7FD),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Color(0xffF4F7FD),
               width: 1,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8),
+              Expanded(
                 child: TextField(
-                  controller: _searchController,
-                  autofocus: true,
+                  controller: _textController,
+                  focusNode: _focusNode,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52), 
+                  ),
                   decoration: InputDecoration(
-                    hintText: "Поиск",
-                    prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                    hintText: "Выберите характеристику",
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52).withOpacity(0.6),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.black),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.black),
-                    ),
+                    border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onChanged: (value) {
-                    filterSearchResults(value);
+                    widget.onSelectCharacteristic(value);
                   },
                 ),
               ),
-              Expanded(
-                child: filteredList.isEmpty && _searchController.text.isNotEmpty
-                    ? Center(
-                        child: Text(
-                          "Нет данных для отображения",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredList.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Text(
-                              filteredList[index].title,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52), 
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _textController.text = filteredList[index].title;
-                                selectedCharacteristicData = filteredList[index];
-                                _isDropdownVisible = false;
-                                _searchController.clear();
-                              });
-                              widget.onSelectCharacteristic(filteredList[index].title);
-                            },
-                          );
-                        },
-                      ),
+              IconButton(
+                icon: Icon(Icons.arrow_drop_down),
+                onPressed: () {
+                  setState(() {
+                    _isDropdownVisible = !_isDropdownVisible;
+                    if (!_isDropdownVisible) {
+                      _searchController.clear();
+                    }
+                  });
+                },
               ),
             ],
           ),
         ),
-    ],
-  );
-}
+        if (_isDropdownVisible)
+          Container(
+            margin: EdgeInsets.only(top: 2),
+            constraints: BoxConstraints(maxHeight: 350,maxWidth: 270),
+            decoration: BoxDecoration(
+              color: Color(0xffF4F7FD),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Color(0xffF4F7FD),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: "Поиск",
+                      prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    onChanged: (value) {
+                      filterSearchResults(value);
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: filteredList.isEmpty && _searchController.text.isNotEmpty
+                      ? Center(
+                          child: Text(
+                            "Нет данных для отображения",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredList.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(
+                                filteredList[index].title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52), 
+                                ),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _textController.text = filteredList[index].title;
+                                  selectedCharacteristicData = filteredList[index];
+                                  _isDropdownVisible = false;
+                                  _searchController.clear();
+                                });
+                                widget.onSelectCharacteristic(filteredList[index].title);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
