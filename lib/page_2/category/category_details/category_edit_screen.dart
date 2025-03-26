@@ -12,14 +12,14 @@ import 'package:image_picker/image_picker.dart';
 class CategoryEditBottomSheet {
   static void show(BuildContext context, {
     required String initialName,
-    required String initialDescription,
+    // required String initialDescription,
     required String? initialSubCategory,
     File? initialImage,
     List<CustomField>? initialCustomFields,
   }) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController(text: initialName);
-    final TextEditingController categoryDescriptionController = TextEditingController(text: initialDescription);
+    // final TextEditingController categoryDescriptionController = TextEditingController(text: initialDescription);
     String? subSelectedCategory = initialSubCategory;
     bool isActive = false;
     File? _image = initialImage;
@@ -187,14 +187,14 @@ class CategoryEditBottomSheet {
                                     });
                                   },
                                 ),
-                              const SizedBox(height: 8),
-                              CustomTextField(
-                                controller: categoryDescriptionController,
-                                hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                                label: AppLocalizations.of(context)!.translate('description_list'),
-                                maxLines: 5,
-                                keyboardType: TextInputType.multiline,
-                              ),
+                              // const SizedBox(height: 8),
+                              // CustomTextField(
+                              //   controller: categoryDescriptionController,
+                              //   hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                              //   label: AppLocalizations.of(context)!.translate('description_list'),
+                              //   maxLines: 5,
+                              //   keyboardType: TextInputType.multiline,
+                              // ),
                               const SizedBox(height: 16),
                               GestureDetector(
                                 onTap: () async {
@@ -349,7 +349,7 @@ class CategoryEditBottomSheet {
                                 _updateCategory(
                                   categoryNameController.text,
                                   isActive,
-                                  categoryDescriptionController.text,
+                                  // categoryDescriptionController.text,
                                   subSelectedCategory,
                                   _image,
                                   customFields,
@@ -376,10 +376,10 @@ class CategoryEditBottomSheet {
     );
   }
 
-  static void _updateCategory(String name, bool isActive, String description, String? subcategory, File? image, List<CustomField> customFields, BuildContext context) {
-    final String? desc = description.isEmpty ? null : description;
+  static void _updateCategory(String name, bool isActive, String? subcategory, File? image, List<CustomField> customFields, BuildContext context) {
+    // final String? desc = description.isEmpty ? null : description;
     print('Обновленное название категории: $name');
-    print('Обновленное описание категории: $desc');
+    // print('Обновленное описание категории: $desc');
     print('Обновленная подкатегория: $subcategory');
     print('Обновленное изображение: ${image?.path}');
     print('Обновленные пользовательские поля: ${customFields.map((field) => field.fieldName).toList()}');

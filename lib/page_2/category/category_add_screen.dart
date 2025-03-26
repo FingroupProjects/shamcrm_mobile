@@ -1,5 +1,7 @@
 
 import 'dart:io';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -7,13 +9,13 @@ import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CategoryAddBottomSheet {
   static void show(BuildContext context) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController();
-    final TextEditingController categoryDescriptionController = TextEditingController();
     bool isActive = false;
     String? subSelectedCategory;
     File? _image;
@@ -185,14 +187,6 @@ class CategoryAddBottomSheet {
                                     });
                                   },
                                 ),
-                              const SizedBox(height: 8),
-                              CustomTextField(
-                                controller: categoryDescriptionController,
-                                hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                                label: AppLocalizations.of(context)!.translate('description_list'),
-                                maxLines: 5,
-                                keyboardType: TextInputType.multiline,
-                              ),
                               const SizedBox(height: 16),
                               GestureDetector(
                                 onTap: () async {
@@ -346,10 +340,10 @@ class CategoryAddBottomSheet {
                               if (formKey.currentState!.validate() && _image != null) {
                                 _createCategory(
                                   categoryNameController.text,
-                                  categoryDescriptionController.text,
                                   subSelectedCategory,
                                   _image,
                                   context,
+                                  isActive,
                                 );
                               } else {
                                 setState(() {
@@ -372,9 +366,30 @@ class CategoryAddBottomSheet {
     );
   }
 
-  static void _createCategory(String name, String description, String? subcategory, File? image, BuildContext context) {
+static void _createCategory(
+  String name,
+  String? subcategory,
+  File? image,
+  BuildContext context,
+  bool isActive,
+) async {
+  try {
+    final categoryBloc = BlocProvider.of<CategoryBloc>(context);
+    categoryBloc.add(CreateCategory(
+      name: name,
+      parentId: isActive ? 0 : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
+      attributeIds: [], 
+      image: image, 
+    ));
+
+   BlocProvider.of<CategoryBloc>(context).add(FetchCategories());
     Navigator.pop(context);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ошибка при создании категории: ${e.toString()}')),
+    );
   }
+}
 }
 
 class CustomField {

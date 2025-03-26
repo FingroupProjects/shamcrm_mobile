@@ -21,19 +21,19 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
       insetPadding: EdgeInsets.zero, 
       child: Container(
         width: MediaQuery.of(context).size.width * 0.7, 
-        height: MediaQuery.of(context).size.height * 0.6, 
+        height: MediaQuery.of(context).size.height * 0.8, 
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Text(
               AppLocalizations.of(context)!.translate('Добавить характеристику'),
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52),
