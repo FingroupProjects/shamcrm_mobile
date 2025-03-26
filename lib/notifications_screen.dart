@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
@@ -253,9 +254,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                         ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
                                                         : notification.type == 'lead'
                                                           ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                          : notification.type == 'updateLeadStatus'
-                                                            ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
-                                                            : notification.type,
+                                                          : notification.type == 'myTaskOutDated'
+                                                            ? AppLocalizations.of(context)!.translate('Напоминание о просроченном сроке мои задачи')
+                                                            : notification.type == 'updateLeadStatus'
+                                                              ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
+                                                              : notification.type,
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -515,6 +518,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             leadName: '',
             leadStatus: '',
             statusId: 1,
+          ),
+        ),
+      );
+    } else if (type =='myTaskOutDated') {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => MyTaskDetailsScreen(
+            taskId: chatId.toString(),
+            taskName: '',
+            taskStatus: '',
+            statusId: 1,
+            taskNumber: 0,
           ),
         ),
       );

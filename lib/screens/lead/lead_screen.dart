@@ -885,15 +885,13 @@ List<TargetFocus> targets = [];
   }
 
   void _editLeadStatus(int index) {
-    // Extract lead status data if needed for editing
-    final leadStatus = _tabTitles[
-        index]; // Assuming _tabTitles holds the relevant data for the lead
+    final leadStatus = _tabTitles[index]; 
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
-          leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
+          leadStatusId: leadStatus['id'], 
         );
       },
     );
@@ -915,8 +913,7 @@ List<TargetFocus> targets = [];
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
+              _tabController = TabController(length: _tabTitles.length, vsync: this);
               _tabController.addListener(() {
                 setState(() {
                   _currentTabIndex = _tabController.index;
@@ -1032,8 +1029,7 @@ List<TargetFocus> targets = [];
                   title: title,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
 
                     if (index != -1) {
                       _tabController.animateTo(index);

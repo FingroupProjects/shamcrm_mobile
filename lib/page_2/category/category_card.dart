@@ -46,8 +46,8 @@ class _CategoryCardState extends State<CategoryCard> {
               categoryId: widget.categoryId,
               categoryName: widget.categoryName,
               subCategoryName: widget.subCategoryName,
-              // categoryDescription: widget.categoryDescription,
               attributes: widget.attributes,
+              imageUrl: widget.image,
             ),
           ),
         );

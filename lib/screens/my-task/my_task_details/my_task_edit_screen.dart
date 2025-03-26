@@ -645,7 +645,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       else ...[
                         // const SizedBox(height: 16),
                         _buildFileSelection(), // Добавляем виджет выбора файла
-                        _buildPushNotificationCheckbox(), // Add this line
+                        // _buildPushNotificationCheckbox(), // Add this line
                       ],
                     ],
                   ),

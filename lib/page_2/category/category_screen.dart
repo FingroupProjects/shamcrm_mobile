@@ -53,34 +53,70 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : BlocBuilder<CategoryBloc, CategoryState>(
+          : BlocConsumer<CategoryBloc, CategoryState>(
+              listener: (context, state) {
+                if (state is CategorySuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                     content: Text(
+                       AppLocalizations.of(context)!.translate(state.message), 
+                       style: TextStyle(
+                         fontFamily: 'Gilroy',
+                         fontSize: 16,
+                         fontWeight: FontWeight.w500,
+                         color: Colors.white,
+                       ),
+                     ),
+                     behavior: SnackBarBehavior.floating,
+                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(12),
+                     ),
+                     backgroundColor: Colors.green,
+                     elevation: 3,
+                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                     duration: Duration(seconds: 3),
+                   ),
+                 );
+                }
+              },
               builder: (context, state) {
-                if (state is CategoryLoading) {
+                if (state is CategoryLoading && state is! CategoryLoaded) {
                   return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
                 } else if (state is CategoryError) {
                   return Center(child: Text(state.message));
-                } else if (state is CategoryLoaded) {
-                    return ListView.builder(
-                      padding: EdgeInsets.only(left: 16, right: 16, top: 8),
-                      itemCount: state.categories.length,
-                      itemBuilder: (context, index) {
-                        final category = state.categories[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: CategoryCard(
-                            categoryId: category.id ?? 0,
-                            categoryName: category.name,
-                            subCategoryName: category.subcategories.isNotEmpty
-                                ? category.subcategories[0].name
-                                : '',
-                            attributes: [],
-                            image: category.image ?? 'assets/images/user1.jpg',
-                          ),
-                        );
-                      },
-                    );
+                } else if (state is CategoryEmpty) {
+                  return Center(child: Text('Категории не найдены'));
+                } else if (state is CategoryLoaded || state is CategorySuccess) {
+                  final categories = (state is CategoryLoaded) 
+                      ? state.categories 
+                      : (context.read<CategoryBloc>().state as CategoryLoaded).categories;
+                  
+                  if (categories.isEmpty) {
+                    return Center(child: Text('Категории не найдены'));
                   }
-                return Center(child: Text('No categories found'));
+                  
+                  return ListView.builder(
+                    padding: EdgeInsets.only(left: 16, right: 16, top: 8),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: CategoryCard(
+                          categoryId: category.id ?? 0,
+                          categoryName: category.name,
+                          subCategoryName: category.subcategories.isNotEmpty
+                              ? category.subcategories[0].name
+                              : '',
+                          attributes: [],
+                          image: category.image,
+                        ),
+                      );
+                    },
+                  );
+                }
+                return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
               },
             ),
       floatingActionButton: FloatingActionButton(

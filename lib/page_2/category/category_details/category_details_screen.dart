@@ -1,8 +1,9 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_goods_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_details/category_subcategory_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -10,15 +11,15 @@ class CategoryDetailsScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
   final String subCategoryName;
-  // final String categoryDescription;
  final List<Attribute> attributes;
+ final String? imageUrl;
 
   CategoryDetailsScreen({
     required this.categoryId,
     required this.categoryName,
     required this.subCategoryName,
-    // required this.categoryDescription,
     required this.attributes,
+    this.imageUrl,
   });
 
   @override
@@ -27,12 +28,27 @@ class CategoryDetailsScreen extends StatefulWidget {
 
 class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   List<Map<String, String>> details = [];
+  final ApiService _apiService = ApiService();
+  String? baseUrl;
 
   @override
   void initState() {
     super.initState();
+    _initializeBaseUrl();
   }
 
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final enteredDomainMap = await _apiService.getEnteredDomain();
+      setState(() {
+        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+      });
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -43,29 +59,67 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   void _updateDetails() {
     details = [
       {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': widget.categoryName},
-      {'label': AppLocalizations.of(context)!.translate('subcategories_details'), 'value': widget.subCategoryName},
-      // {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': widget.categoryDescription},
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(
-          context,
-          AppLocalizations.of(context)!.translate('view_category'),
+      appBar: _buildAppBar(
+        context,
+        AppLocalizations.of(context)!.translate('view_category'),
+      ),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ListView(
+          children: [
+            if (widget.imageUrl != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    '$baseUrl/${widget.imageUrl!}',
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: double.infinity,
+                        height: 200,
+                        color: Colors.white,
+                        child: Icon(Icons.image_not_supported, size: 50, color: Colors.black,),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: double.infinity,
+                        height: 200,
+                        color: Colors.white,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                                color: Colors.black,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            _buildDetailsList(),
+            CategorySubCategoryScreen(categoryId: widget.categoryId),
+          ],
         ),
-        backgroundColor: Colors.white,
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListView(
-            children: [
-              _buildDetailsList(),
-              // CategoryGoodsScreen(categoryName: widget.categoryName,),
-            ],
-          ),
-        ));
+      ),
+    );
   }
+
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -118,11 +172,8 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                 CategoryEditBottomSheet.show(
                   context,
                   initialName: widget.categoryName,
-                  // initialDescription: widget.categoryDescription, 
                   initialSubCategory: widget.subCategoryName,
-                  // initialCustomFields: widget.attributes.map((field) {
-                  //    return CustomField();
-                  //  }).toList(),
+                  // initialImageUrl: widget.imageUrl
                 );
               },
             ),
