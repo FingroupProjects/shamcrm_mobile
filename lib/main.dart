@@ -56,6 +56,7 @@ import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bl
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
@@ -257,6 +258,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllSubjectBloc()),
           BlocProvider(create: (context) => CategoryBloc(widget.apiService)),
+          BlocProvider(create: (context) => CategoryByIdBloc(widget.apiService)),
           ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'), 

@@ -494,19 +494,14 @@ Future<void> _checkPermissionsAndTutorial() async {
       context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
       context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
       context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-      context
-          .read<DashboardConversionBlocManager>()
-          .add(LoadLeadConversionDataManager());
+      context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
       context.read<DealStatsBloc>().add(LoadDealStatsData());
       context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
       context.read<UserBlocManager>().add(LoadUserData());
       context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
-      context
-          .read<DashboardTaskChartBlocManager>()
-          .add(LoadTaskChartDataManager());
-      context
-          .read<ProcessSpeedBlocManager>()
-          .add(LoadProcessSpeedDataManager());
+      context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
+      context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+      
     }
   }
 

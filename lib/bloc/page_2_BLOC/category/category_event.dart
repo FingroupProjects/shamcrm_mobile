@@ -7,13 +7,16 @@ class FetchCategories extends CategoryEvent {}
 class CreateCategory extends CategoryEvent {
   final String name;
   final int parentId;
-  final List<int> attributeIds;
-  final File? image; // Изменяем тип на File
+  final List<String> attributeNames; // Теперь храним названия
+  final File? image;
 
   CreateCategory({
     required this.name,
     required this.parentId,
-    required this.attributeIds,
-     this.image,
+    required this.attributeNames,
+    this.image,
   });
-  }
+
+  @override
+  List<Object?> get props => [name, parentId, attributeNames, image];
+}

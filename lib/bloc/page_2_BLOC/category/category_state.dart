@@ -32,8 +32,8 @@ class CategoryCreateError extends CategoryState {
   CategoryCreateError(this.message);
 }
 
-class CategoryCreatedSuccessfully extends CategoryState {
+class CategorySuccess extends CategoryState {
   final String message;
   
-  CategoryCreatedSuccessfully(this.message);
+  CategorySuccess(this.message);
 }

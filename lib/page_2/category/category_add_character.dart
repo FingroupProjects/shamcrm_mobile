@@ -20,8 +20,8 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
     return Dialog(
       insetPadding: EdgeInsets.zero, 
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.7, 
-        height: MediaQuery.of(context).size.height * 0.8, 
+        width: MediaQuery.of(context).size.width * 0.8, 
+        height: MediaQuery.of(context).size.height * 0.6, 
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,

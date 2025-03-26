@@ -40,6 +40,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
@@ -5973,9 +5974,6 @@ Future<List<CategoryData>> getCategory() async {
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
 
-      print("{====================================================");
-      print(data);
-      print("====================================================}");
 
     if (data.containsKey('result') && data['result'] is List) {
       
@@ -5992,10 +5990,30 @@ Future<List<CategoryData>> getCategory() async {
 }
 
 
+Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final url = '/category/get-by-parent-id/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    final response = await _getRequest(url);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      print(decodedJson);
+      return SubCategoryResponseASD.fromJson(decodedJson);
+    } else {
+      throw Exception('Failed to load subcategories. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Failed to load subcategories: ${e.toString()}');
+  }
+}
+
+
 Future<Map<String, dynamic>> createCategory({
   required String name,
   required int parentId,
-  required List<int> attributeIds,
+  required List<String> attributeNames,
   File? image,
 }) async {
   try {
@@ -6011,18 +6029,15 @@ Future<Map<String, dynamic>> createCategory({
       'Device': 'mobile'
     });
 
-    // Add fields
     request.fields['name'] = name;
     if (parentId != 0) {
       request.fields['parent_id'] = parentId.toString();
     }
 
-    // Add attributes
-    for (int i = 0; i < attributeIds.length; i++) {
-      request.fields['attributes[$i][attribute_id]'] = attributeIds[i].toString();
+    for (int i = 0; i < attributeNames.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributeNames[i]; 
     }
 
-    // Add image if exists
     if (image != null) {
       final imageFile = await http.MultipartFile.fromPath(
         'image', 
@@ -6031,7 +6046,6 @@ Future<Map<String, dynamic>> createCategory({
       request.files.add(imageFile);
     }
 
-    // Send request
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
@@ -6041,7 +6055,7 @@ Future<Map<String, dynamic>> createCategory({
       return {
         'success': true,
         'message': 'category_created_successfully',
-        'data': CategoryData.fromJson(responseBody), // Убрали ['result']
+        'data': CategoryData.fromJson(responseBody),
       };
     } else {
       return {

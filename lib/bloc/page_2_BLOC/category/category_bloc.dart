@@ -7,52 +7,49 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   final ApiService apiService;
+  List<CategoryData> _categories = []; 
 
   CategoryBloc(this.apiService) : super(CategoryInitial()) {
     on<FetchCategories>(_fetchCategories);
     on<CreateCategory>(_createCategory);
   }
 
-Future<void> _fetchCategories(FetchCategories event, Emitter<CategoryState> emit) async {
-  emit(CategoryLoading());
-
-  if (await _checkInternetConnection()) {
-    try {
-      final categories = await apiService.getCategory();
-
-      // Проверяем, пуст ли список категорий
-      if (categories.isEmpty) {
-        emit(CategoryEmpty());
-      } else {
-        emit(CategoryLoaded(categories));
+  Future<void> _fetchCategories(FetchCategories event, Emitter<CategoryState> emit) async {
+    emit(CategoryLoading());
+    
+    if (await _checkInternetConnection()) {
+      try {
+        _categories = await apiService.getCategory(); 
+        if (_categories.isEmpty) {
+          emit(CategoryEmpty());
+        } else {
+          emit(CategoryLoaded(_categories));
+        }
+      } catch (e) {
+        emit(CategoryError('Не удалось загрузить категории!'));
       }
-    } catch (e) {
-      print("Error fetching categories: $e");
-      emit(CategoryError('Не удалось загрузить категории!'));
+    } else {
+      emit(CategoryError('Нет подключения к интернету'));
     }
-  } else {
-    emit(CategoryError('Нет подключения к интернету'));
   }
-}
 
 Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) async {
   emit(CategoryCreating());
-
+  
   if (await _checkInternetConnection()) {
     try {
       final response = await apiService.createCategory(
         name: event.name,
         parentId: event.parentId,
-        attributeIds: event.attributeIds,
+        attributeNames: event.attributeNames,
         image: event.image,
       );
 
       if (response['success'] == true) {
-        // После успешного создания, ничего не эмитим, так как мы заново загрузим список
-        // Главное - не эмитить ошибку
+        add(FetchCategories());
+        emit(CategorySuccess("Категория успешно создана"));
       } else {
-        final errorMessage = response['message'] ?? 'Неизвестная ошибка';
-        emit(CategoryCreateError(errorMessage));
+        emit(CategoryCreateError(response['message'] ?? 'Неизвестная ошибка'));
       }
     } catch (e) {
       emit(CategoryCreateError('Не удалось создать категорию: ${e.toString()}'));

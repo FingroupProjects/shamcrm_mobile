@@ -146,7 +146,7 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
-      case 'myTask':
+      case 'myTaskOutDated':
         print('Переход на экран лида с ID: $id');
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'myTask', message);
@@ -327,14 +327,10 @@ Future<void> navigateToScreen(
   }
 
   Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
-    print('Received push notification data: ${message.data}');
 
     final myTaskId = message.data['id'];
     final taskNumber = int.tryParse(message.data['task_number'] ?? '');
-
-    print('taskId: $myTaskId');
-    print('taskNumber: $taskNumber');
-
+    
     if (myTaskId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
@@ -343,7 +339,7 @@ Future<void> navigateToScreen(
             taskName: '',
             taskStatus: '',
             statusId: 1,
-            taskNumber: taskNumber, // Теперь taskNumber это int?
+            taskNumber: taskNumber, 
           ),
         ),
       );
