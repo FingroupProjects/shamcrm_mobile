@@ -45,8 +45,6 @@ class _CategoryCardState extends State<CategoryCard> {
             builder: (context) => CategoryDetailsScreen(
               categoryId: widget.categoryId,
               categoryName: widget.categoryName,
-              subCategoryName: widget.subCategoryName,
-              attributes: widget.attributes,
               imageUrl: widget.image,
             ),
           ),

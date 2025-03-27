@@ -147,8 +147,8 @@ class FirebaseApi {
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
       case 'myTaskOutDated':
-        print('Переход на экран лида с ID: $id');
-        screenIndex = 2;
+        print('Переход на экран мои задачи с ID: $id');
+        screenIndex = -1;
         await navigateToScreen(screenIndex, id, 'myTask', message);
         break;
       case 'eventId':
@@ -174,7 +174,7 @@ Future<void> navigateToScreen(
   });
 
   int group = 1; // По умолчанию группа 1
-  if (type == 'message' || type == 'task' || type == 'lead' || type == 'dealDeadLineNotification') {
+  if (type == 'message' || type == 'task' || type == 'lead' || type == 'dealDeadLineNotification' || type == 'eventId' || type == 'myTask') {
     group = 1;
   } else {
     group = 2;
@@ -288,8 +288,7 @@ Future<void> navigateToScreen(
     print('Received push notification data: ${message.data}');
 
     final taskId = message.data['id'];
-    final taskNumber =
-        int.tryParse(message.data['taskNumber'] ?? ''); // Преобразуем в int
+    final taskNumber = int.tryParse(message.data['taskNumber'] ?? ''); // Преобразуем в int
 
     print('taskId: $taskId');
     print('taskNumber: $taskNumber');

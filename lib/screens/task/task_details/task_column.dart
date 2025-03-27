@@ -55,10 +55,7 @@ class _TaskColumnState extends State<TaskColumn> {
     super.initState();
     _taskBloc = TaskBloc(_apiService)..add(FetchTasks(widget.statusId));
     _checkPermission();
-    _scrollController.addListener(_onScroll);
-
     _loadFeatureState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         _initTutorialTargets();
@@ -232,21 +229,7 @@ class _TaskColumnState extends State<TaskColumn> {
     super.dispose();
   }
 
-void _onScroll() {
-  if (_scrollController.position.pixels == 
-      _scrollController.position.maxScrollExtent && 
-      !_isFetchingMore) {
-    if (_taskBloc.state is TaskDataLoaded) {
-      final state = _taskBloc.state as TaskDataLoaded;
-      if (!_taskBloc.allTasksFetched) {
-        setState(() {
-          _isFetchingMore = true;
-        });
-        _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
-      }
-    }
-  }
-}
+
 
   Future<void> _checkPermission() async {
     bool hasPermission = await _apiService.hasPermission('task.create');
@@ -262,7 +245,7 @@ void _onScroll() {
     return Future.delayed(Duration(milliseconds: 1));
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: _taskBloc,
@@ -278,30 +261,58 @@ void _onScroll() {
                 ),
               );
             } else if (state is TaskDataLoaded) {
-              final tasks = state.tasks
-                  .where((task) => task.statusId == widget.statusId)
-                  .toList();
+              final tasks = state.tasks.where((task) => task.statusId == widget.statusId).toList();
 
-              // Показываем подсказку для кнопки добавления, если карточек нет
-              if (tasks.isEmpty &&
-                  !_isFabTutorialShown &&
-                  !_isTutorialInProgress) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showTutorial("TaskFloatingActionButton");
+              if (tasks.isNotEmpty) {
+                final ScrollController _scrollController = ScrollController();
+                _scrollController.addListener(() {
+                  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+                      !_taskBloc.allTasksFetched) {
+                    _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
+                  }
                 });
-              }
 
-              // Показываем подсказку для карточки и статуса, если карточки есть
-              if (tasks.isNotEmpty &&
-                  !_isTaskCardTutorialShown &&
-                  !_isStatusTutorialShown &&
-                  !_isTutorialInProgress) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showTutorial("TaskCardAndStatusDropdown");
-                });
-              }
-
-              if (tasks.isEmpty) {
+                return RefreshIndicator(
+                  color: Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: _onRefresh,
+                  child: Column(
+                    children: [
+                      SizedBox(height: 8),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          itemCount: tasks.length,
+                          itemBuilder: (context, index) {
+                            
+                            if (index > 0 && tasks[index].id == tasks[index - 1].id) {
+                                return SizedBox.shrink(); 
+                              }
+                              
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: TaskCard(
+                                key: index == 0 ? keyTaskCard : null,
+                                dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
+                                task: tasks[index],
+                                name: widget.name,
+                                statusId: widget.statusId,
+                                onStatusUpdated: () {
+                                  _taskBloc.add(FetchTasks(widget.statusId));
+                                },
+                                onStatusId: (StatusTaskId) {
+                                  widget.onStatusId(StatusTaskId);
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
                 return RefreshIndicator(
                   backgroundColor: Colors.white,
                   color: Color(0xff1E2E52),
@@ -309,52 +320,22 @@ void _onScroll() {
                   child: ListView(
                     physics: AlwaysScrollableScrollPhysics(),
                     children: [
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4),
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
                       Center(
-                          child: Text(AppLocalizations.of(context)!
-                              .translate('no_tasks_for_selected_status'))),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 );
               }
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: Column(
-                  children: [
-                    SizedBox(height: 15),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: TaskCard(
-                              key: index == 0 ? keyTaskCard : null,
-                              dropdownStatusKey:
-                                  index == 0 ? keyStatusDropdown : null,
-                              task: tasks[index],
-                              name: widget.name,
-                              statusId: widget.statusId,
-                              onStatusUpdated: () {
-                                _taskBloc.add(FetchTasks(widget.statusId));
-                              },
-                              onStatusId: (StatusTaskId) {
-                                widget.onStatusId(StatusTaskId);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
             } else if (state is TaskError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(

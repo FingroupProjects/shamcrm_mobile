@@ -142,36 +142,37 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
             SizedBox(width: 16),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    category.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  category.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
                   ),
-                  SizedBox(height: 8),
-                  if (category.attributes.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Характеристики:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xff99A4BA),
-                          ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 8),
+                if (category.attributes.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Характеристики:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff99A4BA),
                         ),
-                        SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: category.attributes.map((attr) => 
+                      ),
+                      SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          ...category.attributes.take(4).map((attr) => 
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
@@ -179,20 +180,36 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                attr.name,
+                                attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Color(0xff1E2E52),
                                 ),
                               ),
                             ),
-                          ).toList(),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+                          ),
+                          if (category.attributes.length > 3)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '+${category.attributes.length - 3}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+              ],
             ),
+          ),
           ],
         ),
       ),

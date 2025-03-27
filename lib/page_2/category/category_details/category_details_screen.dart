@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -5,20 +7,19 @@ import 'package:crm_task_manager/page_2/category/category_details/category_delet
 import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_subcategory_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 
 class CategoryDetailsScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
-  final String subCategoryName;
- final List<Attribute> attributes;
+
  final String? imageUrl;
 
   CategoryDetailsScreen({
     required this.categoryId,
     required this.categoryName,
-    required this.subCategoryName,
-    required this.attributes,
+
     this.imageUrl,
   });
 
@@ -31,11 +32,28 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeBaseUrl();
+  late String currentName;
+  File? _cachedImageFile;
+
+  Future<void> _loadImage(String imageUrl) async {
+  if (imageUrl.isNotEmpty) {
+    final file = await urlToFile('$baseUrl/$imageUrl');
+    setState(() {
+      _cachedImageFile = file;
+    });
   }
+}
+
+ @override
+void initState() {
+  super.initState();
+  currentName = widget.categoryName;
+  _initializeBaseUrl().then((_) {
+    if (widget.imageUrl != null) {
+      _loadImage(widget.imageUrl!);
+    }
+  });
+}
 
   Future<void> _initializeBaseUrl() async {
     try {
@@ -58,7 +76,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': widget.categoryName},
+      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': currentName},
     ];
   }
 
@@ -74,42 +92,49 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: ListView(
           children: [
-            if (widget.imageUrl != null)
+            if (_cachedImageFile != null || widget.imageUrl != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    '$baseUrl/${widget.imageUrl!}',
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.white,
-                        child: Icon(Icons.image_not_supported, size: 50, color: Colors.black,),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                                color: Colors.black,
-                          ),
+                  child: _cachedImageFile != null
+                      ? Image.file(
+                          _cachedImageFile!,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        )
+                      : Image.network(
+                          '$baseUrl/${widget.imageUrl!}',
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.white,
+                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.white,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ),
             _buildDetailsList(),
@@ -160,23 +185,37 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                CategoryEditBottomSheet.show(
-                  context,
-                  initialName: widget.categoryName,
-                  initialSubCategory: widget.subCategoryName,
-                  // initialImageUrl: widget.imageUrl
-                );
-              },
-            ),
+IconButton(
+  padding: EdgeInsets.zero,
+  constraints: BoxConstraints(),
+  icon: Image.asset(
+    'assets/icons/edit.png',
+    width: 24,
+    height: 24,
+  ),
+  onPressed: () async {
+    final result = await CategoryEditBottomSheet.show(
+      context,
+      initialCategoryId: widget.categoryId,
+      initialName: currentName,
+      initialImage: _cachedImageFile,
+    );
+    
+    if (result != null) {
+      setState(() {
+        currentName = result['updatedName'];
+        if (result['updatedImage'] != null) {
+          _cachedImageFile = result['updatedImage'];
+        }
+
+        print('SUCCES UPDATE CTG');
+        print(currentName);
+        print(_cachedImageFile);
+      });
+        _updateDetails();
+    }
+  },
+),
             IconButton(
               padding: EdgeInsets.only(right: 8),
               constraints: BoxConstraints(),
@@ -188,8 +227,12 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => DeleteCategoryDialog(),
-                );           
+                  builder: (context) => DeleteCategoryDialog(categoryId: widget.categoryId),
+                ).then((deleted) {
+                  if (deleted == true) {
+                    Navigator.of(context).pop(true); 
+                  }
+                });        
               },
             ),
           ],
@@ -326,5 +369,8 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   @override
   void dispose() {
     super.dispose();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    cleanTempFiles();
+  });  
   }
 }

@@ -4,6 +4,43 @@ import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+Future<File?> urlToFile(String imageUrl) async {
+  try {
+    final response = await http.get(Uri.parse(imageUrl));
+    final documentDirectory = await getTemporaryDirectory();
+    
+    // Создаем уникальное имя файла на основе URL или timestamp
+    final uniqueFileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final file = File('${documentDirectory.path}/$uniqueFileName');
+    
+    await file.writeAsBytes(response.bodyBytes);
+    return file;
+  } catch (e) {
+    print('Error converting URL to file: $e');
+    return null;
+  }
+}
+
+Future<void> cleanTempFiles() async {
+  try {
+    final directory = await getTemporaryDirectory();
+    final files = directory.listSync();
+    
+    final cutoffTime = DateTime.now().subtract(Duration(hours: 1));
+    for (var file in files) {
+      if (file is File && 
+          file.path.endsWith('.jpg') && 
+          file.lastModifiedSync().isBefore(cutoffTime)) {
+        await file.delete();
+      }
+    }
+  } catch (e) {
+    print('Error cleaning temp files: $e');
+  }
+}
 
 Future<File?> convertAudioFile(String inputPath, String outputPath) async {
   await FFmpegKit.execute('-i $inputPath $outputPath').then((session) async {
