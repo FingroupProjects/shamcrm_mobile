@@ -255,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                         : notification.type == 'lead'
                                                           ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
                                                           : notification.type == 'myTaskOutDated'
-                                                            ? AppLocalizations.of(context)!.translate('Напоминание о просроченном сроке мои задачи')
+                                                            ? AppLocalizations.of(context)!.translate('Напоминание о просрочке мои задачи')
                                                             : notification.type == 'updateLeadStatus'
                                                               ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
                                                               : notification.type,
@@ -396,8 +396,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   (user) => user.participant.id.toString() == userId);
               if (userIndex != -1) {
                 int otherUserIndex = (userIndex == 0) ? 1 : 0;
-                chatName =
-                    '${getChatById.chatUsers[otherUserIndex].participant.name}';
+                chatName = '${getChatById.chatUsers[otherUserIndex].participant.name}';
               } else {
                 chatName = getChatById.chatUsers[0].participant.name;
               }

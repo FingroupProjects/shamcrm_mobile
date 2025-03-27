@@ -13,6 +13,7 @@ class CategoryLoaded extends CategoryState {
 }
 
 class CategoryEmpty extends CategoryState {}
+
 class CategoryError extends CategoryState {
   final String message;
   CategoryError(this.message);
@@ -36,4 +37,15 @@ class CategorySuccess extends CategoryState {
   final String message;
   
   CategorySuccess(this.message);
+}
+class CatgeoryUpdatedEdit extends CategoryState {
+  final String message;
+
+  CatgeoryUpdatedEdit(this.message);
+}
+
+class CategoryDeleted extends CategoryState {
+  final String message;
+
+  CategoryDeleted(this.message);
 }
