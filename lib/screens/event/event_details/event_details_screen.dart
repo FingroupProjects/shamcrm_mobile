@@ -9,9 +9,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -25,7 +23,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:voice_message_package/voice_message_package.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
@@ -37,35 +34,28 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final ApiService _apiService = ApiService();
-  bool _canEditNotice =
-      true; // You should get this from your permissions system
-  bool _canDeleteNotice =
-      true; // You should get this from your permissions system
+  bool _canEditNotice = false; 
+  bool _canDeleteNotice = false; 
   final TextEditingController conclusionController = TextEditingController();
   final GlobalKey keyNoticeEdit = GlobalKey();
   final GlobalKey keyNoticeFinish = GlobalKey();
-  final GlobalKey keyNoticeDelete =
-      GlobalKey(); // Новый ключ для кнопки удаления
-// Переменные для управления аудиоплеером
+  final GlobalKey keyNoticeDelete = GlobalKey(); 
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false; // Статус воспроизведения
-  Duration _duration = Duration.zero; // Общая длительность записи
-  Duration _position = Duration.zero; // Текущая позиция воспроизведения
+  bool _isPlaying = false; 
+  Duration _duration = Duration.zero; 
+  Duration _position = Duration.zero;
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
-  final ApiService apiService =
-      ApiService(); // Создаем экземпляр здесь или получаем через провайдер
+  final ApiService apiService = ApiService(); 
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false; // Защита от повторного вызова
-  Map<String, dynamic>? tutorialProgress; // Данные с сервера
+  bool _isTutorialInProgress = false; 
+  Map<String, dynamic>? tutorialProgress; 
 
   @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
-      context
-          .read<NoticeBloc>()
-          .add(FetchNoticeEvent(noticeId: widget.noticeId));
+      context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
       _setupAudioPlayer(); // Инициализируем аудиоплеер после проверки разрешений
     });
   }
@@ -112,10 +102,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeEdit',
           keyTarget: keyNoticeEdit,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_Notice_edit_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_Notice_edit_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -123,10 +111,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeDelete',
           keyTarget: keyNoticeDelete,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_Notice_delete_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_Notice_delete_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -155,8 +141,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Padding(
                     padding: EdgeInsets.zero,
                     child: Text(
-                      AppLocalizations.of(context)!
-                          .translate('tutorial_Notice_Finish_description'),
+                      AppLocalizations.of(context)!.translate('tutorial_Notice_Finish_description'),
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -172,10 +157,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       createTarget(
         identify: 'keyDealHistory',
         keyTarget: keyDealHistory,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_history_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_history_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_Notice_history_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_Notice_history_description'),
         align: ContentAlign.top,
         context: context,
       ),
@@ -394,10 +377,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   void _showFinishDialog(int noticeId) {
-    // Clear the controller before showing dialog
     conclusionController.clear();
 
-    // Add a state variable to track validation errors
     bool hasValidationError = false;
     String? errorText;
 
@@ -662,11 +643,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildFinishButton(Notice notice, {Key? key}) {
-    if (notice.isFinished) {
+  if (notice.isFinished || notice.date == null) {
       return const SizedBox.shrink();
     }
     return Padding(
-      key: key, // Передаем ключ в Padding
+      key: key, 
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: CustomButton(
         buttonText: AppLocalizations.of(context)!.translate('finish_event'),

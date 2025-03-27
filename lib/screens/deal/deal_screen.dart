@@ -45,7 +45,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   bool _canReadDealStatus = false;
   bool _canCreateDealStatus = false;
-  bool _canDeleteDealStatus = false;
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
@@ -91,9 +90,7 @@ List<ManagerData> _selectedManagers = [];
     DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
-          _tabTitles = cachedStatuses
-              .map((status) => {'id': status['id'], 'title': status['title']})
-              .toList();
+          _tabTitles = cachedStatuses.map((status) => {'id': status['id'], 'title': status['title']}).toList();
           _tabController = TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
 
@@ -166,11 +163,9 @@ List<ManagerData> _selectedManagers = [];
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
-    final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
       _canReadDealStatus = canRead;
       _canCreateDealStatus = canCreate;
-      _canDeleteDealStatus = canDelete;
     });
 
     try {
@@ -242,7 +237,7 @@ List<ManagerData> _selectedManagers = [];
         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг для DealColumn
+          _isDealScreenTutorialCompleted = true;
         });
         return true;
       },
@@ -251,7 +246,7 @@ List<ManagerData> _selectedManagers = [];
         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг для DealColumn
+          _isDealScreenTutorialCompleted = true; 
         });
       },
     ).show(context: context);
@@ -260,7 +255,6 @@ List<ManagerData> _selectedManagers = [];
   Future<void> _searchDeals(String query, int currentStatusId) async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
     await DealCache.clearAllDeals();
-    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
     dealBloc.add(FetchDeals(currentStatusId,
         query: query,
         managerIds: _selectedManagers.map((manager) => manager.id).toList(),
@@ -297,9 +291,6 @@ List<ManagerData> _selectedManagers = [];
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
-    print(_initialHasTasks);
-    print("_initialHasTasks");
-
     setState(() {
       _showCustomTabBar = false;
       _selectedManagers = managers['managers'];
@@ -461,7 +452,6 @@ List<ManagerData> _selectedManagers = [];
                   _searchController.clear();
                   _lastSearchQuery = '';
                 });
-
                 if (_searchController.text.isEmpty) {
                   if (_selectedManagers.isEmpty &&
                       _selectedStatuses == null &&
@@ -483,9 +473,7 @@ List<ManagerData> _selectedManagers = [];
                     taskBloc.add(FetchDeals(
                       currentStatusId,
                       managerIds: _selectedManagers.isNotEmpty
-                          ? _selectedManagers
-                              .map((manager) => manager.id)
-                              .toList()
+                          ? _selectedManagers.map((manager) => manager.id).toList()
                           : null,
                       statusIds: _selectedStatuses,
                       fromDate: _fromDate,
@@ -500,7 +488,6 @@ List<ManagerData> _selectedManagers = [];
                 } else if (_selectedManagerIds != null &&
                     _selectedManagerIds!.isNotEmpty) {
                   print("ELSE IF SEARCH NOT EMPTY");
-
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<DealBloc>(context);
                   taskBloc.add(FetchDeals(
@@ -521,9 +508,7 @@ List<ManagerData> _selectedManagers = [];
               children: [
                 const SizedBox(height: 15),
                 // Условие для отображения табов с использованием флага
-                if (!_isSearching &&
-                    _selectedManagerId == null &&
-                    _showCustomTabBar)
+                if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
                   _buildCustomTabBar(),
                 Expanded(
                   child: _isSearching || _selectedManagerId != null
@@ -536,7 +521,6 @@ List<ManagerData> _selectedManagers = [];
   }
 
   Widget searchWidget(List<Deal> deals) {
-    // Показать анимацию загрузки, если идет поиск
     if (_isSearching) {
       return const Center(
         child: PlayStoreImageLoading(
@@ -545,8 +529,6 @@ List<ManagerData> _selectedManagers = [];
         ),
       );
     }
-
-    // Показать анимацию загрузки, если это менеджер и данные ещё загружаются
     if (_isManager && deals.isEmpty) {
       return const Center(
         child: PlayStoreImageLoading(
@@ -555,8 +537,6 @@ List<ManagerData> _selectedManagers = [];
         ),
       );
     }
-
-    // Если идёт поиск и ничего не найдено
     if (_isSearching && deals.isEmpty) {
       return Center(
         child: Text(
@@ -570,8 +550,6 @@ List<ManagerData> _selectedManagers = [];
         ),
       );
     }
-
-    // Если это менеджер и список сделок пуст после загрузки
     else if (_isManager && deals.isEmpty) {
       return Center(
         child: Text(
@@ -585,8 +563,6 @@ List<ManagerData> _selectedManagers = [];
         ),
       );
     }
-
-    // Если сделки существуют, отображаем их список
     if (deals.isNotEmpty) {
       return Flexible(
         child: ListView.builder(
@@ -600,20 +576,14 @@ List<ManagerData> _selectedManagers = [];
                 deal: deal,
                 title: deal.dealStatus?.title ?? "",
                 statusId: deal.statusId,
-                onStatusUpdated: () {
-                  print('Статус сделки обновлён');
-                },
-                onStatusId: (StatusDealId) {
-                  print('onStatusId вызван с id: $StatusDealId');
-                },
+                onStatusUpdated: () {},
+                onStatusId: (StatusDealId) {},
               ),
             );
           },
         ),
       );
     }
-
-    // Если список сделок пуст, но это не поиск и не менеджер
     return Center(
       child: Text(
         AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
@@ -636,8 +606,7 @@ List<ManagerData> _selectedManagers = [];
             return Center(
               child: Text(
                 _selectedManagerIds?.isNotEmpty == true
-                    ? AppLocalizations.of(context)!
-                        .translate('no_manager_in_deal')
+                    ? AppLocalizations.of(context)!.translate('no_manager_in_deal')
                     : AppLocalizations.of(context)!.translate('nothing_found'),
                 style: const TextStyle(
                   fontSize: 18,
@@ -654,8 +623,7 @@ List<ManagerData> _selectedManagers = [];
             itemBuilder: (context, index) {
               final deal = deals[index];
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: DealCard(
                   deal: deal,
                   title: deal.dealStatus?.title ?? "",
@@ -749,8 +717,6 @@ List<ManagerData> _selectedManagers = [];
     );
 
     if (result == true) {
-      // await DealCache.clearCache();
-      // print('Все данные удалены успешно. Статусы обновлены.');
       context.read<DealBloc>().add(FetchDealStatuses());
 
       setState(() {
@@ -759,79 +725,6 @@ List<ManagerData> _selectedManagers = [];
     }
   }
 
-  // Widget _buildTabButton(int index) {
-  //   bool isActive = _tabController.index == index;
-
-  //   return BlocBuilder<DealBloc, DealState>(
-  //     builder: (context, state) {
-  //       int dealCount = 0;
-
-  //       if (state is DealLoaded) {
-  //         final statusId = _tabTitles[index]['id'];
-  //         final dealStatus = state.dealStatuses.firstWhere(
-  //           (status) => status.id == statusId,
-  //           // orElse: () => null,
-  //         );
-  //         dealCount = dealStatus?.dealsCount ?? 0; // Берём количество сделок
-  //       }
-
-  //       return GestureDetector(
-  //         key: _tabKeys[index],
-  //         onTap: () {
-  //           _tabController.animateTo(index);
-  //         },
-  //         onLongPress: () {
-  //           if (_canDeleteDealStatus) {
-  //             _showDeleteDialog(index);
-  //           }
-  //         },
-  //         child: Container(
-  //           decoration: TaskStyles.tabButtonDecoration(isActive),
-  //           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-  //           child: Row(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 _tabTitles[index]['title'],
-  //                 style: TaskStyles.tabTextStyle.copyWith(
-  //                   color: isActive
-  //                       ? TaskStyles.activeColor
-  //                       : TaskStyles.inactiveColor,
-  //                 ),
-  //               ),
-  //               Transform.translate(
-  //                 offset: const Offset(12, 0),
-  //                 child: Container(
-  //                   padding:
-  //                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.white,
-  //                     borderRadius: BorderRadius.circular(12),
-  //                     border: Border.all(
-  //                       color: isActive
-  //                           ? const Color(0xff1E2E52)
-  //                           : const Color(0xff99A4BA),
-  //                       width: 1,
-  //                     ),
-  //                   ),
-  //                   child: Text(
-  //                     dealCount.toString(),
-  //                     style: TextStyle(
-  //                       color:
-  //                           isActive ? Colors.black : const Color(0xff99A4BA),
-  //                       fontSize: 12,
-  //                       fontWeight: FontWeight.w500,
-  //                     ),
-  //                   ),
-  //                 ),
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
   void _showStatusOptions(BuildContext context, int index) {
     final RenderBox renderBox =
         _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
@@ -972,9 +865,6 @@ List<ManagerData> _selectedManagers = [];
         dealStatusId: dealStatus['id'],
       ),
     ).then((_) =>
-        // final dealBloc = BlocProvider.of<DealBloc>(context);
-        // dealBloc.add(FetchDealStatuses());
-
         _dealBloc.add(FetchDeals(dealStatus['id'])));
   }
 
@@ -1111,7 +1001,6 @@ List<ManagerData> _selectedManagers = [];
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
-          // print('state: ${state.runtimeType}');
           if (state is DealDataLoaded) {
             final List<Deal> deals = state.deals;
             return searchWidget(deals);
@@ -1129,17 +1018,14 @@ List<ManagerData> _selectedManagers = [];
             }
             return TabBarView(
               controller: _tabController,
-              // key: UniqueKey(),
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
                 return DealColumn(
-                  isDealScreenTutorialCompleted:
-                      _isDealScreenTutorialCompleted, // Передаем флаг
+                  isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
                   statusId: statusId,
                   title: title,
-                  managerId: _selectedManagerId, // Передаем ID менеджера
-
+                  managerId: _selectedManagerId, 
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles

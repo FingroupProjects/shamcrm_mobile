@@ -49,7 +49,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
+  bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
+  
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
@@ -176,10 +178,12 @@ List<TargetFocus> targets = [];
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
+    final canUpdate = await _apiService.hasPermission('leadStatus.update');
     final canDelete = await _apiService.hasPermission('leadStatus.delete');
     setState(() {
       _canReadLeadStatus = canRead;
       _canCreateLeadStatus = canCreate;
+      _canUpdateLeadStatus = canUpdate;
       _canDeleteLeadStatus = canDelete;
     });
 
@@ -731,6 +735,7 @@ List<TargetFocus> targets = [];
       elevation: 4,
       color: Colors.white,
       items: [
+      if (_canUpdateLeadStatus) 
         PopupMenuItem(
           value: 'edit',
           child: ListTile(
@@ -746,6 +751,7 @@ List<TargetFocus> targets = [];
             ),
           ),
         ),
+      if (_canDeleteLeadStatus) 
         PopupMenuItem(
           value: 'delete',
           child: ListTile(
@@ -793,9 +799,7 @@ List<TargetFocus> targets = [];
             _tabController.animateTo(index);
           },
           onLongPress: () {
-            if (_canDeleteLeadStatus) {
               _showStatusOptions(context, index);
-            }
           },
           child: Container(
             decoration: TaskStyles.tabButtonDecoration(isActive),
