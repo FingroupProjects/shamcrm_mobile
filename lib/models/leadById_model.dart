@@ -6,7 +6,6 @@ class LeadById {
   final int id;
   final String name;
   final Source? source;
-  final int messageAmount;
   final String? createdAt;
   final int statusId;
   final RegionData? region;
@@ -28,7 +27,6 @@ class LeadById {
     required this.id,
     required this.name,
     this.source,
-    required this.messageAmount,
     this.createdAt,
     required this.statusId,
     this.region,
@@ -54,7 +52,6 @@ class LeadById {
       source: json['source'] != null && json['source'] is Map<String, dynamic>
           ? Source.fromJson(json['source'])
           : null,
-      messageAmount: json['message_amount'] is int ? json['message_amount'] : 0,
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       statusId: leadStatusId,
       region: json['region'] != null && json['region'] is Map<String, dynamic>

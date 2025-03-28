@@ -2,30 +2,38 @@ import 'dart:io';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
-import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
-class CategoryAddBottomSheet {
-  static void show(BuildContext context) {
+class SubCategoryEditBottomSheet {
+  static Future<Map<String, dynamic>?> show(
+    BuildContext context, {
+    required int initialSubCategoryId,
+    required String initialName,
+    File? initialImage,
+    required List<Attribute> initialAttributes,
+  }) async {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController categoryNameController = TextEditingController();
-    bool isActive = false;
-    String? subSelectedCategory;
-    File? _image;
-    bool _isImageSelected = true; 
-    List<CustomField> customFields = [];
+    int subCategoryId=initialSubCategoryId;
+    final TextEditingController categoryNameController = TextEditingController(text: initialName);
+    File? _image = initialImage;
+    bool _isImageSelected = true;
+    bool _isImageChanged = false;
+    List<CustomField> customFields = initialAttributes
+        .map((attr) => CustomField(name: attr.name))
+        .toList();
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _isImageSelected = true; 
+        _isImageChanged = true;
       } else {
         _isImageSelected = false; 
       }
@@ -85,7 +93,7 @@ class CategoryAddBottomSheet {
                       ),
                     ),
                     Text(
-                      AppLocalizations.of(context)!.translate('new_category'),
+                      AppLocalizations.of(context)!.translate('Редактирования подкатегории'),
                       style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -112,88 +120,6 @@ class CategoryAddBottomSheet {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context)!.translate('Родительская категория'),
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'Gilroy',
-                                            color: Color(0xff1E2E52),
-                                        ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              isActive = !isActive;
-                                              if (isActive) {
-                                                subSelectedCategory = null;
-                                                customFields = [];
-                                              }
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF4F7FD),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Switch(
-                                                  value: isActive,
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      isActive = value;
-                                                      if (isActive) {
-                                                        subSelectedCategory = null;
-                                                        customFields = [];
-                                                      }
-                                                    });
-                                                  },
-                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  isActive
-                                                      ? ''
-                                                      : '',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Gilroy',
-                                                    color: Color(0xFF1E1E1E),
-                                                ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              if (!isActive)
-                                SubCategoryDropdownWidget(
-                                  subSelectedCategory: subSelectedCategory,
-                                  onSelectCategory: (category) {
-                                    setState(() {
-                                      subSelectedCategory = category;
-                                    });
-                                  },
-                                ),
                               const SizedBox(height: 8),
                                Text( AppLocalizations.of(context)!.translate('Изображение'),
                                  style: const TextStyle(
@@ -279,6 +205,7 @@ class CategoryAddBottomSheet {
                                                   onPressed: () {
                                                     setState(() {
                                                       _image = null;
+                                                      _isImageChanged = true;
                                                     });
                                                   },
                                                 ),
@@ -302,13 +229,12 @@ class CategoryAddBottomSheet {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              if (!isActive)
-                                CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
-                                  buttonColor: Color(0xff1E2E52),
-                                  textColor: Colors.white,
-                                  onPressed: _showAddCharacterCustomFieldDialog,
-                                ),
+                              CustomButton(
+                                buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
+                                buttonColor: Color(0xff1E2E52),
+                                textColor: Colors.white,
+                                onPressed: _showAddCharacterCustomFieldDialog,
+                              ),
                               const SizedBox(height: 5),
                               Column(
                                 children: customFields.map((field) {
@@ -358,11 +284,11 @@ class CategoryAddBottomSheet {
                             onPressed: () {
                               if (formKey.currentState!.validate() && _image != null) {
                                 _createCategory(
+                                  subCategoryId,
                                   categoryNameController.text,
-                                  subSelectedCategory,
                                   _image,
+                                  _isImageChanged,
                                   context,
-                                  isActive,
                                   customFields,
                                 );
                               } else {
@@ -387,11 +313,11 @@ class CategoryAddBottomSheet {
   }
 
   static void _createCategory(
+    int subCatgeoryId,
     String name,
-    String? subcategory,
     File? image,
+    bool isImageChanged,
     BuildContext context,
-    bool isActive,
     List<CustomField> customFields,
   ) async {
     try {
@@ -399,11 +325,17 @@ class CategoryAddBottomSheet {
       
       List<String> attributeNames = customFields.map((field) => field.name).toList();
       
-      Navigator.pop(context);
+ Navigator.pop(context, {
+      'updatedSubCategoryName': name,
+      'updatedSubCategoryImage': isImageChanged ? image : null,
+      'isImageRemoved': image == null && isImageChanged,
+      'updatedAttributes': attributeNames,
+    });      
+    
       
-      categoryBloc.add(CreateCategory(
+      categoryBloc.add(UpdateSubCategory(
+        subCategoryId: subCatgeoryId,
         name: name,
-        parentId: isActive ? 0 : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
         attributeNames: attributeNames,
         image: image, 
       ));
@@ -411,7 +343,7 @@ class CategoryAddBottomSheet {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка при создании категории: ${e.toString()}'),
+          content: Text('Ошибка при обновлении подкатегории: ${e.toString()}'),
         ),
       );
     }

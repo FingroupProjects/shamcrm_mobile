@@ -76,10 +76,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
       // Затем запрашиваем данные из API
       final response = await apiService.getTaskStatuses();
-      if (response.isEmpty) {
-        emit(TaskError('Нет статусов задачи!'));
-        return;
-      }
+      // if (response.isEmpty) {
+      //   emit(TaskError('Нет статусов задачи!'));
+      //   return;
+      // }
 
       // Сохраняем статусы задач в кэш
       await TaskCache.cacheTaskStatuses(response.map((status) => {'id': status.id, 'title': status.taskStatus!.name ?? ""}).toList());

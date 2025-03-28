@@ -13,7 +13,6 @@ class NoticeLead {
   final String? waPhone;
   final String? address;
   final String phone;
-  final int messageAmount;
   final String? birthday;
   final String? description;
   final String createdAt;
@@ -40,7 +39,6 @@ class NoticeLead {
     this.waPhone,
     this.address,
     required this.phone,
-    required this.messageAmount,
     this.birthday,
     this.description,
     required this.createdAt,
@@ -69,7 +67,6 @@ class NoticeLead {
       waPhone: json['wa_phone'],
       address: json['address'],
       phone: json['phone'] ?? '',
-      messageAmount: json['message_amount'] ?? 0,
       birthday: json['birthday'],
       description: json['description'],
       createdAt: json['created_at'] ?? '',

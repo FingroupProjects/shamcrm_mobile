@@ -894,6 +894,11 @@ List<ManagerData> _selectedManagers = [];
         context.read<DealBloc>().add(FetchDeals(_currentTabIndex));
       });
 
+    if (_tabTitles.isEmpty) {
+        await DealCache.clearAllDeals(); 
+        await DealCache.clearCache(); 
+      }
+
       final dealBloc = BlocProvider.of<DealBloc>(context);
       dealBloc.add(FetchDealStatuses());
     }

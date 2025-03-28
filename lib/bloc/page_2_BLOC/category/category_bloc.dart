@@ -14,7 +14,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     on<CreateCategory>(_createCategory);
     on<UpdateCategory>(_updateCategory);
     on<DeleteCategory>(_deleteCategory);
-
+    on<UpdateSubCategory>(_updateSubCategory);
   }
 
   Future<void> _fetchCategories(FetchCategories event, Emitter<CategoryState> emit) async {
@@ -82,6 +82,32 @@ Future<void> _updateCategory(UpdateCategory event, Emitter<CategoryState> emit) 
     } catch (e) {
       emit(CategoryError('Не удалось обновить категорию: ${e.toString()}'));
     }
+  } else {
+    emit(CategoryError('Нет подключения к интернету'));
+  }
+}
+
+Future<void> _updateSubCategory(UpdateSubCategory event, Emitter<CategoryState> emit) async {
+  emit(CategoryLoading());
+
+  if (await _checkInternetConnection()) {
+    // try {
+    //   final response = await apiService.updateSubCategory(
+    //     subCategoryId: event.subCategoryId,
+    //     name: event.name,
+    //     image: event.image,
+    //     attributeNames: event.attributeNames
+    //   );
+
+    //   if (response['success'] == true) {
+    //     add(FetchCategories()); 
+    //     emit(CategorySuccess(response['message'] ?? 'Подкатегория успешно обновлена'));
+    //   } else {
+    //     emit(CategoryError(response['message'] ?? 'Ошибка при обновлении подкатегории'));
+    //   }
+    // } catch (e) {
+    //   emit(CategoryError('Не удалось обновить подкатегорию: ${e.toString()}'));
+    // }
   } else {
     emit(CategoryError('Нет подключения к интернету'));
   }
