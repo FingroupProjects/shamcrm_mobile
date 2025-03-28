@@ -876,7 +876,9 @@
       "price":"Цена: ",
       "category_card":"Категория: ",
       "select_all":"Выбрать всех",
-      "selected_manager":"Выбрано менеджеров:"
+      "selected_manager":"Выбрано менеджеров:",
+      "branches":"Филиалы",
+      "select_branch":"Выберите филиал"
 
 
 

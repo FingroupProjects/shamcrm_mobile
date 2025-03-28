@@ -97,7 +97,8 @@ class _OrderCardState extends State<OrderCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(order: widget.order, categoryName: '',),
+            builder: (context) =>
+                OrderDetailsScreen(order: widget.order, categoryName: ''),
           ),
         );
       },
@@ -214,8 +215,9 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             const SizedBox(height: 36),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Выравнивание столбца по началу
               children: [
                 Row(
                   children: [
@@ -225,28 +227,45 @@ class _OrderCardState extends State<OrderCard> {
                       size: 24,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      'Лид: ${widget.order['client']}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                    Expanded(
+                      child: Text(
+                        '${widget.order['client']}',
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-                Text(
-                  '${widget.order['manager']}',
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // const SizedBox(height: 16),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment
+                //       .end, // Выравнивание "Менеджер" по правому краю
+                //   children: [
+                //     Container(
+                //       padding: const EdgeInsets.symmetric(
+                //           horizontal: 8, vertical: 4),
+                //       decoration: BoxDecoration(
+                //         color: Color(0xFFE9EDF5),
+                //         borderRadius: BorderRadius.circular(8),
+                //       ),
+                //       child: Text(
+                //         'Менеджер: ${widget.order['manager']}',
+                //         style: const TextStyle(
+                //           fontFamily: 'Gilroy',
+                //           fontSize: 16,
+                //           fontWeight: FontWeight.w500,
+                //           color: Color(0xff1E2E52),
+                //         ),
+                //         overflow: TextOverflow.ellipsis,
+                //       ),
+                //     ),
+                //   ],
+                // ),
               ],
             ),
           ],

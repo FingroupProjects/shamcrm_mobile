@@ -178,10 +178,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
         decoration:
             MyTaskCardStyles.taskCardDecoration, // Стиль карточки задачи
-        child: Stack(children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Stack(
+          children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -281,8 +280,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   mainAxisAlignment: MainAxisAlignment
                       .spaceBetween, // Пространство между элементами
                   children: [
-                    // Иконка и текст даты
-                    // Replace the date row (around line 280) with this:
+                    // Date section
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -315,39 +313,35 @@ class _MyTaskCardState extends State<MyTaskCard> {
                                 : const Color(0xff99A4BA),
                           ),
                         ),
-
-                        // Then overdue indicator with flexible spacing
-                        if (widget.task.overdue != null &&
-                            widget.task.overdue! > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                left: 200), // Увеличиваем расстояние до 16
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color.fromARGB(255, 253, 98, 87),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  widget.task.overdue.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
+                    // Overdue indicator, positioned 10px from the right
+                    if (widget.task.overdue != null && widget.task.overdue! > 0)
+                      Container(
+                        margin: const EdgeInsets.only(
+                            right: 10), // Strictly 10px from the right
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 253, 98, 87),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            widget.task.overdue.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ]),
+            ])
+          ],
+        ),
       ),
     );
   }

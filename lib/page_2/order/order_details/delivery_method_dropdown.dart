@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class DeliveryMethodDropdown extends StatefulWidget {
   final String? selectedDeliveryMethod;
@@ -21,15 +22,22 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
 
   // Локальный список способов доставки (пока без API)
   final List<String> deliveryMethods = [
+    'Доставка',
     'Самовывоз',
-    'Курьер',
-    'Почта',
+    
   ];
 
   @override
   void initState() {
     super.initState();
-    selectedDeliveryMethod = widget.selectedDeliveryMethod;
+    // Устанавливаем начальное значение, но не вызываем коллбэк здесь
+    selectedDeliveryMethod = widget.selectedDeliveryMethod ?? 'Доставка';
+    // Переносим вызов коллбэка после завершения сборки
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onSelectDeliveryMethod(selectedDeliveryMethod!);
+      }
+    });
   }
 
   @override
@@ -43,7 +51,7 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52 на корректный
+            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 4),
@@ -60,12 +68,12 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
               color: Color(0xffF4F7FD),
               width: 1,
             ),
-            closedBorderRadius:  BorderRadius.circular(12),
-            expandedBorder:  Border.all(
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(
               color: Color(0xffF4F7FD),
               width: 1,
             ),
-            expandedBorderRadius:  BorderRadius.circular(12),
+            expandedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
