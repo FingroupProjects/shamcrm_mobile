@@ -2,6 +2,8 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_column.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class OrderScreen extends StatefulWidget {
@@ -76,21 +78,29 @@ class _OrderScreenState extends State<OrderScreen>
     // Логика поиска будет добавлена позже в order_column.dart
   }
 
+  bool isClickAvatarIcon = false;
+
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
-          title: 'Заказы',
           onChangedSearchInput: (value) {
             _onSearch(value);
           },
           showFilterIcon: false,
           showSearchIcon: true,
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_orders'),
           onClickProfileAvatar: () {
-            // Логика перехода на профиль, если нужна
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
           },
           textEditingController: _searchController,
           focusNode: _focusNode,
@@ -107,24 +117,27 @@ class _OrderScreenState extends State<OrderScreen>
           },
         ),
       ),
-      body: Column(
-        children: [
-          SizedBox(height: 15),
-          _buildCustomTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: _tabTitles.map((tab) {
-                return OrderColumn(
-                  statusId: tab['id'],
-                  name: tab['title'],
-                  searchQuery: _isSearching ? _searchController.text : null,
-                );
-              }).toList(),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                SizedBox(height: 15),
+                _buildCustomTabBar(),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: _tabTitles.map((tab) {
+                      return OrderColumn(
+                        statusId: tab['id'],
+                        name: tab['title'],
+                        searchQuery:
+                            _isSearching ? _searchController.text : null,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

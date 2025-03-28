@@ -878,8 +878,9 @@
       "select_all":"Выбрать всех",
       "selected_manager":"Выбрано менеджеров:",
       "branches":"Филиалы",
-      "select_branch":"Выберите филиал"
-
+      "select_branch":"Выберите филиал",
+      "appbar_orders":"Заказы"
+      
 
 
     }
