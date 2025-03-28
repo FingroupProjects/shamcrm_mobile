@@ -3601,7 +3601,6 @@ Future<Map<String, dynamic>> updateLeadWithData({
     String path =
         '/dashboard/task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
-      print('getTaskChartData: Начало запроса');
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -3780,7 +3779,6 @@ Future<Map<String, dynamic>> updateLeadWithData({
     String path =
         '/dashboard/task-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
-      print('getTaskChartData: Начало запроса');
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -6137,6 +6135,65 @@ Future<Map<String, dynamic>> updateCategory({
       throw Exception('Failed to delete category!');
     }
   }
+
+  Future<Map<String, dynamic>> updateSubCategory({
+  required int subCategoryId,
+  required String name,
+  File? image,
+  required List<String> attributeNames,
+
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    var request = http.MultipartRequest('POST', uri); 
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath(
+        'image', 
+        image.path
+      );
+      request.files.add(imageFile);
+    }
+
+    for (int i = 0; i < attributeNames.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributeNames[i]; 
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Подкатегория успешно обновлена',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update subcategory',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
 
 
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//

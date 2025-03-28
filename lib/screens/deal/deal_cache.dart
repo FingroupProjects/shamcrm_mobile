@@ -59,11 +59,8 @@ class DealCache {
     // Remove all deal-related keys
     for (var key in dealKeys) {
       await prefs.remove(key);
-      print('Удалены сделки для ключа: $key');
     }
 
-    print('-----------------------------------------------');
-    print('УДАЛЕНЫ ВСЕ СДЕЛКИ ИЗ КЕША !!!');
   }
 
   // Clear cached deal statuses and deals
@@ -75,13 +72,6 @@ class DealCache {
 
     if (cachedStatuses != null) {
       decodedData = json.decode(cachedStatuses);
-      print('-----------------------------------------------');
-      print('Статусы сделок, которые были в кэше:');
-      for (var status in decodedData) {
-        print('ID: ${status['id']}, Название: ${status['name']}');
-      }
-    } else {
-      print('Нет кэшированных статусов сделок для удаления.');
     }
 
     // Удаляем кэшированные статусы сделок
@@ -91,12 +81,7 @@ class DealCache {
     final Set<int> statusIds = decodedData.map<int>((status) => status['id']).toSet();
     for (var statusId in statusIds) {
       await prefs.remove('cachedDeals_$statusId');
-      print('Удалены сделки для статуса с ID: $statusId');
     }
-
-    // Выводим сообщение об удалении всех статусов и сделок
-    print('-----------------------------------------------');
-    print('УДАЛЕНЫ ВСЕ СТАТУСЫ И СДЕЛКИ ИЗ КЕША !!!');
   }
 
   // Clear the cached data

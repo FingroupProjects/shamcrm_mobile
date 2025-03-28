@@ -32,6 +32,20 @@ class UpdateCategory extends CategoryEvent {
     this.image,
   });
 }
+class UpdateSubCategory extends CategoryEvent {
+  final int subCategoryId;
+  final String name;
+  final File? image;
+  final List<String> attributeNames; 
+
+
+  UpdateSubCategory({
+    required this.subCategoryId,
+    required this.name,
+    this.image,
+    required this.attributeNames,
+  });
+}
 
 class DeleteCategory extends CategoryEvent {
   final int catgeoryId;

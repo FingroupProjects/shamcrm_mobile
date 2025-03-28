@@ -2,31 +2,25 @@ import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_subcategory_screen.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory/sub%D0%A1ategory_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 
-class CategoryDetailsScreen extends StatefulWidget {
-  final int categoryId;
-  final String categoryName;
+class SubCategoryDetailsScreen extends StatefulWidget {
+  final CategoryDataById category;
 
- final String? imageUrl;
-
-  CategoryDetailsScreen({
-    required this.categoryId,
-    required this.categoryName,
-
-    this.imageUrl,
-  });
+  const SubCategoryDetailsScreen({
+    Key? key,
+    required this.category,
+  }) : super(key: key);
 
   @override
-  _CategoryDetailsScreenState createState() => _CategoryDetailsScreenState();
+  _SubCategoryDetailsScreenState createState() => _SubCategoryDetailsScreenState();
 }
 
-class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
+class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
   String? baseUrl;
@@ -34,25 +28,33 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   late String currentName;
   File? _cachedImageFile;
 
-  Future<void> _loadImage(String imageUrl) async {
+ Future<void> _loadImage(String imageUrl) async {
   if (imageUrl.isNotEmpty) {
-    final file = await urlToFile('$baseUrl/$imageUrl');
-    setState(() {
-      _cachedImageFile = file;
-    });
+    try {
+      final file = await urlToFile('$baseUrl/$imageUrl');
+      print('Image URL: $baseUrl/$imageUrl');
+      setState(() {
+        _cachedImageFile = file;
+      });
+    } catch (error) {
+      print('Failed to load image: $error');
+      setState(() {
+        _cachedImageFile = null; // Очистите кэш, если загрузка не удалась
+      });
+    }
   }
 }
 
- @override
-void initState() {
-  super.initState();
-  currentName = widget.categoryName;
-  _initializeBaseUrl().then((_) {
-    if (widget.imageUrl != null) {
-      _loadImage(widget.imageUrl!);
-    }
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    currentName = widget.category.name;
+    _initializeBaseUrl().then((_) {
+      if (widget.category.image != null) {
+        _loadImage(widget.category.image!);
+      }
+    });
+  }
 
   Future<void> _initializeBaseUrl() async {
     try {
@@ -76,6 +78,8 @@ void initState() {
   void _updateDetails() {
     details = [
       {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': currentName},
+      // if (widget.category.attributes.isNotEmpty)
+      //   {'label': 'Характеристики', 'value': widget.category.attributes.map((attr) => attr.name).join(', ')}
     ];
   }
 
@@ -84,14 +88,14 @@ void initState() {
     return Scaffold(
       appBar: _buildAppBar(
         context,
-        AppLocalizations.of(context)!.translate('view_category'),
+        AppLocalizations.of(context)!.translate('Просмотр подкатегории'),
       ),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: ListView(
           children: [
-            if (_cachedImageFile != null || widget.imageUrl != null)
+            if (_cachedImageFile != null || widget.category.image != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ClipRRect(
@@ -104,7 +108,7 @@ void initState() {
                           fit: BoxFit.contain,
                         )
                       : Image.network(
-                          '$baseUrl/${widget.imageUrl!}',
+                          '$baseUrl/${widget.category.image!}',
                           width: double.infinity,
                           height: 200,
                           fit: BoxFit.contain,
@@ -137,13 +141,51 @@ void initState() {
                 ),
               ),
             _buildDetailsList(),
-            CategorySubCategoryScreen(categoryId: widget.categoryId),
+            if (widget.category.attributes.isNotEmpty) 
+              _buildAttributesSection(),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildAttributesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 0),
+        Text(
+          'Характеристики',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: widget.category.attributes.map((attr) => 
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Color(0xffF4F7FD),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                attr.name,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ).toList(),
+        ),
+      ],
+    );
+  }
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -184,33 +226,33 @@ void initState() {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
+           IconButton(
               icon: Image.asset(
                 'assets/icons/edit.png',
                 width: 24,
                 height: 24,
               ),
-             onPressed: () async {
-              final result = await CategoryEditBottomSheet.show(
-                context,
-                initialCategoryId: widget.categoryId,
-                initialName: currentName,
-                initialImage: _cachedImageFile,
-              );
-              if (result != null) {
-                setState(() {
-                  currentName = result['updatedName'];
-                  if (result['updatedImage'] != null) {
-                    _cachedImageFile = result['updatedImage'];
-                  } else if (result['updatedImage'] == null && result['isImageRemoved'] == true) {
-                    _cachedImageFile = null; 
-                  }
-                  _updateDetails();
-                });
-              }
-            },
+              onPressed: () async {
+                final result = await SubCategoryEditBottomSheet.show(
+                  context,
+                  initialSubCategoryId: widget.category.id,
+                  initialName: currentName,
+                  initialImage: _cachedImageFile,
+                  initialAttributes: widget.category.attributes,
+                );
+
+                if (result != null) {
+                  setState(() {
+                    currentName = result['updatedSubCategoryName'];
+                    if (result['updatedSubCategoryImage'] != null) {
+                      _cachedImageFile = result['updatedSubCategoryImage'];
+                    } else if (result['updatedSubCategoryImage'] == null && result['isImageRemoved'] == true) {
+                      _cachedImageFile = null;
+                    }
+                    _updateDetails();
+                  });
+                }
+              },
             ),
             IconButton(
               padding: EdgeInsets.only(right: 8),
@@ -221,14 +263,14 @@ void initState() {
                 height: 24,
               ),
               onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => DeleteCategoryDialog(categoryId: widget.categoryId),
-                ).then((deleted) {
-                  if (deleted == true) {
-                    Navigator.of(context).pop(true); 
-                  }
-                });        
+                // showDialog(
+                //   context: context,
+                //   builder: (context) => DeleteSubCategoryDialog(subCategoryId: widget.category.id),
+                // ).then((deleted) {
+                //   if (deleted == true) {
+                //     Navigator.of(context).pop(true); 
+                //   }
+                // });        
               },
             ),
           ],
@@ -263,13 +305,14 @@ void initState() {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: label ==  AppLocalizations.of(context)!.translate('description_details') ? GestureDetector(
-                onTap: () {
-                  _showFullTextDialog(  AppLocalizations.of(context)!.translate('description_details'), value );
-                },
-                child: _buildValue(value, label,maxLines: 2),
-              )
-              : _buildValue(value, label,maxLines: 2)
+              child: label == AppLocalizations.of(context)!.translate('description_details') 
+                ? GestureDetector(
+                    onTap: () {
+                      _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
+                    },
+                    child: _buildValue(value, label, maxLines: 2),
+                  )
+                : _buildValue(value, label, maxLines: 2)
             ),
           ],
         );
@@ -298,14 +341,16 @@ void initState() {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
-        decoration: label ==  AppLocalizations.of(context)!.translate('description_details') ? TextDecoration.underline : TextDecoration.none,
+        decoration: label == AppLocalizations.of(context)!.translate('description_details') 
+          ? TextDecoration.underline 
+          : TextDecoration.none,
       ),
       maxLines: maxLines,
       overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
     );
   }
 
-   void _showFullTextDialog(String title, String content) {
+  void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -361,12 +406,11 @@ void initState() {
     );
   }
 
-
   @override
   void dispose() {
     super.dispose();
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    cleanTempFiles();
-  });  
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      cleanTempFiles();
+    });  
   }
 }

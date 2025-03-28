@@ -2,7 +2,7 @@ class CategoryDataById {
   final int id;
   final String name;
   final String? image;
-  final List<Attribute> attributes;
+  late final List<Attribute> attributes;
   final List<CategoryDataById> subcategories;
 
   CategoryDataById({

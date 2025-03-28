@@ -120,10 +120,10 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
 
     try {
       final response = await apiService.getDealStatuses();
-      if (response.isEmpty) {
-        emit(DealError('Нет статусов'));
-        return;
-      }
+      // if (response.isEmpty) {
+      //   emit(DealError('Нет статусов'));
+      //   return;
+      // }
 
       // Сохраняем статусы в кэш
       await DealCache.cacheDealStatuses(

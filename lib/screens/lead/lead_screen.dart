@@ -128,6 +128,7 @@ List<TargetFocus> targets = [];
       } else {
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses());
+
       }
     });
 
@@ -788,7 +789,7 @@ List<TargetFocus> targets = [];
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
             (status) => status.id == statusId,
-            // orElse: () => 1,
+            orElse: () => LeadStatus(id: 0, title: '', leadsCount: 0, isSuccess: false, position: 1, isFailure: false) ,
           );
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
@@ -880,6 +881,11 @@ List<TargetFocus> targets = [];
         context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
       });
 
+      if (_tabTitles.isEmpty) {
+        await LeadCache.clearAllLeads(); 
+        await LeadCache.clearCache(); 
+      }
+
       context.read<LeadBloc>().add(FetchLeadStatuses());
     }
   }
@@ -901,14 +907,9 @@ List<TargetFocus> targets = [];
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-          await LeadCache.cacheLeadStatuses(state.leadStatuses
-              .map((status) => {'id': status.id, 'title': status.title})
-              .toList());
+          await LeadCache.cacheLeadStatuses(state.leadStatuses.map((status) => {'id': status.id, 'title': status.title}).toList());
           setState(() {
-            _tabTitles = state.leadStatuses
-                .where((status) => _canReadLeadStatus)
-                .map((status) => {'id': status.id, 'title': status.title})
-                .toList();
+            _tabTitles = state.leadStatuses.where((status) => _canReadLeadStatus).map((status) => {'id': status.id, 'title': status.title}).toList();
 
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 

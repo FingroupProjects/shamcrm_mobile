@@ -6,7 +6,6 @@ class Lead {
   final int id;
   final String name;
   final Source? source;
-  final int messageAmount;
   final String? createdAt;
   final int statusId;
   final ManagerData? manager;
@@ -23,7 +22,6 @@ class Lead {
     required this.id,
     required this.name,
     this.source,
-    required this.messageAmount,
     this.createdAt,
     required this.statusId,
     this.manager,
@@ -42,7 +40,6 @@ class Lead {
       id: json['id'] ?? 0,
       name: json['name']?.toString() ?? 'Без имени',
       source: json['source'] != null ? Source.fromJson(json['source']) : null,
-      messageAmount: json['message_amount'] ?? 0,
       createdAt: json['created_at']?.toString(),
       statusId: leadStatusId,
       manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
@@ -62,7 +59,6 @@ class Lead {
       'id': id,
       'name': name,
       'source': source?.toJson(),
-      'message_amount': messageAmount,
       'created_at': createdAt,
       'status_id': statusId,
       'manager': manager?.toJson(),
