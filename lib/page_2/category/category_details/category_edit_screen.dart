@@ -1,23 +1,26 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CategoryEditBottomSheet {
-  static void show(BuildContext context, {
-    required String initialName,
-    required String? initialSubCategory,
-    File? initialImage,
-  }) {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController categoryNameController = TextEditingController(text: initialName);
-    String? subSelectedCategory = initialSubCategory;
-    bool isActive = false;
-    File? _image = initialImage;
-    bool _isImageSelected = true;
+static Future<Map<String, dynamic>?> show(BuildContext context, {
+  required int initialCategoryId,
+  required String initialName,
+  File? initialImage,
+}) async {
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final TextEditingController categoryNameController = TextEditingController(text: initialName);
+  bool isActive = false;
+  File? _image = initialImage;
+  bool _isImageSelected = true;
+  int categoryId = initialCategoryId;
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -29,7 +32,7 @@ class CategoryEditBottomSheet {
       }
     }
 
-    showModalBottomSheet(
+  return await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -219,11 +222,12 @@ class CategoryEditBottomSheet {
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() && _image != null) {
+                              if (formKey.currentState!.validate() ) {
+                              // if (formKey.currentState!.validate() && _image != null) {
                                 _updateCategory(
+                                  categoryId,
                                   categoryNameController.text,
                                   isActive,
-                                  subSelectedCategory,
                                   _image,
                                   context,
                                 );
@@ -248,8 +252,23 @@ class CategoryEditBottomSheet {
     );
   }
 
-  static void _updateCategory(String name, bool isActive, String? subcategory, File? image, BuildContext context) {
-
-    Navigator.pop(context);
+static void _updateCategory(
+  int categoryId, 
+  String name, 
+  bool isActive, 
+  File? image, 
+  BuildContext context
+) {
+  final bloc = BlocProvider.of<CategoryBloc>(context);
+  bloc.add(UpdateCategory(
+    categoryId: categoryId,
+    name: name,
+    image: image,
+  ));
+  
+  Navigator.pop(context, {
+    'updatedName': name,
+    'updatedImage': image,
+  });
   }
 }

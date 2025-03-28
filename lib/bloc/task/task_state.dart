@@ -42,36 +42,6 @@ class TaskDataLoaded extends TaskState {
   }
 }
 
-// class TaskDataLoaded extends TaskState {
-//   final List<Task> tasks;
-//   final int currentPage;
-//   final bool allTasksFetched;
-//   final Map<int, int> taskCounts;
-
-//   TaskDataLoaded(this.tasks,
-//       {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
-//       : taskCounts = taskCounts ?? {};
-
-//   TaskDataLoaded merge(List<Task> newTasks) {print(taskCounts);
-//     return TaskDataLoaded(
-//       tasks + newTasks,
-//       currentPage: currentPage,
-//       taskCounts: taskCounts,    
-//         allTasksFetched: newTasks.isEmpty, // Обновляем флаг, если новые задачи пусты
-
-//     );
-//   }
-
-  // Метод для обновления taskCounts
-//   TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
-    
-//     return TaskDataLoaded(
-//       tasks,
-//       currentPage: currentPage,
-//       taskCounts: newTaskCounts,
-//     );
-//   }
-// }
 
 class TaskError extends TaskState {
   final String message;

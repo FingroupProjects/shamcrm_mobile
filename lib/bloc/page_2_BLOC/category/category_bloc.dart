@@ -12,6 +12,9 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   CategoryBloc(this.apiService) : super(CategoryInitial()) {
     on<FetchCategories>(_fetchCategories);
     on<CreateCategory>(_createCategory);
+    on<UpdateCategory>(_updateCategory);
+    on<DeleteCategory>(_deleteCategory);
+
   }
 
   Future<void> _fetchCategories(FetchCategories event, Emitter<CategoryState> emit) async {
@@ -34,7 +37,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   }
 
 Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) async {
-  emit(CategoryCreating());
+  emit(CategoryLoading());
   
   if (await _checkInternetConnection()) {
     try {
@@ -59,7 +62,50 @@ Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) 
   }
 }
 
+Future<void> _updateCategory(UpdateCategory event, Emitter<CategoryState> emit) async {
+  emit(CategoryLoading());
 
+  if (await _checkInternetConnection()) {
+    try {
+      final response = await apiService.updateCategory(
+        categoryId: event.categoryId,
+        name: event.name,
+        image: event.image,
+      );
+
+      if (response['success'] == true) {
+        add(FetchCategories()); 
+        emit(CategorySuccess(response['message'] ?? 'Категория успешно обновлена'));
+      } else {
+        emit(CategoryError(response['message'] ?? 'Ошибка при обновлении категории'));
+      }
+    } catch (e) {
+      emit(CategoryError('Не удалось обновить категорию: ${e.toString()}'));
+    }
+  } else {
+    emit(CategoryError('Нет подключения к интернету'));
+  }
+}
+
+  Future<void> _deleteCategory(DeleteCategory event, Emitter<CategoryState> emit) async {
+    emit(CategoryLoading());
+
+    if (await _checkInternetConnection()) {
+      try {
+        final response = await apiService.deleteCategory(event.catgeoryId);
+        if (response['result'] == 'Success') {
+          emit(CategoryDeleted('Категория успешно удалена'));
+          add(FetchCategories()); 
+        } else {
+          emit(CategoryError('Ошибка удаления категории'));
+        }
+      } catch (e) {
+        emit(CategoryError('Ошибка удаления категории!'));
+      }
+    } else {
+      emit(CategoryError('Нет подключения к интернету'));
+    }
+  }
 
     Future<bool> _checkInternetConnection() async {
     try {

@@ -6072,6 +6072,72 @@ Future<Map<String, dynamic>> createCategory({
   }
 }
 
+Future<Map<String, dynamic>> updateCategory({
+  required int categoryId,
+  required String name,
+  File? image,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('${baseUrl}/category/update/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    var request = http.MultipartRequest('POST', uri); 
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath(
+        'image', 
+        image.path
+      );
+      request.files.add(imageFile);
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Категория успешно обновлена',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update category',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
+
+
+  Future<Map<String, dynamic>> deleteCategory(int categoryId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest('/category/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete category!');
+    }
+  }
+
 
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 }
