@@ -22,9 +22,8 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
 
   // Локальный список способов доставки (пока без API)
   final List<String> deliveryMethods = [
-    'Доставка',
     'Самовывоз',
-    
+    'Доставка',
   ];
 
   @override
@@ -90,7 +89,8 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
             return Text(
               selectedItem.isNotEmpty
                   ? selectedItem
-                  : AppLocalizations.of(context)!.translate('select_delivery_method'),
+                  : AppLocalizations.of(context)!
+                      .translate('select_delivery_method'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
