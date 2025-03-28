@@ -90,11 +90,12 @@ import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized(); 
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
-  final authService = AuthService();
+    final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
     await apiService.initialize();

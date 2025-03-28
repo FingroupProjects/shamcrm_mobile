@@ -28,7 +28,7 @@ class _OrderColumnState extends State<OrderColumn> {
       'number': 'ORD001',
       'date': '2025-03-15',
       'client': 'Иван Иванов',
-      'manager': 'Анна Петрова',
+      'manager': 'Анна',
       'items': [
         {'name': 'Товар 1', 'quantity': 2, 'price': 500},
         {'name': 'Товар 2', 'quantity': 1, 'price': 300},

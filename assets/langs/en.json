@@ -859,7 +859,11 @@
   "select_payment_method": "Select payment method",
   "status_method": "Status",
   "select_status_method": "Select status",
-  "select_all": "Select all"
+  "select_all": "Select all",
+  "selected_manager": "Selected managers:",
+  "branches": "Branches",
+  "select_branch": "Select branch",
+  "appbar_orders": "Orders"
 
 
 

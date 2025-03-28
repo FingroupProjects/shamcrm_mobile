@@ -6,20 +6,20 @@ class ProductSelectionSheet extends StatefulWidget {
 }
 
 class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
-  // Пример списка товаров
+  // Пример списка товаров с несколькими изображениями
   final List<Map<String, dynamic>> _products = [
     {
       'id': '8742220',
       'name': 'Соус Pesto con Basilico e Ru...',
-      'imageUrl': 'assets/images/pesto.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 54.080,
       'isSelected': false,
-      'quantity': 1, 
+      'quantity': 1,
     },
     {
       'id': '4312322',
       'name': 'Нутовая мука цельнозерно...',
-      'imageUrl': 'assets/images/nut_flour.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg','assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg','assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 34.500,
       'isSelected': false,
       'quantity': 1,
@@ -27,7 +27,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '3422560',
       'name': 'Ржаная цельнозерновая му...',
-      'imageUrl': 'assets/images/rye_flour.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 45.200,
       'isSelected': false,
       'quantity': 1,
@@ -35,7 +35,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Варенье из сосновых шише...',
-      'imageUrl': 'assets/images/jam.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 67.890,
       'isSelected': false,
       'quantity': 1,
@@ -43,7 +43,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Вода минеральная "Нагер"...',
-      'imageUrl': 'assets/images/water.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 23.450,
       'isSelected': false,
       'quantity': 1,
@@ -51,7 +51,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Холодный чай Ti Чёрный со...',
-      'imageUrl': 'assets/images/tea.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 35.600,
       'isSelected': false,
       'quantity': 1,
@@ -59,7 +59,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Холодный чай Arizona Зеле...',
-      'imageUrl': 'assets/images/arizona_tea.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 39.800,
       'isSelected': false,
       'quantity': 1,
@@ -67,7 +67,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Растительный напиток Вито...',
-      'imageUrl': 'assets/images/drink.png',
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 28.900,
       'isSelected': false,
       'quantity': 1,
@@ -130,7 +130,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
         .map((product) => {
               'id': product['id'],
               'name': product['name'],
-              'imageUrl': product['imageUrl'],
+              'imageUrls': product['imageUrls'],
               'price': product['price'],
               'quantity': product['quantity'],
             })
@@ -211,24 +211,6 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
               ),
             ),
           ),
-          // SizedBox(height: 12),
-          // // Статусы вместо фильтров
-          // Padding(
-          //   padding: EdgeInsets.symmetric(horizontal: 16),
-          //   child: SingleChildScrollView(
-          //     scrollDirection: Axis.horizontal,
-          //     child: Row(
-          //       children: _statuses.map((status) {
-          //         return Row(
-          //           children: [
-          //             _buildFilterChip(status['title']),
-          //             SizedBox(width: 8),
-          //           ],
-          //         );
-          //       }).toList(),
-          //     ),
-          //   ),
-          // ),
           SizedBox(height: 12),
           // Список товаров
           Expanded(
@@ -267,15 +249,23 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                           Container(
                             width: 48,
                             height: 48,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Color(0xffF4F7FD),
-                            ),
-                            child: Image.asset(
-                              'assets/images/goods_photo.jpg',
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: product['imageUrls'].length,
+                              itemBuilder: (context, imgIndex) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.asset(
+                                      product['imageUrls'][imgIndex],
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           SizedBox(width: 12),

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
@@ -31,6 +32,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedManager;
   String? _deliveryMethod;
   String? _paymentMethod;
+  Branch? _selectedBranch; // Для хранения выбранного филиала
 
   @override
   void initState() {
@@ -39,12 +41,20 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _clientController.text = widget.order['client'] ?? '';
     _managerController.text = widget.order['manager'] ?? 'Текущий менеджер';
     _commentController.text = widget.order['comment'] ?? '';
-    _deliveryMethod = widget.order['deliveryMethod'];
+    _deliveryMethod = widget.order['deliveryMethod'] ?? 'Доставка'; // По умолчанию "Доставка"
     _paymentMethod = widget.order['paymentMethod'];
     _deliveryAddressController.text = widget.order['deliveryAddress'] ?? '';
     _items = List<Map<String, dynamic>>.from(widget.order['items'] ?? []);
     selectedLead = widget.order['leadId']?.toString();
     selectedManager = widget.order['managerId']?.toString();
+
+    // Если доставка "Самовывоз", инициализируем _selectedBranch
+    if (_deliveryMethod == 'Самовывоз' && widget.order['deliveryAddress'] != null) {
+      _selectedBranch = Branch(
+        name: 'Выбранный филиал', // Здесь можно подставить реальное имя, если есть в данных
+        address: widget.order['deliveryAddress'],
+      );
+    }
   }
 
   @override
@@ -85,7 +95,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'paymentMethod': _paymentMethod,
         'deliveryMethod': _deliveryMethod,
         'deliveryAddress': _deliveryMethod == 'Самовывоз'
-            ? null
+            ? _selectedBranch?.address // Адрес филиала
             : _deliveryAddressController.text,
         'comment': _commentController.text,
         'leadId': selectedLead,
@@ -163,16 +173,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 8),
-                    ManagerRadioGroupWidget(
-                      selectedManager: selectedManager,
-                      onSelectManager: (ManagerData selectedManagerData) {
-                        setState(() {
-                          selectedManager = selectedManagerData.id.toString();
-                          _managerController.text = '${selectedManagerData.name} ${selectedManagerData.lastname ?? ''}';
-                        });
-                      },
-                    ),
+                    // const SizedBox(height: 8),
+                    // ManagerRadioGroupWidget(
+                    //   selectedManager: selectedManager,
+                    //   onSelectManager: (ManagerData selectedManagerData) {
+                    //     setState(() {
+                    //       selectedManager = selectedManagerData.id.toString();
+                    //       _managerController.text = '${selectedManagerData.name} ${selectedManagerData.lastname ?? ''}';
+                    //     });
+                    //   },
+                    // ),
                     const SizedBox(height: 16),
                     _buildItemsSection(),
                     const SizedBox(height: 16),
@@ -181,9 +191,37 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                       onSelectDeliveryMethod: (value) {
                         setState(() {
                           _deliveryMethod = value;
+                          // Сбрасываем значения при смене метода доставки
+                          _selectedBranch = null;
+                          _deliveryAddressController.clear();
                         });
                       },
                     ),
+                    const SizedBox(height: 16),
+                    // Условное отображение полей
+                    if (_deliveryMethod == 'Самовывоз')
+                      BranchesDropdown(
+                        selectedBranch: _selectedBranch,
+                        onSelectBranch: (branch) {
+                          setState(() {
+                            _selectedBranch = branch;
+                          });
+                        },
+                      ),
+                    if (_deliveryMethod == 'Доставка')
+                      CustomTextField(
+                        controller: _deliveryAddressController,
+                        hintText: AppLocalizations.of(context)!.translate('Введите адрес доставки'),
+                        label: AppLocalizations.of(context)!.translate('Адрес доставки'),
+                        maxLines: 3,
+                        keyboardType: TextInputType.streetAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Пожалуйста, введите адрес доставки';
+                          }
+                          return null;
+                        },
+                      ),
                     const SizedBox(height: 16),
                     PaymentMethodDropdown(
                       selectedPaymentMethod: _paymentMethod,
@@ -193,16 +231,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         });
                       },
                     ),
-                    if (_deliveryMethod != 'Самовывоз') ...[
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: _deliveryAddressController,
-                        hintText: AppLocalizations.of(context)!.translate('Введите адрес доставки'),
-                        label: AppLocalizations.of(context)!.translate('Адрес доставки'),
-                        validator: (value) =>
-                            value!.isEmpty ? 'Укажите адрес доставки' : null,
-                      ),
-                    ],
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _commentController,
@@ -453,7 +481,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Итого',
+                  'Итого:',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',

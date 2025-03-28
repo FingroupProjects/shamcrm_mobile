@@ -858,7 +858,11 @@
     "select_payment_method": "To'lov usulini tanlang",
     "status_method": "Holat",
     "select_status_method": "Holatni tanlang",
-    "select_all": "Hammasini tanlash"
+    "select_all": "Hammasini tanlash",
+    "selected_manager": "Tanlangan menejerlar:",
+    "branches": "Filiallar",
+    "select_branch": "Filialni tanlang",
+    "appbar_orders": "Buyurtmalar"
   }
 
 

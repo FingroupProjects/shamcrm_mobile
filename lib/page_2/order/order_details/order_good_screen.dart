@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_details_by_order_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 50,
       discountGoodsPrice: 10,
       stockQuantity: 500,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
     Goods(
       id: 2,
@@ -53,7 +54,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
     ),
     Goods(
       id: 3,
@@ -63,7 +64,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
     Goods(
       id: 4,
@@ -72,7 +73,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 23,
       discountGoodsPrice: 0,
       stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
     ),
     Goods(
       id: 5,
@@ -82,7 +83,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       goodsPrice: 125.3,
       discountGoodsPrice: 30,
       stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg'],
+      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
     ),
   ];
 
@@ -233,21 +234,19 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                   ),
                 ),
                 SizedBox(width: 16),
-                ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
+                Container(
                   width: 100,
                   height: 100,
                   child: ListView.builder(
-                    scrollDirection: Axis.horizontal,   
-                    itemCount: goods.imagePaths.length,  
+                    scrollDirection: Axis.horizontal,
+                    itemCount: goods.imagePaths.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),   
+                        padding: const EdgeInsets.only(right: 8),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                           child: Image.asset(
-                            goods.imagePaths[index],   
+                            goods.imagePaths[index],
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
@@ -257,7 +256,6 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                     },
                   ),
                 ),
-              ),
               ],
             ),
           ),
@@ -270,7 +268,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoodsDetailsScreen(
+        builder: (context) => GoodsDetailsByOrderScreen(
           id: goods.id,
           goodsName: goods.goodsName,
           goodsDescription: goods.goodsDescription,
@@ -298,7 +296,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           onPressed: () {
             showModalBottomSheet(
               context: context,
-              isScrollControlled: true, 
+              isScrollControlled: true,
               builder: (context) => ProductSelectionSheet(),
             );
           },
