@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
@@ -19,32 +20,21 @@ class OrderAddScreen extends StatefulWidget {
   _OrderAddScreenState createState() => _OrderAddScreenState();
 }
 
-class _ProductSelectionSheet extends StatefulWidget {
-  @override
-  _ProductSelectionSheetState createState() => _ProductSelectionSheetState();
-}
-
-class _ProductSelectionSheetState extends State<_ProductSelectionSheet> {
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
-}
-
 class _OrderAddScreenState extends State<OrderAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _clientController = TextEditingController();
   final TextEditingController _managerController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController _deliveryAddressController = TextEditingController();
 
   List<Map<String, dynamic>> _items = [];
-  final TextEditingController _deliveryAddressController =
-      TextEditingController();
   String? selectedLead;
   String? selectedManager;
   String? _deliveryMethod;
   String? _paymentMethod;
+  Branch? _selectedBranch; // Для хранения выбранного филиала
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +47,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     _managerController.dispose();
     _commentController.dispose();
     _deliveryAddressController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
@@ -68,7 +59,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
     if (result != null && result is List<Map<String, dynamic>>) {
       setState(() {
-        _items.addAll(result); // Добавляем список товаров
+        _items.addAll(result);
       });
     }
   }
@@ -89,7 +80,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         'paymentMethod': _paymentMethod,
         'deliveryMethod': _deliveryMethod,
         'deliveryAddress': _deliveryMethod == 'Самовывоз'
-            ? null
+            ? _selectedBranch?.address // Адрес филиала
             : _deliveryAddressController.text,
         'comment': _commentController.text,
       };
@@ -165,15 +156,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 8),
-                    ManagerRadioGroupWidget(
-                      selectedManager: selectedManager,
-                      onSelectManager: (ManagerData selectedManagerData) {
-                        setState(() {
-                          selectedManager = selectedManagerData.id.toString();
-                        });
-                      },
-                    ),
+                    // const SizedBox(height: 8),
+                    // ManagerRadioGroupWidget(
+                    //   selectedManager: selectedManager,
+                    //   onSelectManager: (ManagerData selectedManagerData) {
+                    //     setState(() {
+                    //       selectedManager = selectedManagerData.id.toString();
+                    //     });
+                    //   },
+                    // ),
                     SizedBox(height: 16),
                     _buildItemsSection(),
                     const SizedBox(height: 16),
@@ -182,9 +173,39 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       onSelectDeliveryMethod: (value) {
                         setState(() {
                           _deliveryMethod = value;
+                          // Сбрасываем значения при смене метода доставки
+                          _selectedBranch = null;
+                          _deliveryAddressController.clear();
                         });
                       },
                     ),
+                    const SizedBox(height: 16),
+                    // Условное отображение полей
+                    if (_deliveryMethod == 'Самовывоз')
+                      BranchesDropdown(
+                        selectedBranch: _selectedBranch,
+                        onSelectBranch: (branch) {
+                          setState(() {
+                            _selectedBranch = branch;
+                          });
+                        },
+                      ),
+                    if (_deliveryMethod == 'Доставка')
+                      CustomTextField(
+                        controller: _deliveryAddressController,
+                        hintText: AppLocalizations.of(context)!
+                            .translate('Введите адрес доставки'),
+                        label: AppLocalizations.of(context)!
+                            .translate('Адрес доставки'),
+                        maxLines: 3,
+                        keyboardType: TextInputType.streetAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Пожалуйста, введите адрес доставки';
+                          }
+                          return null;
+                        },
+                      ),
                     const SizedBox(height: 16),
                     PaymentMethodDropdown(
                       selectedPaymentMethod: _paymentMethod,
@@ -278,7 +299,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Изображение товара
                     Container(
                       width: 48,
                       height: 48,
@@ -296,7 +316,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       ),
                     ),
                     SizedBox(width: 12),
-                    // Название и ID товара
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,13 +344,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         ],
                       ),
                     ),
-                    // Цена, сумма и количество
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Row(
                           children: [
-                            // Цена
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -356,7 +373,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               ],
                             ),
                             SizedBox(width: 16),
-                            // Сумма
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -383,10 +399,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           ],
                         ),
                         SizedBox(height: 8),
-                        // Количество и кнопка удаления
                         Row(
                           children: [
-                            // Кнопки количества
                             Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
@@ -419,7 +433,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               ),
                             ),
                             SizedBox(width: 8),
-                            // Кнопка удаления
                             IconButton(
                               icon: Icon(Icons.delete,
                                   color: Color(0xff99A4BA), size: 20),
@@ -542,3 +555,4 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 }
+

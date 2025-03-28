@@ -220,7 +220,6 @@ class _TaskColumnState extends State<TaskColumn> {
   void didUpdateWidget(TaskColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.statusId != widget.statusId) {
-      // Если изменился статус, сбрасываем флаг пагинации и загружаем новые задачи
       _isFetchingMore = false;
       _taskBloc.add(FetchTasks(widget.statusId));
     }
@@ -233,16 +232,21 @@ class _TaskColumnState extends State<TaskColumn> {
     super.dispose();
   }
 
- void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      if (_taskBloc.state is TaskDataLoaded) {
-        final state = _taskBloc.state as TaskDataLoaded;
-        if (!_taskBloc.allTasksFetched) {
+void _onScroll() {
+  if (_scrollController.position.pixels == 
+      _scrollController.position.maxScrollExtent && 
+      !_isFetchingMore) {
+    if (_taskBloc.state is TaskDataLoaded) {
+      final state = _taskBloc.state as TaskDataLoaded;
+      if (!_taskBloc.allTasksFetched) {
+        setState(() {
+          _isFetchingMore = true;
+        });
         _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
-        }
       }
     }
   }
+}
 
   Future<void> _checkPermission() async {
     bool hasPermission = await _apiService.hasPermission('task.create');
@@ -314,13 +318,6 @@ class _TaskColumnState extends State<TaskColumn> {
                   ),
                 );
               }
-
-// if (!_isTaskCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
-//   WidgetsBinding.instance.addPostFrameCallback((_) {
-//     showTutorial("TaskCardAndStatusDropdown");
-//   });
-// }
-
               return RefreshIndicator(
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,

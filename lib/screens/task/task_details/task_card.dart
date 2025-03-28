@@ -40,8 +40,7 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String
-      dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
   late int statusId;
 
   @override
@@ -53,8 +52,7 @@ class _TaskCardState extends State<TaskCard> {
 
   /// Форматирование даты в `dd.MM.yyyy`
   String formatDate(String dateString) {
-    DateTime dateTime =
-        DateTime.parse(dateString); // Преобразование строки в дату
+    DateTime dateTime = DateTime.parse(dateString); // Преобразование строки в дату
     return DateFormat('dd.MM.yyyy').format(dateTime); // Форматирование даты
   }
 
@@ -209,8 +207,7 @@ class _TaskCardState extends State<TaskCard> {
             context,
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
-                taskId: widget.task.id
-                    .toString(), // ID задачи для детального экрана
+                taskId: widget.task.id.toString(), // ID задачи для детального экрана
                 taskNumber: widget.task.taskNumber,
                 taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
@@ -426,8 +423,6 @@ class _TaskCardState extends State<TaskCard> {
                             ],
                           )
                         : const SizedBox(),
-
-                    // Display the count of additional users
                     if (widget.task.usersImage != null &&
                         widget.task.usersImage!.length > 2)
                       Padding(
@@ -444,26 +439,22 @@ class _TaskCardState extends State<TaskCard> {
                       ),
                   ],
                 ),
-                // const SizedBox(height: 5),
                 Row(
                   children: [
                     const SizedBox(width: 1),
-                    if (widget.task.user?.name !=
-                        null) // Проверка на наличие имени пользователя
+                    if (widget.task.user?.name != null) 
                       Row(
                         children: [
                           Container(
                             width: 30,
                             height: 30,
                             decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 51, 65,
-                                  98), // Фон иконки инициалов пользователя
+                              color: const Color.fromARGB(255, 51, 65, 98), 
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              _getUserInitials(widget.task.user!
-                                  .name), // Отображение инициалов пользователя
+                              _getUserInitials(widget.task.user!.name),
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -474,51 +465,40 @@ class _TaskCardState extends State<TaskCard> {
                         ],
                       ),
                     Padding(
-                      padding: const EdgeInsets.all(3), // Отступы
+                      padding: const EdgeInsets.all(3),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment
-                            .spaceBetween, // Пространство между элементами
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Иконка и текст даты
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment
-                                .center, // Выровнять по центру по вертикали
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // Используем ColorFiltered для изменения цвета иконки
                               ColorFiltered(
                                 colorFilter: ColorFilter.mode(
-                                  overdueDays > 0
+                                  widget.task.overdue! > 0
                                       ? const Color.fromARGB(255, 198, 40, 40)
-                                      : const Color(
-                                          0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
+                                      : const Color(0xff99A4BA),
                                   BlendMode.srcIn,
                                 ),
                                 child: Image.asset(
-                                  'assets/icons/tabBar/date.png', // Иконка даты
+                                  'assets/icons/tabBar/date.png',
                                   width: 18,
                                   height: 20,
                                 ),
                               ),
-                              const SizedBox(
-                                width: 4,
-                                height: 14,
-                              ), // Отступ между иконкой и текстом
+                              const SizedBox(width: 4, height: 14),
                               Text(
-                                formatDate(widget.task.endDate ??
-                                    DateTime.now().toString()),
+                                formatDate(widget.task.endDate ?? DateTime.now().toString()),
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: overdueDays > 0
+                                  color: widget.task.overdue! > 0
                                       ? const Color.fromARGB(255, 198, 40, 40)
-                                      : const Color(
-                                          0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
+                                      : const Color(0xff99A4BA),
                                 ),
                               ),
                             ],
                           ),
-
                           if (widget.task.overdue! > 0)
                             Padding(
                               padding: EdgeInsets.only(
@@ -527,8 +507,8 @@ class _TaskCardState extends State<TaskCard> {
                               child: Container(
                                 width: 24,
                                 height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 253, 98, 87),
+                                decoration: const BoxDecoration(
+                                  color: Color.fromARGB(255, 253, 98, 87),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(

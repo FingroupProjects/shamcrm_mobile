@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_details_by_order_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -267,11 +268,10 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoodsDetailsScreen(
+        builder: (context) => GoodsDetailsByOrderScreen(
           id: goods.id,
           goodsName: goods.goodsName,
           goodsDescription: goods.goodsDescription,
-          goodsPrice: goods.goodsPrice,
           discountGoodsPrice: goods.discountGoodsPrice,
           stockQuantity: goods.stockQuantity,
           imagePaths: goods.imagePaths,

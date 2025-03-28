@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/page_2/category/category_add_character.dart';
-import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,25 +9,23 @@ import 'package:image_picker/image_picker.dart';
 class CategoryEditBottomSheet {
   static void show(BuildContext context, {
     required String initialName,
-    required String initialDescription,
     required String? initialSubCategory,
-
     File? initialImage,
-    List<CustomField>? initialCustomFields,
-    
   }) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController(text: initialName);
-    final TextEditingController categoryDescriptionController = TextEditingController(text: initialDescription);
-    
     String? subSelectedCategory = initialSubCategory;
+    bool isActive = false;
     File? _image = initialImage;
-    List<CustomField> customFields = initialCustomFields ?? [];
+    bool _isImageSelected = true;
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
+        _isImageSelected = true; 
+      } else {
+        _isImageSelected = false; 
       }
     }
 
@@ -43,28 +39,8 @@ class CategoryEditBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-
-            void _addCustomField(String fieldName) {
-              setState(() {
-                customFields.add(CustomField(fieldName: fieldName));
-              });
-            }
-
-            void _showAddCharacterCustomFieldDialog() {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName) { 
-                      _addCustomField(fieldName); 
-                    },
-                  );
-                },
-              );
-            }
-
             return FractionallySizedBox(
-              heightFactor: 0.95,
+              heightFactor: 0.9,
               child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -92,9 +68,9 @@ class CategoryEditBottomSheet {
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
+                      ),
                     ),
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Form(
@@ -114,128 +90,111 @@ class CategoryEditBottomSheet {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              SubCategoryDropdownWidget(
-                                subSelectedCategory: subSelectedCategory,
-                                onSelectCategory: (category) {
-                                  setState(() {
-                                    subSelectedCategory = category;
-                                  });
-                                },
-                              ),
+                               Text( AppLocalizations.of(context)!.translate('Изображение'),
+                                 style: const TextStyle(
+                                   fontSize: 16,
+                                   fontFamily: 'Gilroy',
+                                   fontWeight: FontWeight.w500,
+                                   color: Color(0xff1E2E52),
+                                 ),
+                               ),
                               const SizedBox(height: 8),
-                              CustomTextField(
-                                controller: categoryDescriptionController,
-                                hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                                label: AppLocalizations.of(context)!.translate('description_list'),
-                                maxLines: 5,
-                                keyboardType: TextInputType.multiline,
-                              ),
-                              const SizedBox(height: 16),
                               GestureDetector(
                                 onTap: () async {
                                   await _pickImage();
                                   setState(() {});
                                 },
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffF4F7FD),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                                  ),
-                                  child: _image == null
-                                      ? Center(
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.camera_alt,
-                                                color: Color(0xff99A4BA),
-                                                size: 24,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                AppLocalizations.of(context)!.translate('pick_image'),
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff99A4BA),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      : Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Container(
-                                                width: 54,
-                                                height: 54,
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  image: DecorationImage(
-                                                    image: FileImage(_image!),
-                                                    fit: BoxFit.cover,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xffF4F7FD),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: _image == null
+                                          ? Center(
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.camera_alt,
+                                                    color: Color(0xff99A4BA),
+                                                    size: 24,
                                                   ),
-                                                ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    AppLocalizations.of(context)!.translate('pick_image'),
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff99A4BA),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              Text(
-                                                _image!.path.split('/').last,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff1E2E52),
-                                                ),
+                                            )
+                                          : Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 54,
+                                                    height: 54,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      image: DecorationImage(
+                                                        image: FileImage(_image!),
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _image!.path.split('/').last,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color: Color(0xff1E2E52),
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis, 
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _image = null;
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
                                               ),
-                                              const SizedBox(width: 30),
-                                              IconButton(
-                                                icon: Icon(Icons.close, color: Color(0xff1E2E52)),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _image = null;
-                                                  });
-                                                },
-                                              ),
-                                            ],
+                                            ),
+                                    ),
+                                    if (!_isImageSelected)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          AppLocalizations.of(context)!.translate('   Изоброжения обязательно'),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
-                                buttonColor: Color(0xff1E2E52),
-                                textColor: Colors.white,
-                                onPressed: _showAddCharacterCustomFieldDialog,
-                              ),
-                              const SizedBox(height: 5),
-                              Column(
-                                children: customFields.map((field) {
-                                  return Card(
-                                    color: const Color(0xffF4F7FD),
-                                    margin: const EdgeInsets.symmetric(vertical: 4),
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.only(left: 16, right: 16),
-                                      title: Text(
-                                        field.fieldName,
-                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                                        onPressed: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
                               ),
                             ],
                           ),
@@ -260,22 +219,25 @@ class CategoryEditBottomSheet {
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate()) {
+                              if (formKey.currentState!.validate() && _image != null) {
                                 _updateCategory(
                                   categoryNameController.text,
-                                  categoryDescriptionController.text,
+                                  isActive,
                                   subSelectedCategory,
                                   _image,
-                                  customFields,
                                   context,
                                 );
+                              } else {
+                                setState(() {
+                                  _isImageSelected = _image != null;
+                                });
                               }
                             },
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 0),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -286,18 +248,8 @@ class CategoryEditBottomSheet {
     );
   }
 
-  static void _updateCategory(String name, String description, String? subcategory, File? image, List<CustomField> customFields, BuildContext context) {
-    final String? desc = description.isEmpty ? null : description;
-    print('Обновленное название категории: $name');
-    print('Обновленное описание категории: $desc');
-    print('Обновленная подкатегория: $subcategory');
-    print('Обновленное изображение: ${image?.path}');
-    print('Обновленные пользовательские поля: ${customFields.map((field) => field.fieldName).toList()}');
+  static void _updateCategory(String name, bool isActive, String? subcategory, File? image, BuildContext context) {
+
     Navigator.pop(context);
   }
-}
-
-class CustomField {
-  final String fieldName;
-  CustomField({required this.fieldName});
 }

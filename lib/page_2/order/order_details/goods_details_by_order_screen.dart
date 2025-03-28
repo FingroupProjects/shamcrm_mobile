@@ -1,56 +1,44 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/page_2/category_model.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
-import 'package:crm_task_manager/page_2/category/category_details/category_subcategory_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
+import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-class CategoryDetailsScreen extends StatefulWidget {
-  final int categoryId;
-  final String categoryName;
-  final String subCategoryName;
- final List<Attribute> attributes;
- final String? imageUrl;
+class GoodsDetailsByOrderScreen extends StatefulWidget {
+  final int id;
+  final String goodsName;
+  final String goodsDescription;
+  final int discountGoodsPrice;
+  final int stockQuantity;
+  final List<String> imagePaths; 
+  String? selectedCategory;
+  bool isActive = false;
 
-  CategoryDetailsScreen({
-    required this.categoryId,
-    required this.categoryName,
-    required this.subCategoryName,
-    required this.attributes,
-    this.imageUrl,
+  GoodsDetailsByOrderScreen({
+    required this.id,
+    required this.goodsName,
+    required this.goodsDescription,
+    required this.discountGoodsPrice,
+    required this.stockQuantity,
+    required this.imagePaths, 
+    this.selectedCategory,
+    this.isActive = false,
   });
 
   @override
-  _CategoryDetailsScreenState createState() => _CategoryDetailsScreenState();
+  _GoodsDetailsScreenState createState() => _GoodsDetailsScreenState();
 }
 
-class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
+class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
   List<Map<String, String>> details = [];
-  final ApiService _apiService = ApiService();
-  String? baseUrl;
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
-    _initializeBaseUrl();
   }
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
-  }
-
-  @override
+   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _updateDetails();
@@ -58,7 +46,12 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': widget.categoryName},
+      {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': widget.goodsName},
+      {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': widget.goodsDescription},
+      {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
+      {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
+      {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
+      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? 'Активно' : 'Неактивно'},
     ];
   }
 
@@ -67,59 +60,64 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     return Scaffold(
       appBar: _buildAppBar(
         context,
-        AppLocalizations.of(context)!.translate('view_category'),
+        AppLocalizations.of(context)!.translate('view_goods'),
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.only(left: 16, right: 16),
         child: ListView(
           children: [
-            if (widget.imageUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    '$baseUrl/${widget.imageUrl!}',
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.white,
-                        child: Icon(Icons.image_not_supported, size: 50, color: Colors.black,),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                                color: Colors.black,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+            _buildImageSlider(),
             _buildDetailsList(),
-            CategorySubCategoryScreen(categoryId: widget.categoryId),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildImageSlider() {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          height: 250,
+          child: PageView.builder(
+            itemCount: widget.imagePaths.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  widget.imagePaths[index],
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            '${_currentPage + 1}/${widget.imagePaths.length}',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -160,38 +158,48 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                CategoryEditBottomSheet.show(
-                  context,
-                  initialName: widget.categoryName,
-                  initialSubCategory: widget.subCategoryName,
-                  // initialImageUrl: widget.imageUrl
-                );
-              },
-            ),
-            IconButton(
-              padding: EdgeInsets.only(right: 8),
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => DeleteCategoryDialog(),
-                );           
-              },
-            ),
+            // IconButton(
+            //   padding: EdgeInsets.zero,
+            //   constraints: BoxConstraints(),
+            //   icon: Image.asset(
+            //     'assets/icons/edit.png',
+            //     width: 24,
+            //     height: 24,
+            //   ),
+            //   onPressed: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => GoodsEditScreen(
+            //           goods: {
+            //             'name': widget.goodsName,
+            //             'description': widget.goodsDescription,
+            //             'discountPrice': widget.discountGoodsPrice,
+            //             'stockQuantity': widget.stockQuantity,
+            //             'category': widget.selectedCategory,
+            //             'isActive': widget.isActive,
+            //             'imagePaths': widget.imagePaths,
+            //           },
+            //         ),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // IconButton(
+            //   padding: EdgeInsets.only(right: 8),
+            //   constraints: BoxConstraints(),
+            //   icon: Image.asset(
+            //     'assets/icons/delete.png',
+            //     width: 24,
+            //     height: 24,
+            //   ),
+            //   onPressed: () {
+            //     showDialog(
+            //       context: context,
+            //       builder: (context) => DeleteGoodsDialog(),
+            //     );
+            //   },
+            // ),
           ],
         ),
       ],
@@ -199,21 +207,23 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    return ListView.builder(
+    return ListView(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
-      itemCount: details.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            details[index]['label']!,
-            details[index]['value']!,
-          ),
-        );
-      },
+      children: [
+        ...details.map((detail) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: _buildDetailItem(
+              detail['label']!,
+              detail['value']!,
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
+
 
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
@@ -266,7 +276,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     );
   }
 
-   void _showFullTextDialog(String title, String content) {
+  void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -321,7 +331,6 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
       },
     );
   }
-
 
   @override
   void dispose() {

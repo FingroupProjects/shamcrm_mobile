@@ -28,13 +28,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': 'Номер заказа:', 'value': widget.order['number'] ?? 'Не указан'},
+      {
+        'label': 'Номер заказа:',
+        'value': widget.order['number'] ?? 'Не указан'
+      },
       {'label': 'Дата заказа:', 'value': widget.order['date'] ?? 'Не указана'},
       {'label': 'Клиент:', 'value': widget.order['client'] ?? 'Не указан'},
-      {
-        'label': 'Ответственный менеджер:',
-        'value': widget.order['manager'] ?? 'Не указан'
-      },
+      // {
+      //   'label': 'Ответственный менеджер:',
+      //   'value': widget.order['manager'] ?? 'Не указан'
+      // },
       {'label': 'Сумма заказа:', 'value': '${widget.order['total'] ?? 0} ₽'},
       {
         'label': 'Статус заказа:',
@@ -144,9 +147,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         child: ListView(
           children: [
             _buildDetailsList(),
-            CategoryGoodsScreen(
-              categoryName: widget.categoryName,
-            ),
+            OrderGoodsScreen(),
           ],
         ),
       ),
@@ -172,6 +173,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
+         IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Icon(
+                Icons.history,
+                size: 30,
+                color: Color.fromARGB(224, 0, 0, 0),
+              ),
+              onPressed: () {
+                // showDialog(
+                //   context: context,
+                //   builder: (context) => HistoryDialog(
+                //     leadId: currentLead!.id,
+                //   ),
+                // );
+              },
+            ),
         IconButton(
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(),

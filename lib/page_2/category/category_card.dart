@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -8,16 +9,16 @@ class CategoryCard extends StatefulWidget {
   final int categoryId;
   final String categoryName;
   final String subCategoryName;
-  final String categoryDescription;
-  final List<Map<String, dynamic>> characterCustomFields;
+  final List<Attribute> attributes; 
+  final String? image;
 
   CategoryCard({
     Key? key,
     required this.categoryId,
     required this.categoryName,
     required this.subCategoryName,
-    required this.categoryDescription,
-    required this.characterCustomFields,
+    required this.attributes, 
+    required this.image,
   }) : super(key: key);
 
   @override
@@ -45,8 +46,8 @@ class _CategoryCardState extends State<CategoryCard> {
               categoryId: widget.categoryId,
               categoryName: widget.categoryName,
               subCategoryName: widget.subCategoryName,
-              categoryDescription: widget.categoryDescription,
-              characterCustomFields: widget.characterCustomFields,
+              attributes: widget.attributes,
+              imageUrl: widget.image,
             ),
           ),
         );

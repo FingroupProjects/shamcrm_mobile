@@ -11,7 +11,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '8742220',
       'name': 'Соус Pesto con Basilico e Ru...',
-      'imageUrls': ['assets/images/pesto.png', 'assets/images/goods_photo1.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 54.080,
       'isSelected': false,
       'quantity': 1,
@@ -19,7 +19,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '4312322',
       'name': 'Нутовая мука цельнозерно...',
-      'imageUrls': ['assets/images/nut_flour.png', 'assets/images/goods_photo2.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg','assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg','assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 34.500,
       'isSelected': false,
       'quantity': 1,
@@ -27,7 +27,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '3422560',
       'name': 'Ржаная цельнозерновая му...',
-      'imageUrls': ['assets/images/rye_flour.png', 'assets/images/goods_photo.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 45.200,
       'isSelected': false,
       'quantity': 1,
@@ -35,7 +35,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Варенье из сосновых шише...',
-      'imageUrls': ['assets/images/jam.png', 'assets/images/goods_photo1.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 67.890,
       'isSelected': false,
       'quantity': 1,
@@ -43,7 +43,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Вода минеральная "Нагер"...',
-      'imageUrls': ['assets/images/water.png', 'assets/images/goods_photo2.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 23.450,
       'isSelected': false,
       'quantity': 1,
@@ -51,7 +51,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Холодный чай Ti Чёрный со...',
-      'imageUrls': ['assets/images/tea.png', 'assets/images/goods_photo.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 35.600,
       'isSelected': false,
       'quantity': 1,
@@ -59,7 +59,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Холодный чай Arizona Зеле...',
-      'imageUrls': ['assets/images/arizona_tea.png', 'assets/images/goods_photo1.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 39.800,
       'isSelected': false,
       'quantity': 1,
@@ -67,7 +67,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     {
       'id': '9992235',
       'name': 'Растительный напиток Вито...',
-      'imageUrls': ['assets/images/drink.png', 'assets/images/goods_photo2.jpg'],
+      'imageUrls': ['assets/images/goods_photo1.jpg', 'assets/images/goods_photo2.jpg'],
       'price': 28.900,
       'isSelected': false,
       'quantity': 1,

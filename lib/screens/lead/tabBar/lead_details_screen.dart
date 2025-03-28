@@ -11,7 +11,7 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
@@ -96,10 +96,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress =
-      false; // Добавлено для защиты от повторного вызова
-  Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
-  @override
+  bool _isTutorialInProgress = false; 
+  Map<String, dynamic>? tutorialProgress; 
+  
   @override
   void initState() {
     super.initState();
@@ -107,10 +106,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     _checkPermissions().then((_) {
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
     });
+    _fetchTutorialProgress();
+
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -354,7 +353,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
 
-    await _fetchTutorialProgress();
   }
 
   // Обновление данных лида

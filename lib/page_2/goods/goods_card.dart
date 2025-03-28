@@ -9,7 +9,6 @@ class GoodsCard extends StatefulWidget {
   final String goodsName;
   final String goodsDescription;
   final String goodsCategory;
-  final double goodsPrice;
   final int goodsDiscountPrice;
   final int goodsStockQuantity;
   final List<String> goodsImagePath;
@@ -22,7 +21,6 @@ class GoodsCard extends StatefulWidget {
     required this.goodsName,
     required this.goodsDescription,
     required this.goodsCategory,
-    required this.goodsPrice,
     required this.goodsDiscountPrice,
     required this.goodsStockQuantity,
     required this.goodsImagePath,
@@ -51,7 +49,6 @@ void _navigateToGoodsDetails() {
         id: widget.goodsId,
         goodsName: widget.goodsName,
         goodsDescription: widget.goodsDescription,
-        goodsPrice: widget.goodsPrice,
         discountGoodsPrice: widget.goodsDiscountPrice,
         stockQuantity: widget.goodsStockQuantity,
         imagePaths: widget.goodsImagePath,
@@ -127,25 +124,25 @@ void _navigateToGoodsDetails() {
                       ),
                     ),
                     SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: AppLocalizations.of(context)!.translate('price'), 
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                            color: Color(0xff99A4BA),
-                            ),
-                          ),
-                          TextSpan(
-                            text: '${widget.goodsPrice % 1 == 0 ? widget.goodsPrice.toInt() : widget.goodsPrice}',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // RichText(
+                    //   text: TextSpan(
+                    //     children: [
+                    //       TextSpan(
+                    //         text: AppLocalizations.of(context)!.translate('price'), 
+                    //         style: TaskCardStyles.priorityStyle.copyWith(
+                    //         color: Color(0xff99A4BA),
+                    //         ),
+                    //       ),
+                    //       TextSpan(
+                    //         text: '${widget.goodsPrice % 1 == 0 ? widget.goodsPrice.toInt() : widget.goodsPrice}',
+                    //         style: TaskCardStyles.priorityStyle.copyWith(
+                    //           color: Color(0xff1E2E52),
+                    //           fontWeight: FontWeight.w600,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
