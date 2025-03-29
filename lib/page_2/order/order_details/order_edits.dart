@@ -1,15 +1,12 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class OrderEditScreen extends StatefulWidget {
   final Map<String, dynamic> order;
