@@ -1,11 +1,11 @@
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Для форматирования даты
+import 'package:intl/intl.dart';
 
 class OrderCard extends StatefulWidget {
-  final Map<String, dynamic> order;
+  final Order order;
   final Function(int)? onStatusUpdated;
 
   const OrderCard({required this.order, this.onStatusUpdated});
@@ -21,21 +21,8 @@ class _OrderCardState extends State<OrderCard> {
   @override
   void initState() {
     super.initState();
-    statusId = widget.order['statusId'];
-    dropdownValue = _getStatusName(statusId);
-  }
-
-  String _getStatusName(int statusId) {
-    const statusMap = {
-      1: 'Новый',
-      2: 'Ожидает оплаты',
-      3: 'Оплачен',
-      4: 'В обработке',
-      5: 'Отправлен',
-      6: 'Завершен',
-      7: 'Отменен',
-    };
-    return statusMap[statusId] ?? 'Неизвестный статус';
+    statusId = widget.order.orderStatus.id;
+    dropdownValue = widget.order.orderStatus.name;
   }
 
   Color _getStatusTextColor(int statusId) {
@@ -44,16 +31,6 @@ class _OrderCardState extends State<OrderCard> {
         return Colors.green[800]!;
       case 2:
         return Colors.amber[900]!;
-      case 3:
-        return Colors.green[800]!;
-      case 4:
-        return Colors.blue[800]!;
-      case 5:
-        return Colors.orange[900]!;
-      case 6:
-        return Colors.teal[700]!;
-      case 7:
-        return Colors.red[900]!;
       default:
         return Colors.grey[800]!;
     }
@@ -65,29 +42,14 @@ class _OrderCardState extends State<OrderCard> {
         return Colors.green[100]!;
       case 2:
         return Colors.amber[50]!;
-      case 3:
-        return Colors.green[50]!;
-      case 4:
-        return Colors.blue[50]!;
-      case 5:
-        return Colors.orange[50]!;
-      case 6:
-        return Colors.teal[50]!;
-      case 7:
-        return Colors.red[50]!;
       default:
         return Colors.grey[100]!;
     }
   }
 
-  // Форматирование даты в dd.MM.yyyy
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd.MM.yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Нет даты';
+    return DateFormat('dd.MM.yyyy').format(date);
   }
 
   @override
@@ -97,13 +59,15 @@ class _OrderCardState extends State<OrderCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                OrderDetailsScreen(order: widget.order, categoryName: ''),
+            builder: (context) => OrderDetailsScreen(
+              orderId: widget.order.id,
+              categoryName: '',
+            ),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Добавили горизонтальные отступы
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 244, 247, 254),
@@ -124,7 +88,7 @@ class _OrderCardState extends State<OrderCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '№${widget.order['number']}',
+                  '№${widget.order.orderNumber}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -133,7 +97,7 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 Text(
-                  _formatDate(widget.order['date']),
+                  _formatDate(widget.order.lead.createdAt),
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -172,12 +136,11 @@ class _OrderCardState extends State<OrderCard> {
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         Container(
-                          constraints: BoxConstraints(maxWidth: 200),
+                          constraints: const BoxConstraints(maxWidth: 200),
                           child: Text(
                             dropdownValue,
                             style: const TextStyle(
@@ -201,7 +164,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
                 Expanded(
                   child: Text(
-                    '${widget.order['total'].toString().replaceAll('.0', '')} сом',
+                    '${widget.order.goods.length} сом',
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 26,
@@ -215,57 +178,26 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             const SizedBox(height: 36),
-            Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start, // Выравнивание столбца по началу
+            Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.person,
-                      color: Color(0xff99A4BA),
-                      size: 24,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '${widget.order['client']}',
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                const Icon(
+                  Icons.person,
+                  color: Color(0xff99A4BA),
+                  size: 24,
                 ),
-                // const SizedBox(height: 16),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment
-                //       .end, // Выравнивание "Менеджер" по правому краю
-                //   children: [
-                //     Container(
-                //       padding: const EdgeInsets.symmetric(
-                //           horizontal: 8, vertical: 4),
-                //       decoration: BoxDecoration(
-                //         color: Color(0xFFE9EDF5),
-                //         borderRadius: BorderRadius.circular(8),
-                //       ),
-                //       child: Text(
-                //         'Менеджер: ${widget.order['manager']}',
-                //         style: const TextStyle(
-                //           fontFamily: 'Gilroy',
-                //           fontSize: 16,
-                //           fontWeight: FontWeight.w500,
-                //           color: Color(0xff1E2E52),
-                //         ),
-                //         overflow: TextOverflow.ellipsis,
-                //       ),
-                //     ),
-                //   ],
-                // ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    widget.order.lead.name,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ],

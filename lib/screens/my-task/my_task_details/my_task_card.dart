@@ -332,7 +332,14 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
+                              fontFamily:
+                                  'Gilroy', // Ensure consistent font (if used elsewhere)
+                              fontWeight: FontWeight.w500, // Consistent weight
+                              height:
+                                  1.0, // Set line height to 1.0 to remove extra vertical space
                             ),
+                            textAlign: TextAlign
+                                .center, // Ensure text is centered horizontally
                           ),
                         ),
                       ),

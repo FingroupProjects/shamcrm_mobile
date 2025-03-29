@@ -40,6 +40,8 @@ import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
@@ -1107,218 +1109,224 @@ class ApiService {
   }
 
 // Обновленный метод createLead
-Future<Map<String, dynamic>> createLead({
-  required String name,
-  required int leadStatusId,
-  required String phone,
-  int? regionId,
-  int? managerId,
-  int? sourceId,
-  String? instaLogin,
-  String? facebookLogin,
-  String? tgNick,
-  DateTime? birthday,
-  String? email,
-  String? description,
-  String? waPhone,
-  List<Map<String, String>>? customFields,
-  String? manager, // Добавляем параметр для "system"
-}) async {
-  final organizationId = await getSelectedOrganization();
+  Future<Map<String, dynamic>> createLead({
+    required String name,
+    required int leadStatusId,
+    required String phone,
+    int? regionId,
+    int? managerId,
+    int? sourceId,
+    String? instaLogin,
+    String? facebookLogin,
+    String? tgNick,
+    DateTime? birthday,
+    String? email,
+    String? description,
+    String? waPhone,
+    List<Map<String, String>>? customFields,
+    String? manager, // Добавляем параметр для "system"
+  }) async {
+    final organizationId = await getSelectedOrganization();
 
-  final Map<String, dynamic> requestData = {
-    'name': name,
-    'lead_status_id': leadStatusId,
-    'phone': phone,
-    'position': 1,
-    if (regionId != null) 'region_id': regionId,
-    if (managerId != null) 'manager_id': managerId,
-    if (manager != null) 'manager': manager, // Добавляем "manager" если он есть
-    if (sourceId != null) 'source_id': sourceId,
-    if (instaLogin != null) 'insta_login': instaLogin,
-    if (facebookLogin != null) 'facebook_login': facebookLogin,
-    if (tgNick != null) 'tg_nick': tgNick,
-    if (birthday != null) 'birthday': birthday.toIso8601String(),
-    if (email != null) 'email': email,
-    if (description != null) 'description': description,
-    if (waPhone != null) 'wa_phone': waPhone,
-    'lead_custom_fields': customFields?.map((field) {
-      return {
-        'key': field.keys.first,
-        'value': field.values.first,
-      };
-    }).toList() ?? [],
-  };
+    final Map<String, dynamic> requestData = {
+      'name': name,
+      'lead_status_id': leadStatusId,
+      'phone': phone,
+      'position': 1,
+      if (regionId != null) 'region_id': regionId,
+      if (managerId != null) 'manager_id': managerId,
+      if (manager != null)
+        'manager': manager, // Добавляем "manager" если он есть
+      if (sourceId != null) 'source_id': sourceId,
+      if (instaLogin != null) 'insta_login': instaLogin,
+      if (facebookLogin != null) 'facebook_login': facebookLogin,
+      if (tgNick != null) 'tg_nick': tgNick,
+      if (birthday != null) 'birthday': birthday.toIso8601String(),
+      if (email != null) 'email': email,
+      if (description != null) 'description': description,
+      if (waPhone != null) 'wa_phone': waPhone,
+      'lead_custom_fields': customFields?.map((field) {
+            return {
+              'key': field.keys.first,
+              'value': field.values.first,
+            };
+          }).toList() ??
+          [],
+    };
 
-  final response = await _postRequest(
-    '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    requestData,
-  );
+    final response = await _postRequest(
+      '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      requestData,
+    );
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'lead_created_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
-    }
-    if (response.body.contains('validation.phone')) {
-      return {'success': false, 'message': 'invalid_phone_format'};
-    }
-    if (response.body.contains('The email field must be a valid email address.')) {
-      return {'success': false, 'message': 'error_enter_email'};
-    }
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'invalid_name_length'};
-    }
-    else if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    } else if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    } else if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    } else if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    } else if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'lead_created_successfully'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      if (response.body.contains('validation.phone')) {
+        return {'success': false, 'message': 'invalid_phone_format'};
+      }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {'success': false, 'message': 'error_enter_email'};
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      } else if (response.body.contains('insta_login')) {
+        return {'success': false, 'message': 'instagram_login_exists'};
+      } else if (response.body.contains('facebook_login')) {
+        return {'success': false, 'message': 'facebook_login_exists'};
+      } else if (response.body.contains('tg_nick')) {
+        return {'success': false, 'message': 'telegram_nick_exists'};
+      } else if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'invalid_birthday'};
+      } else if (response.body.contains('wa_phone')) {
+        return {'success': false, 'message': 'whatsapp_number_exists'};
+      } else {
+        return {'success': false, 'message': 'unknown_error'};
+      }
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'unknown_error'};
+      return {'success': false, 'message': 'lead_creation_error'};
     }
-  } else if (response.statusCode == 500) {
-    return {'success': false, 'message': 'error_server_text'};
-  } else {
-    return {'success': false, 'message': 'lead_creation_error'};
   }
-}
 
 // Новый метод для работы с динамическими данными
-Future<Map<String, dynamic>> createLeadWithData(Map<String, dynamic> data) async {
-  final organizationId = await getSelectedOrganization();
-  if (organizationId != null) {
-    data['organization_id'] = organizationId;
-  }
+  Future<Map<String, dynamic>> createLeadWithData(
+      Map<String, dynamic> data) async {
+    final organizationId = await getSelectedOrganization();
+    if (organizationId != null) {
+      data['organization_id'] = organizationId;
+    }
 
-  final response = await _postRequest(
-    '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    data,
-  );
+    final response = await _postRequest(
+      '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      data,
+    );
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'lead_created_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
-    }
-    if (response.body.contains('validation.phone')) {
-      return {'success': false, 'message': 'invalid_phone_format'};
-    }
-    if (response.body.contains('The email field must be a valid email address.')) {
-      return {'success': false, 'message': 'error_enter_email'};
-    }
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'invalid_name_length'};
-    }
-    else if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    } else if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    } else if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    } else if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    } else if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'lead_created_successfully'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      if (response.body.contains('validation.phone')) {
+        return {'success': false, 'message': 'invalid_phone_format'};
+      }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {'success': false, 'message': 'error_enter_email'};
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      } else if (response.body.contains('insta_login')) {
+        return {'success': false, 'message': 'instagram_login_exists'};
+      } else if (response.body.contains('facebook_login')) {
+        return {'success': false, 'message': 'facebook_login_exists'};
+      } else if (response.body.contains('tg_nick')) {
+        return {'success': false, 'message': 'telegram_nick_exists'};
+      } else if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'invalid_birthday'};
+      } else if (response.body.contains('wa_phone')) {
+        return {'success': false, 'message': 'whatsapp_number_exists'};
+      } else {
+        return {'success': false, 'message': 'unknown_error'};
+      }
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'unknown_error'};
+      return {'success': false, 'message': 'lead_creation_error'};
     }
-  } else if (response.statusCode == 500) {
-    return {'success': false, 'message': 'error_server_text'};
-  } else {
-    return {'success': false, 'message': 'lead_creation_error'};
   }
-}
 
   // Метод для Обновления Лида
   Future<Map<String, dynamic>> updateLead({
-  required int leadId,
-  required String name,
-  required int leadStatusId,
-  required String phone,
-  int? regionId,
-  int? sourceId, // Исправлено с sourseId на sourceId
-  int? managerId,
-  String? instaLogin,
-  String? facebookLogin,
-  String? tgNick,
-  DateTime? birthday,
-  String? email,
-  String? description,
-  String? waPhone,
-  List<Map<String, String>>? customFields,
-}) async {
-  final organizationId = await getSelectedOrganization();
+    required int leadId,
+    required String name,
+    required int leadStatusId,
+    required String phone,
+    int? regionId,
+    int? sourceId, // Исправлено с sourseId на sourceId
+    int? managerId,
+    String? instaLogin,
+    String? facebookLogin,
+    String? tgNick,
+    DateTime? birthday,
+    String? email,
+    String? description,
+    String? waPhone,
+    List<Map<String, String>>? customFields,
+  }) async {
+    final organizationId = await getSelectedOrganization();
 
-  final Map<String, dynamic> requestData = {
-    'name': name,
-    'lead_status_id': leadStatusId,
-    'phone': phone,
-    if (regionId != null) 'region_id': regionId,
-    if (sourceId != null) 'source_id': sourceId,
-    if (managerId != null) 'manager_id': managerId,
-    if (instaLogin != null) 'insta_login': instaLogin,
-    if (facebookLogin != null) 'facebook_login': facebookLogin,
-    if (tgNick != null) 'tg_nick': tgNick,
-    if (birthday != null) 'birthday': birthday.toIso8601String(),
-    if (email != null) 'email': email,
-    if (description != null) 'description': description,
-    if (waPhone != null) 'wa_phone': waPhone,
-    'lead_custom_fields': customFields?.map((field) => {
-          'key': field.keys.first,
-          'value': field.values.first,
-        }).toList() ?? [],
-  };
+    final Map<String, dynamic> requestData = {
+      'name': name,
+      'lead_status_id': leadStatusId,
+      'phone': phone,
+      if (regionId != null) 'region_id': regionId,
+      if (sourceId != null) 'source_id': sourceId,
+      if (managerId != null) 'manager_id': managerId,
+      if (instaLogin != null) 'insta_login': instaLogin,
+      if (facebookLogin != null) 'facebook_login': facebookLogin,
+      if (tgNick != null) 'tg_nick': tgNick,
+      if (birthday != null) 'birthday': birthday.toIso8601String(),
+      if (email != null) 'email': email,
+      if (description != null) 'description': description,
+      if (waPhone != null) 'wa_phone': waPhone,
+      'lead_custom_fields': customFields
+              ?.map((field) => {
+                    'key': field.keys.first,
+                    'value': field.values.first,
+                  })
+              .toList() ??
+          [],
+    };
 
-  final response = await _patchRequest(
-    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    requestData,
-  );
+    final response = await _patchRequest(
+      '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      requestData,
+    );
 
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'lead_updated_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'lead_updated_successfully'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else {
+      return {'success': false, 'message': 'error_update_lead'};
     }
-    return {'success': false, 'message': 'unknown_error'};
-  } else {
-    return {'success': false, 'message': 'error_update_lead'};
-  }
-}
-
-Future<Map<String, dynamic>> updateLeadWithData({
-  required int leadId,
-  required Map<String, dynamic> data,
-}) async {
-  final organizationId = await getSelectedOrganization();
-  if (organizationId != null) {
-    data['organization_id'] = organizationId;
   }
 
-  final response = await _patchRequest(
-    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    data,
-  );
-
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'lead_updated_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
+  Future<Map<String, dynamic>> updateLeadWithData({
+    required int leadId,
+    required Map<String, dynamic> data,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    if (organizationId != null) {
+      data['organization_id'] = organizationId;
     }
-    return {'success': false, 'message': 'unknown_error'};
-  } else {
-    return {'success': false, 'message': 'error_update_lead'};
+
+    final response = await _patchRequest(
+      '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      data,
+    );
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'lead_updated_successfully'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else {
+      return {'success': false, 'message': 'error_update_lead'};
+    }
   }
-}
 
   //Метод для получения региона
   Future<RegionsDataResponse> getAllRegion() async {
@@ -5942,18 +5950,16 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//
 
-
   //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
-  
-  
+
   Future<CharacteristicListDataResponse> getAllCharacteristics() async {
     final organizationId = await getSelectedOrganization();
 
-    final response = await _getRequest('/attribute${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/attribute${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-
 
       return CharacteristicListDataResponse.fromJson(data);
     } else {
@@ -5961,173 +5967,168 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-
-Future<List<CategoryData>> getCategory() async {
-  final organizationId = await getSelectedOrganization();
-  // final String path = '/category/organization_id=$organizationId';
-  final String path = '/category';
-
-  final response = await _getRequest(path); // Ваш метод запроса
-
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
-
-
-    if (data.containsKey('result') && data['result'] is List) {
-      
-      return (data['result'] as List)
-          .map((category) => CategoryData.fromJson(category as Map<String, dynamic>))
-          .toList();
-          
-    } else {
-      throw Exception('Ошибка: Неверный формат данных');
-    }
-  } else {
-    throw Exception('Ошибка загрузки категории: ${response.statusCode}');
-  }
-}
-
-
-Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
-  try {
+  Future<List<CategoryData>> getCategory() async {
     final organizationId = await getSelectedOrganization();
-    final url = '/category/get-by-parent-id/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    // final String path = '/category/organization_id=$organizationId';
+    final String path = '/category';
 
-    final response = await _getRequest(url);
+    final response = await _getRequest(path); // Ваш метод запроса
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      print(decodedJson);
-      return SubCategoryResponseASD.fromJson(decodedJson);
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.containsKey('result') && data['result'] is List) {
+        return (data['result'] as List)
+            .map((category) =>
+                CategoryData.fromJson(category as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Ошибка: Неверный формат данных');
+      }
     } else {
-      throw Exception('Failed to load subcategories. Status code: ${response.statusCode}');
+      throw Exception('Ошибка загрузки категории: ${response.statusCode}');
     }
-  } catch (e) {
-    throw Exception('Failed to load subcategories: ${e.toString()}');
   }
-}
 
+  Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final url =
+          '/category/get-by-parent-id/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-Future<Map<String, dynamic>> createCategory({
-  required String name,
-  required int parentId,
-  required List<String> attributeNames,
-  File? image,
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse('${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      final response = await _getRequest(url);
 
-    var request = http.MultipartRequest('POST', uri);
-
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
-
-    request.fields['name'] = name;
-    if (parentId != 0) {
-      request.fields['parent_id'] = parentId.toString();
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        print(decodedJson);
+        return SubCategoryResponseASD.fromJson(decodedJson);
+      } else {
+        throw Exception(
+            'Failed to load subcategories. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load subcategories: ${e.toString()}');
     }
+  }
 
-    for (int i = 0; i < attributeNames.length; i++) {
-      request.fields['attributes[$i][attribute]'] = attributeNames[i]; 
-    }
+  Future<Map<String, dynamic>> createCategory({
+    required String name,
+    required int parentId,
+    required List<String> attributeNames,
+    File? image,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (image != null) {
-      final imageFile = await http.MultipartFile.fromPath(
-        'image', 
-        image.path
-      );
-      request.files.add(imageFile);
-    }
+      var request = http.MultipartRequest('POST', uri);
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-    final responseBody = json.decode(response.body);
+      request.fields['name'] = name;
+      if (parentId != 0) {
+        request.fields['parent_id'] = parentId.toString();
+      }
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'category_created_successfully',
-        'data': CategoryData.fromJson(responseBody),
-      };
-    } else {
+      for (int i = 0; i < attributeNames.length; i++) {
+        request.fields['attributes[$i][attribute]'] = attributeNames[i];
+      }
+
+      if (image != null) {
+        final imageFile =
+            await http.MultipartFile.fromPath('image', image.path);
+        request.files.add(imageFile);
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      final responseBody = json.decode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'category_created_successfully',
+          'data': CategoryData.fromJson(responseBody),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseBody['message'] ?? 'Failed to create category',
+          'error': responseBody,
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': responseBody['message'] ?? 'Failed to create category',
-        'error': responseBody,
+        'message': 'An error occurred: $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'An error occurred: $e',
-    };
   }
-}
 
-Future<Map<String, dynamic>> updateCategory({
-  required int categoryId,
-  required String name,
-  File? image,
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse('${baseUrl}/category/update/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  Future<Map<String, dynamic>> updateCategory({
+    required int categoryId,
+    required String name,
+    File? image,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/category/update/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    var request = http.MultipartRequest('POST', uri); 
+      var request = http.MultipartRequest('POST', uri);
 
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-    request.fields['name'] = name;
+      request.fields['name'] = name;
 
-    if (image != null) {
-      final imageFile = await http.MultipartFile.fromPath(
-        'image', 
-        image.path
-      );
-      request.files.add(imageFile);
-    }
+      if (image != null) {
+        final imageFile =
+            await http.MultipartFile.fromPath('image', image.path);
+        request.files.add(imageFile);
+      }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    final responseBody = json.decode(response.body);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final responseBody = json.decode(response.body);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Категория успешно обновлена',
-        'data': responseBody,
-      };
-    } else {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Категория успешно обновлена',
+          'data': responseBody,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseBody['message'] ?? 'Failed to update category',
+          'error': responseBody,
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': responseBody['message'] ?? 'Failed to update category',
-        'error': responseBody,
+        'message': 'An error occurred: $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'An error occurred: $e',
-    };
   }
-}
-
 
   Future<Map<String, dynamic>> deleteCategory(int categoryId) async {
     final organizationId = await getSelectedOrganization();
 
-    final response = await _deleteRequest('/category/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _deleteRequest(
+        '/category/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -6137,61 +6138,176 @@ Future<Map<String, dynamic>> updateCategory({
   }
 
   Future<Map<String, dynamic>> updateSubCategory({
-  required int subCategoryId,
-  required String name,
-  File? image,
-  required List<String> attributeNames,
+    required int subCategoryId,
+    required String name,
+    File? image,
+    required List<String> attributeNames,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse('${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      var request = http.MultipartRequest('POST', uri);
 
-    var request = http.MultipartRequest('POST', uri); 
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
+      request.fields['name'] = name;
 
-    request.fields['name'] = name;
+      if (image != null) {
+        final imageFile =
+            await http.MultipartFile.fromPath('image', image.path);
+        request.files.add(imageFile);
+      }
 
-    if (image != null) {
-      final imageFile = await http.MultipartFile.fromPath(
-        'image', 
-        image.path
-      );
-      request.files.add(imageFile);
-    }
+      for (int i = 0; i < attributeNames.length; i++) {
+        request.fields['attributes[$i][attribute]'] = attributeNames[i];
+      }
 
-    for (int i = 0; i < attributeNames.length; i++) {
-      request.fields['attributes[$i][attribute]'] = attributeNames[i]; 
-    }
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final responseBody = json.decode(response.body);
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    final responseBody = json.decode(response.body);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Подкатегория успешно обновлена',
-        'data': responseBody,
-      };
-    } else {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Подкатегория успешно обновлена',
+          'data': responseBody,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseBody['message'] ?? 'Failed to update subcategory',
+          'error': responseBody,
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': responseBody['message'] ?? 'Failed to update subcategory',
-        'error': responseBody,
+        'message': 'An error occurred: $e',
       };
     }
+  }
+
+  //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
+
+  //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
+// Метод для получение статусов заказы
+  Future<List<OrderStatus>> getOrderStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+
+    try {
+      final response = await _getRequest(
+          '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          await prefs.setString('cachedOrderStatuses_$organizationId',
+              json.encode(data['result']));
+          return (data['result'] as List)
+              .map((status) => OrderStatus.fromJson(status))
+              .toList();
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}!');
+      }
+    } catch (e) {
+      print(
+          'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
+      final cachedStatuses =
+          prefs.getString('cachedOrderStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        return (decodedData as List)
+            .map((status) => OrderStatus.fromJson(status))
+            .toList();
+      } else {
+        throw Exception(
+            'Ошибка загрузки статусов заказов и нет кэшированных данных!');
+      }
+    }
+  }
+
+  // Метод для получение карточки
+Future<OrderResponse> getOrders({int page = 1, int perPage = 20, int? statusId}) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+
+  try {
+    String url = '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    url += '&page=$page&per_page=$perPage';
+    if (statusId != null) {
+      url += '&status_id=$statusId';
+    }
+
+    final response = await _getRequest(url); // Предполагается, что это ваш метод HTTP-запроса
+
+    print('Response status: ${response.statusCode}');
+    print('Raw response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body);
+      print('Decoded JSON: $rawData');
+      final data = rawData['result'];
+      print('Result data: $data');
+      print('Data type: ${data.runtimeType}');
+      
+      final orderResponse = OrderResponse.fromJson(data);
+      print('Deserialized OrderResponse: $orderResponse');
+      await prefs.setString('cachedOrders_$organizationId', json.encode(data));
+      return orderResponse;
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
   } catch (e) {
-    return {
-      'success': false,
-      'message': 'An error occurred: $e',
-    };
+    print('Ошибка загрузки заказов: $e. Используем кэшированные данные.');
+    final cachedOrders = prefs.getString('cachedOrders_$organizationId');
+    if (cachedOrders != null) {
+      final decodedData = json.decode(cachedOrders);
+      print('Cached data: $decodedData');
+      return OrderResponse.fromJson(decodedData);
+    } else {
+      throw Exception('Ошибка загрузки заказов и нет кэшированных данных!');
+    }
+  }
+}
+
+  //Метод для получение просмотра заказов 
+Future<Order> getOrderDetails(int orderId) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+
+  try {
+    final response = await _getRequest(
+      '/order/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body)['result'];
+      final order = Order.fromJson(data);
+      await prefs.setString('cachedOrder_$orderId', json.encode(data));
+      return order;
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    print('Ошибка загрузки деталей заказа: $e. Используем кэшированные данные.');
+    final cachedOrder = prefs.getString('cachedOrder_$orderId');
+    if (cachedOrder != null) {
+      final decodedData = json.decode(cachedOrder);
+      return Order.fromJson(decodedData);
+    } else {
+      throw Exception('Ошибка загрузки деталей заказа и нет кэшированных данных!');
+    }
   }
 }
 
