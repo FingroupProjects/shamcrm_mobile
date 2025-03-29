@@ -2,8 +2,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
-import 'package:crm_task_manager/page_2/order/order_details/order_delete.dart';
-import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,22 +38,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       {'label': 'Номер заказа:', 'value': order.orderNumber},
       {'label': 'Дата заказа:', 'value': formattedDate},
       {'label': 'Клиент:', 'value': order.lead.name},
-      {
-        'label': 'Сумма заказа:',
-        'value': '${order.goods.length} сом'
-      }, // Нет total в API
       {'label': 'Статус заказа:', 'value': order.orderStatus.name},
-      {'label': 'Способ оплаты:', 'value': 'Не указан'}, // Нет в API
-      {'label': 'Способ доставки:', 'value': 'Не указан'}, // Нет в API
       if (order.deliveryAddress != null)
         {
           'label': 'Адрес доставки:',
           'value': order.deliveryAddress ?? 'Не указан'
         },
-      {
-        'label': 'Комментарий клиента:',
-        'value': 'Нет комментария'
-      }, // Нет в API
     ];
   }
 
@@ -141,7 +129,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               child: ListView(
                 children: [
                   _buildDetailsList(),
-                  const OrderGoodsScreen(), // Предполагается, что он работает отдельно
+                  OrderGoodsScreen(goods: state.orderDetails!.goods), // Передаем товары
                 ],
               ),
             ),
@@ -187,46 +175,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
           onPressed: () {},
         ),
-        // IconButton(
-        //   padding: EdgeInsets.zero,
-        //   constraints: const BoxConstraints(),
-        //   icon: Image.asset(
-        //     'assets/icons/edit.png',
-        //     width: 24,
-        //     height: 24,
-        //   ),
-        //   onPressed: () async {
-        //     final updatedOrder = await Navigator.push(
-        //       context,
-        //       MaterialPageRoute(
-        //         builder: (context) =>
-        //         OrderEditScreen(order: order), // Передаем Order напрямую // Теперь работает
-        //       ),
-        //     );
-        //     if (updatedOrder != null) {
-        //       context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
-        //     }
-        //   },
-        // ),
-        // IconButton(
-        //   padding: const EdgeInsets.only(right: 8),
-        //   constraints: const BoxConstraints(),
-        //   icon: Image.asset(
-        //     'assets/icons/delete.png',
-        //     width: 24,
-        //     height: 24,
-        //   ),
-        //   onPressed: () {
-        //     showDialog(
-        //       context: context,
-        //       builder: (context) => DeleteOrderDialog(orderId: order.id),
-        //     ).then((shouldDelete) {
-        //       if (shouldDelete == true) {
-        //         Navigator.pop(context, true);
-        //       }
-        //     });
-        //   },
-        // ),
       ],
     );
   }
@@ -248,7 +196,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-Widget _buildDetailItem(String label, String value) {
+  Widget _buildDetailItem(String label, String value) {
     if (label == 'Комментарий клиента:') {
       return GestureDetector(
         onTap: () {
@@ -290,6 +238,7 @@ Widget _buildDetailItem(String label, String value) {
       ],
     );
   }
+
   Widget _buildLabel(String label) {
     return Text(
       label,

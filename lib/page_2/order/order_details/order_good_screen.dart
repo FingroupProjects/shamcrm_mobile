@@ -5,30 +5,14 @@ import 'package:crm_task_manager/page_2/order/order_details/goods_details_by_ord
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-
-class Goods {
-  final int id;
-  final String goodsName;
-  final String goodsDescription;
-  final double goodsPrice;
-  final int discountGoodsPrice;
-  final int stockQuantity;
-  final List<String> imagePaths;
-
-  Goods({
-    required this.id,
-    required this.goodsName,
-    required this.goodsDescription,
-    required this.goodsPrice,
-    required this.discountGoodsPrice,
-    required this.stockQuantity,
-    required this.imagePaths,
-  });
-}
+import 'package:crm_task_manager/models/page_2/order_card.dart'; // Импортируем модель Order
 
 class OrderGoodsScreen extends StatefulWidget {
+  final List<Good> goods; // Добавляем параметр для передачи товаров из API
+
   const OrderGoodsScreen({
     Key? key,
+    required this.goods, // Требуем список товаров
   }) : super(key: key);
 
   @override
@@ -36,57 +20,6 @@ class OrderGoodsScreen extends StatefulWidget {
 }
 
 class _OrderGoodsState extends State<OrderGoodsScreen> {
-  final List<Goods> testGoods = [
-    Goods(
-      id: 1,
-      goodsName: 'Товар 1',
-      goodsDescription:
-          '🌟 Забудьте о компромиссах! Смартфон Nova X создан для тех, кто хочет максимум возможностей. Сверхчеткий экран, профессиональная камера и батарея, которая не подведёт. Воплотите мечты в реальность',
-      goodsPrice: 50,
-      discountGoodsPrice: 10,
-      stockQuantity: 500,
-      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
-    ),
-    Goods(
-      id: 2,
-      goodsName: 'Товар 2',
-      goodsDescription: 'Тест описание тест тест тест  ',
-      goodsPrice: 23,
-      discountGoodsPrice: 0,
-      stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
-    ),
-    Goods(
-      id: 3,
-      goodsName: 'Товар 3',
-      goodsDescription:
-          'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
-      goodsPrice: 125.3,
-      discountGoodsPrice: 30,
-      stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
-    ),
-    Goods(
-      id: 4,
-      goodsName: 'Товар 4',
-      goodsDescription: 'Тест описание тест тест тест  ',
-      goodsPrice: 23,
-      discountGoodsPrice: 0,
-      stockQuantity: 1000,
-      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo2.jpg'],
-    ),
-    Goods(
-      id: 5,
-      goodsName: 'Товар 5',
-      goodsDescription:
-          'Тест описание тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест тест',
-      goodsPrice: 125.3,
-      discountGoodsPrice: 30,
-      stockQuantity: 712,
-      imagePaths: ['assets/images/goods_photo.jpg', 'assets/images/goods_photo1.jpg'],
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -99,10 +32,10 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildGoodsList(testGoods);
+    return _buildGoodsList(widget.goods); // Используем товары из API
   }
 
-  Widget _buildGoodsList(List<Goods> goods) {
+  Widget _buildGoodsList(List<Good> goods) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -144,10 +77,10 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  Widget _buildGoodsItem(Goods goods) {
+  Widget _buildGoodsItem(Good good) {
     return GestureDetector(
       onTap: () {
-        _navigateToGoodsDetails(goods);
+        _navigateToGoodsDetails(good);
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -164,29 +97,9 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        goods.goodsName,
+                        good.good, // Используем название из API
                         style: TaskCardStyles.titleStyle,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      RichText(
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          text: goods.goodsDescription,
-                          style: TaskCardStyles.priorityStyle.copyWith(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                          children: const <TextSpan>[
-                            TextSpan(
-                              text: '\n\u200B',
-                              style: TaskCardStyles.priorityStyle,
-                            ),
-                          ],
-                        ),
                       ),
                       SizedBox(height: 4),
                       RichText(
@@ -199,29 +112,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                               ),
                             ),
                             TextSpan(
-                              text:
-                                  '${goods.stockQuantity % 1 == 0 ? goods.stockQuantity.toInt() : goods.stockQuantity}',
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff1E2E52),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Цена: ',
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                            TextSpan(
-                              text:
-                                  '${goods.goodsPrice % 1 == 0 ? goods.goodsPrice.toInt() : goods.goodsPrice}',
+                              text: '${good.quantity}',
                               style: TaskCardStyles.priorityStyle.copyWith(
                                 color: Color(0xff1E2E52),
                                 fontWeight: FontWeight.w600,
@@ -234,26 +125,13 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                   ),
                 ),
                 SizedBox(width: 16),
-                Container(
-                  width: 100,
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: goods.imagePaths.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(
-                            goods.imagePaths[index],
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    },
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/goods_photo.jpg', // Заглушка для изображения
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ],
@@ -264,18 +142,18 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  void _navigateToGoodsDetails(Goods goods) {
+  void _navigateToGoodsDetails(Good good) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GoodsDetailsByOrderScreen(
-          id: goods.id,
-          goodsName: goods.goodsName,
-          goodsDescription: goods.goodsDescription,
-          discountGoodsPrice: goods.discountGoodsPrice,
-          stockQuantity: goods.stockQuantity,
-          imagePaths: goods.imagePaths,
-          selectedCategory: goods.id.toString(),
+          id: 0, // ID отсутствует в API, используем 0 как заглушку
+          goodsName: good.good,
+          goodsDescription: '', // Описания нет в API
+          discountGoodsPrice: 0, // Скидки нет в API
+          stockQuantity: good.quantity,
+          imagePaths: ['assets/images/goods_photo.jpg'], // Заглушка для изображения
+          selectedCategory: '',
           isActive: true,
         ),
       ),
@@ -339,7 +217,6 @@ class DeleteGoodsDialog extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            // Логика удаления
             Navigator.pop(context);
           },
           child: Text('Удалить'),
@@ -349,7 +226,6 @@ class DeleteGoodsDialog extends StatelessWidget {
   }
 }
 
-// Заглушка для экрана добавления сделки
 class CategoryGoodsAddScreen extends StatelessWidget {
   const CategoryGoodsAddScreen({
     Key? key,
