@@ -1,8 +1,8 @@
-import 'package:crm_task_manager/page_2/category/category_details/category_goods_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_delete.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Добавляем пакет для форматирования даты
 
 class OrderDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> order;
@@ -27,17 +27,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _updateDetails() {
+    // Форматируем дату в dd.MM.yyyy
+    String formattedDate = widget.order['date'] != null
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(widget.order['date']))
+        : 'Не указана';
+
     details = [
       {
         'label': 'Номер заказа:',
         'value': widget.order['number'] ?? 'Не указан'
       },
-      {'label': 'Дата заказа:', 'value': widget.order['date'] ?? 'Не указана'},
+      {'label': 'Дата заказа:', 'value': formattedDate},
       {'label': 'Клиент:', 'value': widget.order['client'] ?? 'Не указан'},
-      // {
-      //   'label': 'Ответственный менеджер:',
-      //   'value': widget.order['manager'] ?? 'Не указан'
-      // },
       {'label': 'Сумма заказа:', 'value': '${widget.order['total'] ?? 0} ₽'},
       {
         'label': 'Статус заказа:',
@@ -173,23 +174,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-         IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Icon(
-                Icons.history,
-                size: 30,
-                color: Color.fromARGB(224, 0, 0, 0),
-              ),
-              onPressed: () {
-                // showDialog(
-                //   context: context,
-                //   builder: (context) => HistoryDialog(
-                //     leadId: currentLead!.id,
-                //   ),
-                // );
-              },
-            ),
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(),
+          icon: Icon(
+            Icons.history,
+            size: 30,
+            color: Color.fromARGB(224, 0, 0, 0),
+          ),
+          onPressed: () {},
+        ),
         IconButton(
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(),
@@ -229,7 +223,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   DeleteOrderDialog(orderId: widget.order['id']),
             ).then((shouldDelete) {
               if (shouldDelete == true) {
-                Navigator.pop(context, true); // Указываем, что заказ удален
+                Navigator.pop(context, true);
               }
             });
           },
@@ -275,8 +269,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 1, // Одна строка
+                overflow: TextOverflow.ellipsis, // Обрезка с многоточием
               ),
             ),
           ],
