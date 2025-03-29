@@ -57,8 +57,11 @@ void initState() {
   Future<void> _initializeBaseUrl() async {
     try {
       final enteredDomainMap = await _apiService.getEnteredDomain();
+          String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
       setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
     } catch (error) {
       setState(() {
@@ -137,7 +140,7 @@ void initState() {
                 ),
               ),
             _buildDetailsList(),
-            CategorySubCategoryScreen(categoryId: widget.categoryId),
+            CategorySubCategoryScreen(categoryId: widget.categoryId, categoryName: widget.categoryName,),
           ],
         ),
       ),

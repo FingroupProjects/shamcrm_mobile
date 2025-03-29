@@ -12,11 +12,13 @@ class CharacteristicData {
 class CharacteristicSelectionWidget extends StatefulWidget {
   final String? selectedCharacteristic;
   final Function(String) onSelectCharacteristic;
+  final Function(bool)? onDropdownVisibilityChanged; 
 
   CharacteristicSelectionWidget({
     Key? key,
     this.selectedCharacteristic,
     required this.onSelectCharacteristic,
+    required this.onDropdownVisibilityChanged,
   }) : super(key: key);
 
   @override
@@ -140,6 +142,15 @@ Widget _buildTextField() {
                   onChanged: (value) {
                     widget.onSelectCharacteristic(value);
                   },
+                onTap: () {
+                    _focusNode.requestFocus();
+                    setState(() {
+                      _isDropdownVisible = false;
+                    });
+                    if (widget.onDropdownVisibilityChanged != null) {
+                      widget.onDropdownVisibilityChanged!(false);
+                    }
+                  },
                 ),
               ),
               IconButton(
@@ -147,10 +158,16 @@ Widget _buildTextField() {
                 onPressed: () {
                   setState(() {
                     _isDropdownVisible = !_isDropdownVisible;
+                    if (_isDropdownVisible) {
+                      _focusNode.unfocus(); 
+                    }
                     if (!_isDropdownVisible) {
                       _searchController.clear();
                     }
                   });
+                  if (widget.onDropdownVisibilityChanged != null) {
+                    widget.onDropdownVisibilityChanged!(_isDropdownVisible);
+                  }
                 },
               ),
             ],
@@ -159,7 +176,7 @@ Widget _buildTextField() {
         if (_isDropdownVisible)
           Container(
             margin: EdgeInsets.only(top: 2),
-            constraints: BoxConstraints(maxHeight: 275,maxWidth: 330),
+            constraints: BoxConstraints(maxHeight: 280,maxWidth: 330),
             decoration: BoxDecoration(
               color: Color(0xffF4F7FD),
               borderRadius: BorderRadius.circular(12),
@@ -232,6 +249,9 @@ Widget _buildTextField() {
                                   _searchController.clear();
                                 });
                                 widget.onSelectCharacteristic(filteredList[index].title);
+                                 if (widget.onDropdownVisibilityChanged != null) {
+                                  widget.onDropdownVisibilityChanged!(false);
+                                }
                               },
                             );
                           },

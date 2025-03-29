@@ -2,7 +2,7 @@ class CategoryDataById {
   final int id;
   final String name;
   final String? image;
-  late final List<Attribute> attributes;
+  final List<Attribute> attributes;
   final List<CategoryDataById> subcategories;
 
   CategoryDataById({
@@ -12,6 +12,23 @@ class CategoryDataById {
     required this.attributes,
     required this.subcategories,
   });
+
+  // Добавляем метод copyWith
+  CategoryDataById copyWith({
+    int? id,
+    String? name,
+    String? image,
+    List<Attribute>? attributes,
+    List<CategoryDataById>? subcategories,
+  }) {
+    return CategoryDataById(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      attributes: attributes ?? this.attributes,
+      subcategories: subcategories ?? this.subcategories,
+    );
+  }
 
   factory CategoryDataById.fromJson(Map<String, dynamic> json) {
     return CategoryDataById(
