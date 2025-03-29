@@ -91,23 +91,23 @@ Future<void> _updateSubCategory(UpdateSubCategory event, Emitter<CategoryState> 
   emit(CategoryLoading());
 
   if (await _checkInternetConnection()) {
-    // try {
-    //   final response = await apiService.updateSubCategory(
-    //     subCategoryId: event.subCategoryId,
-    //     name: event.name,
-    //     image: event.image,
-    //     attributeNames: event.attributeNames
-    //   );
+    try {
+      final response = await apiService.updateSubCategory(
+        subCategoryId: event.subCategoryId,
+        name: event.name,
+        image: event.image,
+        attributeNames: event.attributeNames
+      );
 
-    //   if (response['success'] == true) {
-    //     add(FetchCategories()); 
-    //     emit(CategorySuccess(response['message'] ?? 'Подкатегория успешно обновлена'));
-    //   } else {
-    //     emit(CategoryError(response['message'] ?? 'Ошибка при обновлении подкатегории'));
-    //   }
-    // } catch (e) {
-    //   emit(CategoryError('Не удалось обновить подкатегорию: ${e.toString()}'));
-    // }
+      if (response['success'] == true) {
+        add(FetchCategories()); 
+        emit(CategorySuccess(response['message'] ?? 'Подкатегория успешно обновлена'));
+      } else {
+        emit(CategoryError(response['message'] ?? 'Ошибка при обновлении подкатегории'));
+      }
+    } catch (e) {
+      emit(CategoryError('Не удалось обновить подкатегорию: ${e.toString()}'));
+    }
   } else {
     emit(CategoryError('Нет подключения к интернету'));
   }

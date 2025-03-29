@@ -1,9 +1,12 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory_add_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,8 +14,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CategorySubCategoryScreen extends StatefulWidget {
   final int categoryId;
+  final String categoryName;
 
-  const CategorySubCategoryScreen({Key? key, required this.categoryId}) : super(key: key);
+  const CategorySubCategoryScreen({Key? key, required this.categoryId,required this.categoryName}) : super(key: key);
 
   @override
   _CategorySubCategoryState createState() => _CategorySubCategoryState();
@@ -21,12 +25,16 @@ class CategorySubCategoryScreen extends StatefulWidget {
 class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
+  bool isCreateSubCatgeory=false;
 
   Future<void> _initializeBaseUrl() async {
     try {
       final enteredDomainMap = await _apiService.getEnteredDomain();
+          String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
       setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
     } catch (error) {
       setState(() {
@@ -35,6 +43,7 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
     }
   }
 
+
   @override
   void initState() {
     super.initState();
@@ -42,9 +51,18 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
     _initializeBaseUrl();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
+ @override
+Widget build(BuildContext context) {
+  return BlocListener<CategoryBloc, CategoryState>(
+    listener: (context, state) {
+      if (isCreateSubCatgeory && state is CategorySuccess) {
+        setState(() {
+          isCreateSubCatgeory = false;
+        });
+        context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.categoryId));
+      }
+    },
+    child: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
       builder: (context, state) {
         if (state is CategoryByIdLoading) {
           return Center(child: CircularProgressIndicator(color: const Color(0xff1E2E52)));
@@ -56,8 +74,9 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
           return Center(child: Text('Нет данных'));
         }
       },
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSubCategoryList(List<CategoryDataById> categories) {
     return Column(
@@ -109,13 +128,6 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Color(0xffF4F7FD),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: Colors.black12,
-        //     blurRadius: 6,
-        //     offset: Offset(0, 2),
-        //   ),
-        // ],
       ),
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -153,7 +165,7 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
                     fontWeight: FontWeight.w600,
                     color: Color(0xff1E2E52),
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 8),
@@ -240,6 +252,7 @@ Widget _buildNoPhotoPlaceholder() {
       context,
       MaterialPageRoute(
         builder: (context) => SubCategoryDetailsScreen(
+          ctgId: widget.categoryId,
           category: category,
         ),
       ),
@@ -257,12 +270,12 @@ Widget _buildNoPhotoPlaceholder() {
           ),
         ),
         TextButton(
-          onPressed: () {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => SubCategoryAddScreen()),
-            // );
-          },
+           onPressed: () {
+          SubCategoryAddBottomSheet.show(context, widget.categoryId);
+          setState(() {
+            isCreateSubCatgeory=true;
+          });
+        },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),

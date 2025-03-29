@@ -282,7 +282,8 @@ class SubCategoryEditBottomSheet {
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() && _image != null) {
+                              if (formKey.currentState!.validate()) {
+                              // if (formKey.currentState!.validate() && _image != null) {
                                 _createCategory(
                                   subCategoryId,
                                   categoryNameController.text,
@@ -312,42 +313,35 @@ class SubCategoryEditBottomSheet {
     );
   }
 
-  static void _createCategory(
-    int subCatgeoryId,
-    String name,
-    File? image,
-    bool isImageChanged,
-    BuildContext context,
-    List<CustomField> customFields,
-  ) async {
-    try {
-      final categoryBloc = BlocProvider.of<CategoryBloc>(context);
-      
-      List<String> attributeNames = customFields.map((field) => field.name).toList();
-      
- Navigator.pop(context, {
-      'updatedSubCategoryName': name,
-      'updatedSubCategoryImage': isImageChanged ? image : null,
-      'isImageRemoved': image == null && isImageChanged,
-      'updatedAttributes': attributeNames,
-    });      
+static void _createCategory(
+  int subCatgeoryId,
+  String name,
+  File? image,
+  bool isImageChanged,
+  BuildContext context,
+  List<CustomField> customFields,
+) async {
+  try {
+    final categoryBloc = BlocProvider.of<CategoryBloc>(context);
     
-      
-      categoryBloc.add(UpdateSubCategory(
-        subCategoryId: subCatgeoryId,
-        name: name,
-        attributeNames: attributeNames,
-        image: image, 
-      ));
-      
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ошибка при обновлении подкатегории: ${e.toString()}'),
-        ),
-      );
-    }
+    List<String> attributeNames = customFields.map((field) => field.name).toList();
+    
+    Navigator.pop(context,);      
+    
+    categoryBloc.add(UpdateSubCategory(
+      subCategoryId: subCatgeoryId,
+      name: name,
+      attributeNames: attributeNames,
+      image: isImageChanged ? image : null, 
+    ));
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ошибка при обновлении подкатегории!'),
+      ),
+    );
   }
+}
 }
 
 class CustomField {

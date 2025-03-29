@@ -14,14 +14,44 @@ class AddCustomCharacterFieldDialog extends StatefulWidget {
 
 class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldDialog> {
   String? selectedCharacter;
+  bool _isDropdownVisible = false;
+  bool _isKeyboardVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewInsets = MediaQuery.of(context).viewInsets;
+      setState(() {
+        _isKeyboardVisible = viewInsets.bottom > 0;
+      });
+    });
+  }
+
+  @override
+void didChangeDependencies() {
+  super.didChangeDependencies();
+  final viewInsets = MediaQuery.of(context).viewInsets;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      setState(() {
+        _isKeyboardVisible = viewInsets.bottom > 0;
+      });
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
+final double dialogHeight = _isDropdownVisible
+    ? MediaQuery.of(context).size.height * 0.56
+    : MediaQuery.of(context).size.height * 0.22;
+
     return Dialog(
-      insetPadding: EdgeInsets.zero, 
+      insetPadding: EdgeInsets.zero,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8, 
-        height: MediaQuery.of(context).size.height * 0.6, 
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: dialogHeight, 
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -37,7 +67,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52),
-              ),
+            ),
             ),
             SizedBox(height: 16),
             Expanded(
@@ -46,6 +76,11 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                 onSelectCharacteristic: (String character) {
                   setState(() {
                     selectedCharacter = character;
+                  });
+                },
+                onDropdownVisibilityChanged: (bool isVisible) {
+                  setState(() {
+                    _isDropdownVisible = isVisible;
                   });
                 },
               ),
@@ -75,7 +110,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(AppLocalizations.of(context)!.translate('Выберите характеристику')),
-                          ),
+                        )
                         );
                       }
                     },

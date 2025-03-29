@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 
-class DeleteCategoryDialog extends StatelessWidget {
+class DeleteSubCategoryDialog extends StatelessWidget {
   final int categoryId;
   
-  const DeleteCategoryDialog({
+  const DeleteSubCategoryDialog({
     super.key,
     required this.categoryId,
   });
@@ -74,7 +74,7 @@ class DeleteCategoryDialog extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                AppLocalizations.of(context)!.translate('delete_category_title'),
+                AppLocalizations.of(context)!.translate('Удалить подкатегорию'),
                 style: const TextStyle(
                   fontSize: 20,
                   fontFamily: 'Gilroy',
@@ -87,7 +87,7 @@ class DeleteCategoryDialog extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                AppLocalizations.of(context)!.translate('confrim_delete_category'),
+                AppLocalizations.of(context)!.translate('Подтвердите удаление подкатегории!'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

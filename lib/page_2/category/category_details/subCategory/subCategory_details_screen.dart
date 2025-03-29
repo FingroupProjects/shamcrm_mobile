@@ -1,17 +1,26 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
-import 'package:crm_task_manager/page_2/category/category_details/subCategory/sub%D0%A1ategory_edit_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_edit_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_delete.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SubCategoryDetailsScreen extends StatefulWidget {
+  final int ctgId;
   final CategoryDataById category;
 
   const SubCategoryDetailsScreen({
+    required this.ctgId,
     Key? key,
     required this.category,
   }) : super(key: key);
@@ -25,42 +34,38 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
-  late String currentName;
+  late CategoryDataById _currentCategory;
   File? _cachedImageFile;
-
- Future<void> _loadImage(String imageUrl) async {
-  if (imageUrl.isNotEmpty) {
-    try {
-      final file = await urlToFile('$baseUrl/$imageUrl');
-      print('Image URL: $baseUrl/$imageUrl');
-      setState(() {
-        _cachedImageFile = file;
-      });
-    } catch (error) {
-      print('Failed to load image: $error');
-      setState(() {
-        _cachedImageFile = null; // Очистите кэш, если загрузка не удалась
-      });
-    }
-  }
-}
+  String? currentName;
 
   @override
   void initState() {
     super.initState();
-    currentName = widget.category.name;
+    _currentCategory = widget.category;
     _initializeBaseUrl().then((_) {
-      if (widget.category.image != null) {
-        _loadImage(widget.category.image!);
+      if (_currentCategory.image != null) {
+        _loadImage(_currentCategory.image!);
       }
     });
+  }
+
+  Future<void> _loadImage(String imageUrl) async {
+    if (imageUrl.isNotEmpty) {
+      final file = await urlToFile('$baseUrl/$imageUrl');
+      setState(() {
+        _cachedImageFile = file;
+      });
+    }
   }
 
   Future<void> _initializeBaseUrl() async {
     try {
       final enteredDomainMap = await _apiService.getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+
       setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
     } catch (error) {
       setState(() {
@@ -77,42 +82,89 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': currentName},
-      // if (widget.category.attributes.isNotEmpty)
-      //   {'label': 'Характеристики', 'value': widget.category.attributes.map((attr) => attr.name).join(', ')}
+      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': _currentCategory.name},
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(
-        context,
-        AppLocalizations.of(context)!.translate('Просмотр подкатегории'),
-      ),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ListView(
-          children: [
-            if (_cachedImageFile != null || widget.category.image != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _cachedImageFile != null
-                      ? Image.file(
-                          _cachedImageFile!,
-                          width: double.infinity,
-                          height: 200,
-                          fit: BoxFit.contain,
-                        )
-                      : Image.network(
-                          '$baseUrl/${widget.category.image!}',
-                          width: double.infinity,
-                          height: 200,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<CategoryBloc, CategoryState>(
+          listener: (context, state) {
+            if (state is CategorySuccess) {
+              context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
+            }
+          },
+        ),
+        BlocListener<CategoryByIdBloc, CategoryByIdState>(
+          listener: (context, state) {
+            if (state is CategoryByIdLoaded) {
+              final updatedSubCategory = state.category.categories.firstWhere(
+                (c) => c.id == _currentCategory.id,
+                orElse: () => _currentCategory,
+              );
+              
+              setState(() {
+                _currentCategory = updatedSubCategory;
+                if (updatedSubCategory.image != null) {
+                  _loadImage(updatedSubCategory.image!);
+                } else {
+                  _cachedImageFile = null;
+                }
+                _updateDetails();
+              });
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        appBar: _buildAppBar(
+          context,
+          AppLocalizations.of(context)!.translate('Просмотр подкатегории'),
+        ),
+        backgroundColor: Colors.white,
+        body: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
+          builder: (context, state) {
+            if (state is CategoryByIdLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
+            
+            if (state is CategoryByIdError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Ошибка загрузки данных'),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<CategoryByIdBloc>().add(
+                          FetchCategoryByIdEvent(categoryId: widget.ctgId)
+                        );
+                      },
+                      child: Text('Повторить'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListView(
+                children: [
+                  if (_cachedImageFile != null || _currentCategory.image != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                                '$baseUrl/${_currentCategory.image!}',
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
                             return Container(
                               width: double.infinity,
                               height: 200,
@@ -137,18 +189,22 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                               ),
                             );
                           },
-                        ),
-                ),
+                              ),
+                      ),
+                    ),
+                  _buildDetailsList(),
+                  if (_currentCategory.attributes.isNotEmpty) 
+                    _buildAttributesSection(),
+                ],
               ),
-            _buildDetailsList(),
-            if (widget.category.attributes.isNotEmpty) 
-              _buildAttributesSection(),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
+  // Остальные методы остаются без изменений
   Widget _buildAttributesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +222,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: widget.category.attributes.map((attr) => 
+          children: _currentCategory.attributes.map((attr) => 
             Container(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
@@ -233,26 +289,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 height: 24,
               ),
               onPressed: () async {
-                final result = await SubCategoryEditBottomSheet.show(
-                  context,
-                  initialSubCategoryId: widget.category.id,
-                  initialName: currentName,
-                  initialImage: _cachedImageFile,
-                  initialAttributes: widget.category.attributes,
-                );
-
-                if (result != null) {
-                  setState(() {
-                    currentName = result['updatedSubCategoryName'];
-                    if (result['updatedSubCategoryImage'] != null) {
-                      _cachedImageFile = result['updatedSubCategoryImage'];
-                    } else if (result['updatedSubCategoryImage'] == null && result['isImageRemoved'] == true) {
-                      _cachedImageFile = null;
-                    }
-                    _updateDetails();
-                  });
-                }
-              },
+                await SubCategoryEditBottomSheet.show(
+                 context,
+                 initialSubCategoryId: widget.category.id,
+                 initialName:  _currentCategory.name  ,
+                 initialImage: _cachedImageFile,
+                 initialAttributes: _currentCategory.attributes,
+               );
+              } ,
             ),
             IconButton(
               padding: EdgeInsets.only(right: 8),
@@ -263,14 +307,15 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 height: 24,
               ),
               onPressed: () {
-                // showDialog(
-                //   context: context,
-                //   builder: (context) => DeleteSubCategoryDialog(subCategoryId: widget.category.id),
-                // ).then((deleted) {
-                //   if (deleted == true) {
-                //     Navigator.of(context).pop(true); 
-                //   }
-                // });        
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteSubCategoryDialog(categoryId: widget.category.id),
+                ).then((deleted) {
+                  if (deleted == true) {
+                    context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
+                    Navigator.of(context).pop(true); 
+                  }
+                });        
               },
             ),
           ],
