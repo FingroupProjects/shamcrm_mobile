@@ -900,28 +900,29 @@ class ApiService {
   }
 
 //Обновление статуса карточки Лида  в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
+ Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-      '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'position': 1,
-        'status_id': statusId,
-      },
-    );
+  final response = await _postRequest(
+    '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'position': position,
+      'status_id': statusId,
+    },
+  );
 
-    if (response.statusCode == 200) {
-      print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      throw LeadStatusUpdateException(
-        422,
-        'Вы не можете переместить задачу на этот статус',
-      );
-    } else {
-      throw Exception('Ошибка обновления задач лида!');
-    }
+  if (response.statusCode == 200) {
+    print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    final responseData = jsonDecode(response.body);
+    final errorMessage = responseData['message'];
+    
+    throw LeadStatusUpdateException(422, errorMessage);
+  } else {
+    throw Exception('Ошибка обновления задач лида!');
   }
+}
+
 
 // Метод для получения Истории Лида
   Future<List<LeadHistory>> getLeadHistory(int leadId) async {

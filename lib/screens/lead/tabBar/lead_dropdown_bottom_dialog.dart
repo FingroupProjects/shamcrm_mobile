@@ -112,18 +112,17 @@ void DropdownBottomSheet(
                                );
                               Navigator.pop(context);
                               
-                              // Передаем оба значения через onSelect
                               onSelect(selectedValue, selectedStatusId!);
                             }).catchError((error) {
                               setState(() {
                                 isLoading = false;
                               });
-
                               if (error is LeadStatusUpdateException && error.code == 422) {
+                                String errorMessage = error.message.replaceAll(RegExp(r'\(and \d+ more error[s]?\)'), '').trim();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                       AppLocalizations.of(context)!.translate('cannot_move_lead_to_status'),
+                                      errorMessage, 
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
