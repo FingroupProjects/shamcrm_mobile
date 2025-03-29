@@ -899,6 +899,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
         context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
       });
+
+          if (_tabTitles.isEmpty) {
+        await TaskCache.clearAllTasks(); 
+        await TaskCache.clearCache(); 
+      }
+
       final taskBloc = BlocProvider.of<TaskBloc>(context);
       taskBloc.add(FetchTaskStatuses());
     }

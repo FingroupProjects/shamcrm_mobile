@@ -144,10 +144,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     try {
       final response = await apiService.getLeadStatuses();
-      if (response.isEmpty) {
-        emit(LeadError('Нет статусов'));
-        return;
-      }
+      // if (response.isEmpty) {
+      //   emit(LeadError('Нет статусов'));
+      //   return;
+      // }
       // Cache the statuses
       await LeadCache.cacheLeadStatuses(response
           .map((status) => {'id': status.id, 'title': status.title})

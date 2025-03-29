@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeo
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -235,14 +236,14 @@ Widget _buildNoPhotoPlaceholder() {
 }
 
   void _navigateToSubCategoryDetails(CategoryDataById category) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => SubCategoryDetailsScreen(
-    //       category: category,
-    //     ),
-    //   ),
-    // );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SubCategoryDetailsScreen(
+          category: category,
+        ),
+      ),
+    );
   }
 
   Row _buildTitleRow(String title) {

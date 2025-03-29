@@ -1,15 +1,20 @@
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_delete.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Добавляем пакет для форматирования даты
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic> order;
+  final int orderId;
   final String categoryName;
 
-  OrderDetailsScreen({
-    required this.order,
+  const OrderDetailsScreen({
+    required this.orderId,
     required this.categoryName,
   });
 
@@ -23,55 +28,35 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _updateDetails();
+    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
 
-  void _updateDetails() {
-    // Форматируем дату в dd.MM.yyyy
-    String formattedDate = widget.order['date'] != null
-        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(widget.order['date']))
+  void _updateDetails(Order order) {
+    String formattedDate = order.lead.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
         : 'Не указана';
 
     details = [
-      {
-        'label': 'Номер заказа:',
-        'value': widget.order['number'] ?? 'Не указан'
-      },
+      {'label': 'Номер заказа:', 'value': order.orderNumber},
       {'label': 'Дата заказа:', 'value': formattedDate},
-      {'label': 'Клиент:', 'value': widget.order['client'] ?? 'Не указан'},
-      {'label': 'Сумма заказа:', 'value': '${widget.order['total'] ?? 0} ₽'},
+      {'label': 'Клиент:', 'value': order.lead.name},
       {
-        'label': 'Статус заказа:',
-        'value': _getStatusName(widget.order['statusId'] ?? 1)
-      },
-      {
-        'label': 'Способ оплаты:',
-        'value': widget.order['paymentMethod'] ?? 'Не указан'
-      },
-      {
-        'label': 'Способ доставки:',
-        'value': widget.order['deliveryMethod'] ?? 'Не указан'
-      },
-      if (widget.order['deliveryMethod'] != 'Самовывоз')
+        'label': 'Сумма заказа:',
+        'value': '${order.goods.length} сом'
+      }, // Нет total в API
+      {'label': 'Статус заказа:', 'value': order.orderStatus.name},
+      {'label': 'Способ оплаты:', 'value': 'Не указан'}, // Нет в API
+      {'label': 'Способ доставки:', 'value': 'Не указан'}, // Нет в API
+      if (order.deliveryAddress != null)
         {
           'label': 'Адрес доставки:',
-          'value': widget.order['deliveryAddress'] ?? 'Не указан'
+          'value': order.deliveryAddress ?? 'Не указан'
         },
-      {'label': 'Комментарий клиента:', 'value': widget.order['comment'] ?? ''},
+      {
+        'label': 'Комментарий клиента:',
+        'value': 'Нет комментария'
+      }, // Нет в API
     ];
-  }
-
-  String _getStatusName(int statusId) {
-    const statusMap = {
-      1: 'Новый',
-      2: 'Ожидает оплаты',
-      3: 'Оплачен',
-      4: 'В обработке',
-      5: 'Отправлен',
-      6: 'Завершен',
-      7: 'Отменен',
-    };
-    return statusMap[statusId] ?? 'Неизвестный статус';
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -86,10 +71,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -98,12 +83,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               ),
               Container(
-                constraints: BoxConstraints(maxHeight: 400),
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                constraints: const BoxConstraints(maxHeight: 400),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -113,15 +98,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xff1E2E52),
+                    backgroundColor: const Color(0xff1E2E52),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Закрыть',
                     style: TextStyle(
                       color: Colors.white,
@@ -140,33 +125,51 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(context),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ListView(
-          children: [
-            _buildDetailsList(),
-            OrderGoodsScreen(),
-          ],
-        ),
-      ),
+    return BlocBuilder<OrderBloc, OrderState>(
+      builder: (context, state) {
+        if (state is OrderLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (state is OrderLoaded && state.orderDetails != null) {
+          _updateDetails(state.orderDetails!);
+          return Scaffold(
+            appBar: _buildAppBar(context, state.orderDetails!),
+            backgroundColor: Colors.white,
+            body: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListView(
+                children: [
+                  _buildDetailsList(),
+                  const OrderGoodsScreen(), // Предполагается, что он работает отдельно
+                ],
+              ),
+            ),
+          );
+        } else if (state is OrderError) {
+          return Scaffold(
+            body: Center(child: Text(state.message)),
+          );
+        }
+        return const Scaffold(
+          body: Center(child: Text('')),
+        );
+      },
     );
   }
 
-  AppBar _buildAppBar(BuildContext context) {
+  AppBar _buildAppBar(BuildContext context, Order order) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
+        icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'Заказ #${widget.order['number']}',
-        style: TextStyle(
+        'Заказ #${order.orderNumber}',
+        style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
@@ -176,58 +179,54 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       actions: [
         IconButton(
           padding: EdgeInsets.zero,
-          constraints: BoxConstraints(),
-          icon: Icon(
+          constraints: const BoxConstraints(),
+          icon: const Icon(
             Icons.history,
             size: 30,
             color: Color.fromARGB(224, 0, 0, 0),
           ),
           onPressed: () {},
         ),
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: BoxConstraints(),
-          icon: Image.asset(
-            'assets/icons/edit.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () async {
-            final updatedOrder = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderEditScreen(order: widget.order),
-              ),
-            );
-            if (updatedOrder != null) {
-              setState(() {
-                widget.order.clear();
-                widget.order.addAll(updatedOrder);
-                _updateDetails();
-              });
-            }
-          },
-        ),
-        IconButton(
-          padding: EdgeInsets.only(right: 8),
-          constraints: BoxConstraints(),
-          icon: Image.asset(
-            'assets/icons/delete.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) =>
-                  DeleteOrderDialog(orderId: widget.order['id']),
-            ).then((shouldDelete) {
-              if (shouldDelete == true) {
-                Navigator.pop(context, true);
-              }
-            });
-          },
-        ),
+        // IconButton(
+        //   padding: EdgeInsets.zero,
+        //   constraints: const BoxConstraints(),
+        //   icon: Image.asset(
+        //     'assets/icons/edit.png',
+        //     width: 24,
+        //     height: 24,
+        //   ),
+        //   onPressed: () async {
+        //     final updatedOrder = await Navigator.push(
+        //       context,
+        //       MaterialPageRoute(
+        //         builder: (context) =>
+        //         OrderEditScreen(order: order), // Передаем Order напрямую // Теперь работает
+        //       ),
+        //     );
+        //     if (updatedOrder != null) {
+        //       context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+        //     }
+        //   },
+        // ),
+        // IconButton(
+        //   padding: const EdgeInsets.only(right: 8),
+        //   constraints: const BoxConstraints(),
+        //   icon: Image.asset(
+        //     'assets/icons/delete.png',
+        //     width: 24,
+        //     height: 24,
+        //   ),
+        //   onPressed: () {
+        //     showDialog(
+        //       context: context,
+        //       builder: (context) => DeleteOrderDialog(orderId: order.id),
+        //     ).then((shouldDelete) {
+        //       if (shouldDelete == true) {
+        //         Navigator.pop(context, true);
+        //       }
+        //     });
+        //   },
+        // ),
       ],
     );
   }
@@ -235,23 +234,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: details.length,
       itemBuilder: (context, index) {
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: _buildDetailItem(
-              details[index]['label']!, details[index]['value']!),
+            details[index]['label']!,
+            details[index]['value']!,
+          ),
         );
       },
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    if (label == 'Комментарий клиента') {
+Widget _buildDetailItem(String label, String value) {
+    if (label == 'Комментарий клиента:') {
       return GestureDetector(
         onTap: () {
-          if (value.isNotEmpty) _showFullTextDialog(label, value);
+          if (value.isNotEmpty && value != 'Нет комментария') {
+            _showFullTextDialog(label.replaceAll(':', ''), value);
+          }
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,11 +269,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  decoration:
-                      value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration: value.isNotEmpty && value != 'Нет комментария'
+                      ? TextDecoration.underline
+                      : null,
                 ),
-                maxLines: 1, // Одна строка
-                overflow: TextOverflow.ellipsis, // Обрезка с многоточием
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -286,11 +290,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ],
     );
   }
-
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
@@ -302,7 +305,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,

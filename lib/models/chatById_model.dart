@@ -10,7 +10,6 @@ class ChatProfile {
   final String? waName;
   final String? waPhone;
   final String? phone;
-  final int messageAmount;
   final String? address;
   final String? description;
   final String createdAt;
@@ -26,7 +25,6 @@ class ChatProfile {
     this.waName,
     this.waPhone,
     this.phone,
-    required this.messageAmount,
     this.address,
     this.description,
     required this.createdAt,
@@ -44,7 +42,6 @@ class ChatProfile {
       waName: json['wa_name'],
       waPhone: json['wa_phone'],
       phone: json['phone'],
-      messageAmount: json['message_amount'] ?? 0,
       address: json['address'],
       description: json['description'],
       createdAt: json['created_at'] ?? "",

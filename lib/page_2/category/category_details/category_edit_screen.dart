@@ -20,6 +20,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
   bool isActive = false;
   File? _image = initialImage;
   bool _isImageSelected = true;
+  bool _isImageChanged = false;
   int categoryId = initialCategoryId;
 
     Future<void> _pickImage() async {
@@ -27,6 +28,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _isImageSelected = true; 
+         _isImageChanged = true;
       } else {
         _isImageSelected = false; 
       }
@@ -177,6 +179,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
+                                                        _isImageChanged = true;
                                                       });
                                                     },
                                                   ),
@@ -229,6 +232,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                   categoryNameController.text,
                                   isActive,
                                   _image,
+                                  _isImageChanged,
                                   context,
                                 );
                               } else {
@@ -257,18 +261,19 @@ static void _updateCategory(
   String name, 
   bool isActive, 
   File? image, 
+  bool isImageChanged,
   BuildContext context
 ) {
   final bloc = BlocProvider.of<CategoryBloc>(context);
   bloc.add(UpdateCategory(
     categoryId: categoryId,
     name: name,
-    image: image,
+    image: isImageChanged ? image : null,
   ));
   
   Navigator.pop(context, {
     'updatedName': name,
-    'updatedImage': image,
+    'updatedImage': isImageChanged ? image : null,
   });
   }
 }
