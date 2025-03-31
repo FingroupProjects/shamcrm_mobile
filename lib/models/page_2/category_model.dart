@@ -67,25 +67,8 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'],
-      name: json['name'] ?? '',
-    );
-  }
-}
-
-class Pivot {
-  final int categoryId;
-  final int attributeId;
-
-  Pivot({
-    required this.categoryId,
-    required this.attributeId,
-  });
-
-  factory Pivot.fromJson(Map<String, dynamic> json) {
-    return Pivot(
-      categoryId: json['category_id'],
-      attributeId: json['attribute_id'],
+      id: json['id'] as int? ?? 0, 
+      name: json['name'] as String? ?? '', 
     );
   }
 }

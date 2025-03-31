@@ -1,100 +1,17 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-
-class ProductCharacteristic {
-  final String name;
-  final String hintText; 
-  final TextInputType keyboardType; 
-
-  ProductCharacteristic({
-    required this.name,
-    required this.hintText,
-    this.keyboardType = TextInputType.text,
-  });
-}
-
-final Map<String, List<ProductCharacteristic>> categoryCharacteristics = {
-  'Электроника': [
-    ProductCharacteristic(name: 'Модель', hintText: 'Введите модель'),
-    ProductCharacteristic(name: 'Производитель', hintText: 'Введите производителя'),
-    ProductCharacteristic(name: 'Гарантия', hintText: 'Введите срок гарантии'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Операционная система', hintText: 'Введите ОС'),
-  ],
-  'Бытовая техника': [
-    ProductCharacteristic(name: 'Мощность', hintText: 'Введите мощность'),
-    ProductCharacteristic(name: 'Вес', hintText: 'Введите вес'),
-    ProductCharacteristic(name: 'Габариты', hintText: 'Введите габариты'),
-    ProductCharacteristic(name: 'Энергопотребление', hintText: 'Введите класс энергопотребления'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-  ],
-  'Продукты питания': [
-    ProductCharacteristic(name: 'Срок годности', hintText: 'Введите срок годности'),
-    ProductCharacteristic(name: 'Вес', hintText: 'Введите вес'),
-    ProductCharacteristic(name: 'Состав', hintText: 'Введите состав'),
-    ProductCharacteristic(name: 'Количество', hintText: 'Введите количество'),
-    ProductCharacteristic(name: 'Условия хранения', hintText: 'Введите условия хранения'),
-  ],
-  'Одежда': [
-    ProductCharacteristic(name: 'Размер', hintText: 'Введите размер'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Сезон', hintText: 'Введите сезон'),
-    ProductCharacteristic(name: 'Бренд', hintText: 'Введите бренд'),
-  ],
-  'Обувь': [
-    ProductCharacteristic(name: 'Размер', hintText: 'Введите размер'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Тип обуви', hintText: 'Введите тип обуви'),
-    ProductCharacteristic(name: 'Бренд', hintText: 'Введите бренд'),
-  ],
-  'Аксессуары': [
-    ProductCharacteristic(name: 'Тип аксессуара', hintText: 'Введите тип аксессуара'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Бренд', hintText: 'Введите бренд'),
-    ProductCharacteristic(name: 'Размер', hintText: 'Введите размер (если применимо)'),
-  ],
-  'Мебель': [
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Габариты', hintText: 'Введите габариты'),
-    ProductCharacteristic(name: 'Вес', hintText: 'Введите вес'),
-    ProductCharacteristic(name: 'Стиль', hintText: 'Введите стиль мебели'),
-  ],
-  'Спортивные товары': [
-    ProductCharacteristic(name: 'Тип товара', hintText: 'Введите тип товара'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Размер', hintText: 'Введите размер (если применимо)'),
-    ProductCharacteristic(name: 'Бренд', hintText: 'Введите бренд'),
-  ],
-  'Книги': [
-    ProductCharacteristic(name: 'Автор', hintText: 'Введите автора'),
-    ProductCharacteristic(name: 'Жанр', hintText: 'Введите жанр'),
-    ProductCharacteristic(name: 'Количество страниц', hintText: 'Введите количество страниц'),
-    ProductCharacteristic(name: 'Издательство', hintText: 'Введите издательство'),
-    ProductCharacteristic(name: 'Год издания', hintText: 'Введите год издания'),
-  ],
-  'Игрушки': [
-    ProductCharacteristic(name: 'Тип игрушки', hintText: 'Введите тип игрушки'),
-    ProductCharacteristic(name: 'Материал', hintText: 'Введите материал'),
-    ProductCharacteristic(name: 'Возрастная группа', hintText: 'Введите возрастную группу'),
-    ProductCharacteristic(name: 'Цвет', hintText: 'Введите цвет'),
-    ProductCharacteristic(name: 'Бренд', hintText: 'Введите бренд'),
-  ],
-};
-
 class CategoryDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
-  final Function(String) onSelectCategory;
+  final Function(SubCategoryAttributesData?) onSelectCategory;
+  final List<SubCategoryAttributesData> subCategories;
 
   CategoryDropdownWidget({
     Key? key,
     required this.onSelectCategory,
     this.selectedCategory,
+    required this.subCategories,
   }) : super(key: key);
 
   @override
@@ -102,21 +19,8 @@ class CategoryDropdownWidget extends StatefulWidget {
 }
 
 class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
-  final List<String> categories = [
-    'Электроника', 
-    'Бытовая техника', 
-    'Продукты питания',
-    'Одежда', 
-    'Обувь', 
-    'Аксессуары', 
-    'Мебель', 
-    'Спортивные товары', 
-    'Книги', 
-    'Игрушки'
-  ];
+  SubCategoryAttributesData? selectedSubCategory;
   
-  String? selectedCategory;
-
   final TextStyle categoryTextStyle = const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
@@ -127,10 +31,11 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.selectedCategory != null && categories.contains(widget.selectedCategory)) {
-      selectedCategory = widget.selectedCategory;
-    } else {
-      selectedCategory = null;
+    if (widget.selectedCategory != null) {
+      selectedSubCategory = widget.subCategories.firstWhere(
+        (subCat) => subCat.name == widget.selectedCategory,
+        orElse: () => widget.subCategories.first
+      );
     }
   }
 
@@ -140,8 +45,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('Подкатегория'), 
-          // AppLocalizations.of(context)!.translate('category'), 
+          AppLocalizations.of(context)!.translate('Подкатегория'),
           style: categoryTextStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 4),
@@ -154,10 +58,10 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               color: const Color(0xFFF4F7FD),
             ),
           ),
-          child: CustomDropdown<String>.search(
+          child: CustomDropdown<SubCategoryAttributesData>.search(
             closeDropDownOnClearFilterSearch: true,
-            items: categories,
-            searchHintText: AppLocalizations.of(context)!.translate('search'), 
+            items: widget.subCategories,
+            searchHintText: AppLocalizations.of(context)!.translate('search'),
             overlayHeight: 300,
             decoration: CustomDropdownDecoration(
               closedFillColor: Color(0xffF4F7FD),
@@ -175,27 +79,27 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             ),
             listItemBuilder: (context, item, isSelected, onItemSelect) {
               return Text(
-                item,
+                item.name,
                 style: categoryTextStyle,
               );
             },
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
-                selectedItem ?? AppLocalizations.of(context)!.translate('select_category'), 
+                selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_category'),
                 style: categoryTextStyle,
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
-              AppLocalizations.of(context)!.translate('Выберите подкатегорию'), 
+              AppLocalizations.of(context)!.translate('Выберите подкатегорию'),
               style: categoryTextStyle.copyWith(fontSize: 14),
             ),
             excludeSelected: false,
-            initialItem: selectedCategory,
+            initialItem: selectedSubCategory,
             onChanged: (value) {
               if (value != null) {
                 widget.onSelectCategory(value);
                 setState(() {
-                  selectedCategory = value;
+                  selectedSubCategory = value;
                 });
                 FocusScope.of(context).unfocus();
               }
