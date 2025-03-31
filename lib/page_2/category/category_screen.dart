@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
@@ -82,7 +83,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               },
               builder: (context, state) {
                 if (state is CategoryLoading) {
-                  return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                  return const Center(child: PlayStoreImageLoading(size: 80.0,duration: Duration(milliseconds: 1000)));               
                 } else if (state is CategoryError) {
                   context.read<CategoryBloc>().add(FetchCategories());
                   return Center(child: Text(state.message));

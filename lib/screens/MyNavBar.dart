@@ -119,31 +119,31 @@ Widget build(BuildContext context) {
                 curve: Curves.ease,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
               ),
-              // BottomNavyBar(
-              //   backgroundColor: Color(0xffF4F7FD),
-              //   selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
-              //   onItemSelected: (index) {
-              //     setState(() {
-              //       currentIndexGroup2 = index;
-              //       currentIndexGroup1 = -1;
-              //     });
-              //     widget.onItemSelectedGroup2(index);
-              //   },
-              //   items: List.generate(
-              //     widget.navBarTitlesGroup2.length,
-              //     (index) => _buildNavBarItem(
-              //       index,
-              //       widget.navBarTitlesGroup2[index],
-              //       widget.activeIconsGroup2[index],
-              //       widget.inactiveIconsGroup2[index],
-              //       currentIndexGroup2 == index,
-              //     ),
-              //   ),
-              //   iconSize: _iconSize,
-              //   containerHeight: _navBarHeight,
-              //   curve: Curves.ease,
-              //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-              // ),
+              BottomNavyBar(
+                backgroundColor: Color(0xffF4F7FD),
+                selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
+                onItemSelected: (index) {
+                  setState(() {
+                    currentIndexGroup2 = index;
+                    currentIndexGroup1 = -1;
+                  });
+                  widget.onItemSelectedGroup2(index);
+                },
+                items: List.generate(
+                  widget.navBarTitlesGroup2.length,
+                  (index) => _buildNavBarItem(
+                    index,
+                    widget.navBarTitlesGroup2[index],
+                    widget.activeIconsGroup2[index],
+                    widget.inactiveIconsGroup2[index],
+                    currentIndexGroup2 == index,
+                  ),
+                ),
+                iconSize: _iconSize,
+                containerHeight: _navBarHeight,
+                curve: Curves.ease,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              ),
             ],
           ),
         ),

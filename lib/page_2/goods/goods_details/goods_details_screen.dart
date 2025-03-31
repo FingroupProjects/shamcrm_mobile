@@ -1,28 +1,22 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
-  final String goodsName;
-  final String goodsDescription;
-  final int discountGoodsPrice;
-  final int stockQuantity;
-  final List<String> imagePaths; 
-  String? selectedCategory;
-  bool isActive = false;
+
 
   GoodsDetailsScreen({
     required this.id,
-    required this.goodsName,
-    required this.goodsDescription,
-    required this.discountGoodsPrice,
-    required this.stockQuantity,
-    required this.imagePaths, 
-    this.selectedCategory,
-    this.isActive = false,
+
   });
 
   @override
@@ -32,10 +26,31 @@ class GoodsDetailsScreen extends StatefulWidget {
 class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   List<Map<String, String>> details = [];
   int _currentPage = 0;
+  final ApiService _apiService = ApiService();
+  String? baseUrl;
+
+
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final enteredDomainMap = await _apiService.getEnteredDomain();
+          String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+    _initializeBaseUrl();
   }
 
    @override
@@ -46,12 +61,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': widget.goodsName},
-      {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': widget.goodsDescription},
-      {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
-      {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
-      {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
-      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? 'Активно' : 'Неактивно'},
+      // {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': widget.goodsName},
+      // {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': widget.goodsDescription},
+      // {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
+      // {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
+      // {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
+      // {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? 'Активно' : 'Неактивно'},
     ];
   }
 
@@ -63,61 +78,120 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         AppLocalizations.of(context)!.translate('view_goods'),
       ),
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16),
-        child: ListView(
-          children: [
-            _buildImageSlider(),
-            _buildDetailsList(),
-          ],
-        ),
+      body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
+        listener: (context, state) {
+          if (state is GoodsByIdError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is GoodsByIdLoading) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            } else if (state is GoodsByIdLoaded) {
+            final goods = state.goods;
+            details = [
+              {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 
+               'value': goods.name ?? ''},
+              {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 
+               'value': goods.description ?? ''},
+              // {'label': AppLocalizations.of(context)!.translate('discount_price_details'),
+              //  'value': goods.discountPrice?.toString() ?? '0'},
+              {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 
+               'value': goods.quantity?.toString() ?? '0'},
+              {'label': AppLocalizations.of(context)!.translate('category_details'), 
+               'value': goods.category.name ?? ''},
+              // {'label': AppLocalizations.of(context)!.translate('status_details'), 
+              //  'value': goods.isActive ?? false ? 'Активно' : 'Неактивно'},
+            ];
+
+            return Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16),
+              child: ListView(
+                children: [
+                  if (goods.files != null && goods.files!.isNotEmpty)
+                  _buildImageSlider(goods.files),
+                  _buildDetailsList(),
+                ],
+              ),
+            );
+          } else if (state is GoodsByIdEmpty) {
+            return Center(child: Text('Товар не найден'));
+          } else if (state is GoodsByIdError) {
+            return Center(child: Text(state.message));
+          }
+          return Center(child: Text('Загрузка...'));
+        },
       ),
     );
   }
 
-  Widget _buildImageSlider() {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          height: 250,
-          child: PageView.builder(
-            itemCount: widget.imagePaths.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  widget.imagePaths[index],
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                ),
-              );
-            },
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Text(
-            '${_currentPage + 1}/${widget.imagePaths.length}',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
+  Widget _buildImageSlider(List<GoodsFile> files) {
+  if (baseUrl == null) {
+    return Center(child: CircularProgressIndicator());
   }
+
+  return Column(
+    children: [
+      Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        height: 250,
+        child: PageView.builder(
+          itemCount: files.length,
+          onPageChanged: (index) {
+            setState(() {
+              _currentPage = index;
+            });
+          },
+          itemBuilder: (context, index) {
+            final imageUrl = '$baseUrl/${files[index].path}';
+            
+            if (files[index].path == null || files[index].path!.isEmpty) {
+              return _buildPlaceholder();
+            }
+
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildPlaceholder();
+                },
+              ),
+            );
+          },
+        ),
+      ),
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          '${_currentPage + 1}/${files.length}',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildPlaceholder() {
+  return Container(
+    color: Colors.grey[200],
+    child: Center(
+      child: Icon(Icons.image, size: 50, color: Colors.grey),
+    ),
+  );
+}
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -167,22 +241,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 height: 24,
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GoodsEditScreen(
-                      goods: {
-                        'name': widget.goodsName,
-                        'description': widget.goodsDescription,
-                        'discountPrice': widget.discountGoodsPrice,
-                        'stockQuantity': widget.stockQuantity,
-                        'category': widget.selectedCategory,
-                        'isActive': widget.isActive,
-                        'imagePaths': widget.imagePaths,
-                      },
-                    ),
-                  ),
-                );
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => GoodsEditScreen(
+                //       goods: {
+                //         // 'name': widget.goodsName,
+                //         // 'description': widget.goodsDescription,
+                //         // 'discountPrice': widget.discountGoodsPrice,
+                //         // 'stockQuantity': widget.stockQuantity,
+                //         // 'category': widget.selectedCategory,
+                //         // 'isActive': widget.isActive,
+                //         // 'imagePaths': widget.imagePaths,
+                //       },
+                //     ),
+                //   ),
+                // );
               },
             ),
             IconButton(

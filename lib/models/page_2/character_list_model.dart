@@ -1,17 +1,19 @@
 class CharacteristicListDataResponse {
-  final List<CharacteristicItem> result;
+  final List<CharacteristicItem>? result; 
   final dynamic errors;
 
   CharacteristicListDataResponse({
-    required this.result,
+    this.result, 
     this.errors,
   });
 
   factory CharacteristicListDataResponse.fromJson(Map<String, dynamic> json) {
     return CharacteristicListDataResponse(
-      result: (json['result'] as List)
-          .map((item) => CharacteristicItem.fromJson(item))
-          .toList(),
+      result: json['result'] != null 
+          ? (json['result'] as List)
+              .map((item) => CharacteristicItem.fromJson(item))
+              .toList()
+          : null,
       errors: json['errors'],
     );
   }
@@ -20,22 +22,22 @@ class CharacteristicListDataResponse {
 class CharacteristicItem {
   final int id;
   final String name;
-  final String createdAt;
-  final String updatedAt;
+  final String? createdAt;  
+  final String? updatedAt;  
 
   CharacteristicItem({
     required this.id,
     required this.name,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,  
+    this.updatedAt,  
   });
 
   factory CharacteristicItem.fromJson(Map<String, dynamic> json) {
     return CharacteristicItem(
-      id: json['id'],
-      name: json['name'] ?? '', // Обеспечиваем дефолтное значение
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: json['id'] ?? 0,  
+      name: json['name']?.toString() ?? '',  
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 }
@@ -46,6 +48,8 @@ class AttributeList {
   AttributeList({required this.attribute});
 
   factory AttributeList.fromJson(Map<String, dynamic> json) {
-    return AttributeList(attribute: json['attribute']);
+    return AttributeList(
+      attribute: json['attribute']?.toString() ?? '',  
+    );
   }
 }

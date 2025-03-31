@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -22,14 +24,38 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   
-  String? selectedCategory;
+  SubCategoryAttributesData? selectedCategory;
   bool isActive = false;
+  List<SubCategoryAttributesData> subCategories = [];
   
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
+  Map<String, TextEditingController> attributeControllers = {};
+  bool isLoading = false;
+    final ApiService _apiService = ApiService();
 
-    List<ProductCharacteristic>? selectedCharacteristics; 
-  Map<String, TextEditingController> characteristicControllers = {}; 
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSubCategories();
+  }
+Future<void> fetchSubCategories() async {
+    setState(() => isLoading = true);
+    try {
+      final categories = await _apiService.getSubCategoryAttributes();
+      setState(() {
+        subCategories = categories;
+      });
+    } catch (e) {
+      print('Error fetching subcategories: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка загрузки подкатегорий')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,62 +124,61 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 8),
-                  CategoryDropdownWidget(
-                    selectedCategory: selectedCategory,
-                    onSelectCategory: (category) {
-                      setState(() {
-                        selectedCategory = category;
-                        selectedCharacteristics = categoryCharacteristics[category]; 
-                        characteristicControllers.clear(); 
-                        if (selectedCharacteristics != null) {
-                          for (var characteristic in selectedCharacteristics!) {
-                            characteristicControllers[characteristic.name] = TextEditingController();
-                          }
-                        }
-                      });
-                    },
-                  ),
-                 const SizedBox(height: 8),
-                if (selectedCharacteristics != null && selectedCharacteristics!.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       Divider(color: Color(0xff1E2E52)),
-                      Center(
-                        child: Text(
-                          'Характеристика товара',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
+                CategoryDropdownWidget(
+                          selectedCategory: selectedCategory?.name,
+                          onSelectCategory: (category) {
+                            setState(() {
+                              selectedCategory = category;
+                              attributeControllers.clear();
+                              if (category != null && category.attributes.isNotEmpty) {
+                                for (var attribute in category.attributes) {
+                                  attributeControllers[attribute.name] = TextEditingController();
+                                }
+                              }
+                            });
+                          },
+                          subCategories: subCategories,
                         ),
-                      ),
-                      Divider( color: Color(0xff1E2E52)),
-                      ...selectedCharacteristics!.map((characteristic) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(
-                              characteristic.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                        const SizedBox(height: 8),
+                if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Divider(color: Color(0xff1E2E52)),
+                              Center(
+                                child: Text(
+                                  'Характеристика товара',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
                               ),
-                              ),
-                            const SizedBox(height: 4),
-                            CustomCharacteristicField(
-                              controller: characteristicControllers[characteristic.name]!,
-                              hintText: characteristic.hintText,
-                              keyboardType: characteristic.keyboardType,
-                            ),
-                          ],
-                        );
-                      }).toList(),
+                              Divider(color: Color(0xff1E2E52)),
+                              ...selectedCategory!.attributes.map((attribute) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      attribute.name,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    CustomCharacteristicField(
+                                      controller: attributeControllers[attribute.name]!,
+                                      hintText: 'Введите ${attribute.name.toLowerCase()}',
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -435,42 +460,60 @@ void _removeImage(String imagePath) {
   });
 }
 
-void _createProduct() {
-  if (formKey.currentState!.validate()) {
-    String goodsName = goodsNameController.text;
-    String goodsDescription = goodsDescriptionController.text;
-    String discountPrice = discountPriceController.text;
-    String stockQuantity = stockQuantityController.text;
+void _createProduct() async {
+  if (formKey.currentState!.validate() && selectedCategory != null) {
+    setState(() => isLoading = true);
+    
+    try {
+      // Подготавливаем список атрибутов
+      List<String> attributes = [];
+      for (var attribute in selectedCategory!.attributes) {
+        final controller = attributeControllers[attribute.name];
+        if (controller != null && controller.text.isNotEmpty) {
+          attributes.add(controller.text);
+        }
+      }
 
-    List<Map<String, String>> characteristics = [];
-    if (selectedCharacteristics != null) {
-      for (var characteristic in selectedCharacteristics!) {
-        characteristics.add({
-          'name': characteristic.name,
-          'value': characteristicControllers[characteristic.name]!.text,
-        });
+      // Берем первое изображение (если есть)
+      File? imageFile;
+      if (_imagePaths.isNotEmpty) {
+        imageFile = File(_imagePaths.first);
+      }
+
+      // Вызываем API для создания товара
+      final response = await _apiService.createGoods(
+        name: goodsNameController.text,
+        parentId: selectedCategory!.id,
+        description: goodsDescriptionController.text,
+        quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        attributeNames: attributes,
+        image: imageFile,
+        isActive: isActive,
+      );
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Товар успешно создан')),
+        );
+        Navigator.pop(context, true); // Возвращаем true для обновления списка
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'] ?? 'Ошибка при создании товара')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
       }
     }
-
-    Map<String, dynamic> productData = {
-      'name': goodsName,
-      'description': goodsDescription,
-      'discountPrice': discountPrice,
-      'stockQuantity': stockQuantity,
-      'category': selectedCategory,
-      'isActive': isActive,
-      'characteristics': characteristics,
-      'imagePaths': _imagePaths,
-    };
-
-    JsonEncoder encoder = JsonEncoder.withIndent('  '); 
-    String prettyJson = encoder.convert(productData);
-    print('Данные товара в JSON:');
-    print(prettyJson);
-
-    // Закрытие экрана
-    Navigator.pop(context);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Пожалуйста, заполните все обязательные поля')),
+    );
   }
-
 }
 }

@@ -1,9 +1,15 @@
+import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/page_2/goods/goods_card.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
-import 'package:crm_task_manager/page_2/goods/goods_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:flutter/material.dart';
 
 class GoodsScreen extends StatefulWidget {
   @override
@@ -16,61 +22,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-  final List<Map<String, dynamic>> testGoods = [
-    {
-      'id': 1,
-      'name': 'Смартфон XYZ Pro',
-      'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
-      'category': 'Электроника',
-      'discount': 15,
-      'stockQuantity': 500,
-      'imagePaths': [
-        'assets/images/goods_photo2.jpg',
-        'assets/images/goods_photo1.jpg'
-      ],
-      'status': true,
-    },
-    {
-      'id': 2,
-      'name': 'Стиральная машина Модель A100',
-      'description': 'Энергоэффективная стиральная машина с емкостью 7 кг и несколькими режимами стирки.',
-      'category': 'Бытовая техника',
-      'discount': 10,
-      'stockQuantity': 150,
-      'imagePaths': ['assets/images/goods_photo1.jpg'],
-      'status': false,
-    },
-    {
-      'id': 3,
-      'name': 'Органический хлеб из цельного зерна',
-      'description': 'Свежевыпеченный органический хлеб из цельного зерна, сделанный из высококачественных ингредиентов.',
-      'category': 'Продукты питания',
-      'discount': 5,
-      'stockQuantity': 2000,
-      'imagePaths': [
-        'assets/images/goods_photo.jpg',
-        'assets/images/goods_photo.jpg',
-        'assets/images/goods_photo.jpg',
-        'assets/images/goods_photo1.jpg',
-        'assets/images/goods_photo2.jpg'
-      ],
-      'status': true,
-    },
-    {
-      'id': 4,
-      'name': 'Смартфон XYZ Pro',
-      'description': 'Высокопроизводительный смартфон с 6,5-дюймовым экраном, 128 ГБ памяти и камерой 12 МП.',
-      'category': 'Электроника',
-      'discount': 15,
-      'stockQuantity': 500,
-      'imagePaths': [
-        'assets/images/goods_photo2.jpg',
-        'assets/images/goods_photo1.jpg'
-      ],
-      'status': true,
-    },
-  ];
-
   // void _onSearchChanged(String value) {}
 
   // void _onClearSearch() {
@@ -81,6 +32,13 @@ class _GoodsScreenState extends State<GoodsScreen> {
   // }
 
   // void _onProfileAvatarClick() {}
+
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GoodsBloc>().add(FetchGoods());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,27 +65,55 @@ class _GoodsScreenState extends State<GoodsScreen> {
           clearButtonClick: (isSearching) {},
         ),
       ),
-      body: isClickAvatarIcon
+     body: isClickAvatarIcon
           ? ProfileScreen()
-          : ListView.builder(
-              padding: EdgeInsets.only(left: 16, right: 16, top: 0),
-              itemCount: testGoods.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 0),
-                  child: GoodsCard(
-                    goodsId: testGoods[index]['id']!,
-                    goodsName: testGoods[index]['name']!,
-                    goodsDescription: testGoods[index]['description']!,
-                    goodsCategory: testGoods[index]['category']!,
-                    goodsDiscountPrice: testGoods[index]['discount']!,
-                    goodsStockQuantity: testGoods[index]['stockQuantity']!,
-                    goodsImagePath: testGoods[index]['imagePaths']!,
-                    goodsIsActive: testGoods[index]['status']!,
-                  ),
-                );
-              },
-            ),
+          : BlocBuilder<GoodsBloc, GoodsState>(
+              builder: (context, state) {
+                if (state is GoodsLoading) {
+                  return const Center(child: PlayStoreImageLoading(size: 80.0,duration: Duration(milliseconds: 1000)));               
+                } else if (state is GoodsDataLoaded) {
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: state.goods.length,
+                    itemBuilder: (context, index) {
+                      final Goods goods = state.goods[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GoodsCard(
+                          goodsId: goods.id,
+                          goodsName: goods.name,
+                          goodsDescription: goods.description ?? "",
+                          goodsCategory: goods.category.name,
+                          // goodsDiscountPrice: goods.,
+                          goodsStockQuantity: goods.quantity ?? 0,
+                          goodsFiles: goods.files,
+                          // goodsIsActive: goods.isActive,
+                        ),
+                      );
+                    },
+                  );
+                } else if (state is GoodsEmpty) { 
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text( 'Товаров нет', style: TextStyle(fontSize: 18, color: Colors.grey, fontFamily: 'Gilroy'),
+                            ),
+                            TextButton(
+                              onPressed: () => context.read<GoodsBloc>().add(FetchGoods()),
+                              child: Text('Обновить'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (state is GoodsError) {
+                      return Center(child: Text(state.message));
+                    }
+                    return Center(child: Text('Неизвестное состояние'));
+                  },
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -141,3 +127,4 @@ class _GoodsScreenState extends State<GoodsScreen> {
     );
   }
 }
+

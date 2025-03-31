@@ -69,7 +69,7 @@ final double dialogHeight = _isDropdownVisible
                 color: Color(0xff1E2E52),
             ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 4),
             Expanded(
               child: CharacteristicSelectionWidget(
                 selectedCharacteristic: selectedCharacter,
@@ -85,6 +85,7 @@ final double dialogHeight = _isDropdownVisible
                 },
               ),
             ),
+            SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

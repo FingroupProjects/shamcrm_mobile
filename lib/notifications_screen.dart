@@ -425,6 +425,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
           );
+           if (mounted) {
+      notificationBloc.add(FetchNotifications());
+    }
         }
       } catch (e) {
         Navigator.of(context).pop();
@@ -474,7 +477,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         print("Ошибка загрузки данных!");
       }
     } else if (type == 'notice') {
-      // Переход на экран лида
       print('Переход на экран лида с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
@@ -487,7 +489,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'dealDeadLineNotification') {
-      // Переход на экран сделки
       print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [
         DealCustomField(id: 1, key: '', value: ''),

@@ -13,7 +13,6 @@ class CategoryDataById {
     required this.subcategories,
   });
 
-  // Добавляем метод copyWith
   CategoryDataById copyWith({
     int? id,
     String? name,
