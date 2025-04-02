@@ -861,12 +861,12 @@
       "inactive":"Неактивен",
       "make_photo":"Сделать фото",
       "select_from_gallery":"Выбрать из галереи",
-      "goods_name_details":"Название:",
-      "goods_description_details":"Описание:",
-      "goods_price_details":"Цена:",
-      "discount_price_details":"Скидка:",
-      "stock_quantity_details":"Количество:",
-      "category_details":"Категория:",
+      "goods_name_details":"Название",
+      "goods_description_details":"Описание",
+      "goods_price_details":"Цена",
+      "discount_price_details":"Скидка",
+      "stock_quantity_details":"Количество",
+      "category_details":"Категория",
       "view_goods":"Просмотр товара",
       "add_goods":"Добавить товар",
       "category":"Категория",
@@ -879,7 +879,8 @@
       "selected_manager":"Выбрано менеджеров:",
       "branches":"Филиалы",
       "select_branch":"Выберите филиал",
-      "appbar_orders":"Заказы"
+      "appbar_orders":"Заказы",
+      "goods_finished":"Статус"
       
 
 

@@ -6269,7 +6269,7 @@ Future<Map<String, dynamic>> createGoods({
   required String description,
   required int quantity,
   required List<String> attributeNames,
-  File? image,
+  List<File>? images, // Изменено на List<File>?
   required bool isActive,
 }) async {
   try {
@@ -6284,19 +6284,23 @@ Future<Map<String, dynamic>> createGoods({
     });
 
     request.fields['name'] = name;
-    request.fields['category_id'] = parentId.toString(); 
+    request.fields['category_id'] = parentId.toString();
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive.toString();
 
+    // Добавляем атрибуты
     for (int i = 0; i < attributeNames.length; i++) {
-      request.fields['attributes[$i][attribute_id]'] = (i + 1).toString(); 
+      request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
       request.fields['attributes[$i][value]'] = attributeNames[i];
     }
 
-    if (image != null) {
-      final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
-      request.files.add(imageFile);
+    // Добавляем все изображения
+    if (images != null && images.isNotEmpty) {
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
+      }
     }
 
     final streamedResponse = await request.send();
@@ -6324,6 +6328,69 @@ Future<Map<String, dynamic>> createGoods({
   }
 }
 
+Future<Map<String, dynamic>> updateGoods({
+  required int goodId,
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<String> attributeNames,
+  List<File>? images,
+  required bool isActive,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl/good/$goodId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive.toString();
+
+    for (int i = 0; i < attributeNames.length; i++) {
+      request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
+      request.fields['attributes[$i][value]'] = attributeNames[i];
+    }
+
+    if (images != null && images.isNotEmpty) {
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'goods_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update goods',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
 
 
 
