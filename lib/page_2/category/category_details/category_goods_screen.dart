@@ -245,13 +245,13 @@ void _navigateToGoodsDetails(Goods goods) {
     MaterialPageRoute(
       builder: (context) => GoodsDetailsScreen(
         id: goods.id,
-        goodsName: goods.goodsName,
-        goodsDescription: goods.goodsDescription,
-        discountGoodsPrice: goods.discountGoodsPrice,
-        stockQuantity: goods.stockQuantity,
-        imagePaths: goods.imagePaths,
-        selectedCategory: widget.categoryName, 
-        isActive: true, 
+        // goodsName: goods.goodsName,
+        // goodsDescription: goods.goodsDescription,
+        // discountGoodsPrice: goods.discountGoodsPrice,
+        // stockQuantity: goods.stockQuantity,
+        // imagePaths: goods.imagePaths,
+        // selectedCategory: widget.categoryName, 
+        // isActive: true, 
       ),
     ),
   );

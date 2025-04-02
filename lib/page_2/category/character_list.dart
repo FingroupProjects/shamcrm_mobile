@@ -47,20 +47,22 @@ class _CharacteristicSelectionWidgetState
   }
 
 Future<void> _loadCharacteristics() async {
-    try {
-      final response = await ApiService().getAllCharacteristics();
+  try {
+    final response = await ApiService().getAllCharacteristics();
+    if (response.result != null) {
       setState(() {
-        characteristicList = response.result.map((item) => 
-          CharacteristicData(title: item.name)
-        ).toList();
+        characteristicList = response.result!
+            .map((item) => CharacteristicData(title: item.name))
+            .toList();
         filteredList = List.from(characteristicList);
       });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не удалось загрузить характеристики!')),
-      );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Не удалось загрузить характеристики: ${e.toString()}')),
+    );
   }
+}
 
   void filterSearchResults(String query) {
     setState(() {

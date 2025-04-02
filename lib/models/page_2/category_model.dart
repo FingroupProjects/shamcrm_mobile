@@ -19,7 +19,6 @@ class CategoryResponse {
   }
 }
 
-
 class SubCategoryResponse {
   final int id;
   final String name;
@@ -32,28 +31,27 @@ class SubCategoryResponse {
     required this.id,
     required this.name,
     this.image,
-
     required this.subcategories,
     required this.attributes,
   });
 
-factory SubCategoryResponse.fromJson(Map<String, dynamic> json) {
-  return SubCategoryResponse(
-    id: json['id'],
-    name: json['name'] ?? '',
-    image: json['image'],
-    subcategories: json['subcategories'] != null
-        ? (json['subcategories'] as List)
-            .map((i) => SubCategoryResponse.fromJson(i))
-            .toList()
-        : [],
-    attributes: json['attributes'] != null
-        ? (json['attributes'] as List)
-            .map((i) => Attribute.fromJson(i))
-            .toList()
-        : [], 
-  );
-}
+  factory SubCategoryResponse.fromJson(Map<String, dynamic> json) {
+    return SubCategoryResponse(
+      id: json['id'],
+      name: json['name'] ?? '',
+      image: json['image'],
+      subcategories: json['subcategories'] != null
+          ? (json['subcategories'] as List)
+              .map((i) => SubCategoryResponse.fromJson(i))
+              .toList()
+          : [],
+      attributes: json['attributes'] != null
+          ? (json['attributes'] as List)
+              .map((i) => Attribute.fromJson(i))
+              .toList()
+          : [],
+    );
+  }
 }
 
 class Attribute {
@@ -67,38 +65,21 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'],
-      name: json['name'] ?? '',
-    );
-  }
-}
-
-class Pivot {
-  final int categoryId;
-  final int attributeId;
-
-  Pivot({
-    required this.categoryId,
-    required this.attributeId,
-  });
-
-  factory Pivot.fromJson(Map<String, dynamic> json) {
-    return Pivot(
-      categoryId: json['category_id'],
-      attributeId: json['attribute_id'],
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
     );
   }
 }
 
 class CategoryData {
   final String name;
-  final int? id;
+  final int id;
   final String? image;
   final List<SubCategoryResponse> subcategories;
 
   CategoryData({
     required this.name,
-    this.id,
+    required this.id,
     this.image,
     required this.subcategories,
   });

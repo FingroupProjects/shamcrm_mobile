@@ -40,8 +40,10 @@ import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
@@ -6197,6 +6199,206 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 
+
+  //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
+
+
+
+Future<List<Goods>> getGoods() async {
+  final organizationId = await getSelectedOrganization();
+  final String path = '/good?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      return (data['result']['data'] as List)
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+  }
+}
+
+Future<List<Goods>> getGoodsById(int goodsId) async {
+  final organizationId = await getSelectedOrganization();
+  final String path = '/good/$goodsId?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result')) {
+      return [Goods.fromJson(data['result'] as Map<String, dynamic>)];
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
+  }
+}
+
+Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
+  final organizationId = await getSelectedOrganization();
+  final String path = '/category/get/subcategories?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('data')) {
+      return (data['data'] as List)
+          .map((item) => SubCategoryAttributesData.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
+  }
+}
+
+
+Future<Map<String, dynamic>> createGoods({
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<String> attributeNames,
+  List<File>? images, // Изменено на List<File>?
+  required bool isActive,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('${baseUrl}/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive.toString();
+
+    // Добавляем атрибуты
+    for (int i = 0; i < attributeNames.length; i++) {
+      request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
+      request.fields['attributes[$i][value]'] = attributeNames[i];
+    }
+
+    // Добавляем все изображения
+    if (images != null && images.isNotEmpty) {
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'goods_created_successfully',
+        'data': CategoryData.fromJson(responseBody),
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to create goods',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
+
+Future<Map<String, dynamic>> updateGoods({
+  required int goodId,
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<String> attributeNames,
+  List<File>? images,
+  required bool isActive,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl/good/$goodId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive.toString();
+
+    for (int i = 0; i < attributeNames.length; i++) {
+      request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
+      request.fields['attributes[$i][value]'] = attributeNames[i];
+    }
+
+    if (images != null && images.isNotEmpty) {
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'goods_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update goods',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
+  }
+}
+
+
+
+
+
+  //_________________________________ END____API_SCREEN__GOODS____________________________________________//
+
+
   //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
 // Метод для получение статусов заказы
   Future<List<OrderStatus>> getOrderStatuses() async {
@@ -6252,29 +6454,29 @@ Future<OrderResponse> getOrders({int page = 1, int perPage = 20, int? statusId})
 
     final response = await _getRequest(url); // Предполагается, что это ваш метод HTTP-запроса
 
-    print('Response status: ${response.statusCode}');
-    print('Raw response body: ${response.body}');
+    // print('Response status: ${response.statusCode}');
+    // print('Raw response body: ${response.body}');
 
     if (response.statusCode == 200) {
       final rawData = json.decode(response.body);
-      print('Decoded JSON: $rawData');
+      // print('Decoded JSON: $rawData');
       final data = rawData['result'];
-      print('Result data: $data');
-      print('Data type: ${data.runtimeType}');
+      // print('Result data: $data');
+      // print('Data type: ${data.runtimeType}');
       
       final orderResponse = OrderResponse.fromJson(data);
-      print('Deserialized OrderResponse: $orderResponse');
+      // print('Deserialized OrderResponse: $orderResponse');
       await prefs.setString('cachedOrders_$organizationId', json.encode(data));
       return orderResponse;
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
     }
   } catch (e) {
-    print('Ошибка загрузки заказов: $e. Используем кэшированные данные.');
+    print('Ошибка загрузки заказов: $e. Использ?уем кэшированные данные.');
     final cachedOrders = prefs.getString('cachedOrders_$organizationId');
     if (cachedOrders != null) {
       final decodedData = json.decode(cachedOrders);
-      print('Cached data: $decodedData');
+      // print('Cached data: $decodedData');
       return OrderResponse.fromJson(decodedData);
     } else {
       throw Exception('Ошибка загрузки заказов и нет кэшированных данных!');
