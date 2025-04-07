@@ -19,12 +19,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:intl/intl.dart';
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
   final String dealName;
-  // final String dealStatus;
   final String? manager;
   final String? currency;
   final String? lead;
@@ -39,7 +39,6 @@ class DealEditScreen extends StatefulWidget {
   DealEditScreen({
     required this.dealId,
     required this.dealName,
-    // required this.dealStatus,
     required this.statusId,
     this.manager,
     this.currency,
@@ -215,16 +214,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomTextField(
-                          controller: titleController,
-                          hintText: AppLocalizations.of(context)!
-                              .translate('enter_name_list'),
-                          label: AppLocalizations.of(context)!
-                              .translate('name_list'),
-                          validator: (value) => value!.isEmpty
-                              ? AppLocalizations.of(context)!
-                                  .translate('field_required')
-                              : null,
+                        DealNameSelectionWidget(
+                          selectedDealName: titleController.text,
+                          onSelectDealName: (String dealName) {
+                            setState(() {
+                              titleController.text = dealName;
+                            });
+                          },
                         ),
                         const SizedBox(height: 8),
                         LeadRadioGroupWidget(
@@ -486,4 +482,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
       ),
     );
   }
+}
+
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
 }

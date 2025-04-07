@@ -12,6 +12,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -36,7 +37,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
@@ -72,9 +72,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
   void _fetchAndAddCustomFields() async {
     try {
-      // Здесь предполагается, что getCustomFields определён в ApiService
-      final data =
-          await ApiService().getCustomFieldsdeal(); // Выполнить GET-запрос
+      final data = await ApiService().getCustomFieldsdeal();
       if (data['result'] != null) {
         data['result'].forEach((value) {
           setState(() {
@@ -83,7 +81,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка!');
+      print('Ошибка при загрузке пользовательских полей: $e');
     }
   }
 
@@ -131,8 +129,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -155,8 +152,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -193,18 +189,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomTextField(
-                          controller: titleController,
-                          hintText: AppLocalizations.of(context)!
-                              .translate('enter_name_list'),
-                          label: AppLocalizations.of(context)!
-                              .translate('name_list'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                  .translate('field_required');
-                            }
-                            return null;
+                        DealNameSelectionWidget(
+                          selectedDealName: titleController.text,
+                          onSelectDealName: (String dealName) {
+                            setState(() {
+                              titleController.text = dealName;
+                            });
                           },
                         ),
                         const SizedBox(height: 8),
@@ -253,12 +243,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             FilteringTextInputFormatter.allow(
                                 RegExp(r'[0-9\.,]')),
                           ],
-                          // validator: (value) {
-                          //   if (value == null || value.isEmpty) {
-                          //    return AppLocalizations.of(context)!.translate('field_required');
-                          //   }
-                          //   return null;
-                          // },
                         ),
                         const SizedBox(height: 8),
                         CustomTextField(
@@ -300,7 +284,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
                     Expanded(
@@ -311,7 +296,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         textColor: Colors.black,
                         onPressed: () {
                           Navigator.pop(context, widget.statusId);
-                          // context.read<DealBloc>().add(FetchDealStatuses());
                         },
                       ),
                     ),
@@ -348,6 +332,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate() &&
+        titleController.text.isNotEmpty &&
         selectedManager != null &&
         selectedLead != null) {
       _createDeal();
@@ -439,7 +424,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
       return;
     }
 
-    // Создание сделки
     List<Map<String, String>> customFieldMap = [];
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();

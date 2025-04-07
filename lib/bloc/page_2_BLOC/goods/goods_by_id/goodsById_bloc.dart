@@ -8,12 +8,14 @@ class GoodsByIdBloc extends Bloc<GoodsByIdEvent, GoodsByIdState> {
 
   GoodsByIdBloc(this.apiService) : super(GoodsByIdInitial()) {
     on<FetchGoodsById>(_fetchGoodsById);
+    on<DeleteGoods>(_onDeleteGoods);
   }
 
   Future<void> _fetchGoodsById(
-      FetchGoodsById event, Emitter<GoodsByIdState> emit) async {
+    FetchGoodsById event,
+    Emitter<GoodsByIdState> emit,
+  ) async {
     emit(GoodsByIdLoading());
-    
     try {
       final goodsList = await apiService.getGoodsById(event.goodsId);
       if (goodsList.isEmpty) {
@@ -23,6 +25,26 @@ class GoodsByIdBloc extends Bloc<GoodsByIdEvent, GoodsByIdState> {
       }
     } catch (e) {
       emit(GoodsByIdError('Не удалось загрузить товар: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onDeleteGoods(
+    DeleteGoods event,
+    Emitter<GoodsByIdState> emit,
+  ) async {
+    emit(GoodsByIdLoading());
+    try {
+      final success = await apiService.deleteGoods(
+        event.goodId,
+        organizationId: event.organizationId,
+      );
+      if (success) {
+        emit(GoodsByIdDeleted());
+      } else {
+        emit(GoodsByIdError('Не удалось удалить товар'));
+      }
+    } catch (e) {
+      emit(GoodsByIdError('Ошибка удаления товара: $e'));
     }
   }
 }

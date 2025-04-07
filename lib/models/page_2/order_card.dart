@@ -157,19 +157,65 @@ class OrderLead {
 }
 
 class Good {
-  final String good;
+  final GoodItem good;
   final int quantity;
 
   Good({required this.good, required this.quantity});
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      good: json['good'] ?? '',
+      good: GoodItem.fromJson(json['good'] as Map<String, dynamic>),
       quantity: json['quantity'] ?? 0,
     );
   }
 }
+class GoodItem {
+  final int id;
+  final String name;
+  final String description;
+  final int quantity;
+  final List<GoodFile> files;
 
+  GoodItem({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.quantity,
+    required this.files,
+  });
+
+  factory GoodItem.fromJson(Map<String, dynamic> json) {
+    return GoodItem(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      quantity: json['quantity'] ?? 0,
+      files: (json['files'] as List? ?? [])
+          .map((f) => GoodFile.fromJson(f as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class GoodFile {
+  final int id;
+  final String name;
+  final String path;
+
+  GoodFile({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory GoodFile.fromJson(Map<String, dynamic> json) {
+    return GoodFile(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      path: json['path'] ?? '',
+    );
+  }
+}
 class OrderResponse {
   final List<Order> data;
   final Pagination pagination;

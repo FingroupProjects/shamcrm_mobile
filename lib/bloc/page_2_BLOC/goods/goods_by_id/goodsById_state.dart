@@ -12,10 +12,12 @@ class GoodsByIdLoaded extends GoodsByIdState {
   GoodsByIdLoaded(this.goods);
 }
 
+class GoodsByIdEmpty extends GoodsByIdState {}
+
 class GoodsByIdError extends GoodsByIdState {
   final String message;
 
   GoodsByIdError(this.message);
 }
 
-class GoodsByIdEmpty extends GoodsByIdState {}
+class GoodsByIdDeleted extends GoodsByIdState {} // Новое состояние для успешного удаления

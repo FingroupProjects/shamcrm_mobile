@@ -10,7 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart'; // Added for DealNameSelectionWidget
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_status_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -37,7 +37,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedManager;
-  String? selectedDealStatus; // Добавляем выбор статуса
+  String? selectedDealStatus;
   List<CustomField> customFields = [];
   bool isStartDateInvalid = false;
   bool isEndDateInvalid = false;
@@ -46,7 +46,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    context.read<DealBloc>().add(FetchDealStatuses()); // Загружаем статусы
+    context.read<DealBloc>().add(FetchDealStatuses());
   }
 
   void _addCustomField(String fieldName) {
@@ -90,7 +90,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         title: Row(
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('new_deal'), 
+              AppLocalizations.of(context)!.translate('new_deal'),
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -108,7 +108,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                    AppLocalizations.of(context)!.translate(state.message),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -132,7 +132,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-              AppLocalizations.of(context)!.translate('deal_created_successfully'), 
+                  AppLocalizations.of(context)!.translate('deal_created_successfully'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -156,135 +156,112 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // Выбор статуса сделки
-                      DealStatusWidget(
-                        selectedDealStatus: selectedDealStatus,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedDealStatus = newValue;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerRadioGroupWidget(
-                        selectedManager: selectedManager,
-                        onSelectManager: (ManagerData selectedManagerData) {
-                          setState(() {
-                            selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('start_date'),
-                        withTime: false,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return 'Поле обязательно для заполнения';
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('end_date'),
-                        withTime: false,
-                        hasError: isEndDateInvalid,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return 'Поле обязательно для заполнения';
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: sumController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
-                        label: AppLocalizations.of(context)!.translate('summ'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //    return AppLocalizations.of(context)!.translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
-                        maxLines: 5,
-                                                keyboardType: TextInputType.multiline,
-
-                      ),
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Added DealNameSelectionWidget for title selection
+                        DealNameSelectionWidget(
+                          selectedDealName: titleController.text,
+                          onSelectDealName: (String dealName) {
+                            setState(() {
+                              titleController.text = dealName;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        DealStatusWidget(
+                          selectedDealStatus: selectedDealStatus,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedDealStatus = newValue;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager = selectedManagerData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: startDateController,
+                          label: AppLocalizations.of(context)!.translate('start_date'),
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: endDateController,
+                          label: AppLocalizations.of(context)!.translate('end_date'),
+                          withTime: false,
+                          hasError: isEndDateInvalid,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: sumController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                          label: AppLocalizations.of(context)!.translate('summ'),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                          label: AppLocalizations.of(context)!.translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText:  AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -305,7 +282,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText:  AppLocalizations.of(context)!.translate('add'),
+                              buttonText: AppLocalizations.of(context)!.translate('add'),
                               buttonColor: Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: _submitForm,
@@ -326,6 +303,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate() &&
+        titleController.text.isNotEmpty && // Check titleController instead of null
         selectedManager != null &&
         selectedDealStatus != null) {
       _createLeadDeal();
@@ -360,8 +338,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
     DateTime? endDate;
     try {
       if (startDateController.text.isNotEmpty) {
-        startDate =
-            DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+        startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
       }
       if (endDateController.text.isNotEmpty) {
         endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
@@ -373,8 +350,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:  Text(
-              AppLocalizations.of(context)!.translate('error_parsing_date'),
+          content: Text(
+            AppLocalizations.of(context)!.translate('error_parsing_date'),
           ),
           backgroundColor: Colors.red,
         ),
@@ -388,32 +365,40 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date'),),
+          content: Text(
+            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
     final String name = titleController.text;
-      final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     context.read<DealBloc>().add(CreateDeal(
-          name: name,
-          dealStatusId: int.parse(selectedDealStatus!),
-          managerId: int.parse(selectedManager!),
-          leadId: widget.leadId,
-          dealtypeId: 1,
-          startDate: startDateController.text.isNotEmpty
-              ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
-              : null,
-          endDate: endDateController.text.isNotEmpty
-              ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
-              : null,
-          sum: sumController.text,
-          description: descriptionController.text,
-          customFields: [],
-          localizations: localizations, 
-
-        ));
+      name: name,
+      dealStatusId: int.parse(selectedDealStatus!),
+      managerId: int.parse(selectedManager!),
+      leadId: widget.leadId,
+      dealtypeId: 1,
+      startDate: startDateController.text.isNotEmpty
+          ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
+          : null,
+      endDate: endDateController.text.isNotEmpty
+          ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
+          : null,
+      sum: sumController.text,
+      description: descriptionController.text,
+      customFields: [],
+      localizations: localizations,
+    ));
   }
+}
+
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
 }
