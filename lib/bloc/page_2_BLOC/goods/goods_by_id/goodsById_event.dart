@@ -5,3 +5,10 @@ class FetchGoodsById extends GoodsByIdEvent {
 
   FetchGoodsById(this.goodsId);
 }
+
+class DeleteGoods extends GoodsByIdEvent {
+  final int goodId;
+  final int? organizationId;
+
+  DeleteGoods(this.goodId, this.organizationId);
+}

@@ -20,6 +20,7 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
+import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
@@ -261,6 +262,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => EventBloc(widget.apiService)),
           BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllSubjectBloc()),
+          BlocProvider(create: (context) => GetAllDealNameBloc()),
           BlocProvider(create: (context) => CategoryBloc(widget.apiService)),
           BlocProvider(create: (context) => CategoryByIdBloc(widget.apiService)),
           BlocProvider(create: (context) => OrderBloc(widget.apiService)),

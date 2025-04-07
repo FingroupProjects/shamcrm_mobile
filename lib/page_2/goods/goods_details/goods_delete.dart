@@ -3,61 +3,77 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 
 class DeleteGoodsDialog extends StatelessWidget {
+  final int goodId;
+  final VoidCallback onDelete;
 
-  DeleteGoodsDialog({ super.key });
+  const DeleteGoodsDialog({
+    required this.goodId,
+    required this.onDelete,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return Dialog(
       backgroundColor: Colors.white,
-      title: Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('delete_goods'),
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              AppLocalizations.of(context)!.translate('delete_goods'),
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        ),
-      ),
-      content: Text(
-        AppLocalizations.of(context)!.translate('confrim_delete_goods'),
-        style: const TextStyle(
-          fontSize: 16,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      actions: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('no'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              AppLocalizations.of(context)!.translate('confirm_delete_goods'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('yes'),
-                onPressed: () {
-                  Navigator.of(context).pop(true);
-                },
-                buttonColor: const Color(0xff1E2E52),
-                textColor: Colors.white,
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    buttonColor: const Color(0xffF4F7FD),
+                    textColor: Colors.black,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('delete'),
+                    buttonColor: const Color(0xffFF4D4F),
+                    textColor: Colors.white,
+                    onPressed: () {
+                      onDelete();
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

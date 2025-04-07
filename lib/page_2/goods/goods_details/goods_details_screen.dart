@@ -13,10 +13,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
 
-  GoodsDetailsScreen({required this.id});
+  const GoodsDetailsScreen({required this.id, super.key});
 
   @override
-  _GoodsDetailsScreenState createState() => _GoodsDetailsScreenState();
+  State<GoodsDetailsScreen> createState() => _GoodsDetailsScreenState();
 }
 
 class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
@@ -28,8 +28,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Future<void> _initializeBaseUrl() async {
     try {
       final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      final enteredDomain = enteredDomainMap['enteredDomain'];
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
@@ -61,7 +61,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(
-          context, AppLocalizations.of(context)!.translate('view_goods')),
+        context,
+        AppLocalizations.of(context)!.translate('view_goods'),
+      ),
       backgroundColor: Colors.white,
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
@@ -69,73 +71,71 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
+          } else if (state is GoodsByIdDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Товар успешно удалён')),
+            );
+            Navigator.pop(context);
           }
         },
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+            );
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
-            // Формируем список details с базовыми полями
             details = [
               {
                 'label': AppLocalizations.of(context)!
                     .translate('goods_name_details'),
-                'value': goods.name ?? ''
+                'value': goods.name ?? '',
               },
               {
                 'label': AppLocalizations.of(context)!
                     .translate('goods_description_details'),
-                'value': goods.description ?? ''
+                'value': goods.description ?? '',
               },
               {
                 'label': AppLocalizations.of(context)!
                     .translate('discount_price_details'),
-                'value': goods.discountPrice?.toString() ?? '0'
+                'value': goods.discountPrice?.toString() ?? '0',
               },
               {
                 'label': AppLocalizations.of(context)!
                     .translate('stock_quantity_details'),
-                'value': goods.quantity?.toString() ?? '0'
+                'value': goods.quantity?.toString() ?? '0',
               },
               {
                 'label':
                     AppLocalizations.of(context)!.translate('category_details'),
-                'value': goods.category.name ?? ''
+                'value': goods.category.name ?? '',
               },
-              // Добавляем атрибуты после категории
-              ...(goods.attributes.isNotEmpty
-                  ? goods.attributes
-                      .map((attr) => {
-                            'label': attr.name,
-                            'value': attr.value,
-                          })
-                      .toList()
-                  : []),
+              ...goods.attributes
+                  .map((attr) => {'label': attr.name, 'value': attr.value}),
               {
                 'label':
                     AppLocalizations.of(context)!.translate('goods_finished'),
-                'value': goods.isActive ?? false ? 'Активно' : 'Неактивно'
+                'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
               },
             ];
 
             return Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
                 children: [
                   if (goods.files != null && goods.files!.isNotEmpty)
-                    _buildImageSlider(goods.files),
+                    _buildImageSlider(goods.files!),
                   _buildDetailsList(),
                 ],
               ),
             );
           } else if (state is GoodsByIdEmpty) {
-            return Center(child: Text('Товар не найден'));
+            return const Center(child: Text('Товар не найден'));
           } else if (state is GoodsByIdError) {
             return Center(child: Text(state.message));
           }
-          return Center(child: Text('Загрузка...'));
+          return const Center(child: Text('Загрузка...'));
         },
       ),
     );
@@ -143,7 +143,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildImageSlider(List<GoodsFile> files) {
     if (baseUrl == null) {
-      return Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
 
     return Column(
@@ -153,11 +153,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           height: 250,
           child: PageView.builder(
             itemCount: files.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
+            onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${files[index].path}';
               if (files[index].path == null || files[index].path!.isEmpty) {
@@ -169,23 +165,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildPlaceholder();
-                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(),
                 ),
               );
             },
           ),
         ),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.black54,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
             '${_currentPage + 1}/${files.length}',
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -199,7 +194,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Widget _buildPlaceholder() {
     return Container(
       color: Colors.grey[200],
-      child: Center(
+      child: const Center(
         child: Icon(Icons.image, size: 50, color: Colors.grey),
       ),
     );
@@ -217,14 +212,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-            },
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
+            onPressed: () => Navigator.pop(context),
           ),
         ),
       ),
@@ -248,15 +238,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               children: [
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/edit.png',
-                    width: 24,
-                    height: 24,
-                  ),
+                  constraints: const BoxConstraints(),
+                  icon: Image.asset('assets/icons/edit.png',
+                      width: 24, height: 24),
                   onPressed: state is GoodsByIdLoaded
                       ? () async {
-                          // Переход на экран редактирования и ожидание результата
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -264,7 +250,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                   GoodsEditScreen(goods: state.goods),
                             ),
                           );
-                          // Если результат true (успешное сохранение), обновляем данные
                           if (result == true) {
                             context
                                 .read<GoodsByIdBloc>()
@@ -274,19 +259,25 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       : null,
                 ),
                 IconButton(
-                  padding: EdgeInsets.only(right: 8),
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DeleteGoodsDialog(),
-                    );
-                  },
+                  padding: const EdgeInsets.only(right: 8),
+                  constraints: const BoxConstraints(),
+                  icon: Image.asset('assets/icons/delete.png',
+                      width: 24, height: 24),
+                  onPressed: state is GoodsByIdLoaded
+                      ? () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => DeleteGoodsDialog(
+                              goodId: widget.id,
+                              onDelete: () {
+                                context.read<GoodsByIdBloc>().add(
+                                      DeleteGoods(widget.id, null),
+                                    );
+                              },
+                            ),
+                          );
+                        }
+                      : null,
                 ),
               ],
             );
@@ -299,54 +290,43 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Widget _buildDetailsList() {
     return ListView(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      children: [
-        ...details.map((detail) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: _buildDetailItem(
-              detail['label']!,
-              detail['value']!,
-            ),
-          );
-        }).toList(),
-      ],
+      physics: const NeverScrollableScrollPhysics(),
+      children: details
+          .map((detail) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: _buildDetailItem(detail['label']!, detail['value']!),
+              ))
+          .toList(),
     );
   }
 
   Widget _buildDetailItem(String label, String value) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: label ==
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(width: 8),
+        Expanded(
+          child: label ==
+                  AppLocalizations.of(context)!
+                      .translate('description_details')
+              ? GestureDetector(
+                  onTap: () => _showFullTextDialog(
                       AppLocalizations.of(context)!
-                          .translate('description_details')
-                  ? GestureDetector(
-                      onTap: () {
-                        _showFullTextDialog(
-                            AppLocalizations.of(context)!
-                                .translate('description_details'),
-                            value);
-                      },
-                      child: _buildValue(value, label, maxLines: 2),
-                    )
-                  : _buildValue(value, label, maxLines: 2),
-            ),
-          ],
-        );
-      },
+                          .translate('description_details'),
+                      value),
+                  child: _buildValue(value, label, maxLines: 2),
+                )
+              : _buildValue(value, label, maxLines: 2),
+        ),
+      ],
     );
   }
 
   Widget _buildLabel(String label) {
     return Text(
-      '$label:', // Добавляем двоеточие после label
-      style: TextStyle(
+      '$label:',
+      style: const TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
@@ -363,75 +343,66 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
+        color: const Color(0xFF1E2E52),
         decoration: label ==
                 AppLocalizations.of(context)!.translate('description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
       ),
       maxLines: maxLines,
-      overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
     );
   }
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(16),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 400),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
                 child: Text(
-                  title,
-                  style: TextStyle(
+                  content,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
                     color: Color(0xff1E2E52),
-                    fontSize: 18,
+                    fontSize: 16,
                     fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              Container(
-                constraints: BoxConstraints(maxHeight: 400),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SingleChildScrollView(
-                  child: Text(
-                    content,
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('close'),
+                onPressed: () => Navigator.pop(context),
+                buttonColor: const Color(0xff1E2E52),
+                textColor: Colors.white,
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('close'),
-                  onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

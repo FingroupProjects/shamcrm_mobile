@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
@@ -8,11 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart'; // Импортируем модель Order
 
 class OrderGoodsScreen extends StatefulWidget {
-  final List<Good> goods; // Добавляем параметр для передачи товаров из API
+  final List<Good> goods;
 
   const OrderGoodsScreen({
     Key? key,
-    required this.goods, // Требуем список товаров
+    required this.goods,
   }) : super(key: key);
 
   @override
@@ -20,11 +21,29 @@ class OrderGoodsScreen extends StatefulWidget {
 }
 
 class _OrderGoodsState extends State<OrderGoodsScreen> {
+  String? baseUrl; // Переменная для базового URL
+  final ApiService _apiService = ApiService(); // Экземпляр ApiService
   @override
   void initState() {
+    _initializeBaseUrl(); // Инициализируем базовый URL
     super.initState();
+    
   }
+Future<void> _initializeBaseUrl() async {
+    try {
+      final enteredDomainMap = await _apiService.getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
 
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/'; // Резервный URL
+      });
+    }
+  }
   @override
   void dispose() {
     super.dispose();
@@ -32,7 +51,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildGoodsList(widget.goods); // Используем товары из API
+    return _buildGoodsList(widget.goods);
   }
 
   Widget _buildGoodsList(List<Good> goods) {
@@ -77,82 +96,102 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  Widget _buildGoodsItem(Good good) {
-    return GestureDetector(
-      onTap: () {
-        _navigateToGoodsDetails(good);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
-          child: Padding(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        good.good, // Используем название из API
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Количество: ',
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff1E2E52),
-                              ),
+Widget _buildGoodsItem(Good good) {
+  return GestureDetector(
+    onTap: () {
+      _navigateToGoodsDetails(good);
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      good.good.name,
+                      style: TaskCardStyles.titleStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Количество: ',
+                            style: TaskCardStyles.priorityStyle.copyWith(
+                              color: Color(0xff1E2E52),
                             ),
-                            TextSpan(
-                              text: '${good.quantity}',
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff1E2E52),
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                          TextSpan(
+                            text: '${good.quantity}',
+                            style: TaskCardStyles.priorityStyle.copyWith(
+                              color: Color(0xff1E2E52),
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/goods_photo.jpg', // Заглушка для изображения
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              SizedBox(width: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: good.good.files.isNotEmpty && baseUrl != null
+                    ? Image.network(
+                        '$baseUrl/${good.good.files[0].path}', // Динамический URL
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPlaceholderImage(); // Заглушка при ошибке
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _buildPlaceholderImage(); // Заглушка при загрузке
+                        },
+                      )
+                    : _buildPlaceholderImage(), // Заглушка, если нет файлов или baseUrl
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+// Добавим метод для заглушки изображения
+Widget _buildPlaceholderImage() {
+  return Container(
+    width: 100,
+    height: 100,
+    color: Colors.grey[200],
+    child: const Center(
+      child: Icon(Icons.image, color: Colors.grey, size: 40),
+    ),
+  );
+}
 
   void _navigateToGoodsDetails(Good good) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GoodsDetailsByOrderScreen(
-          id: 0, // ID отсутствует в API, используем 0 как заглушку
-          goodsName: good.good,
-          goodsDescription: '', // Описания нет в API
-          discountGoodsPrice: 0, // Скидки нет в API
+          id: good.good.id, // Используем ID из GoodItem
+          goodsName: good.good.name, // Используем имя из GoodItem
+          goodsDescription: good.good.description, // Используем описание из GoodItem
+          discountGoodsPrice: 0,
           stockQuantity: good.quantity,
-          imagePaths: ['assets/images/goods_photo.jpg'], // Заглушка для изображения
+          imagePaths: ['assets/images/goods_photo.jpg'],
           selectedCategory: '',
           isActive: true,
         ),

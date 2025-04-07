@@ -880,7 +880,9 @@
       "branches":"Филиалы",
       "select_branch":"Выберите филиал",
       "appbar_orders":"Заказы",
-      "goods_finished":"Статус"
+      "goods_finished":"Статус",
+      "deal_name":"Название",
+      "select_deal_name":"Введите название"
       
 
 

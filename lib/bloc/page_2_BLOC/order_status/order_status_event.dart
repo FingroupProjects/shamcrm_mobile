@@ -16,3 +16,21 @@ class FetchOrderDetails extends OrderEvent {
 
   FetchOrderDetails(this.orderId);
 }
+
+class CreateOrder extends OrderEvent {
+  final String phone;
+  final int leadId;
+  final bool delivery;
+  final String deliveryAddress;
+  final List<Map<String, dynamic>> goods;
+  final int organizationId;
+
+  CreateOrder({
+    required this.phone,
+    required this.leadId,
+    required this.delivery,
+    required this.deliveryAddress,
+    required this.goods,
+    required this.organizationId,
+  });
+}
