@@ -8,7 +8,8 @@ class OrderColumn extends StatelessWidget {
   final String name;
   final String? searchQuery;
   final List<Order> orders;
-  final bool isLoading; // Добавляем параметр isLoading
+  final bool isLoading;
+  final int? organizationId; // Обновляем тип на int?
 
   const OrderColumn({
     required this.statusId,
@@ -16,6 +17,7 @@ class OrderColumn extends StatelessWidget {
     this.searchQuery,
     required this.orders,
     this.isLoading = false,
+    this.organizationId, // Делаем необязательным
   });
 
   @override
@@ -36,7 +38,10 @@ class OrderColumn extends StatelessWidget {
                       itemCount: orders.length,
                       itemBuilder: (context, index) {
                         final order = orders[index];
-                        return OrderCard(order: order);
+                        return OrderCard(
+                          order: order,
+                          organizationId: organizationId ?? order.organizationId, // Используем значение из order, если null
+                        );
                       },
                     ),
         ),

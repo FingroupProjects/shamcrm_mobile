@@ -1,4 +1,3 @@
-// screens/order/order_screen.dart
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
@@ -16,12 +15,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderScreen extends StatefulWidget {
+  final int? organizationId; // Делаем organizationId необязательным (int?)
+
+  const OrderScreen({this.organizationId}); // Обновляем конструктор
+
   @override
   _OrderScreenState createState() => _OrderScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen>
-    with TickerProviderStateMixin {
+class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -53,8 +55,7 @@ class _OrderScreenState extends State<OrderScreen>
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position =
-          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
       double targetOffset = _scrollController.offset +
           position.dx -
@@ -114,15 +115,12 @@ class _OrderScreenState extends State<OrderScreen>
                 listener: (context, state) {
                   if (state is OrderLoaded) {
                     if (_statuses.length != state.statuses.length ||
-                        !_statuses.every(
-                            (s) => state.statuses.any((st) => st.id == s.id))) {
+                        !_statuses.every((s) => state.statuses.any((st) => st.id == s.id))) {
                       setState(() {
                         _statuses = state.statuses;
-                        _tabKeys =
-                            List.generate(_statuses.length, (_) => GlobalKey());
+                        _tabKeys = List.generate(_statuses.length, (_) => GlobalKey());
                         _tabController.dispose();
-                        _tabController = TabController(
-                            length: _statuses.length, vsync: this);
+                        _tabController = TabController(length: _statuses.length, vsync: this);
                         _tabController.addListener(() {
                           if (_currentTabIndex != _tabController.index) {
                             setState(() {
@@ -135,9 +133,7 @@ class _OrderScreenState extends State<OrderScreen>
                         });
                       });
                       if (_isInitialLoad && _statuses.isNotEmpty) {
-                        context
-                            .read<OrderBloc>()
-                            .add(FetchOrders(statusId: _statuses[0].id));
+                        context.read<OrderBloc>().add(FetchOrders(statusId: _statuses[0].id));
                         _isInitialLoad = false;
                       }
                     }
@@ -145,7 +141,6 @@ class _OrderScreenState extends State<OrderScreen>
                 },
                 child: BlocBuilder<OrderBloc, OrderState>(
                   builder: (context, state) {
-                    // Если статусы еще не загружены, показываем полную анимацию загрузки
                     if (_statuses.isEmpty) {
                       return const Center(
                         child: PlayStoreImageLoading(
@@ -155,7 +150,6 @@ class _OrderScreenState extends State<OrderScreen>
                       );
                     }
 
-                    // Если статусы загружены, показываем интерфейс
                     return Column(
                       children: [
                         SizedBox(height: 15),
@@ -165,25 +159,17 @@ class _OrderScreenState extends State<OrderScreen>
                             controller: _tabController,
                             physics: NeverScrollableScrollPhysics(),
                             children: _statuses.map((status) {
-                              // Фильтруем заказы для текущего статуса с явным указанием типа
-                              final List<Order> statusOrders =
-                                  state is OrderLoaded
-                                      ? state.orders
-                                          .where((order) =>
-                                              order.orderStatus.id == status.id)
-                                          .toList() as List<Order>
-                                      : <Order>[];
+                              final List<Order> statusOrders = state is OrderLoaded
+                                  ? state.orders.where((order) => order.orderStatus.id == status.id).toList()
+                                  : <Order>[];
 
                               return OrderColumn(
                                 statusId: status.id,
                                 name: status.name,
-                                searchQuery: _isSearching
-                                    ? _searchController.text
-                                    : null,
+                                searchQuery: _isSearching ? _searchController.text : null,
                                 orders: statusOrders,
-                                // Показываем анимацию загрузки только если идет загрузка и нет заказов для этого статуса
-                                isLoading: state is OrderLoading &&
-                                    statusOrders.isEmpty,
+                                isLoading: state is OrderLoading && statusOrders.isEmpty,
+                                organizationId: widget.organizationId, // Передаем nullable int
                               );
                             }).toList(),
                           ),
@@ -193,16 +179,20 @@ class _OrderScreenState extends State<OrderScreen>
                   },
                 ),
               ),
-                floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => OrderAddScreen()),
-          );
-        },
-        backgroundColor: const Color(0xff1E2E52),
-        child: Icon(Icons.add, color: Colors.white),
-      ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OrderAddScreen(
+                  organizationId: widget.organizationId, // Ошибка была здесь
+                ),
+              ),
+            );
+          },
+          backgroundColor: const Color(0xff1E2E52),
+          child: Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
@@ -233,9 +223,7 @@ class _OrderScreenState extends State<OrderScreen>
                 child: Text(
                   _statuses[index].name,
                   style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
+                    color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
                   ),
                 ),
               ),

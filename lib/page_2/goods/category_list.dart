@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+
 class CategoryDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
   final Function(SubCategoryAttributesData?) onSelectCategory;
@@ -31,10 +32,10 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.selectedCategory != null) {
+    if (widget.selectedCategory != null && widget.subCategories.isNotEmpty) {
       selectedSubCategory = widget.subCategories.firstWhere(
         (subCat) => subCat.name == widget.selectedCategory,
-        orElse: () => widget.subCategories.first
+        orElse: () => widget.subCategories.first // This must return a non-nullable SubCategoryAttributesData
       );
     }
   }
@@ -84,6 +85,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               );
             },
             headerBuilder: (context, selectedItem, enabled) {
+              // No loading animation, just text
               return Text(
                 selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_category'),
                 style: categoryTextStyle,

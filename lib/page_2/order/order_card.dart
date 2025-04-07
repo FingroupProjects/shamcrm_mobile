@@ -1,14 +1,17 @@
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class OrderCard extends StatefulWidget {
   final Order order;
-  final Function(int)? onStatusUpdated;
+  final int? organizationId;
 
-  const OrderCard({required this.order, this.onStatusUpdated});
+  const OrderCard({required this.order, this.organizationId});
 
   @override
   _OrderCardState createState() => _OrderCardState();
@@ -36,17 +39,6 @@ class _OrderCardState extends State<OrderCard> {
     }
   }
 
-  Color _getStatusBackgroundColor(int statusId) {
-    switch (statusId) {
-      case 1:
-        return Colors.green[100]!;
-      case 2:
-        return Colors.amber[50]!;
-      default:
-        return Colors.grey[100]!;
-    }
-  }
-
   String _formatDate(DateTime? date) {
     if (date == null) return 'Нет даты';
     return DateFormat('dd.MM.yyyy').format(date);
@@ -62,12 +54,14 @@ class _OrderCardState extends State<OrderCard> {
             builder: (context) => OrderDetailsScreen(
               orderId: widget.order.id,
               categoryName: '',
+              order: widget.order,
+              organizationId: widget.organizationId,
             ),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Добавили горизонтальные отступы
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 244, 247, 254),
@@ -121,9 +115,11 @@ class _OrderCardState extends State<OrderCard> {
                           dropdownValue = newValue;
                           statusId = newStatusId;
                         });
-                        if (widget.onStatusUpdated != null) {
-                          widget.onStatusUpdated!(newStatusId);
-                        }
+                        context.read<OrderBloc>().add(ChangeOrderStatus(
+                          orderId: widget.order.id,
+                          statusId: newStatusId,
+                          organizationId: widget.organizationId,
+                        ));
                       },
                       widget.order,
                     );

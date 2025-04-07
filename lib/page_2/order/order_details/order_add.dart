@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
@@ -14,7 +15,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderAddScreen extends StatefulWidget {
-  const OrderAddScreen({super.key});
+  final Order? order; // Делаем order необязательным (nullable)
+  final int? organizationId; // Добавляем новое поле
+
+  const OrderAddScreen({this.order, super.key, this.organizationId, // Добавляем в конструктор
+  });
 
   @override
   State<OrderAddScreen> createState() => _OrderAddScreenState();
@@ -22,8 +27,8 @@ class OrderAddScreen extends StatefulWidget {
 
 class _OrderAddScreenState extends State<OrderAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _deliveryAddressController = TextEditingController();
+  late TextEditingController _phoneController;
+  late TextEditingController _deliveryAddressController;
   final TextEditingController _commentController = TextEditingController();
 
   List<Map<String, dynamic>> _items = [];
@@ -31,6 +36,27 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? _deliveryMethod;
   Branch? _selectedBranch;
   String? selectedDialCode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Инициализация контроллеров с учетом того, что order может быть null
+    _phoneController = TextEditingController(text: widget.order?.phone ?? '');
+    _deliveryAddressController =
+        TextEditingController(text: widget.order?.deliveryAddress ?? '');
+    if (widget.order != null) {
+      _items = widget.order!.goods
+          .map((good) => {
+                'id': good.goodId,
+                'name': good.goodName,
+                'price': good.price,
+                'quantity': good.quantity,
+              })
+          .toList();
+      selectedLead = widget.order!.lead.id.toString();
+      _deliveryMethod = widget.order!.delivery ? 'Доставка' : 'Самовывоз';
+    }
+  }
 
   @override
   void dispose() {
@@ -41,16 +67,38 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   void _navigateToAddProduct() async {
-    final result = await showModalBottomSheet(
+    // Если order есть, передаем его; если нет, создаем временный объект Order
+    final Order tempOrder = widget.order ??
+        Order(
+          id: 0, // Временный ID, который не будет использоваться для создания
+          phone: _phoneController.text,
+          orderNumber: '',
+          delivery: _deliveryMethod == 'Доставка',
+          deliveryAddress: _deliveryAddressController.text,
+          lead: OrderLead(
+            id: int.tryParse(selectedLead ?? '0') ?? 0,
+            name: '',
+            channels: [],
+            phone: _phoneController.text,
+          ),
+          orderStatus: OrderStatusName(id: 0, name: ''),
+          goods: _items
+              .map((item) => Good(
+                    good: item['id'],
+                    goodName: item['name'],
+                    price: item['price'],
+                    quantity: item['quantity'],
+                    goodId: item['id'],
+                  ))
+              .toList(), organizationId: widget.organizationId,
+        );
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => ProductSelectionSheet(),
+      builder: (context) => ProductSelectionSheet(order: tempOrder),
     );
-    if (result != null && result is List<Map<String, dynamic>>) {
-      setState(() {
-        _items.addAll(result);
-      });
-    }
+    // Обновление списка товаров больше не нужно здесь, так как оно происходит в ProductSelectionSheet
   }
 
   void _updateQuantity(int index, int newQuantity) {
@@ -81,6 +129,24 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
               );
+            } else if (state is OrderLoaded && state.orderDetails != null) {
+              // Обновляем локальные данные после редактирования через ProductSelectionSheet
+              setState(() {
+                _items = state.orderDetails!.goods
+                    .map((good) => {
+                          'id': good.goodId,
+                          'name': good.goodName,
+                          'price': good.price,
+                          'quantity': good.quantity,
+                        })
+                    .toList();
+                _phoneController.text = state.orderDetails!.phone;
+                _deliveryAddressController.text =
+                    state.orderDetails!.deliveryAddress ?? '';
+                selectedLead = state.orderDetails!.lead.id.toString();
+                _deliveryMethod =
+                    state.orderDetails!.delivery ? 'Доставка' : 'Самовывоз';
+              });
             }
           },
           builder: (context, state) {
@@ -93,7 +159,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -124,11 +191,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
-                            label: AppLocalizations.of(context)!.translate('phone'),
+                            label: AppLocalizations.of(context)!
+                                .translate('phone'),
                           ),
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
@@ -141,8 +210,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           if (_deliveryMethod == 'Доставка')
                             CustomTextField(
                               controller: _deliveryAddressController,
-                              hintText: AppLocalizations.of(context)!.translate('Введите адрес доставки'),
-                              label: AppLocalizations.of(context)!.translate('Адрес доставки'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('Введите адрес доставки'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('Адрес доставки'),
                               maxLines: 3,
                               keyboardType: TextInputType.streetAddress,
                               validator: (value) {
@@ -155,8 +226,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _commentController,
-                            hintText: AppLocalizations.of(context)!.translate('Введите комментарий'),
-                            label: AppLocalizations.of(context)!.translate('Комментарий клиента'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('Введите комментарий'),
+                            label: AppLocalizations.of(context)!
+                                .translate('Комментарий клиента'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -180,7 +253,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: const Text(
@@ -197,7 +271,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildItemsSection() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)));
+    final total = _items.fold<double>(
+        0, (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -206,7 +281,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           children: [
             const Text(
               'Список товаров',
-              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52)),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52)),
             ),
             GestureDetector(
               onTap: _navigateToAddProduct,
@@ -214,7 +293,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 children: [
                   Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
                   SizedBox(width: 4),
-                  Text('Добавить товар', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52))),
+                  Text('Добавить товар',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52))),
                 ],
               ),
             ),
@@ -223,7 +307,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         const SizedBox(height: 8),
         if (_items.isNotEmpty)
           Column(
-            children: _items.asMap().entries.map((entry) => _buildItemCard(entry.key, entry.value)).toList(),
+            children: _items
+                .asMap()
+                .entries
+                .map((entry) => _buildItemCard(entry.key, entry.value))
+                .toList(),
           ),
         if (_items.isNotEmpty)
           Container(
@@ -232,13 +320,29 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 1))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 1))
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Итого:', style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52))),
-                Text('${total.toStringAsFixed(3)} сом', style: const TextStyle(fontSize: 20, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52))),
+                const Text('Итого:',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52))),
+                Text('${total.toStringAsFixed(3)} сом',
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52))),
               ],
             ),
           ),
@@ -253,7 +357,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 1))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1))
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -261,17 +371,32 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xffF4F7FD)),
-            child: ClipOval(child: Image.asset('assets/images/goods_photo.jpg', width: 48, height: 48, fit: BoxFit.cover)),
+            decoration: const BoxDecoration(
+                shape: BoxShape.circle, color: Color(0xffF4F7FD)),
+            child: ClipOval(
+                child: Image.asset('assets/images/goods_photo.jpg',
+                    width: 48, height: 48, fit: BoxFit.cover)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'] ?? 'Без названия', style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(item['name'] ?? 'Без названия',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Text(item['id'].toString(), style: const TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff99A4BA))),
+                Text(item['id'].toString(),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA))),
               ],
             ),
           ),
@@ -283,16 +408,37 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Цена', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff99A4BA))),
-                      Text('${item['price'].toStringAsFixed(3)}', style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52))),
+                      const Text('Цена',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text('${item['price'].toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
                     ],
                   ),
                   const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Сумма', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff99A4BA))),
-                      Text('${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}', style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52))),
+                      const Text('Сумма',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text(
+                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
                     ],
                   ),
                 ],
@@ -301,17 +447,35 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               Row(
                 children: [
                   Container(
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: const Color(0xffF4F7FD)),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF4F7FD)),
                     child: Row(
                       children: [
-                        IconButton(icon: const Icon(Icons.remove, size: 20), color: const Color(0xff1E2E52), onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}', style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52))),
-                        IconButton(icon: const Icon(Icons.add, size: 20), color: const Color(0xff1E2E52), onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1)),
+                        IconButton(
+                            icon: const Icon(Icons.remove, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) - 1)),
+                        Text('${item['quantity'] ?? 1}',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52))),
+                        IconButton(
+                            icon: const Icon(Icons.add, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) + 1)),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(icon: const Icon(Icons.delete, color: Color(0xff99A4BA), size: 20), onPressed: () => _removeItem(index)),
+                  IconButton(
+                      icon: const Icon(Icons.delete,
+                          color: Color(0xff99A4BA), size: 20),
+                      onPressed: () => _removeItem(index)),
                 ],
               ),
             ],
@@ -324,14 +488,29 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, -1))]),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [
+        BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, -1))
+      ]),
       child: Row(
         children: [
           Expanded(
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffF4F7FD), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text('Отмена', style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Colors.black)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffF4F7FD),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12)),
+              child: const Text('Отмена',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black)),
             ),
           ),
           const SizedBox(width: 16),
@@ -340,21 +519,40 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onPressed: () {
                 if (_formKey.currentState!.validate() && _items.isNotEmpty) {
                   context.read<OrderBloc>().add(CreateOrder(
-                    phone: _phoneController.text,
-                    leadId: int.parse(selectedLead ?? '0'),
-                    delivery: _deliveryMethod == 'Доставка',
-                    deliveryAddress: _deliveryMethod == 'Самовывоз' ? _selectedBranch?.address ?? '' : _deliveryAddressController.text,
-                    goods: _items.map((item) => {'good_id': item['id'], 'quantity': item['quantity'] ?? 1}).toList(),
-                    organizationId: 1, // Можно сделать динамическим
-                  ));
+                        phone: _phoneController.text,
+                        leadId: int.parse(selectedLead ?? '0'),
+                        delivery: _deliveryMethod == 'Доставка',
+                        deliveryAddress: _deliveryMethod == 'Самовывоз'
+                            ? _selectedBranch?.address ?? ''
+                            : _deliveryAddressController.text,
+                        goods: _items
+                            .map((item) => {
+                                  'good_id': item['id'],
+                                  'quantity': item['quantity'] ?? 1
+                                })
+                            .toList(),
+                        organizationId: 1, // Можно сделать динамическим
+                      ));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(_items.isEmpty ? 'Добавьте хотя бы один товар' : 'Заполните все обязательные поля')),
+                    SnackBar(
+                        content: Text(_items.isEmpty
+                            ? 'Добавьте хотя бы один товар'
+                            : 'Заполните все обязательные поля')),
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff4759FF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text('Создать', style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12)),
+              child: const Text('Создать',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white)),
             ),
           ),
         ],
