@@ -2,12 +2,17 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductSelectionSheet extends StatefulWidget {
-  const ProductSelectionSheet({super.key});
+  final Order order; // Добавляем текущий заказ
+
+  const ProductSelectionSheet({required this.order, super.key});
 
   @override
   State<ProductSelectionSheet> createState() => _ProductSelectionSheetState();
@@ -16,13 +21,13 @@ class ProductSelectionSheet extends StatefulWidget {
 class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   String _searchQuery = '';
   String _selectedFilter = 'Новый';
-  String? baseUrl; // Добавляем переменную для базового URL\\
-  final ApiService _apiService = ApiService(); // Экземпляр ApiService
+  String? baseUrl;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _initializeBaseUrl(); // Инициализируем базовый URL
+    _initializeBaseUrl();
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
@@ -37,7 +42,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       });
     } catch (error) {
       setState(() {
-        baseUrl = 'https://shamcrm.com/storage/'; // Резервный URL
+        baseUrl = 'https://shamcrm.com/storage/';
       });
     }
   }
@@ -54,35 +59,64 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     });
   }
 
-  void _addSelectedProducts(List<Goods> goods) {
-    final selectedProducts = goods
-        .where((product) => product.isSelected == true)
-        .map((product) => {
-              'id': product.id,
-              'name': product.name,
-              'price': product.discountPrice ?? 0.0,
-              'quantity': product.quantitySelected ?? 1,
-            })
-        .toList();
+void _updateOrderWithSelectedProducts(List<Goods> goods) {
+  // Собираем новые выбранные товары
+  final selectedProducts = goods
+      .where((product) => product.isSelected == true)
+      .map((product) => {
+            'good_id': product.id,
+            'quantity': product.quantitySelected ?? 1,
+            'price': product.discountPrice ?? 0.0,
+          })
+      .toList();
 
-    if (selectedProducts.isNotEmpty) {
-      Navigator.pop(context, selectedProducts);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Выберите хотя бы один товар',
-            style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
+  if (selectedProducts.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Выберите хотя бы один товар',
+          style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
         ),
-      );
-    }
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
   }
+
+  // Собираем ВСЕ текущие товары заказа
+  final currentGoods = widget.order.goods
+      .map((good) => {
+            'good_id': good.goodId,
+            'quantity': good.quantity,
+            'price': good.price,
+          })
+      .toList();
+
+  // Объединяем текущие и новые товары
+  final updatedGoods = [...currentGoods, ...selectedProducts];
+
+  // Логирование для отладки
+  print('Current goods: $currentGoods');
+  print('Selected products: $selectedProducts');
+  print('Updated goods: $updatedGoods');
+
+  // Отправляем событие обновления заказа
+  context.read<OrderBloc>().add(UpdateOrder(
+    orderId: widget.order.id,
+    phone: widget.order.phone,
+    leadId: widget.order.lead.id,
+    delivery: widget.order.delivery,
+    deliveryAddress: widget.order.deliveryAddress ?? '',
+    goods: updatedGoods,
+    organizationId: 1, // Можно сделать динамическим
+  ));
+
+  // Закрываем BottomSheet после отправки
+  Navigator.pop(context);
+}
 
   @override
   Widget build(BuildContext context) {
-    // Убираем создание нового GoodsBloc здесь, предполагаем, что он уже предоставлен сверху
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
@@ -97,7 +131,6 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
           Expanded(
             child: BlocBuilder<GoodsBloc, GoodsState>(
               builder: (context, state) {
-                print('Current state: $state'); // Отладка состояния
                 if (state is GoodsLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is GoodsDataLoaded) {
@@ -114,8 +147,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                 } else if (state is GoodsError) {
                   return Center(child: Text(state.message));
                 }
-                return const Center(
-                    child: Text('Ожидание данных...')); // Изменено для ясности
+                return const Center(child: Text('Ожидание данных...'));
               },
             ),
           ),
@@ -226,33 +258,32 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   }
 
   Widget _buildProductImage(Goods product) {
-  return SizedBox(
-    width: 48,
-    height: 48,
-    child: product.files.isNotEmpty && baseUrl != null
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              '$baseUrl/${product.files[0].path}', // Полный URL с динамическим baseUrl
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildPlaceholderImage(); // Показываем заглушку во время загрузки
-              },
-            ),
-          )
-        : _buildPlaceholderImage(),
-  );
-}
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: product.files.isNotEmpty && baseUrl != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                '$baseUrl/${product.files[0].path}',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return _buildPlaceholderImage();
+                },
+              ),
+            )
+          : _buildPlaceholderImage(),
+    );
+  }
 
   Widget _buildPlaceholderImage() {
     return Container(
       color: Colors.grey[200],
-      child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -346,12 +377,11 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       child: ElevatedButton(
         onPressed: () {
           final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) _addSelectedProducts(state.goods);
+          if (state is GoodsDataLoaded) _updateOrderWithSelectedProducts(state.goods);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         child: const Center(

@@ -6610,5 +6610,121 @@ Future<bool> createOrder({
       return false;
     }
   }
+
+
+  // Метод для редактирование заказа 
+Future<bool> updateOrder({
+  required int orderId,
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  required String deliveryAddress,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final uri = Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'phone': phone,
+        'lead_id': leadId,
+        'delivery': delivery,
+        'delivery_address': deliveryAddress,
+        'goods': goods,
+        'organization_id': organizationId.toString(),
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+    }
+  } catch (e) {
+    print('Ошибка обновления заказа: $e');
+    return false;
+  }
+}
+
+
+// 
+Future<bool> deleteOrder({
+  required int orderId,
+  required int? organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final uri = Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+    final response = await http.delete(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при удалении заказа');
+    }
+  } catch (e) {
+    print('Ошибка удаления заказа: $e');
+    return false;
+  }
+}
+
+
+// api_service.dart
+Future<bool> changeOrderStatus({
+  required int orderId,
+  required int statusId,
+  required int? organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final uri = Uri.parse('$baseUrl/order/changeStatus/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'status_id': statusId,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+    }
+  } catch (e) {
+    print('Ошибка смены статуса заказа: $e');
+    return false;
+  }
+}
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 }

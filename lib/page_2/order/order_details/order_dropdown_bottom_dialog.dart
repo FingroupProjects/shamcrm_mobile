@@ -1,5 +1,3 @@
-// page_2/order/order_details/order_dropdown_bottom_dialog.dart
-
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
@@ -13,7 +11,7 @@ void OrderDropdownBottomSheet(
   BuildContext context,
   String defaultValue,
   Function(String, int) onSelect,
-  Order order, // Теперь принимаем объект Order вместо Map
+  Order order,
 ) {
   String selectedValue = defaultValue;
   int? selectedStatusId = order.orderStatus.id;
@@ -28,7 +26,7 @@ void OrderDropdownBottomSheet(
       return BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
           if (state is OrderLoaded && state.statuses.isNotEmpty) {
-            final orderStatuses = state.statuses; // Получаем статусы из состояния
+            final orderStatuses = state.statuses;
             return StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return Container(

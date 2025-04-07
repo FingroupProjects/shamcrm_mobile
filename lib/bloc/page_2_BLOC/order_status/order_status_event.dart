@@ -34,3 +34,48 @@ class CreateOrder extends OrderEvent {
     required this.organizationId,
   });
 }
+
+
+// event.dart
+class UpdateOrder extends OrderEvent {
+  final int orderId;
+  final String phone;
+  final int leadId;
+  final bool delivery;
+  final String deliveryAddress;
+  final List<Map<String, dynamic>> goods;
+  final int organizationId;
+
+  UpdateOrder({
+    required this.orderId,
+    required this.phone,
+    required this.leadId,
+    required this.delivery,
+    required this.deliveryAddress,
+    required this.goods,
+    required this.organizationId,
+  });
+}
+// В конец файла order_event.dart
+class DeleteOrder extends OrderEvent {
+  final int orderId;
+  final int? organizationId;
+
+  DeleteOrder({
+    required this.orderId,
+     this.organizationId,
+  });
+}
+
+
+class ChangeOrderStatus extends OrderEvent {
+  final int orderId;
+  final int statusId;
+  final int? organizationId;
+
+  ChangeOrderStatus({
+    required this.orderId,
+    required this.statusId,
+    this.organizationId,
+  });
+}

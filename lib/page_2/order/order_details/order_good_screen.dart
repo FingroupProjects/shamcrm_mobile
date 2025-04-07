@@ -10,8 +10,10 @@ import 'package:crm_task_manager/models/page_2/order_card.dart'; // Импорт
 
 class OrderGoodsScreen extends StatefulWidget {
   final List<Good> goods;
+  final Order order;
 
   const OrderGoodsScreen({
+    required this.order,
     Key? key,
     required this.goods,
   }) : super(key: key);
@@ -27,9 +29,9 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   void initState() {
     _initializeBaseUrl(); // Инициализируем базовый URL
     super.initState();
-    
   }
-Future<void> _initializeBaseUrl() async {
+
+  Future<void> _initializeBaseUrl() async {
     try {
       final enteredDomainMap = await _apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
@@ -44,6 +46,7 @@ Future<void> _initializeBaseUrl() async {
       });
     }
   }
+
   @override
   void dispose() {
     super.dispose();
@@ -96,90 +99,91 @@ Future<void> _initializeBaseUrl() async {
     );
   }
 
-Widget _buildGoodsItem(Good good) {
-  return GestureDetector(
-    onTap: () {
-      _navigateToGoodsDetails(good);
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      good.good.name,
-                      style: TaskCardStyles.titleStyle,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Количество: ',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          TextSpan(
-                            text: '${good.quantity}',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+  Widget _buildGoodsItem(Good good) {
+    return GestureDetector(
+      onTap: () {
+        _navigateToGoodsDetails(good);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Container(
+          decoration: TaskCardStyles.taskCardDecoration,
+          child: Padding(
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        good.good.name,
+                        style: TaskCardStyles.titleStyle,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 4),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Количество: ',
+                              style: TaskCardStyles.priorityStyle.copyWith(
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            TextSpan(
+                              text: '${good.quantity}',
+                              style: TaskCardStyles.priorityStyle.copyWith(
+                                color: Color(0xff1E2E52),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(width: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: good.good.files.isNotEmpty && baseUrl != null
-                    ? Image.network(
-                        '$baseUrl/${good.good.files[0].path}', // Динамический URL
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(); // Заглушка при ошибке
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return _buildPlaceholderImage(); // Заглушка при загрузке
-                        },
-                      )
-                    : _buildPlaceholderImage(), // Заглушка, если нет файлов или baseUrl
-              ),
-            ],
+                SizedBox(width: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: good.good.files.isNotEmpty && baseUrl != null
+                      ? Image.network(
+                          '$baseUrl/${good.good.files[0].path}', // Динамический URL
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholderImage(); // Заглушка при ошибке
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildPlaceholderImage(); // Заглушка при загрузке
+                          },
+                        )
+                      : _buildPlaceholderImage(), // Заглушка, если нет файлов или baseUrl
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
 // Добавим метод для заглушки изображения
-Widget _buildPlaceholderImage() {
-  return Container(
-    width: 100,
-    height: 100,
-    color: Colors.grey[200],
-    child: const Center(
-      child: Icon(Icons.image, color: Colors.grey, size: 40),
-    ),
-  );
-}
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image, color: Colors.grey, size: 40),
+      ),
+    );
+  }
 
   void _navigateToGoodsDetails(Good good) {
     Navigator.push(
@@ -188,7 +192,8 @@ Widget _buildPlaceholderImage() {
         builder: (context) => GoodsDetailsByOrderScreen(
           id: good.good.id, // Используем ID из GoodItem
           goodsName: good.good.name, // Используем имя из GoodItem
-          goodsDescription: good.good.description, // Используем описание из GoodItem
+          goodsDescription:
+              good.good.description, // Используем описание из GoodItem
           discountGoodsPrice: 0,
           stockQuantity: good.quantity,
           imagePaths: ['assets/images/goods_photo.jpg'],
@@ -212,10 +217,10 @@ Widget _buildPlaceholderImage() {
         TextButton(
           onPressed: () {
             showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => ProductSelectionSheet(),
-            );
+                context: context,
+                isScrollControlled: true,
+                builder: (context) =>
+                    ProductSelectionSheet(order: widget.order));
           },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,

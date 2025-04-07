@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderBloc extends Bloc<OrderEvent, OrderState> {
@@ -11,6 +12,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<FetchOrders>(_fetchOrders);
     on<FetchOrderDetails>(_fetchOrderDetails);
     on<CreateOrder>(_createOrder);
+    on<UpdateOrder>(_updateOrder);
+    on<DeleteOrder>(_deleteOrder);
+    on<ChangeOrderStatus>(_changeOrderStatus);
   }
 
   Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> emit) async {
@@ -69,4 +73,77 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       emit(OrderError('Ошибка создания заказа: $e'));
     }
   }
+Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+  emit(OrderLoading());
+  try {
+    final success = await apiService.updateOrder(
+      orderId: event.orderId,
+      phone: event.phone,
+      leadId: event.leadId,
+      delivery: event.delivery,
+      deliveryAddress: event.deliveryAddress,
+      goods: event.goods,
+      organizationId: event.organizationId,
+    );
+    if (success) {
+      final updatedOrder = await apiService.getOrderDetails(event.orderId);
+      emit(OrderLoaded(
+        await apiService.getOrderStatuses(),
+        orderDetails: updatedOrder,
+      ));
+    } else {
+      emit(OrderError('Не удалось обновить заказ'));
+    }
+  } catch (e) {
+    emit(OrderError('Ошибка обновления заказа: $e'));
+  }
+}
+// Добавьте этот метод
+  Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
+    emit(OrderLoading());
+    try {
+      final success = await apiService.deleteOrder(
+        orderId: event.orderId,
+        organizationId: event.organizationId,
+      );
+      if (success) {
+        emit(OrderSuccess());
+      } else {
+        emit(OrderError('Не удалось удалить заказ'));
+      }
+    } catch (e) {
+      emit(OrderError('Ошибка удаления заказа: $e'));
+    }
+  }
+
+
+Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
+  emit(OrderLoading());
+  try {
+    final success = await apiService.changeOrderStatus(
+      orderId: event.orderId,
+      statusId: event.statusId,
+      organizationId: event.organizationId,
+    );
+    if (success) {
+      final statuses = await apiService.getOrderStatuses();
+      final currentState = state as OrderLoaded;
+      final updatedOrders = currentState.orders.map((order) {
+        if (order.id == event.orderId) {
+          return order.copyWith(
+            orderStatus: OrderStatusName.fromOrderStatus(
+              statuses.firstWhere((status) => status.id == event.statusId),
+            ),
+          );
+        }
+        return order;
+      }).toList();
+      emit(OrderLoaded(statuses, orders: updatedOrders, pagination: currentState.pagination));
+    } else {
+      emit(OrderError('Не удалось сменить статус заказа'));
+    }
+  } catch (e) {
+    emit(OrderError('Ошибка смены статуса заказа: $e'));
+  }
+}
 }

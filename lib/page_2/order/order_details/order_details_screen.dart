@@ -2,6 +2,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_delete.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,10 +12,14 @@ import 'package:intl/intl.dart';
 class OrderDetailsScreen extends StatefulWidget {
   final int orderId;
   final String categoryName;
+  final Order order;
+  final int? organizationId; // Добавляем новое поле
 
   const OrderDetailsScreen({
     required this.orderId,
+    required this.order,
     required this.categoryName,
+     this.organizationId, // Добавляем в конструктор
   });
 
   @override
@@ -129,7 +135,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               child: ListView(
                 children: [
                   _buildDetailsList(),
-                  OrderGoodsScreen(goods: state.orderDetails!.goods), // Передаем товары
+                  OrderGoodsScreen(
+                    goods: state.orderDetails!.goods,
+                    order: widget.order,
+                  ), // Передаем товары
                 ],
               ),
             ),
@@ -174,6 +183,64 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             color: Color.fromARGB(224, 0, 0, 0),
           ),
           onPressed: () {},
+        ),
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Image.asset(
+            'assets/icons/edit.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () async {
+            final updatedOrder = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    OrderEditScreen(order: order), // Передаем объект Order
+              ),
+            );
+            if (updatedOrder != null) {
+              context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+            }
+          },
+        ),
+        IconButton(
+          padding: EdgeInsets.only(right: 8),
+          constraints: const BoxConstraints(),
+          icon: Image.asset(
+            'assets/icons/delete.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => DeleteOrderDialog(orderId: widget.orderId),
+            ).then((shouldDelete) {
+              if (shouldDelete == true) {
+                // Предполагаем, что у вас есть доступ к organizationId
+                // Если его нет, нужно будет добавить в виджет
+                context.read<OrderBloc>().add(DeleteOrder(
+                      orderId: widget.orderId,
+                      organizationId: order.organizationId, // Добавьте это поле в Order модель если его нет
+                    ));
+                // Подписываемся на изменение состояния после удаления
+                context.read<OrderBloc>().stream.listen((state) {
+                  if (state is OrderSuccess) {
+                    Navigator.pop(context, true);
+                  } else if (state is OrderError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                });
+              }
+            });
+          },
         ),
       ],
     );
