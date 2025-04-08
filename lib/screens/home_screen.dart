@@ -9,7 +9,6 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/page_test.dart';
-import 'package:crm_task_manager/screens/placeholder_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
+  bool _isPushHandled = false;  
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -153,18 +153,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
   }
-  @override
+@override
 void didChangeDependencies() {
   super.didChangeDependencies();
   final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-  if (args != null && args['screenIndex'] != null) {
+  if (args != null && args['screenIndex'] != null && !_isPushHandled) {
     setState(() {
       if (args['group'] == 1) {
         _selectedIndexGroup1 = args['screenIndex'];
       } else if (args['group'] == 2) {
         _selectedIndexGroup2 = args['screenIndex'];
       }
+      _isPushHandled = true; 
     });
   }
 }
