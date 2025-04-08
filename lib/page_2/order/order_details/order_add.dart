@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -66,40 +67,61 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     super.dispose();
   }
 
-  void _navigateToAddProduct() async {
-    // Если order есть, передаем его; если нет, создаем временный объект Order
-    final Order tempOrder = widget.order ??
-        Order(
-          id: 0, // Временный ID, который не будет использоваться для создания
-          phone: _phoneController.text,
-          orderNumber: '',
-          delivery: _deliveryMethod == 'Доставка',
-          deliveryAddress: _deliveryAddressController.text,
-          lead: OrderLead(
-            id: int.tryParse(selectedLead ?? '0') ?? 0,
-            name: '',
-            channels: [],
-            phone: _phoneController.text,
-          ),
-          orderStatus: OrderStatusName(id: 0, name: ''),
-          goods: _items
-              .map((item) => Good(
-                    good: item['id'],
-                    goodName: item['name'],
-                    price: item['price'],
-                    quantity: item['quantity'],
-                    goodId: item['id'],
-                  ))
-              .toList(), organizationId: widget.organizationId,
-        );
+Widget _buildPlaceholderImage() {
+  return Container(
+    width: 48,
+    height: 48,
+    color: Colors.grey[200],
+    child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+  );
+}
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => ProductSelectionSheet(order: tempOrder),
-    );
-    // Обновление списка товаров больше не нужно здесь, так как оно происходит в ProductSelectionSheet
+// Обновляем _navigateToAddProduct
+void _navigateToAddProduct() async {
+  final Order tempOrder = widget.order ??
+      Order(
+        id: 0,
+        phone: _phoneController.text,
+        orderNumber: '',
+        delivery: _deliveryMethod == 'Доставка',
+        deliveryAddress: _deliveryAddressController.text,
+        lead: OrderLead(
+          id: int.tryParse(selectedLead ?? '0') ?? 0,
+          name: '',
+          channels: [],
+          phone: _phoneController.text,
+        ),
+        orderStatus: OrderStatusName(id: 0, name: ''),
+        goods: _items
+            .map((item) => Good(
+                  good: item['id'],
+                  goodName: item['name'],
+                  price: item['price'],
+                  quantity: item['quantity'],
+                  goodId: item['id'],
+                ))
+            .toList(),
+        organizationId: widget.organizationId,
+      );
+
+  final result = await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
+  );
+
+  if (result != null && result is List<Map<String, dynamic>>) {
+    setState(() {
+      _items.addAll(result.map((item) => {
+            'id': item['id'],
+            'name': item['name'],
+            'price': item['price'],
+            'quantity': item['quantity'],
+            'imagePath': item['imagePath'], // Добавляем путь к изображению
+          }));
+    });
   }
+}
 
   void _updateQuantity(int index, int newQuantity) {
     setState(() {
@@ -350,140 +372,171 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 
-  Widget _buildItemCard(int index, Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1))
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-                shape: BoxShape.circle, color: Color(0xffF4F7FD)),
-            child: ClipOval(
-                child: Image.asset('assets/images/goods_photo.jpg',
-                    width: 48, height: 48, fit: BoxFit.cover)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item['name'] ?? 'Без названия',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text(item['id'].toString(),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA))),
-              ],
+ Widget _buildItemCard(int index, Map<String, dynamic> item) {
+  final ApiService apiService = ApiService();
+  String? baseUrl;
+
+  Future<void> _loadBaseUrl() async {
+    try {
+      final enteredDomainMap = await apiService.getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+    } catch (error) {
+      baseUrl = 'https://shamcrm.com/storage/';
+    }
+  }
+
+  return FutureBuilder(
+    future: _loadBaseUrl(),
+    builder: (context, snapshot) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1))
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: item['imagePath'] != null && baseUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        '$baseUrl/${item['imagePath']}',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildPlaceholderImage(),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _buildPlaceholderImage();
+                        },
+                      ),
+                    )
+                  : _buildPlaceholderImage(),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Цена',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text('${item['price'].toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Сумма',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text(
-                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
+                  Text(item['name'] ?? 'Без названия',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(item['id'].toString(),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA))),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xffF4F7FD)),
-                    child: Row(
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}',
+                        const Text('Цена',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA))),
+                        Text('${item['price'].toStringAsFixed(3)}',
                             style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52))),
-                        IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) + 1)),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Color(0xff99A4BA), size: 20),
-                      onPressed: () => _removeItem(index)),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('Сумма',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA))),
+                        Text(
+                            '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52))),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xffF4F7FD)),
+                      child: Row(
+                        children: [
+                          IconButton(
+                              icon: const Icon(Icons.remove, size: 20),
+                              color: const Color(0xff1E2E52),
+                              onPressed: () => _updateQuantity(
+                                  index, (item['quantity'] ?? 1) - 1)),
+                          Text('${item['quantity'] ?? 1}',
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52))),
+                          IconButton(
+                              icon: const Icon(Icons.add, size: 20),
+                              color: const Color(0xff1E2E52),
+                              onPressed: () => _updateQuantity(
+                                  index, (item['quantity'] ?? 1) + 1)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                        icon: const Icon(Icons.delete,
+                            color: Color(0xff99A4BA), size: 20),
+                        onPressed: () => _removeItem(index)),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(

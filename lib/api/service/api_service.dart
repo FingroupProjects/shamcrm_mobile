@@ -6214,25 +6214,25 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
-  Future<List<Goods>> getGoods() async {
-    final organizationId = await getSelectedOrganization();
-    final String path = '/good?organization_id=$organizationId';
+  Future<List<Goods>> getGoods({int page = 1, int perPage = 20}) async {
+  final organizationId = await getSelectedOrganization();
+  final String path = '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
 
-    final response = await _getRequest(path);
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        return (data['result']['data'] as List)
-            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      return (data['result']['data'] as List)
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
     } else {
-      throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+      throw Exception('Ошибка: Неверный формат данных');
     }
+  } else {
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
+}
 
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
@@ -6282,8 +6282,9 @@ Future<Map<String, dynamic>> createMyTask({
     required String description,
     required int quantity,
     required List<String> attributeNames,
-    List<File>? images, // Изменено на List<File>?
+    List<File>? images,
     required bool isActive,
+    double? discountPrice, // Добавлено
   }) async {
     try {
       final token = await getToken();
@@ -6302,14 +6303,15 @@ Future<Map<String, dynamic>> createMyTask({
       request.fields['description'] = description;
       request.fields['quantity'] = quantity.toString();
       request.fields['is_active'] = isActive.toString();
+      if (discountPrice != null) { // Добавлено
+        request.fields['discount_price'] = discountPrice.toString();
+      }
 
-      // Добавляем атрибуты
       for (int i = 0; i < attributeNames.length; i++) {
         request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
         request.fields['attributes[$i][value]'] = attributeNames[i];
       }
 
-      // Добавляем все изображения
       if (images != null && images.isNotEmpty) {
         for (var image in images) {
           final imageFile =
@@ -6352,6 +6354,7 @@ Future<Map<String, dynamic>> createMyTask({
     required List<String> attributeNames,
     List<File>? images,
     required bool isActive,
+    double? discountPrice, // Добавлено
   }) async {
     try {
       final token = await getToken();
@@ -6370,6 +6373,9 @@ Future<Map<String, dynamic>> createMyTask({
       request.fields['description'] = description;
       request.fields['quantity'] = quantity.toString();
       request.fields['is_active'] = isActive.toString();
+      if (discountPrice != null) { // Добавлено
+        request.fields['discount_price'] = discountPrice.toString();
+      }
 
       for (int i = 0; i < attributeNames.length; i++) {
         request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
@@ -6408,6 +6414,7 @@ Future<Map<String, dynamic>> createMyTask({
       };
     }
   }
+
 
   Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
     try {
@@ -6565,8 +6572,6 @@ Future<Map<String, dynamic>> createMyTask({
       }
     }
   }
-
-
 
 Future<bool> createOrder({
     required String phone,
