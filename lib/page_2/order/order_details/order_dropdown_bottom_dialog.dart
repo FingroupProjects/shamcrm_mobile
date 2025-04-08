@@ -1,7 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,15 @@ void OrderDropdownBottomSheet(
   String selectedValue = defaultValue;
   int? selectedStatusId = order.orderStatus.id;
 
+  // Проверяем текущее состояние и загружаем статусы только если их нет
+  final currentState = context.read<OrderBloc>().state;
+  if (currentState is! OrderLoaded || currentState.statuses.isEmpty) {
+    context.read<OrderBloc>().add(FetchOrderStatuses());
+    print('Отправлено событие FetchOrderStatuses');
+  } else {
+    print('Статусы уже загружены: ${currentState.statuses.length}');
+  }
+
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
@@ -25,6 +36,8 @@ void OrderDropdownBottomSheet(
     builder: (BuildContext context) {
       return BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
+          print('Текущее состояние в OrderDropdownBottomSheet: $state');
+
           if (state is OrderLoaded && state.statuses.isNotEmpty) {
             final orderStatuses = state.statuses;
             return StatefulBuilder(
@@ -91,8 +104,24 @@ void OrderDropdownBottomSheet(
                               ),
                             );
 
-                            Navigator.pop(context);
                             onSelect(selectedValue, selectedStatusId!);
+
+                            context.read<OrderBloc>().add(ChangeOrderStatus(
+                              orderId: order.id,
+                              statusId: selectedStatusId!,
+                              organizationId: order.organizationId,
+                            ));
+
+                            Navigator.pop(context);
+
+                            final newTabIndex = orderStatuses.indexWhere((status) => status.id == selectedStatusId);
+                            if (newTabIndex != -1) {
+                              final tabController = DefaultTabController.of(context);
+                              if (tabController != null) {
+                                tabController.animateTo(newTabIndex);
+                              }
+                              context.read<OrderBloc>().add(FetchOrders(statusId: selectedStatusId!));
+                            }
                           } else {
                             print('Статус не выбран');
                           }
@@ -105,11 +134,21 @@ void OrderDropdownBottomSheet(
               },
             );
           } else if (state is OrderLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state is OrderError) {
             return Center(child: Text(state.message));
           }
-          return const Center(child: Text('Нет данных о статусах'));
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
         },
       );
     },

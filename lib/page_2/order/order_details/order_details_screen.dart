@@ -205,43 +205,43 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             }
           },
         ),
-        IconButton(
-          padding: EdgeInsets.only(right: 8),
-          constraints: const BoxConstraints(),
-          icon: Image.asset(
-            'assets/icons/delete.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => DeleteOrderDialog(orderId: widget.orderId),
-            ).then((shouldDelete) {
-              if (shouldDelete == true) {
-                // Предполагаем, что у вас есть доступ к organizationId
-                // Если его нет, нужно будет добавить в виджет
-                context.read<OrderBloc>().add(DeleteOrder(
-                      orderId: widget.orderId,
-                      organizationId: order.organizationId, // Добавьте это поле в Order модель если его нет
-                    ));
-                // Подписываемся на изменение состояния после удаления
-                context.read<OrderBloc>().stream.listen((state) {
-                  if (state is OrderSuccess) {
-                    Navigator.pop(context, true);
-                  } else if (state is OrderError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                });
-              }
-            });
-          },
-        ),
+        // IconButton(
+        //   padding: EdgeInsets.only(right: 8),
+        //   constraints: const BoxConstraints(),
+        //   icon: Image.asset(
+        //     'assets/icons/delete.png',
+        //     width: 24,
+        //     height: 24,
+        //   ),
+        //   onPressed: () {
+        //     showDialog(
+        //       context: context,
+        //       builder: (context) => DeleteOrderDialog(orderId: widget.orderId),
+        //     ).then((shouldDelete) {
+        //       if (shouldDelete == true) {
+        //         // Предполагаем, что у вас есть доступ к organizationId
+        //         // Если его нет, нужно будет добавить в виджет
+        //         context.read<OrderBloc>().add(DeleteOrder(
+        //               orderId: widget.orderId,
+        //               organizationId: order.organizationId, // Добавьте это поле в Order модель если его нет
+        //             ));
+        //         // Подписываемся на изменение состояния после удаления
+        //         context.read<OrderBloc>().stream.listen((state) {
+        //           if (state is OrderSuccess) {
+        //             Navigator.pop(context, true);
+        //           } else if (state is OrderError) {
+        //             ScaffoldMessenger.of(context).showSnackBar(
+        //               SnackBar(
+        //                 content: Text(state.message),
+        //                 backgroundColor: Colors.red,
+        //               ),
+        //             );
+        //           }
+        //         });
+        //       }
+        //     });
+        //   },
+        // ),
       ],
     );
   }

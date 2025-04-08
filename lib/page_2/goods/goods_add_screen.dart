@@ -528,6 +528,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           attributeNames: attributes,
           images: images, // Передаем список изображений вместо одного файла
           isActive: isActive,
+          discountPrice: double.tryParse(discountPriceController.text), // Добавлено
         );
 
         if (response['success'] == true) {

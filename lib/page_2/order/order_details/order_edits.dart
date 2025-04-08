@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -61,7 +62,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final result = await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        builder: (context) => ProductSelectionSheet(order: widget.order));
+        builder: (context) => ProductSelectionSheetAdd(order: widget.order));
     if (result != null && result is List<Map<String, dynamic>>) {
       setState(() {
         _items.addAll(result);
@@ -284,137 +285,178 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1))
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-                shape: BoxShape.circle, color: Color(0xffF4F7FD)),
-            child: ClipOval(
-                child: Image.asset('assets/images/goods_photo.jpg',
-                    width: 48, height: 48, fit: BoxFit.cover)),
+    final ApiService apiService = ApiService();
+    String? baseUrl;
+
+    Future<void> _loadBaseUrl() async {
+      try {
+        final enteredDomainMap = await apiService.getEnteredDomain();
+        String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+        String? enteredDomain = enteredDomainMap['enteredDomain'];
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      } catch (error) {
+        baseUrl = 'https://shamcrm.com/storage/';
+      }
+    }
+
+    Widget _buildPlaceholderImage() {
+      return Container(
+        width: 48,
+        height: 48,
+        color: Colors.grey[200],
+        child: const Center(
+            child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      );
+    }
+
+    return FutureBuilder(
+      future: _loadBaseUrl(),
+      builder: (context, snapshot) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1))
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item['name'] ?? 'Без названия',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text(item['id'].toString(),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA))),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Цена',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text('${item['price'].toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Сумма',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text(
-                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
-                ],
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: item['imagePath'] != null && baseUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          '$baseUrl/${item['imagePath']}',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholderImage(),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildPlaceholderImage();
+                          },
+                        ),
+                      )
+                    : _buildPlaceholderImage(),
               ),
-              const SizedBox(height: 8),
-              Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item['name'] ?? 'Без названия',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Text(item['id'].toString(),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA))),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xffF4F7FD)),
-                    child: Row(
-                      children: [
-                        IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}',
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
-                        IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) + 1)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('Цена',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff99A4BA))),
+                          Text('${item['price'].toStringAsFixed(3)}',
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52))),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('Сумма',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff99A4BA))),
+                          Text(
+                              '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52))),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Color(0xff99A4BA), size: 20),
-                      onPressed: () => _removeItem(index)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: const Color(0xffF4F7FD)),
+                        child: Row(
+                          children: [
+                            IconButton(
+                                icon: const Icon(Icons.remove, size: 20),
+                                color: const Color(0xff1E2E52),
+                                onPressed: () => _updateQuantity(
+                                    index, (item['quantity'] ?? 1) - 1)),
+                            Text('${item['quantity'] ?? 1}',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52))),
+                            IconButton(
+                                icon: const Icon(Icons.add, size: 20),
+                                color: const Color(0xff1E2E52),
+                                onPressed: () => _updateQuantity(
+                                    index, (item['quantity'] ?? 1) + 1)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                          icon: const Icon(Icons.delete,
+                              color: Color(0xff99A4BA), size: 20),
+                          onPressed: () => _removeItem(index)),
+                    ],
+                  ),
                 ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

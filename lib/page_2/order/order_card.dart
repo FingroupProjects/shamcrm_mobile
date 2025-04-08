@@ -10,8 +10,15 @@ import 'package:intl/intl.dart';
 class OrderCard extends StatefulWidget {
   final Order order;
   final int? organizationId;
+  final VoidCallback onStatusUpdated; // Коллбэк для уведомления об обновлении
+  final void Function(int newStatusId) onStatusId; // Коллбэк для передачи нового статуса
 
-  const OrderCard({required this.order, this.organizationId});
+  const OrderCard({
+    required this.order,
+    this.organizationId,
+    required this.onStatusUpdated,
+    required this.onStatusId,
+  });
 
   @override
   _OrderCardState createState() => _OrderCardState();
@@ -115,6 +122,10 @@ class _OrderCardState extends State<OrderCard> {
                           dropdownValue = newValue;
                           statusId = newStatusId;
                         });
+                        // Уведомляем родительский виджет о новом статусе
+                        widget.onStatusId(newStatusId);
+                        widget.onStatusUpdated();
+                        // Отправляем событие в блок
                         context.read<OrderBloc>().add(ChangeOrderStatus(
                           orderId: widget.order.id,
                           statusId: newStatusId,

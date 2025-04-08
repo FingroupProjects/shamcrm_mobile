@@ -21,23 +21,33 @@ class _GoodsScreenState extends State<GoodsScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
-
-  // void _onSearchChanged(String value) {}
-
-  // void _onClearSearch() {
-  //   setState(() {
-  //     _isSearching = false;
-  //     _searchController.clear();
-  //   });
-  // }
-
-  // void _onProfileAvatarClick() {}
-
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     context.read<GoodsBloc>().add(FetchGoods());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
+        !(context.read<GoodsBloc>().allGoodsFetched)) {
+      final state = context.read<GoodsBloc>().state;
+      if (state is GoodsDataLoaded) {
+        context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
+      }
+    }
   }
 
   @override
@@ -65,17 +75,31 @@ class _GoodsScreenState extends State<GoodsScreen> {
           clearButtonClick: (isSearching) {},
         ),
       ),
-     body: isClickAvatarIcon
+      body: isClickAvatarIcon
           ? ProfileScreen()
           : BlocBuilder<GoodsBloc, GoodsState>(
               builder: (context, state) {
                 if (state is GoodsLoading) {
-                  return const Center(child: PlayStoreImageLoading(size: 80.0,duration: Duration(milliseconds: 1000)));               
+                  return const Center(
+                      child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000)));
                 } else if (state is GoodsDataLoaded) {
                   return ListView.builder(
+                    controller: _scrollController,
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: state.goods.length,
+                    itemCount: state.goods.length + (context.read<GoodsBloc>().allGoodsFetched ? 0 : 1),
                     itemBuilder: (context, index) {
+                      if (index == state.goods.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: PlayStoreImageLoading(
+                                size: 80.0,
+                                duration: Duration(milliseconds: 1000)),
+                          ),
+                        );
+                      }
                       final Goods goods = state.goods[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -84,42 +108,50 @@ class _GoodsScreenState extends State<GoodsScreen> {
                           goodsName: goods.name,
                           goodsDescription: goods.description ?? "",
                           goodsCategory: goods.category.name,
-                          // goodsDiscountPrice: goods.,
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
-                          // goodsIsActive: goods.isActive,
                         ),
                       );
                     },
                   );
-                } else if (state is GoodsEmpty) { 
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text( 'Товаров нет', style: TextStyle(fontSize: 18, color: Colors.grey, fontFamily: 'Gilroy'),
-                            ),
-                            TextButton(
-                              onPressed: () => context.read<GoodsBloc>().add(FetchGoods()),
-                              child: Text('Обновить'),
-                            ),
-                          ],
+                } else if (state is GoodsEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inventory_2_outlined,
+                            size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Товаров нет',
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                              fontFamily: 'Gilroy'),
                         ),
-                      );
-                    } else if (state is GoodsError) {
-                      return Center(child: Text(state.message));
-                    }
-                    return Center(child: Text('Неизвестное состояние'));
-                  },
-                ),
+                        TextButton(
+                          onPressed: () =>
+                              context.read<GoodsBloc>().add(FetchGoods()),
+                          child: Text('Обновить'),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (state is GoodsError) {
+                  return Center(child: Text(state.message));
+                }
+                return Center(child: Text('Неизвестное состояние'));
+              },
+            ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => GoodsAddScreen()),
           );
+          if (result == true) {
+            context.read<GoodsBloc>().add(FetchGoods());
+          }
         },
         backgroundColor: const Color(0xff1E2E52),
         child: Icon(Icons.add, color: Colors.white),
@@ -127,4 +159,3 @@ class _GoodsScreenState extends State<GoodsScreen> {
     );
   }
 }
-
