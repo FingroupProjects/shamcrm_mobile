@@ -101,7 +101,6 @@ class GoodsAttribute {
   });
 
   factory GoodsAttribute.fromJson(Map<String, dynamic> json) {
-  print('Parsing attribute: $json'); // Для отладки
   final attrData = json['attributes'] as Map<String, dynamic>?;
   return GoodsAttribute(
     name: attrData != null ? (attrData['name'] as String? ?? '') : '',

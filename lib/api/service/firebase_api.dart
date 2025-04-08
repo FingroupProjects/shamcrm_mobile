@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
@@ -288,7 +287,7 @@ Future<void> navigateToScreen(
     print('Received push notification data: ${message.data}');
 
     final taskId = message.data['id'];
-    final taskNumber = int.tryParse(message.data['taskNumber'] ?? ''); // Преобразуем в int
+    final taskNumber = int.tryParse(message.data['taskNumber'] ?? ''); 
 
     print('taskId: $taskId');
     print('taskNumber: $taskNumber');
@@ -301,7 +300,7 @@ Future<void> navigateToScreen(
             taskName: '',
             taskStatus: '',
             statusId: 1,
-            taskNumber: taskNumber, // Теперь taskNumber это int?
+            taskNumber: taskNumber, 
             taskCustomFields: [],
           ),
         ),
@@ -318,7 +317,7 @@ Future<void> navigateToScreen(
             leadId: leadId.toString(),
             leadName: '',
             leadStatus: '',
-            statusId: 1,
+            statusId: 0,
           ),
         ),
       );

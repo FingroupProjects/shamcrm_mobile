@@ -1,4 +1,3 @@
-// models/order_model.dart
 
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 
@@ -26,7 +25,6 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    print('Parsing Order JSON: $json');
     return Order(
       id: json['id'] ?? 0,
       phone: (json['phone'] ?? '').toString(),
@@ -54,9 +52,8 @@ class Order {
     };
   }
 
-  // Исправленный метод copyWith
   Order copyWith({
-    int? id, // Оставляем int?, так как это входной параметр
+    int? id,
     String? phone,
     String? orderNumber,
     bool? delivery,
@@ -67,7 +64,7 @@ class Order {
     int? organizationId,
   }) {
     return Order(
-      id: id ?? this.id, // this.id всегда int, так как id в классе не null
+      id: id ?? this.id,
       phone: phone ?? this.phone,
       orderNumber: orderNumber ?? this.orderNumber,
       delivery: delivery ?? this.delivery,
@@ -118,7 +115,6 @@ class OrderLead {
   });
 
   factory OrderLead.fromJson(Map<String, dynamic> json) {
-    print('Parsing Lead JSON: $json');
     return OrderLead(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -163,10 +159,10 @@ class OrderLead {
 
 class Good {
   final GoodItem good;
-  final int goodId; // Прямое поле вместо вложенного good.id
-  final String goodName; // Прямое поле вместо вложенного good.name
+  final int goodId; 
+  final String goodName; 
   final int quantity;
-  final double price; // Добавляем цену для UI и API
+  final double price;
 
   Good({
     required this.good,
@@ -179,16 +175,16 @@ class Good {
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
       good: GoodItem.fromJson(json['good'] ?? {}),
-      goodId: json['good_id'] ?? json['good']?['id'] ?? 0, // Поддержка разных форматов JSON
+      goodId: json['good_id'] ?? json['good']?['id'] ?? 0, 
       goodName: json['good_name'] ?? json['good']?['name'] ?? '',
       quantity: json['quantity'] ?? 0,
-      price: (json['price'] ?? 0).toDouble(), // Парсим цену
+      price: (json['price'] ?? 0).toDouble(), 
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'good_id': good.id, // Используем good.id для API
+      'good_id': good.id, 
       'quantity': quantity,
       'price': price,
     };
@@ -288,7 +284,6 @@ class OrderStatusName {
   OrderStatusName({required this.id, required this.name});
 
   factory OrderStatusName.fromJson(Map<String, dynamic> json) {
-    print('Parsing OrderStatus JSON: $json');
     return OrderStatusName(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
