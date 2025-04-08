@@ -270,7 +270,6 @@ Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
       final result = await apiService.updateTask(
         taskId: event.taskId,
         name: event.name,
-        statusId: event.statusId,
         priority: event.priority,
         startDate: event.startDate,
         endDate: event.endDate,

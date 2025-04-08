@@ -41,13 +41,15 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> {
   late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
-  late int statusId;
+  late int statusIdTask;
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.name;
-    statusId = widget.statusId;
+    statusIdTask = widget.statusId;
+    print('=====------------------------================');
+    print(statusIdTask);
   }
 
   /// Форматирование даты в `dd.MM.yyyy`
@@ -213,7 +215,7 @@ class _TaskCardState extends State<TaskCard> {
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи
                 taskStatus: dropdownValue, // Текущий статус задачи
-                statusId: widget.statusId, // ID статуса задачи
+                statusId: statusIdTask, // ID статуса задачи
                 priority: widget.task.priority, // Приоритет задачи
                 description: widget.task.description, // Описание задачи
                 project: widget.task.project?.name ?? widget.project ??
@@ -315,7 +317,7 @@ class _TaskCardState extends State<TaskCard> {
                             (String newValue, int newStatusId) {
                               setState(() {
                                 dropdownValue = newValue;
-                                statusId = newStatusId;
+                                statusIdTask = newStatusId;
                               });
                               widget.onStatusId(newStatusId);
                               widget.onStatusUpdated();

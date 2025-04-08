@@ -14,12 +14,14 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +73,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   String? selectedProject;
   List<String>? selectedUsers;
   int? selectedPriority;
+  int? _selectedStatuses;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool _showAdditionalFields = false;
@@ -88,8 +91,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _loadInitialData();
     _checkAdditionalFields(); // Проверяем поля при инициализации
 
-    selectedPriority ??=
-        1; // или другое значение по умолчанию из priorityLevels
+    selectedPriority ??= 1; // или другое значение по умолчанию из priorityLevels
     // Сохраняем существующие файлы
     if (widget.files != null) {
       existingFiles = widget.files!;
@@ -139,6 +141,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
+    _selectedStatuses = widget.statusId;
+
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
       startDateController.text =
@@ -681,8 +685,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      // Здесь могут располагаться другие поля (например, выбор проекта, пользователей и т.д.)
-                      CustomTextField(
+                        TaskStatusEditWidget(
+                          selectedStatus: _selectedStatuses?.toString(),
+                          onSelectStatus: (TaskStatus selectedStatusData) {
+                            setState(() {
+                              _selectedStatuses = selectedStatusData.id;
+                            });
+                          },
+                        ),                      
+                        CustomTextField(
                         controller: descriptionController,
                         hintText: AppLocalizations.of(context)!
                             .translate('enter_description'),
@@ -853,8 +864,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           UpdateTask(
                                             taskId: widget.taskId,
                                             name: nameController.text,
-                                            statusId: widget.statusId,
-                                            taskStatusId: widget.statusId,
+                                            statusId: _selectedStatuses!.toInt(),
+                                            taskStatusId: _selectedStatuses!.toInt(),
                                             startDate: startDate,
                                             endDate: endDate,
                                             projectId: selectedProject != null

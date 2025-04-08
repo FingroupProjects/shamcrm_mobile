@@ -84,6 +84,7 @@ void initState() {
   _checkPermissions().then((_) {
     context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
   });
+    _fetchTutorialProgress();
 }
 
   void _initTargets() {
@@ -315,7 +316,6 @@ Future<void> _fetchTutorialProgress() async {
       _canDeleteDeal = canDelete;
       _canReadTasks = canReadTasks;
     });
-    await _fetchTutorialProgress();
   }
 
   String formatDate(String? dateString) {

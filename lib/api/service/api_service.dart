@@ -1252,7 +1252,7 @@ class ApiService {
     required int leadStatusId,
     required String phone,
     int? regionId,
-    int? sourceId, // Исправлено с sourseId на sourceId
+    int? sourceId, 
     int? managerId,
     String? instaLogin,
     String? facebookLogin,
@@ -1459,7 +1459,6 @@ Future<DealNameDataResponse> getAllDealNames() async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-
       if (data['result'] != null) {
         dataLead = LeadsDataResponse.fromJson(data);
       } else {
@@ -1470,7 +1469,6 @@ Future<DealNameDataResponse> getAllDealNames() async {
     }
 
     if (kDebugMode) {
-      print('getAll lead!');
     }
 
     return dataLead;
@@ -3067,7 +3065,6 @@ Future<DealNameDataResponse> getAllDealNames() async {
   Future<Map<String, dynamic>> updateTask({
     required int taskId,
     required String name,
-    required int statusId,
     required int taskStatusId,
     String? priority,
     DateTime? startDate,
@@ -3098,7 +3095,6 @@ Future<DealNameDataResponse> getAllDealNames() async {
 
       // Добавляем все поля в формате form-data
       request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
       request.fields['task_status_id'] = taskStatusId.toString();
       request.fields['_method'] = 'POST'; // Для эмуляции PUT запроса
 
