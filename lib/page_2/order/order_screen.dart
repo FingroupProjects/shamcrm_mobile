@@ -15,9 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderScreen extends StatefulWidget {
-  final int? organizationId; // Делаем organizationId необязательным (int?)
+  final int? organizationId;
 
-  const OrderScreen({this.organizationId}); // Обновляем конструктор
+  const OrderScreen({this.organizationId});
 
   @override
   _OrderScreenState createState() => _OrderScreenState();
@@ -73,6 +73,18 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     setState(() {
       _isSearching = query.isNotEmpty;
     });
+  }
+
+  void _onStatusUpdated(int newStatusId) {
+    final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
+    if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+      setState(() {
+        _currentTabIndex = newTabIndex;
+      });
+      _tabController.animateTo(newTabIndex);
+      _scrollToActiveTab();
+      context.read<OrderBloc>().add(FetchOrders(statusId: newStatusId));
+    }
   }
 
   @override
@@ -169,7 +181,9 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                                 searchQuery: _isSearching ? _searchController.text : null,
                                 orders: statusOrders,
                                 isLoading: state is OrderLoading && statusOrders.isEmpty,
-                                organizationId: widget.organizationId, // Передаем nullable int
+                                organizationId: widget.organizationId,
+                                onStatusUpdated: () => _onStatusUpdated(status.id), // Передаем коллбэк
+                                onStatusId: (newStatusId) => _onStatusUpdated(newStatusId), // Передаем коллбэк
                               );
                             }).toList(),
                           ),
@@ -185,7 +199,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
-                  organizationId: widget.organizationId, // Ошибка была здесь
+                  organizationId: widget.organizationId,
                 ),
               ),
             );

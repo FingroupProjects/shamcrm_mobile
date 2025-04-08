@@ -11,6 +11,10 @@ class GoodsDataLoaded extends GoodsState {
   final int currentPage;
 
   GoodsDataLoaded(this.goods, {this.currentPage = 1});
+
+  GoodsDataLoaded merge(List<Goods> newGoods) {
+    return GoodsDataLoaded([...goods, ...newGoods], currentPage: currentPage + 1);
+  }
 }
 
 class GoodsError extends GoodsState {
@@ -19,7 +23,7 @@ class GoodsError extends GoodsState {
   GoodsError(this.message);
 }
 
-class GoodsEmpty extends GoodsState {} 
+class GoodsEmpty extends GoodsState {}
 
 class GoodsSuccess extends GoodsState {
   final String message;

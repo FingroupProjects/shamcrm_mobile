@@ -2,25 +2,22 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ProductSelectionSheet extends StatefulWidget {
-  final Order order; 
+class ProductSelectionSheetAdd extends StatefulWidget {
+  final Order order;
 
-  const ProductSelectionSheet({required this.order, super.key});
+  const ProductSelectionSheetAdd({required this.order, super.key});
 
   @override
-  State<ProductSelectionSheet> createState() => _ProductSelectionSheetState();
+  State<ProductSelectionSheetAdd> createState() => _ProductSelectionSheetAddState();
 }
 
-class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
+class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   String _searchQuery = '';
-  String _selectedFilter = 'Новый';
   String? baseUrl;
   final ApiService _apiService = ApiService();
 
@@ -53,67 +50,33 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     });
   }
 
-  void _applyFilter(String filter) {
-    setState(() {
-      _selectedFilter = filter;
-    });
-  }
+  void _returnSelectedProducts(List<Goods> goods) {
+    final selectedProducts = goods
+        .where((product) => product.isSelected == true)
+        .map((product) => {
+              'id': product.id,
+              'name': product.name,
+              'price': product.discountPrice ?? 0.0,
+              'quantity': product.quantitySelected ?? 1,
+            })
+        .toList();
 
-void _updateOrderWithSelectedProducts(List<Goods> goods) {
-  // Собираем новые выбранные товары
-  final selectedProducts = goods
-      .where((product) => product.isSelected == true)
-      .map((product) => {
-            'good_id': product.id,
-            'quantity': product.quantitySelected ?? 1,
-            'price': product.discountPrice ?? 0.0,
-          })
-      .toList();
-
-  if (selectedProducts.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Выберите хотя бы один товар',
-          style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+    if (selectedProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Выберите хотя бы один товар',
+            style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
         ),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
+      );
+      return;
+    }
+
+    // Возвращаем выбранные товары в OrderAddScreen
+    Navigator.pop(context, selectedProducts);
   }
-
-  // Собираем ВСЕ текущие товары заказа
-  final currentGoods = widget.order.goods
-      .map((good) => {
-            'good_id': good.goodId,
-            'quantity': good.quantity,
-            'price': good.price,
-          })
-      .toList();
-
-  // Объединяем текущие и новые товары
-  final updatedGoods = [...currentGoods, ...selectedProducts];
-
-  // Логирование для отладки
-  print('Current goods: $currentGoods');
-  print('Selected products: $selectedProducts');
-  print('Updated goods: $updatedGoods');
-
-  // Отправляем событие обновления заказа
-  context.read<OrderBloc>().add(UpdateOrder(
-    orderId: widget.order.id,
-    phone: widget.order.phone,
-    leadId: widget.order.lead.id,
-    delivery: widget.order.delivery,
-    deliveryAddress: widget.order.deliveryAddress ?? '',
-    goods: updatedGoods,
-    organizationId: 1, // Можно сделать динамическим
-  ));
-
-  // Закрываем BottomSheet после отправки
-  Navigator.pop(context);
-}
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +340,7 @@ void _updateOrderWithSelectedProducts(List<Goods> goods) {
       child: ElevatedButton(
         onPressed: () {
           final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) _updateOrderWithSelectedProducts(state.goods);
+          if (state is GoodsDataLoaded) _returnSelectedProducts(state.goods);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),

@@ -258,27 +258,27 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         }
                       : null,
                 ),
-                IconButton(
-                  padding: const EdgeInsets.only(right: 8),
-                  constraints: const BoxConstraints(),
-                  icon: Image.asset('assets/icons/delete.png',
-                      width: 24, height: 24),
-                  onPressed: state is GoodsByIdLoaded
-                      ? () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => DeleteGoodsDialog(
-                              goodId: widget.id,
-                              onDelete: () {
-                                context.read<GoodsByIdBloc>().add(
-                                      DeleteGoods(widget.id, null),
-                                    );
-                              },
-                            ),
-                          );
-                        }
-                      : null,
-                ),
+                // IconButton(
+                //   padding: const EdgeInsets.only(right: 8),
+                //   constraints: const BoxConstraints(),
+                //   icon: Image.asset('assets/icons/delete.png',
+                //       width: 24, height: 24),
+                //   onPressed: state is GoodsByIdLoaded
+                //       ? () {
+                //           showDialog(
+                //             context: context,
+                //             builder: (context) => DeleteGoodsDialog(
+                //               goodId: widget.id,
+                //               onDelete: () {
+                //                 context.read<GoodsByIdBloc>().add(
+                //                       DeleteGoods(widget.id, null),
+                //                     );
+                //               },
+                //             ),
+                //           );
+                //         }
+                //       : null,
+                // ),
               ],
             );
           },
@@ -308,8 +308,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: label ==
-                  AppLocalizations.of(context)!
-                      .translate('description_details')
+                  AppLocalizations.of(context)!.translate('description_details')
               ? GestureDetector(
                   onTap: () => _showFullTextDialog(
                       AppLocalizations.of(context)!

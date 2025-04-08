@@ -654,6 +654,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         attributeNames: attributes,
         images: images,
         isActive: isActive,
+        discountPrice: double.tryParse(discountPriceController.text), // Добавлено
       );
 
       if (response['success'] == true) {

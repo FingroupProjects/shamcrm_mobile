@@ -3,6 +3,11 @@ import 'dart:io';
 abstract class GoodsEvent {}
 
 class FetchGoods extends GoodsEvent {}
+class FetchMoreGoods extends GoodsEvent {
+  final int currentPage;
+
+  FetchMoreGoods(this.currentPage);
+}
 
 class CreateGoods extends GoodsEvent {
   final String name;
@@ -10,8 +15,9 @@ class CreateGoods extends GoodsEvent {
   final int quantity;
   final int parentId;
   final List<String> attributeNames;
-  final List<File>? images; // Изменено на List<File>?
+  final List<File>? images;
   final bool isActive;
+  final double? discountPrice; // Добавлено поле discountPrice
 
   CreateGoods({
     required this.name,
@@ -19,8 +25,9 @@ class CreateGoods extends GoodsEvent {
     required this.quantity,
     required this.parentId,
     required this.attributeNames,
-    this.images, // Изменено на List<File>?
+    this.images,
     required this.isActive,
+    this.discountPrice, // Добавлено в конструктор
   });
 }
 
@@ -33,6 +40,7 @@ class UpdateGoods extends GoodsEvent {
   final List<String> attributeNames;
   final List<File>? images;
   final bool isActive;
+  final double? discountPrice; // Добавлено поле discountPrice
 
   UpdateGoods({
     required this.goodId,
@@ -43,5 +51,6 @@ class UpdateGoods extends GoodsEvent {
     required this.attributeNames,
     this.images,
     required this.isActive,
+    this.discountPrice, // Добавлено в конструктор
   });
 }

@@ -7,12 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
-  List<Goods> goods = [];
-  int currentPage = 1;
+  bool allGoodsFetched = false;
   final int _perPage = 20;
 
   GoodsBloc(this.apiService) : super(GoodsInitial()) {
     on<FetchGoods>(_fetchGoods);
+    on<FetchMoreGoods>(_fetchMoreGoods);
     on<CreateGoods>(_createCategory);
     on<UpdateGoods>(_updateCategory);
   }
@@ -22,16 +22,32 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
     if (await _checkInternetConnection()) {
       try {
-        final newGoods = await apiService.getGoods();
-        if (newGoods.isEmpty) {
-          goods.clear();
-          emit(GoodsEmpty());
-        } else {
-          goods = newGoods;
-          emit(GoodsDataLoaded(List.from(goods)));
-        }
+        final goods = await apiService.getGoods(page: 1);
+        allGoodsFetched = goods.length < _perPage;
+        emit(GoodsDataLoaded(goods));
       } catch (e) {
         emit(GoodsError('Не удалось загрузить товары!'));
+      }
+    } else {
+      emit(GoodsError('Нет подключения к интернету'));
+    }
+  }
+
+  Future<void> _fetchMoreGoods(FetchMoreGoods event, Emitter<GoodsState> emit) async {
+    if (allGoodsFetched) return;
+
+    if (await _checkInternetConnection()) {
+      try {
+        final newGoods = await apiService.getGoods(page: event.currentPage + 1);
+        if (newGoods.isEmpty || newGoods.length < _perPage) {
+          allGoodsFetched = true;
+        }
+        if (state is GoodsDataLoaded) {
+          final currentState = state as GoodsDataLoaded;
+          emit(currentState.merge(newGoods));
+        }
+      } catch (e) {
+        emit(GoodsError('Не удалось загрузить дополнительные товары!'));
       }
     } else {
       emit(GoodsError('Нет подключения к интернету'));
@@ -52,6 +68,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           attributeNames: event.attributeNames,
           images: event.images, // Передаем список изображений
           isActive: event.isActive,
+          discountPrice: event.discountPrice, // Добавлено
         );
 
         if (response['success'] == true) {
@@ -91,6 +108,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           attributeNames: event.attributeNames,
           images: event.images,
           isActive: event.isActive,
+          discountPrice: event.discountPrice, // Добавлено
         );
 
         if (response['success'] == true) {

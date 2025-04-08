@@ -9,7 +9,9 @@ class OrderColumn extends StatelessWidget {
   final String? searchQuery;
   final List<Order> orders;
   final bool isLoading;
-  final int? organizationId; // Обновляем тип на int?
+  final int? organizationId;
+  final VoidCallback onStatusUpdated; // Добавляем коллбэк
+  final void Function(int newStatusId) onStatusId; // Добавляем коллбэк
 
   const OrderColumn({
     required this.statusId,
@@ -17,7 +19,9 @@ class OrderColumn extends StatelessWidget {
     this.searchQuery,
     required this.orders,
     this.isLoading = false,
-    this.organizationId, // Делаем необязательным
+    this.organizationId,
+    required this.onStatusUpdated, // Делаем обязательным
+    required this.onStatusId, // Делаем обязательным
   });
 
   @override
@@ -40,7 +44,9 @@ class OrderColumn extends StatelessWidget {
                         final order = orders[index];
                         return OrderCard(
                           order: order,
-                          organizationId: organizationId ?? order.organizationId, // Используем значение из order, если null
+                          organizationId: organizationId ?? order.organizationId,
+                          onStatusUpdated: onStatusUpdated, // Передаем коллбэк
+                          onStatusId: onStatusId, // Передаем коллбэк
                         );
                       },
                     ),
