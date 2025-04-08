@@ -5,11 +5,14 @@ import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
@@ -76,6 +79,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  int? _selectedStatuses;
   String? selectedRegion;
   String? selectedSource;
 
@@ -91,6 +95,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   void initState() {
     super.initState();
     titleController.text = widget.leadName;
+    _selectedStatuses = widget.statusId;
+
     if (widget.phone != null) {
       String phoneNumber = widget.phone!;
       for (var code in countryCodes) {
@@ -284,15 +290,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
-                        validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!
-                                .translate('field_required')
-                            : null,
+                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!.translate('name_list'),
+                        validator: (value) => value!.isEmpty ? AppLocalizations.of(context)!.translate('field_required') : null,
                       ),
+                      const SizedBox(height: 8),
+                     LeadStatusEditpWidget(
+                          selectedStatus: _selectedStatuses?.toString(),
+                          onSelectStatus: (LeadStatus selectedStatusData) {
+                            setState(() {
+                              _selectedStatuses = selectedStatusData.id;
+                            });
+                          },
+                    ),
+                      const SizedBox(height: 8),
                       CustomPhoneNumberInput(
                         controller: phoneController,
                         selectedDialCode: selectedDialCode,
@@ -534,7 +545,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     birthday: parsedBirthday,
                                     email: emailController.text,
                                     description: descriptionController.text,
-                                    leadStatusId: widget.statusId,
+                                    leadStatusId: _selectedStatuses!.toInt(),
                                     customFields: customFieldList,
                                     localizations: localizations,
                                     isSystemManager: isSystemManager,

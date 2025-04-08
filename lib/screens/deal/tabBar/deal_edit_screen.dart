@@ -6,10 +6,11 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -65,6 +66,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController createdAtController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
 
+  int? _selectedStatuses;
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
@@ -75,6 +77,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
     super.initState();
 
     titleController.text = widget.dealName;
+        _selectedStatuses = widget.statusId;
+
     descriptionController.text = widget.description ?? '';
     selectedManager = widget.manager;
     selectedLead = widget.lead;
@@ -87,7 +91,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         ..controller.text = customField.value);
     }
 
-    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    // context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
 
@@ -219,6 +223,15 @@ class _DealEditScreenState extends State<DealEditScreen> {
                           onSelectDealName: (String dealName) {
                             setState(() {
                               titleController.text = dealName;
+                            });
+                          },
+                        ),
+                         const SizedBox(height: 8),
+                         DealStatusEditWidget(
+                          selectedStatus: _selectedStatuses?.toString(),
+                          onSelectStatus: (DealStatus selectedStatusData) {
+                            setState(() {
+                              _selectedStatuses = selectedStatusData.id;
                             });
                           },
                         ),
@@ -425,7 +438,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                   context.read<DealBloc>().add(UpdateDeal(
                                         dealId: widget.dealId,
                                         name: titleController.text,
-                                        dealStatusId: widget.statusId,
+                                        dealStatusId: _selectedStatuses!.toInt(),
                                         managerId: selectedManager != null
                                             ? int.parse(selectedManager!)
                                             : null,

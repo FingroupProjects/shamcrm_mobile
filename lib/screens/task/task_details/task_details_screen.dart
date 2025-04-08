@@ -178,6 +178,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
     context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
     _fetchTutorialProgress(); // Загружаем данные туториала и инициализируем targets
@@ -824,7 +825,7 @@ Widget build(BuildContext context) {
                                     .map((user) => user.id)
                                     .toList()
                                 : null,
-                            statusId: currentTask!.statusId,
+                            statusId: widget.statusId,
                             description: currentTask!.description,
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
