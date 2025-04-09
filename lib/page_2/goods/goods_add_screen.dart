@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -23,14 +23,15 @@ class GoodsAddScreen extends StatefulWidget {
 class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController goodsNameController = TextEditingController();
-  final TextEditingController goodsDescriptionController =
-      TextEditingController();
+  final TextEditingController goodsDescriptionController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
 
   SubCategoryAttributesData? selectedCategory;
   bool isActive = false;
   List<SubCategoryAttributesData> subCategories = [];
+  bool isCategoryValid = true; 
+  bool isImagesValid = true;   
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -53,12 +54,19 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       });
     } catch (e) {
       print('Error fetching subcategories: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка загрузки подкатегорий')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Ошибка загрузки подкатегорий')),
+      // );
     } finally {
       setState(() => isLoading = false);
     }
+  }
+
+  void validateForm() {
+    setState(() {
+      isCategoryValid = selectedCategory != null;
+      isImagesValid = _imagePaths.isNotEmpty;
+    });
   }
 
   @override
@@ -101,41 +109,32 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_name'),
-                    label:
-                        AppLocalizations.of(context)!.translate('goods_name'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                    label: AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!
-                            .translate('field_required')
+                        ? AppLocalizations.of(context)!.translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!
-                        .translate('goods_description'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: discountPriceController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_discount_price'),
-                    label: AppLocalizations.of(context)!
-                        .translate('discount_price'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_discount_price'),
+                    label: AppLocalizations.of(context)!.translate('discount_price'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: stockQuantityController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_stock_quantity'),
-                    label: AppLocalizations.of(context)!
-                        .translate('stock_quantity'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
+                    label: AppLocalizations.of(context)!.translate('stock_quantity'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 8),
@@ -145,20 +144,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       setState(() {
                         selectedCategory = category;
                         attributeControllers.clear();
-                        if (category != null &&
-                            category.attributes.isNotEmpty) {
+                        if (category != null && category.attributes.isNotEmpty) {
                           for (var attribute in category.attributes) {
-                            attributeControllers[attribute.name] =
-                                TextEditingController();
+                            attributeControllers[attribute.name] = TextEditingController();
                           }
                         }
                       });
                     },
                     subCategories: subCategories,
+                    isValid: isCategoryValid, 
                   ),
                   const SizedBox(height: 8),
-                  if (selectedCategory != null &&
-                      selectedCategory!.attributes.isNotEmpty)
+                  if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -191,10 +188,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
-                                controller:
-                                    attributeControllers[attribute.name]!,
-                                hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                controller: attributeControllers[attribute.name]!,
+                                hintText: 'Введите ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -211,19 +206,19 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         color: const Color(0xffF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: const Color(0xffF4F7FD), width: 1),
+                          color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                          width: 1.5,
+                        ),
                       ),
                       child: _imagePaths.isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt,
-                                      color: Color(0xff99A4BA), size: 40),
+                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('pick_image'),
+                                    AppLocalizations.of(context)!.translate('pick_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -258,14 +253,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             top: 4,
                                             right: 4,
                                             child: GestureDetector(
-                                              onTap: () =>
-                                                  _removeImage(imagePath),
+                                              onTap: () => _removeImage(imagePath),
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black
-                                                      .withOpacity(0.5),
+                                                  color: Colors.black.withOpacity(0.5),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
@@ -282,8 +274,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   }).toList(),
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item =
-                                          _imagePaths.removeAt(oldIndex);
+                                      final item = _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                     });
                                   },
@@ -292,8 +283,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.5),
                                       borderRadius: BorderRadius.circular(12),
@@ -313,6 +303,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                             ),
                     ),
                   ),
+                  if (!isImagesValid) 
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('   Выберите хотя-бы одну фотографию!'),
+                        style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                        fontWeight: FontWeight.w400),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -321,8 +322,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('status_goods'),
+                              AppLocalizations.of(context)!.translate('status_goods'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -338,8 +338,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 4, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF4F7FD),
                                   borderRadius: BorderRadius.circular(12),
@@ -353,23 +352,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           isActive = value;
                                         });
                                       },
-                                      activeColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
-                                      inactiveTrackColor: const Color.fromARGB(
-                                              255, 179, 179, 179)
-                                          .withOpacity(0.5),
-                                      activeTrackColor: ChatSmsStyles
-                                          .messageBubbleSenderColor,
-                                      inactiveThumbColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
+                                      activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
                                       isActive
-                                          ? AppLocalizations.of(context)!
-                                              .translate('active')
-                                          : AppLocalizations.of(context)!
-                                              .translate('inactive'),
+                                          ? AppLocalizations.of(context)!.translate('active')
+                                          : AppLocalizations.of(context)!.translate('inactive'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -393,37 +385,55 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           ),
         ),
       ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+    bottomSheet: Container(
+    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+      children: [
+        Expanded(
+          child: CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+            buttonColor: const Color(0xffF4F7FD),
+            textColor: Colors.black,
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                buttonColor: const Color(0xffF4F7FD),
-                textColor: Colors.black,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('add'),
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: () {
-                  if (formKey.currentState!.validate()) {
-                    _createProduct();
-                  }
-                },
-              ),
-            ),
-          ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: isLoading
+              ? SizedBox(
+                  height: 48, 
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: CircularProgressIndicator(
+                      color: const Color(0xff4759FF),
+                    ),
+                  ),
+                )
+              : CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('add'),
+                  buttonColor: const Color(0xff4759FF),
+                  textColor: Colors.white,
+                  onPressed: () {
+                    validateForm();
+                    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+                      _createProduct();
+                    } else {
+                        showCustomSnackBar(
+                         context: context,
+                         message:'Пожалуйста, заполните все обязательные поля!',
+                         isSuccess: false,
+                       );
+                    }
+                  },
+                ),
         ),
-      ),
+      ],
+    ),
+  ),
     );
   }
 
@@ -456,8 +466,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!
-                      .translate('select_from_gallery'),
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -483,6 +492,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFile != null) {
       setState(() {
         _imagePaths.add(pickedFile.path);
+        isImagesValid = true;
       });
     }
   }
@@ -492,6 +502,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFiles != null) {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
+        isImagesValid = true; 
       });
     }
   }
@@ -499,64 +510,60 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void _removeImage(String imagePath) {
     setState(() {
       _imagePaths.remove(imagePath);
+      isImagesValid = _imagePaths.isNotEmpty;
     });
   }
 
-  void _createProduct() async {
-    if (formKey.currentState!.validate() && selectedCategory != null) {
-      setState(() => isLoading = true);
+void _createProduct() async {
+  if (formKey.currentState!.validate() && selectedCategory != null && _imagePaths.isNotEmpty) {
+    setState(() => isLoading = true); 
 
-      try {
-        // Подготавливаем список атрибутов
-        List<String> attributes = [];
-        for (var attribute in selectedCategory!.attributes) {
-          final controller = attributeControllers[attribute.name];
-          if (controller != null && controller.text.isNotEmpty) {
-            attributes.add(controller.text);
-          }
-        }
-
-        // Подготавливаем список файлов
-        List<File> images = _imagePaths.map((path) => File(path)).toList();
-
-        // Вызываем API для создания товара
-        final response = await _apiService.createGoods(
-          name: goodsNameController.text,
-          parentId: selectedCategory!.id,
-          description: goodsDescriptionController.text,
-          quantity: int.tryParse(stockQuantityController.text) ?? 0,
-          attributeNames: attributes,
-          images: images, // Передаем список изображений вместо одного файла
-          isActive: isActive,
-          discountPrice: double.tryParse(discountPriceController.text), // Добавлено
-        );
-
-        if (response['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Товар успешно создан')),
-          );
-          Navigator.pop(context, true); // Возвращаем true для обновления списка
-          context.read<GoodsBloc>().add(FetchGoods());
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content:
-                    Text(response['message'] ?? 'Ошибка при создании товара')),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: ${e.toString()}')),
-        );
-      } finally {
-        if (mounted) {
-          setState(() => isLoading = false);
+    try {
+      List<String> attributes = [];
+      for (var attribute in selectedCategory!.attributes) {
+        final controller = attributeControllers[attribute.name];
+        if (controller != null && controller.text.isNotEmpty) {
+          attributes.add(controller.text);
         }
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Пожалуйста, заполните все обязательные поля')),
+
+      List<File> images = _imagePaths.map((path) => File(path)).toList();
+
+      final response = await _apiService.createGoods(
+        name: goodsNameController.text,
+        parentId: selectedCategory!.id,
+        description: goodsDescriptionController.text,
+        quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        attributeNames: attributes,
+        images: images,
+        isActive: isActive,
+        discountPrice: double.tryParse(discountPriceController.text),
+      );
+
+      if (response['success'] == true) {
+        showCustomSnackBar(
+          context: context,
+          message: 'Товар успешно создан!',
+          isSuccess: true,
+        );
+        Navigator.pop(context, true); 
+        context.read<GoodsBloc>().add(FetchGoods()); 
+      } else {
+        setState(() => isLoading = false);
+        showCustomSnackBar(
+          context: context,
+          message: response['message'] ?? 'Ошибка при создании товара',
+          isSuccess: false,
+        );
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+     showCustomSnackBar(
+        context: context,
+        message: 'Ошибка: ${e.toString()}',
+        isSuccess: false,
       );
     }
   }
+}
 }

@@ -7,12 +7,16 @@ class CategoryDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
   final Function(SubCategoryAttributesData?) onSelectCategory;
   final List<SubCategoryAttributesData> subCategories;
+  final bool isValid; // Добавляем флаг для валидации
+  final VoidCallback? onValidationChanged; // Callback для уведомления родителя
 
   CategoryDropdownWidget({
     Key? key,
     required this.onSelectCategory,
     this.selectedCategory,
     required this.subCategories,
+    this.isValid = true,
+    this.onValidationChanged,
   }) : super(key: key);
 
   @override
@@ -35,14 +39,14 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
     if (widget.selectedCategory != null && widget.subCategories.isNotEmpty) {
       selectedSubCategory = widget.subCategories.firstWhere(
         (subCat) => subCat.name == widget.selectedCategory,
-        orElse: () => widget.subCategories.first // This must return a non-nullable SubCategoryAttributesData
+        orElse: () => widget.subCategories.first 
       );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
+Widget build(BuildContext context) {
+      return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -51,14 +55,14 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
         ),
         const SizedBox(height: 4),
         Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              width: 1,
-              color: const Color(0xFFF4F7FD),
-            ),
-          ),
+          // decoration: BoxDecoration(
+          //   color: const Color(0xFFF4F7FD),
+          //   borderRadius: BorderRadius.circular(12),
+          //   border: Border.all(
+          //     width: 1.5,
+          //     color: widget.isValid ? const Color(0xFFF4F7FD) : Colors.red, // Красная рамка при ошибке
+          //   ),
+          // ),
           child: CustomDropdown<SubCategoryAttributesData>.search(
             closeDropDownOnClearFilterSearch: true,
             items: widget.subCategories,
@@ -68,13 +72,13 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               closedFillColor: Color(0xffF4F7FD),
               expandedFillColor: Colors.white,
               closedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
-                width: 1,
+                color: widget.isValid ? const  Color(0xffF4F7FD) : Colors.red,
+                width: 1.5,
               ),
               closedBorderRadius: BorderRadius.circular(12),
               expandedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
-                width: 1,
+                color: widget.isValid ? const Color(0xffF4F7FD) : Colors.red,
+                width: 1.5,
               ),
               expandedBorderRadius: BorderRadius.circular(12),
             ),
@@ -85,7 +89,6 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               );
             },
             headerBuilder: (context, selectedItem, enabled) {
-              // No loading animation, just text
               return Text(
                 selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_category'),
                 style: categoryTextStyle,
@@ -108,7 +111,20 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             },
           ),
         ),
+        if (!widget.isValid) 
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              AppLocalizations.of(context)!.translate('   Поле обязательно для заполнения'),
+              style: TextStyle(
+              fontSize: 14,
+              color: Colors.red,
+              fontWeight: FontWeight.w400),
+            ),
+          ),
       ],
     );
   }
-}
+  
+  }
+  

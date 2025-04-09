@@ -32,7 +32,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final int? taskNumber;
   final String taskName;
   final String taskStatus;
-  final int statusId;
+  final int? statusId;
   final String? project;
   final int? projectId;
   // final String? user;
@@ -52,7 +52,7 @@ class TaskDetailsScreen extends StatefulWidget {
     this.taskNumber,
     required this.taskName,
     required this.taskStatus,
-    required this.statusId,
+     this.statusId,
     this.project,
     this.projectId,
     // this.user,
@@ -178,6 +178,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    print('================================================================');
+    print(widget.statusId);
+    print('================================================================');
+
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
     context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
@@ -802,9 +806,8 @@ Widget build(BuildContext context) {
             ),
             onPressed: () async {
                     final createdAtString = currentTask?.createdAt != null &&
-                            currentTask!.createdAt!.isNotEmpty
-                        ? DateFormat('dd/MM/yyyy')
-                            .format(DateTime.parse(currentTask!.createdAt!))
+                          currentTask!.createdAt!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(currentTask!.createdAt!))
                         : null;
 
                     if (currentTask != null) {
@@ -815,17 +818,13 @@ Widget build(BuildContext context) {
                             taskId: currentTask!.id,
                             taskName: currentTask!.name,
                             priority: currentTask!.priority,
-                            taskStatus: currentTask!.taskStatus?.taskStatus
-                                    .toString() ??
-                                '',
+                            taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
                             project: currentTask!.project?.id.toString(),
-                            user: currentTask!.user != null &&
-                                    currentTask!.user!.isNotEmpty
-                                ? currentTask!.user!
-                                    .map((user) => user.id)
-                                    .toList()
+                            user: currentTask!.user != null && currentTask!.user!.isNotEmpty
+                                ? currentTask!.user!.map((user) => user.id) .toList()
                                 : null,
-                            statusId: widget.statusId,
+                            statusId: currentTask!.taskStatus?.taskStatus.id ?? 0,
+                            // statusId: widget.statusId ?? 0,
                             description: currentTask!.description,
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,

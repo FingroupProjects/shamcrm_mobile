@@ -125,21 +125,23 @@ Widget _buildImageWidget(GoodsFile file) {
                       RichText(
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          text: widget.goodsDescription,
-                          style: TaskCardStyles.priorityStyle.copyWith(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                          children: const <TextSpan>[
-                            TextSpan(
-                              text: '\n\u200B', 
-                              style: TaskCardStyles.priorityStyle,
-                            ),
-                          ],
-                        ),
+                        text: widget.goodsDescription != 'null' 
+                            ? TextSpan(
+                                text: widget.goodsDescription,
+                                style: TaskCardStyles.priorityStyle.copyWith(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                children: const <TextSpan>[
+                                  TextSpan(
+                                    text: '\n\u200B', 
+                                    style: TaskCardStyles.priorityStyle,
+                                  ),
+                                ],
+                              )
+                            : const TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
                       ),
                       RichText(
                         maxLines: 2,

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -47,7 +48,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   void _initializeFieldsWithDefaults() {
     goodsNameController = TextEditingController(text: widget.goods.name ?? '');
-    goodsDescriptionController = TextEditingController(text: widget.goods.description ?? '');
+    goodsDescriptionController = TextEditingController( text: (widget.goods.description ?? '') == 'null' ? '' : (widget.goods.description ?? ''),);
     discountPriceController = TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
     stockQuantityController = TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     isActive = widget.goods.isActive ?? false;
@@ -203,40 +204,55 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 8),
-                  subCategories.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        )
-                      : CategoryDropdownWidget(
-                          selectedCategory: selectedCategory?.name,
-                          onSelectCategory: (category) {
-                            setState(() {
-                              selectedCategory = category;
-                              final existingAttributes = Map<String, String>.fromIterable(
-                                widget.goods.attributes,
-                                key: (attr) => attr.name,
-                                value: (attr) => attr.value,
-                              );
-                              attributeControllers.clear();
-                              if (category != null &&
-                                  category.attributes.isNotEmpty) {
-                                for (var attribute in category.attributes) {
-                                  attributeControllers[attribute.name] =
-                                      TextEditingController(
-                                    text: existingAttributes[attribute.name] ??
-                                        '',
-                                  );
-                                }
-                              }
-                            });
-                          },
-                          subCategories:
-                              subCategories.isEmpty ? [] : subCategories,
+                subCategories.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                         ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CategoryDropdownWidget(
+                            selectedCategory: selectedCategory?.name,
+                            onSelectCategory: (category) {
+                              setState(() {
+                                selectedCategory = category;
+                                isCategoryValid = category != null;
+                                final existingAttributes = Map<String, String>.fromIterable(
+                                  widget.goods.attributes,
+                                  key: (attr) => attr.name,
+                                  value: (attr) => attr.value,
+                                );
+                                attributeControllers.clear();
+                                if (category != null && category.attributes.isNotEmpty) {
+                                  for (var attribute in category.attributes) {
+                                    attributeControllers[attribute.name] =
+                                        TextEditingController(
+                                      text: existingAttributes[attribute.name] ?? '',
+                                    );
+                                  }
+                                }
+                              });
+                            },
+                            subCategories: subCategories.isEmpty ? [] : subCategories,
+                            isValid: isCategoryValid,
+                          ),
+                          if (!isCategoryValid)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Пожалуйста, выберите подкатегорию',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                   const SizedBox(height: 8),
                   if (selectedCategory != null &&
                       selectedCategory!.attributes.isNotEmpty)
@@ -281,39 +297,39 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ],
                     ),
                   const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _showImagePickerOptions,
-                    child: Container(
-                      width: double.infinity,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF4F7FD),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: const Color(0xffF4F7FD), width: 1),
-                      ),
-                      child: _imagePaths.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.camera_alt,
-                                      color: Color(0xff99A4BA), size: 40),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('pick_image'),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff99A4BA),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Stack(
+                 GestureDetector(
+                     onTap: _showImagePickerOptions,
+                     child: Container(
+                       width: double.infinity,
+                       height: 220,
+                       decoration: BoxDecoration(
+                         color: const Color(0xffF4F7FD),
+                         borderRadius: BorderRadius.circular(12),
+                         border: Border.all(
+                           color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                           width: 1.5,
+                         ),
+                       ),
+                       child: _imagePaths.isEmpty
+                           ? Center(
+                               child: Column(
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: [
+                                   Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                   const SizedBox(height: 8),
+                                   Text(
+                                     AppLocalizations.of(context)!.translate('pick_image'),
+                                     style: TextStyle(
+                                       fontSize: 14,
+                                       fontWeight: FontWeight.w500,
+                                       fontFamily: 'Gilroy',
+                                       color: Color(0xff99A4BA),
+                                   ),
+                                   ),
+                                 ],
+                               ),
+                             )
+                           : Stack(
                               children: [
                                 ReorderableWrap(
                                   spacing: 20,
@@ -395,6 +411,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             ),
                     ),
                   ),
+                  if (!isImagesValid)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('   Выберите хотя-бы одну фотографию!'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w400),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -475,50 +502,42 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           ),
         ),
       ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-        decoration: const BoxDecoration(color: Colors.white),
-        child: Row(
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                buttonColor: const Color(0xffF4F7FD),
-                textColor: Colors.black,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: CustomButton(
-                buttonText: isLoading
-                    ? ''
-                    : AppLocalizations.of(context)!.translate('save'),
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: () {
-                  if (isLoading) return;
-                  if (formKey.currentState!.validate() &&
-                      selectedCategory != null) {
-                    _updateProduct();
-                  }
-                },
-                child: isLoading
-                    ? SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-          ],
+    bottomSheet: Container(
+  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
+  decoration: const BoxDecoration(color: Colors.white),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Expanded(
+        child: CustomButton(
+          buttonText: AppLocalizations.of(context)!.translate('cancel'),
+          buttonColor: const Color(0xffF4F7FD),
+          textColor: Colors.black,
+          onPressed: () => Navigator.pop(context),
         ),
       ),
+      const SizedBox(width: 16),
+      Expanded(
+        child: isLoading
+            ? SizedBox(
+                height: 48,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: CircularProgressIndicator(
+                    color: const Color(0xff4759FF),
+                  ),
+                ),
+              )
+            : CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('save'),
+                buttonColor: const Color(0xff4759FF),
+                textColor: Colors.white,
+                onPressed: _updateProduct,
+              ),
+      ),
+    ],
+  ),
+),
     );
   }
 
@@ -573,29 +592,45 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _imagePaths.add(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _pickMultipleImages() async {
-    final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _imagePaths.addAll(pickedFiles.map((file) => file.path));
-      });
-    }
-  }
-
-  void _removeImage(String imagePath) {
+Future<void> _pickImage(ImageSource source) async {
+  final pickedFile = await _picker.pickImage(source: source);
+  if (pickedFile != null) {
     setState(() {
-      _imagePaths.remove(imagePath);
+      _imagePaths.add(pickedFile.path);
+      isImagesValid = true;
     });
   }
+}
+
+Future<void> _pickMultipleImages() async {
+  final pickedFiles = await _picker.pickMultiImage();
+  if (pickedFiles != null) {
+    setState(() {
+      _imagePaths.addAll(pickedFiles.map((file) => file.path));
+      isImagesValid = true;
+    });
+  }
+}
+
+void _removeImage(String imagePath) {
+  setState(() {
+    _imagePaths.remove(imagePath);
+    isImagesValid = _imagePaths.isNotEmpty;
+  });
+}
+
+bool isCategoryValid = true;
+bool isImagesValid = true;
+
+
+void validateForm() {
+  setState(() {
+    isCategoryValid = selectedCategory != null;
+    isImagesValid = _imagePaths.isNotEmpty;
+  });
+}
+
+
 
   void _updateProduct() async {
     setState(() => isLoading = true);
@@ -627,25 +662,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       );
 
       if (response['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Товар успешно обновлен')),
+        showCustomSnackBar(
+          context: context,
+          message:'Товар успешно обновлен!',
+          isSuccess: true,
         );
         Navigator.pop(context, true);
       } else {
         if (mounted) {
           setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    response['message'] ?? 'Ошибка при обновлении товара')),
-          );
+       showCustomSnackBar(
+          context: context,
+          message: response['message'] ?? 'Ошибка при обновлении товара',
+          isSuccess: false,
+        );
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: ${e.toString()}')),
+        showCustomSnackBar(
+          context: context,
+          message:'Ошибка при обновлении товара!',
+          isSuccess: false,
         );
       }
     }
