@@ -182,8 +182,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                                 orders: statusOrders,
                                 isLoading: state is OrderLoading && statusOrders.isEmpty,
                                 organizationId: widget.organizationId,
-                                onStatusUpdated: () => _onStatusUpdated(status.id), // Передаем коллбэк
-                                onStatusId: (newStatusId) => _onStatusUpdated(newStatusId), // Передаем коллбэк
+                                onStatusUpdated: () => _onStatusUpdated(status.id),
+                                onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
+                                onTabChange: (newTabIndex) {
+                                  setState(() {
+                                    _currentTabIndex = newTabIndex;
+                                  });
+                                  _tabController.animateTo(newTabIndex);
+                                  _scrollToActiveTab();
+                                }, // Передаем коллбэк для переключения таба
                               );
                             }).toList(),
                           ),
