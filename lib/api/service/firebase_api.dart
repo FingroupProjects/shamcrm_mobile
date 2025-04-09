@@ -3,6 +3,8 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
@@ -172,7 +174,7 @@ Future<void> navigateToScreen(
     prefs.setBool('hasNewNotification', false);
   });
 
-  int group = 1; // По умолчанию группа 1
+  int group = 1;
   if (type == 'message' || type == 'task' || type == 'lead' || type == 'dealDeadLineNotification' || type == 'eventId' || type == 'myTask') {
     group = 1;
   } else {
@@ -205,6 +207,10 @@ Future<void> navigateToScreen(
 
     case 'dealDeadLineNotification':
       await navigateToDealScreen(id, message);
+      break;
+
+    case 'orders':
+      await navigateToOrdersScreen(id, message);
       break;
 
     default:
@@ -376,7 +382,28 @@ Future<void> navigateToScreen(
         ),
       );
     }
+    
+
   
+}
+
+ Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
+  final orderId = int.tryParse(message.data['id'] ?? '');
+  if (orderId != null) {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => OrderDetailsScreen(
+          orderId: orderId,
+          order: Order(id: orderId,phone: '',orderNumber: '', delivery: false,
+            lead: OrderLead( id: 0, name: '', phone: '', channels: [] ),
+            orderStatus: OrderStatusName(id: 0, name: ''),
+            goods: [],
+          ),
+          categoryName: '',
+        ),
+      ),
+    );
+  }
 }
 
 // Фоновый обработчик сообщений
