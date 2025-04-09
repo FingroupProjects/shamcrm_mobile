@@ -10,8 +10,9 @@ class OrderColumn extends StatelessWidget {
   final List<Order> orders;
   final bool isLoading;
   final int? organizationId;
-  final VoidCallback onStatusUpdated; // Добавляем коллбэк
-  final void Function(int newStatusId) onStatusId; // Добавляем коллбэк
+  final VoidCallback onStatusUpdated;
+  final void Function(int newStatusId) onStatusId;
+  final Function(int) onTabChange; // Новый коллбэк
 
   const OrderColumn({
     required this.statusId,
@@ -20,8 +21,9 @@ class OrderColumn extends StatelessWidget {
     required this.orders,
     this.isLoading = false,
     this.organizationId,
-    required this.onStatusUpdated, // Делаем обязательным
-    required this.onStatusId, // Делаем обязательным
+    required this.onStatusUpdated,
+    required this.onStatusId,
+    required this.onTabChange, // Добавляем в конструктор
   });
 
   @override
@@ -45,8 +47,9 @@ class OrderColumn extends StatelessWidget {
                         return OrderCard(
                           order: order,
                           organizationId: organizationId ?? order.organizationId,
-                          onStatusUpdated: onStatusUpdated, // Передаем коллбэк
-                          onStatusId: onStatusId, // Передаем коллбэк
+                          onStatusUpdated: onStatusUpdated,
+                          onStatusId: onStatusId,
+                          onTabChange: onTabChange, // Передаем коллбэк
                         );
                       },
                     ),

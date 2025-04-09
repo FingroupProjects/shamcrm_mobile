@@ -11,7 +11,7 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   final Function(ManagerData) onSelectManager;
   final String? currentUserId;
 
-  ManagerRadioGroupWidget({
+  const ManagerRadioGroupWidget({
     super.key,
     required this.onSelectManager,
     this.selectedManager,
@@ -27,11 +27,12 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
+  bool isInitialized = false; // Флаг для предотвращения повторной инициализации
 
   @override
   void initState() {
     super.initState();
-    // Инициализируем список с "Системой", но не выбираем ничего автоматически
+    // Инициализируем список с "Системой"
     managersList = [
       ManagerData(
         id: -1,
@@ -39,7 +40,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
         lastname: "",
       ),
     ];
-    // Не устанавливаем selectedManagerData по умолчанию
 
     print(
         'ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}');
@@ -79,7 +79,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -87,52 +87,39 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               });
             }
 
-            // Обработка данных
-            List<ManagerData> currentManagersList = managersList;
-            ManagerData? currentSelectedManagerData = selectedManagerData;
-
-            if (state is GetAllManagerSuccess) {
-              currentManagersList = [
+            // Устанавливаем данные только при успехе и если еще не инициализировано
+            if (state is GetAllManagerSuccess && !isInitialized) {
+              managersList = [
                 ManagerData(
                   id: -1,
                   name: "Система",
                   lastname: "",
                 ),
-                ...?state.dataManager.result
+                ...?state.dataManager.result,
               ];
 
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() {
-                    managersList = currentManagersList;
-                    // Не устанавливаем selectedManagerData автоматически
-                    // Оставляем выбор только на основе widget.selectedManager, если он передан
-                    if (widget.selectedManager != null &&
-                        managersList.isNotEmpty) {
-                      try {
-                        selectedManagerData = managersList.firstWhere(
-                          (manager) =>
-                              manager.id.toString() == widget.selectedManager,
-                        );
-                      } catch (e) {
-                        selectedManagerData = null; // Ничего не выбрано
-                      }
-                    }
-                  });
-                }
-              });
+              if (widget.selectedManager != null && managersList.isNotEmpty) {
+                selectedManagerData = managersList.firstWhere(
+                  (manager) => manager.id.toString() == widget.selectedManager,
+                  orElse: () => managersList[0], // Default to "Система"
+                );
+              }
+              isInitialized = true; // Устанавливаем флаг после первой инициализации
             }
 
             // Отображаем UI
@@ -141,7 +128,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('manager'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -149,85 +136,84 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  child: CustomDropdown<ManagerData>.search(
-                    closeDropDownOnClearFilterSearch: true,
-                    items: currentManagersList,
-                    searchHintText:
-                        AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    enabled: true,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
-                      closedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(12),
+                CustomDropdown<ManagerData>.search(
+                  closeDropDownOnClearFilterSearch: true,
+                  items: managersList,
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
+                  overlayHeight: 400,
+                  enabled: true,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(
+                      color: Color(0xffF4F7FD),
+                      width: 1,
                     ),
-                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(
+                      color: Color(0xffF4F7FD),
+                      width: 1,
+                    ),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      '${item.name!} ${item.lastname ?? ''}'.trim(),
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    if (state is GetAllManagerLoading) {
                       return Text(
-                        '${item.name!} ${item.lastname ?? ''}'.trim(),
-                        style: TextStyle(
-                          color: Color(0xff1E2E52),
+                        AppLocalizations.of(context)!
+                            .translate('select_manager'),
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
                         ),
                       );
-                    },
-                    headerBuilder: (context, selectedItem, enabled) {
-                      if (state is GetAllManagerLoading) {
-                        return Text(
-                          AppLocalizations.of(context)!
+                    }
+                    return Text(
+                      selectedItem != null
+                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                              .trim()
+                          : AppLocalizations.of(context)!
                               .translate('select_manager'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        );
-                      }
-                      return Text(
-                        selectedItem != null
-                            ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
-                            : AppLocalizations.of(context)!
-                                .translate('select_manager'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      );
-                    },
-                    hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_manager'),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_manager'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
-                    excludeSelected: false,
-                    initialItem: currentSelectedManagerData,
-                    onChanged: (value) {
-                      if (value != null) {
-                        widget.onSelectManager(value);
-                        setState(() {
-                          selectedManagerData = value;
-                        });
-                      }
-                    },
                   ),
+                  excludeSelected: false,
+                  initialItem: selectedManagerData,
+                  onChanged: (value) {
+                    if (value != null) {
+                      widget.onSelectManager(value);
+                      setState(() {
+                        selectedManagerData = value;
+                      });
+                    }
+                  },
                 ),
               ],
             );
