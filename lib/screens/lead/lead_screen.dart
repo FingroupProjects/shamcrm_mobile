@@ -51,7 +51,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
-  
+
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
@@ -72,21 +72,25 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasNotices = false;
   bool? _hasContact = false;
   bool? _hasChat = false;
+  bool? _hasNoReplies = false; // Новый параметр
+  bool? _hasUnreadMessages = false; // Новый параметр
   bool? _hasDeal = false;
   int? _daysWithoutActivity;
 
-  List<ManagerData> _initialselectedManagers = [];
-  List<RegionData> _initialselectedRegions = [];
-  List<SourceData> _initialselectedSources = [];
+  List<ManagerData> _initialSelectedManagers = [];
+  List<RegionData> _initialSelectedRegions = [];
+  List<SourceData> _initialSelectedSources = [];
   int? _initialSelStatus;
-  DateTime? _intialFromDate;
-  DateTime? _intialToDate;
+  DateTime? _initialFromDate;
+  DateTime? _initialToDate;
   bool? _initialHasSuccessDeals;
   bool? _initialHasInProgressDeals;
   bool? _initialHasFailureDeals;
   bool? _initialHasNotices;
   bool? _initialHasContact;
   bool? _initialHasChat;
+  bool? _initialHasNoReplies; // Новый параметр
+  bool? _initialHasUnreadMessages; // Новый параметр
   bool? _initialHasDeal;
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
@@ -94,12 +98,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
 
-List<TargetFocus> targets = [];
+  List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isLeadScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
 
- @override
+  @override
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
@@ -108,10 +112,9 @@ List<TargetFocus> targets = [];
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-    
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {    
+        setState(() {
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
@@ -128,7 +131,6 @@ List<TargetFocus> targets = [];
       } else {
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses());
-
       }
     });
 
@@ -139,18 +141,20 @@ List<TargetFocus> targets = [];
     });
     _checkPermissions();
   }
+
   void _onScroll() {
-  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    if (leadBloc.state is LeadDataLoaded) {
-      final state = leadBloc.state as LeadDataLoaded;
-      if (!leadBloc.allLeadsFetched) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        leadBloc.add(FetchMoreLeads(currentStatusId, state.currentPage));
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      if (leadBloc.state is LeadDataLoaded) {
+        final state = leadBloc.state as LeadDataLoaded;
+        if (!leadBloc.allLeadsFetched) {
+          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          leadBloc.add(FetchMoreLeads(currentStatusId, state.currentPage));
+        }
       }
     }
   }
-}
 
   void _initTutorialTargets() {
     targets.clear();
@@ -158,8 +162,10 @@ List<TargetFocus> targets = [];
       createTarget(
         identify: "LeadSearchIcon",
         keyTarget: keySearchIcon,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
-        description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_search_description'), 
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_screen_search_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -167,8 +173,10 @@ List<TargetFocus> targets = [];
       createTarget(
         identify: "LeadMenuIcon",
         keyTarget: keyMenuIcon,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
-        description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_menu_description'), 
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_screen_menu_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -206,9 +214,9 @@ List<TargetFocus> targets = [];
         _isTutorialShown = isTutorialShown;
       });
 
-      if (tutorialProgress != null && 
-          tutorialProgress!['leads']?['index'] == false && 
-          !_isTutorialShown && 
+      if (tutorialProgress != null &&
+          tutorialProgress!['leads']?['index'] == false &&
+          !_isTutorialShown &&
           mounted) {
         _initTutorialTargets();
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -216,11 +224,6 @@ List<TargetFocus> targets = [];
             showTutorial();
           }
         });
-      } else {
-        // print('Tutorial not shown for LeadScreen. Reasons:');
-        // print('tutorialProgress: $tutorialProgress');
-        // print('leads/index: ${tutorialProgress?['leads']?['index']}');
-        // print('isTutorialShown: $_isTutorialShown');
       }
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -257,7 +260,7 @@ List<TargetFocus> targets = [];
         prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг для LeadColumn
+          _isLeadScreenTutorialCompleted = true;
         });
         return true;
       },
@@ -266,12 +269,12 @@ List<TargetFocus> targets = [];
         prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг для LeadColumn
+          _isLeadScreenTutorialCompleted = true;
         });
       },
     ).show(context: context);
   }
-  
+
   Future<void> _searchLeads(String query, int currentStatusId) async {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
 
@@ -293,6 +296,8 @@ List<TargetFocus> targets = [];
       hasNotices: _hasNotices,
       hasContact: _hasContact,
       hasChat: _hasChat,
+      hasNoReplies: _hasNoReplies, // Новый параметр
+      hasUnreadMessages: _hasUnreadMessages, // Новый параметр
       hasDeal: _hasDeal,
       daysWithoutActivity: _daysWithoutActivity,
     ));
@@ -313,20 +318,24 @@ List<TargetFocus> targets = [];
       _hasNotices = false;
       _hasContact = false;
       _hasChat = false;
+      _hasNoReplies = false; // Новый параметр
+      _hasUnreadMessages = false; // Новый параметр
       _hasDeal = false;
       _daysWithoutActivity = null;
-      _initialselectedManagers = [];
-      _initialselectedRegions = [];
-      _initialselectedSources = [];
+      _initialSelectedManagers = [];
+      _initialSelectedRegions = [];
+      _initialSelectedSources = [];
       _initialSelStatus = null;
-      _intialFromDate = null;
-      _intialToDate = null;
+      _initialFromDate = null;
+      _initialToDate = null;
       _initialHasSuccessDeals = false;
       _initialHasInProgressDeals = false;
       _initialHasFailureDeals = false;
       _initialHasNotices = false;
       _initialHasContact = false;
       _initialHasChat = false;
+      _initialHasNoReplies = false; // Новый параметр
+      _initialHasUnreadMessages = false; // Новый параметр
       _initialHasDeal = false;
       _initialDaysWithoutActivity = null;
       _lastSearchQuery = '';
@@ -351,21 +360,25 @@ List<TargetFocus> targets = [];
       _hasNotices = managers['hasNotices'];
       _hasContact = managers['hasContact'];
       _hasChat = managers['hasChat'];
+      _hasNoReplies = managers['hasNoReplies']; // Новый параметр
+      _hasUnreadMessages = managers['hasUnreadMessages']; // Новый параметр
       _hasDeal = managers['hasDeal'];
       _daysWithoutActivity = managers['daysWithoutActivity'];
 
-      _initialselectedManagers = managers['managers'];
-      _initialselectedRegions = managers['regions'];
-      _initialselectedSources = managers['sources'];
+      _initialSelectedManagers = managers['managers'];
+      _initialSelectedRegions = managers['regions'];
+      _initialSelectedSources = managers['sources'];
       _initialSelStatus = managers['statuses'];
-      _intialFromDate = managers['fromDate'];
-      _intialToDate = managers['toDate'];
+      _initialFromDate = managers['fromDate'];
+      _initialToDate = managers['toDate'];
       _initialHasSuccessDeals = managers['hasSuccessDeals'];
       _initialHasInProgressDeals = managers['hasInProgressDeals'];
       _initialHasFailureDeals = managers['hasFailureDeals'];
       _initialHasNotices = managers['hasNotices'];
       _initialHasContact = managers['hasContact'];
       _initialHasChat = managers['hasChat'];
+      _initialHasNoReplies = managers['hasNoReplies']; // Новый параметр
+      _initialHasUnreadMessages = managers['hasUnreadMessages']; // Новый параметр
       _initialHasDeal = managers['hasDeal'];
       _initialDaysWithoutActivity = managers['daysWithoutActivity'];
     });
@@ -386,6 +399,8 @@ List<TargetFocus> targets = [];
       hasNotices: _hasNotices,
       hasContact: _hasContact,
       hasChat: _hasChat,
+      hasNoReplies: _hasNoReplies, // Новый параметр
+      hasUnreadMessages: _hasUnreadMessages, // Новый параметр
       hasDeal: _hasDeal,
       daysWithoutActivity: _daysWithoutActivity,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
@@ -398,12 +413,12 @@ List<TargetFocus> targets = [];
     _searchLeads(query, currentStatusId);
   }
 
-  // Метод для проверки разрешений
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
 
   bool isClickAvatarIcon = false;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -431,18 +446,20 @@ List<TargetFocus> targets = [];
             _onSearch(value);
           },
           onManagersLeadSelected: _handleManagerSelected,
-          initialManagersLead: _initialselectedManagers,
-          initialManagersLeadRegions: _initialselectedRegions,
-          initialManagersLeadSources: _initialselectedSources,
+          initialManagersLead: _initialSelectedManagers,
+          initialManagersLeadRegions: _initialSelectedRegions,
+          initialManagersLeadSources: _initialSelectedSources,
           initialManagerLeadStatuses: _initialSelStatus,
-          initialManagerLeadFromDate: _intialFromDate,
-          initialManagerLeadToDate: _intialToDate,
+          initialManagerLeadFromDate: _initialFromDate,
+          initialManagerLeadToDate: _initialToDate,
           initialManagerLeadHasSuccessDeals: _initialHasSuccessDeals,
           initialManagerLeadHasInProgressDeals: _initialHasInProgressDeals,
           initialManagerLeadHasFailureDeals: _initialHasFailureDeals,
           initialManagerLeadHasNotices: _initialHasNotices,
           initialManagerLeadHasContact: _initialHasContact,
           initialManagerLeadHasChat: _initialHasChat,
+          initialManagerLeadHasNoReplies: _initialHasNoReplies, // Новый параметр
+          initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages, // Новый параметр
           initialManagerLeadHasDeal: _initialHasDeal,
           initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
           onLeadResetFilters: _resetFilters,
@@ -474,6 +491,8 @@ List<TargetFocus> targets = [];
                     _hasNotices == false &&
                     _hasContact == false &&
                     _hasChat == false &&
+                    _hasNoReplies == false && // Новый параметр
+                    _hasUnreadMessages == false && // Новый параметр
                     _hasDeal == false) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
@@ -507,6 +526,8 @@ List<TargetFocus> targets = [];
                     hasNotices: _hasNotices,
                     hasContact: _hasContact,
                     hasChat: _hasChat,
+                    hasNoReplies: _hasNoReplies, // Новый параметр
+                    hasUnreadMessages: _hasUnreadMessages, // Новый параметр
                     hasDeal: _hasDeal,
                     daysWithoutActivity: _daysWithoutActivity,
                   ));
@@ -550,7 +571,6 @@ List<TargetFocus> targets = [];
   }
 
   Widget searchWidget(List<Lead> leads) {
-    // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
       return Center(
         child: Text(
@@ -563,9 +583,7 @@ List<TargetFocus> targets = [];
           ),
         ),
       );
-    }
-    // Если это менеджер и список лидов пуст
-    else if (_isManager && leads.isEmpty) {
+    } else if (_isManager && leads.isEmpty) {
       return Center(
         child: Text(
           'У выбранного менеджера нет лидов',
@@ -577,9 +595,7 @@ List<TargetFocus> targets = [];
           ),
         ),
       );
-    }
-    // Если лидов вообще нет
-    else if (leads.isEmpty) {
+    } else if (leads.isEmpty) {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
@@ -592,7 +608,6 @@ List<TargetFocus> targets = [];
         ),
       );
     }
-    // Если лиды есть, показываем список
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
@@ -618,63 +633,62 @@ List<TargetFocus> targets = [];
     );
   }
 
-// Обновляем метод _buildManagerView для корректной обработки обоих случаев
- Widget _buildManagerView() {
-  return BlocBuilder<LeadBloc, LeadState>(
-    builder: (context, state) {
-      if (state is LeadDataLoaded) {
-        final List<Lead> leads = state.leads;
+  Widget _buildManagerView() {
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        if (state is LeadDataLoaded) {
+          final List<Lead> leads = state.leads;
+          final statusId = _tabTitles[_tabController.index]['id'];
+          final filteredLeads =
+              leads.where((lead) => lead.statusId == statusId).toList();
 
-        // Фильтрация по выбранному статусу
-        final statusId = _tabTitles[_tabController.index]['id'];
-        final filteredLeads = leads.where((lead) => lead.statusId == statusId).toList();
-
-        if (filteredLeads.isEmpty) {
-          return Center(
-            child: Text(
-              _selectedManagers != null
-                  ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
-                  : AppLocalizations.of(context)!.translate('nothing_found'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff99A4BA),
+          if (filteredLeads.isEmpty) {
+            return Center(
+              child: Text(
+                _selectedManagers != null
+                    ? AppLocalizations.of(context)!
+                        .translate('selected_manager_has_any_lead')
+                    : AppLocalizations.of(context)!.translate('nothing_found'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
               ),
+            );
+          }
+
+          return ListView.builder(
+            controller: _scrollController,
+            itemCount: filteredLeads.length,
+            itemBuilder: (context, index) {
+              final lead = filteredLeads[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: LeadCard(
+                  lead: lead,
+                  title: lead.leadStatus?.title ?? "",
+                  statusId: lead.statusId,
+                  onStatusUpdated: () {},
+                  onStatusId: (StatusLeadId) {},
+                ),
+              );
+            },
+          );
+        }
+        if (state is LeadLoading) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
             ),
           );
         }
-
-        return ListView.builder(
-          controller: _scrollController, 
-          itemCount: filteredLeads.length,
-          itemBuilder: (context, index) {
-            final lead = filteredLeads[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: LeadCard(
-                lead: lead,
-                title: lead.leadStatus?.title ?? "",
-                statusId: lead.statusId,
-                onStatusUpdated: () {},
-                onStatusId: (StatusLeadId) {},
-              ),
-            );
-          },
-        );
-      }
-      if (state is LeadLoading) {
-        return const Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
-          ),
-        );
-      }
-      return const SizedBox();
-    },
-  );
-}
+        return const SizedBox();
+      },
+    );
+  }
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
@@ -736,38 +750,38 @@ List<TargetFocus> targets = [];
       elevation: 4,
       color: Colors.white,
       items: [
-      if (_canUpdateLeadStatus) 
-        PopupMenuItem(
-          value: 'edit',
-          child: ListTile(
-            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-            title: Text(
-              'Изменить',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+        if (_canUpdateLeadStatus)
+          PopupMenuItem(
+            value: 'edit',
+            child: ListTile(
+              leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+              title: Text(
+                'Изменить',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
               ),
             ),
           ),
-        ),
-      if (_canDeleteLeadStatus) 
-        PopupMenuItem(
-          value: 'delete',
-          child: ListTile(
-            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-            title: Text(
-              'Удалить',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+        if (_canDeleteLeadStatus)
+          PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+              title: Text(
+                'Удалить',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
               ),
             ),
           ),
-        ),
       ],
     ).then((value) {
       if (value == 'edit') {
@@ -789,9 +803,15 @@ List<TargetFocus> targets = [];
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
             (status) => status.id == statusId,
-            orElse: () => LeadStatus(id: 0, title: '', leadsCount: 0, isSuccess: false, position: 1, isFailure: false) ,
+            orElse: () => LeadStatus(
+                id: 0,
+                title: '',
+                leadsCount: 0,
+                isSuccess: false,
+                position: 1,
+                isFailure: false),
           );
-          leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
+          leadCount = leadStatus?.leadsCount ?? 0;
         }
 
         return GestureDetector(
@@ -800,7 +820,7 @@ List<TargetFocus> targets = [];
             _tabController.animateTo(index);
           },
           onLongPress: () {
-              _showStatusOptions(context, index);
+            _showStatusOptions(context, index);
           },
           child: Container(
             decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -851,7 +871,6 @@ List<TargetFocus> targets = [];
   }
 
   void _deleteLeadStatus(int index) {
-    // Вызываем вашу существующую логику удаления
     _showDeleteDialog(index);
   }
 
@@ -882,8 +901,8 @@ List<TargetFocus> targets = [];
       });
 
       if (_tabTitles.isEmpty) {
-        await LeadCache.clearAllLeads(); 
-        await LeadCache.clearCache(); 
+        await LeadCache.clearAllLeads();
+        await LeadCache.clearCache();
       }
 
       context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -891,13 +910,13 @@ List<TargetFocus> targets = [];
   }
 
   void _editLeadStatus(int index) {
-    final leadStatus = _tabTitles[index]; 
+    final leadStatus = _tabTitles[index];
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
-          leadStatusId: leadStatus['id'], 
+          leadStatusId: leadStatus['id'],
         );
       },
     );
@@ -907,14 +926,20 @@ List<TargetFocus> targets = [];
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-          await LeadCache.cacheLeadStatuses(state.leadStatuses.map((status) => {'id': status.id, 'title': status.title}).toList());
+          await LeadCache.cacheLeadStatuses(state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
           setState(() {
-            _tabTitles = state.leadStatuses.where((status) => _canReadLeadStatus).map((status) => {'id': status.id, 'title': status.title}).toList();
+            _tabTitles = state.leadStatuses
+                .where((status) => _canReadLeadStatus)
+                .map((status) => {'id': status.id, 'title': status.title})
+                .toList();
 
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController =
+                  TabController(length: _tabTitles.length, vsync: this);
               _tabController.addListener(() {
                 setState(() {
                   _currentTabIndex = _tabController.index;
@@ -937,7 +962,6 @@ List<TargetFocus> targets = [];
                 _scrollToActiveTab();
               }
 
-              //Логика для перехода к созданн статусе
               if (navigateToEnd) {
                 navigateToEnd = false;
                 if (_tabController != null) {
@@ -945,7 +969,6 @@ List<TargetFocus> targets = [];
                 }
               }
 
-              //Логика для перехода к после удаления статусе на лево
               if (navigateAfterDelete) {
                 navigateAfterDelete = false;
                 if (_deletedIndex != null) {
@@ -958,9 +981,6 @@ List<TargetFocus> targets = [];
                   }
                 }
               }
-
-              // Сохраняем данные в кеш
-              // LeadCache.cacheLeadStatuses(_tabTitles);
             }
           });
         } else if (state is LeadError) {
@@ -978,8 +998,7 @@ List<TargetFocus> targets = [];
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -1003,7 +1022,6 @@ List<TargetFocus> targets = [];
       },
       child: BlocBuilder<LeadBloc, LeadState>(
         builder: (context, state) {
-          // print('state: ${state.runtimeType}');
           if (state is LeadDataLoaded) {
             final List<Lead> leads = state.leads;
             return searchWidget(leads);
@@ -1030,7 +1048,8 @@ List<TargetFocus> targets = [];
                   title: title,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
 
                     if (index != -1) {
                       _tabController.animateTo(index);

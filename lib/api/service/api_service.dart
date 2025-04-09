@@ -710,6 +710,8 @@ class ApiService {
     bool? hasChat,
     bool? hasDeal,
     int? daysWithoutActivity,
+    bool? hasNoReplies, // Новый параметр
+    bool? hasUnreadMessages, // Новый параметр
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
@@ -728,6 +730,8 @@ class ApiService {
         (hasContact == true) ||
         (hasChat == true) ||
         (hasDeal == true) ||
+        (hasNoReplies == true) || // Новый параметр
+        (hasUnreadMessages == true) || // Новый параметр
         (daysWithoutActivity != null) ||
         (statuses != null);
 
@@ -754,7 +758,15 @@ class ApiService {
         path += '&sources[$i]=${sources[i]}';
       }
     }
+    if (hasNoReplies == true) {
+      // Новый параметр
+      path += '&hasNoReplies=1';
+    }
 
+    if (hasUnreadMessages == true) {
+      // Новый параметр
+      path += '&hasUnreadMessages=1';
+    }
     if (statuses != null) {
       path += '&lead_status_id=$statuses';
     }
@@ -1252,7 +1264,7 @@ class ApiService {
     required int leadStatusId,
     required String phone,
     int? regionId,
-    int? sourceId, 
+    int? sourceId,
     int? managerId,
     String? instaLogin,
     String? facebookLogin,
@@ -1330,20 +1342,22 @@ class ApiService {
       return {'success': false, 'message': 'error_update_lead'};
     }
   }
+
 // Api Service
-Future<DealNameDataResponse> getAllDealNames() async {
-  final organizationId = await getSelectedOrganization();
+  Future<DealNameDataResponse> getAllDealNames() async {
+    final organizationId = await getSelectedOrganization();
 
-  final response = await _getRequest(
-      '/service${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/service${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    return DealNameDataResponse.fromJson(data);
-  } else {
-    throw ('Failed to load deal names');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return DealNameDataResponse.fromJson(data);
+    } else {
+      throw ('Failed to load deal names');
+    }
   }
-}
+
   //Метод для получения региона
   Future<RegionsDataResponse> getAllRegion() async {
     final organizationId = await getSelectedOrganization();
@@ -1468,8 +1482,7 @@ Future<DealNameDataResponse> getAllDealNames() async {
       throw Exception('Ошибка при получении данных!');
     }
 
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
 
     return dataLead;
   }
@@ -6211,24 +6224,25 @@ Future<Map<String, dynamic>> createMyTask({
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
   Future<List<Goods>> getGoods({int page = 1, int perPage = 20}) async {
-  final organizationId = await getSelectedOrganization();
-  final String path = '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
+    final organizationId = await getSelectedOrganization();
+    final String path =
+        '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
-    if (data.containsKey('result') && data['result']['data'] is List) {
-      return (data['result']['data'] as List)
-          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
-          .toList();
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      if (data.containsKey('result') && data['result']['data'] is List) {
+        return (data['result']['data'] as List)
+            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Ошибка: Неверный формат данных');
+      }
     } else {
-      throw Exception('Ошибка: Неверный формат данных');
+      throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
     }
-  } else {
-    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
-}
 
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
@@ -6299,7 +6313,8 @@ Future<Map<String, dynamic>> createMyTask({
       request.fields['description'] = description;
       request.fields['quantity'] = quantity.toString();
       request.fields['is_active'] = isActive.toString();
-      if (discountPrice != null) { // Добавлено
+      if (discountPrice != null) {
+        // Добавлено
         request.fields['discount_price'] = discountPrice.toString();
       }
 
@@ -6369,7 +6384,8 @@ Future<Map<String, dynamic>> createMyTask({
       request.fields['description'] = description;
       request.fields['quantity'] = quantity.toString();
       request.fields['is_active'] = isActive.toString();
-      if (discountPrice != null) { // Добавлено
+      if (discountPrice != null) {
+        // Добавлено
         request.fields['discount_price'] = discountPrice.toString();
       }
 
@@ -6410,7 +6426,6 @@ Future<Map<String, dynamic>> createMyTask({
       };
     }
   }
-
 
   Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
     try {
@@ -6569,7 +6584,7 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-Future<bool> createOrder({
+  Future<bool> createOrder({
     required String phone,
     required int leadId,
     required bool delivery,
@@ -6604,7 +6619,8 @@ Future<bool> createOrder({
         return true;
       } else {
         final jsonResponse = jsonDecode(response.body);
-        throw Exception(jsonResponse['message'] ?? 'Ошибка при создании заказа');
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при создании заказа');
       }
     } catch (e) {
       print('Ошибка создания заказа: $e');
@@ -6612,120 +6628,123 @@ Future<bool> createOrder({
     }
   }
 
+  // Метод для редактирование заказа
+  Future<bool> updateOrder({
+    required int orderId,
+    required String phone,
+    required int leadId,
+    required bool delivery,
+    required String deliveryAddress,
+    required List<Map<String, dynamic>> goods,
+    required int organizationId,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-  // Метод для редактирование заказа 
-Future<bool> updateOrder({
-  required int orderId,
-  required String phone,
-  required int leadId,
-  required bool delivery,
-  required String deliveryAddress,
-  required List<Map<String, dynamic>> goods,
-  required int organizationId,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+      final uri =
+          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+      final response = await http.patch(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'phone': phone,
+          'lead_id': leadId,
+          'delivery': delivery,
+          'delivery_address': deliveryAddress,
+          'goods': goods,
+          'organization_id': organizationId.toString(),
+        }),
+      );
 
-    final uri = Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-    final response = await http.patch(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode({
-        'phone': phone,
-        'lead_id': leadId,
-        'delivery': delivery,
-        'delivery_address': deliveryAddress,
-        'goods': goods,
-        'organization_id': organizationId.toString(),
-      }),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return true;
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+      }
+    } catch (e) {
+      print('Ошибка обновления заказа: $e');
+      return false;
     }
-  } catch (e) {
-    print('Ошибка обновления заказа: $e');
-    return false;
   }
-}
 
+//
+  Future<bool> deleteOrder({
+    required int orderId,
+    required int? organizationId,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-// 
-Future<bool> deleteOrder({
-  required int orderId,
-  required int? organizationId,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+      final uri =
+          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+      );
 
-    final uri = Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-    final response = await http.delete(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return true;
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при удалении заказа');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при удалении заказа');
+      }
+    } catch (e) {
+      print('Ошибка удаления заказа: $e');
+      return false;
     }
-  } catch (e) {
-    print('Ошибка удаления заказа: $e');
-    return false;
   }
-}
-
 
 // api_service.dart
-Future<bool> changeOrderStatus({
-  required int orderId,
-  required int statusId,
-  required int? organizationId,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+  Future<bool> changeOrderStatus({
+    required int orderId,
+    required int statusId,
+    required int? organizationId,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-    final uri = Uri.parse('$baseUrl/order/changeStatus/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode({
-        'status_id': statusId,
-      }),
-    );
+      final uri = Uri.parse(
+          '$baseUrl/order/changeStatus/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'status_id': statusId,
+        }),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return true;
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+      }
+    } catch (e) {
+      print('Ошибка смены статуса заказа: $e');
+      return false;
     }
-  } catch (e) {
-    print('Ошибка смены статуса заказа: $e');
-    return false;
   }
-}
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 }

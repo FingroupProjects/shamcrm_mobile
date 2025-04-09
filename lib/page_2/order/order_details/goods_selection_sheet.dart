@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductSelectionSheet extends StatefulWidget {
-  final Order order; 
+  final Order order;
 
   const ProductSelectionSheet({required this.order, super.key});
 
@@ -23,12 +23,17 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   String _selectedFilter = 'Новый';
   String? baseUrl;
   final ApiService _apiService = ApiService();
+  final ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
-    context.read<GoodsBloc>().add(FetchGoods());
+    context.read<GoodsBloc>().add(FetchGoods(page: _currentPage));
+    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -59,61 +64,80 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     });
   }
 
-void _updateOrderWithSelectedProducts(List<Goods> goods) {
-  // Собираем новые выбранные товары
-  final selectedProducts = goods
-      .where((product) => product.isSelected == true)
-      .map((product) => {
-            'good_id': product.id,
-            'quantity': product.quantitySelected ?? 1,
-            'price': product.discountPrice ?? 0.0,
-          })
-      .toList();
-
-  if (selectedProducts.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Выберите хотя бы один товар',
-          style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
-        ),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _loadMoreGoods();
+    }
   }
 
-  // Собираем ВСЕ текущие товары заказа
-  final currentGoods = widget.order.goods
-      .map((good) => {
-            'good_id': good.goodId,
-            'quantity': good.quantity,
-            'price': good.price,
-          })
-      .toList();
+  void _loadMoreGoods() {
+    final state = context.read<GoodsBloc>().state;
+    if (state is GoodsDataLoaded) {
+      setState(() {
+        _isLoadingMore = true;
+      });
+      context.read<GoodsBloc>().add(FetchMoreGoods(state.pagination.currentPage));
+    }
+  }
 
-  // Объединяем текущие и новые товары
-  final updatedGoods = [...currentGoods, ...selectedProducts];
+  void _updateOrderWithSelectedProducts(List<Goods> goods) {
+    final selectedProducts = goods
+        .where((product) => product.isSelected == true)
+        .map((product) => {
+              'good_id': product.id,
+              'quantity': product.quantitySelected ?? 1,
+              'price': product.discountPrice ?? 0.0,
+            })
+        .toList();
 
-  // Логирование для отладки
-  print('Current goods: $currentGoods');
-  print('Selected products: $selectedProducts');
-  print('Updated goods: $updatedGoods');
+    if (selectedProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Выберите хотя бы один товар',
+            style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  // Отправляем событие обновления заказа
-  context.read<OrderBloc>().add(UpdateOrder(
-    orderId: widget.order.id,
-    phone: widget.order.phone,
-    leadId: widget.order.lead.id,
-    delivery: widget.order.delivery,
-    deliveryAddress: widget.order.deliveryAddress ?? '',
-    goods: updatedGoods,
-    organizationId: 1, // Можно сделать динамическим
-  ));
+    final currentGoods = widget.order.goods
+        .map((good) => {
+              'good_id': good.goodId,
+              'quantity': good.quantity,
+              'price': good.price,
+            })
+        .toList();
 
-  // Закрываем BottomSheet после отправки
-  Navigator.pop(context);
-}
+    final updatedGoods = [...currentGoods, ...selectedProducts];
+
+    print('Current goods: $currentGoods');
+    print('Selected products: $selectedProducts');
+    print('Updated goods: $updatedGoods');
+
+    context.read<OrderBloc>().add(UpdateOrder(
+      orderId: widget.order.id,
+      phone: widget.order.phone,
+      leadId: widget.order.lead.id,
+      delivery: widget.order.delivery,
+      deliveryAddress: widget.order.deliveryAddress ?? '',
+      goods: updatedGoods,
+      organizationId: 1,
+    ));
+
+    Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,9 +153,17 @@ void _updateOrderWithSelectedProducts(List<Goods> goods) {
           _buildSearchField(),
           const SizedBox(height: 12),
           Expanded(
-            child: BlocBuilder<GoodsBloc, GoodsState>(
+            child: BlocConsumer<GoodsBloc, GoodsState>(
+              listener: (context, state) {
+                if (state is GoodsDataLoaded) {
+                  setState(() {
+                    _isLoadingMore = false;
+                    _hasMore = state.pagination.currentPage < state.pagination.totalPages;
+                  });
+                }
+              },
               builder: (context, state) {
-                if (state is GoodsLoading) {
+                if (state is GoodsLoading && _currentPage == 1) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is GoodsDataLoaded) {
                   final filteredProducts = _searchQuery.isEmpty
@@ -141,7 +173,7 @@ void _updateOrderWithSelectedProducts(List<Goods> goods) {
                               .toLowerCase()
                               .contains(_searchQuery.toLowerCase()))
                           .toList();
-                  return _buildProductList(filteredProducts);
+                  return _buildProductList(filteredProducts, state);
                 } else if (state is GoodsEmpty) {
                   return const Center(child: Text('Товары не найдены'));
                 } else if (state is GoodsError) {
@@ -213,47 +245,62 @@ void _updateOrderWithSelectedProducts(List<Goods> goods) {
     );
   }
 
-  Widget _buildProductList(List<Goods> products) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        final product = products[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                product.isSelected = !product.isSelected;
-                if (!product.isSelected) product.quantitySelected = 1;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
+  Widget _buildProductList(List<Goods> products, GoodsDataLoaded state) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: products.length + (_isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == products.length && _isLoadingMore) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(),
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  _buildProductImage(product),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildProductDetails(product)),
-                  _buildSelectionIndicator(product),
-                ],
-              ),
-            ),
+                );
+              }
+              final product = products[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      product.isSelected = !product.isSelected;
+                      if (!product.isSelected) product.quantitySelected = 1;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        _buildProductImage(product),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildProductDetails(product)),
+                        _buildSelectionIndicator(product),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 

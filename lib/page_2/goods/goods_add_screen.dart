@@ -29,7 +29,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController stockQuantityController = TextEditingController();
 
   SubCategoryAttributesData? selectedCategory;
-  bool isActive = false;
+  bool isActive = true;
   List<SubCategoryAttributesData> subCategories = [];
 
   final ImagePicker _picker = ImagePicker();
@@ -240,46 +240,71 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   spacing: 20,
                                   runSpacing: 10,
                                   padding: const EdgeInsets.all(8),
-                                  children: _imagePaths.map((imagePath) {
-                                    return Container(
-                                      key: ValueKey(imagePath),
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        image: DecorationImage(
-                                          image: FileImage(File(imagePath)),
-                                          fit: BoxFit.cover,
+                                  children: [
+                                    ..._imagePaths.map((imagePath) {
+                                      return Container(
+                                        key: ValueKey(imagePath),
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          image: DecorationImage(
+                                            image: FileImage(File(imagePath)),
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
-                                      ),
-                                      child: Stack(
-                                        children: [
-                                          Positioned(
-                                            top: 4,
-                                            right: 4,
-                                            child: GestureDetector(
-                                              onTap: () =>
-                                                  _removeImage(imagePath),
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black
-                                                      .withOpacity(0.5),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.close,
-                                                  color: Colors.white,
-                                                  size: 16,
+                                        child: Stack(
+                                          children: [
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: GestureDetector(
+                                                onTap: () =>
+                                                    _removeImage(imagePath),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withOpacity(0.5),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 16,
+                                                  ),
                                                 ),
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                    // Добавляем иконку для добавления нового изображения
+                                    GestureDetector(
+                                      onTap: _showImagePickerOptions,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xffF4F7FD),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Color(0xffF4F7FD)),
+                                        ),
+                                        child: Center(
+                                          child: Image.asset(
+                                            'assets/icons/files/add.png',
+                                            width: 100,
+                                            height: 100,
                                           ),
-                                        ],
+                                        ),
                                       ),
-                                    );
-                                  }).toList(),
+                                    ),
+                                  ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
                                       final item =
@@ -528,7 +553,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           attributeNames: attributes,
           images: images, // Передаем список изображений вместо одного файла
           isActive: isActive,
-          discountPrice: double.tryParse(discountPriceController.text), // Добавлено
+          discountPrice:
+              double.tryParse(discountPriceController.text), // Добавлено
         );
 
         if (response['success'] == true) {

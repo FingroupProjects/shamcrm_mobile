@@ -19,6 +19,8 @@ class FetchLeads extends LeadEvent {
   final bool? hasNotices;
   final bool? hasContact;
   final bool? hasChat;
+  final bool? hasNoReplies; // Новый параметр
+  final bool? hasUnreadMessages; // Новый параметр
   final bool? hasDeal;
   final int? daysWithoutActivity;
 
@@ -37,6 +39,8 @@ class FetchLeads extends LeadEvent {
     this.hasNotices,
     this.hasContact,
     this.hasChat,
+    this.hasNoReplies, // Новый параметр
+    this.hasUnreadMessages, // Новый параметр
     this.hasDeal,
     this.daysWithoutActivity,
   });
@@ -54,7 +58,6 @@ class FetchMoreLeads extends LeadEvent {
   FetchMoreLeads(this.statusId, this.currentPage);
 }
 
-// Новое событие для обновления количества лидов
 class UpdateLeadCounts extends LeadEvent {
   final int statusId;
   final int count;
@@ -82,7 +85,7 @@ class CreateLeadStatus extends LeadEvent {
 
 class CreateLead extends LeadEvent {
   final String name;
-  final int leadStatusId;   
+  final int leadStatusId;
   final String phone;
   final int? regionId;
   final int? managerId;
@@ -97,6 +100,7 @@ class CreateLead extends LeadEvent {
   final List<Map<String, String>>? customFields;
   final AppLocalizations localizations;
   final bool isSystemManager;
+
   CreateLead({
     required this.name,
     required this.leadStatusId,
@@ -124,7 +128,6 @@ class UpdateLead extends LeadEvent {
   final String phone;
   final int? regionId;
   final int? sourseId;
-
   final int? managerId;
   final String? instaLogin;
   final String? facebookLogin;
@@ -134,7 +137,7 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
-  final bool isSystemManager; // Добавляем флаг для "Системы"
+  final bool isSystemManager;
   final AppLocalizations localizations;
 
   UpdateLead({
@@ -154,7 +157,7 @@ class UpdateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     required this.localizations,
-    this.isSystemManager = false, // По умолчанию false
+    this.isSystemManager = false,
   });
 }
 
@@ -178,7 +181,6 @@ class DeleteLeadStatuses extends LeadEvent {
   );
 }
 
-// Event для изменения статуса лида
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;
   final String title;

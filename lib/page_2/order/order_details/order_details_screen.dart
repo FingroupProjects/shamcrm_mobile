@@ -19,7 +19,7 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.orderId,
     required this.order,
     required this.categoryName,
-     this.organizationId, // Добавляем в конструктор
+    this.organizationId, // Добавляем в конструктор
   });
 
   @override
@@ -42,6 +42,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     details = [
       {'label': 'Номер заказа:', 'value': order.orderNumber},
+      {'label': 'Номер телефона:', 'value': order.phone},
       {'label': 'Дата заказа:', 'value': formattedDate},
       {'label': 'Клиент:', 'value': order.lead.name},
       {'label': 'Статус заказа:', 'value': order.orderStatus.name},

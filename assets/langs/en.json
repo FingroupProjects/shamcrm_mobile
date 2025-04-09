@@ -863,7 +863,13 @@
   "selected_manager": "Selected managers:",
   "branches": "Branches",
   "select_branch": "Select branch",
-  "appbar_orders": "Orders"
+  "appbar_orders": "Orders",
+  "goods_finished": "Status",
+  "deal_name": "Name",
+  "select_deal_name": "Enter name",
+  "with_unread_messages": "With unread messages",
+  "without_replies": "No reply"
+
 
 
 

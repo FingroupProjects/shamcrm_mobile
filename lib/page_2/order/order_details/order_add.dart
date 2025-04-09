@@ -16,11 +16,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderAddScreen extends StatefulWidget {
-  final Order? order; // Делаем order необязательным (nullable)
-  final int? organizationId; // Добавляем новое поле
+  final Order? order;
+  final int? organizationId;
 
-  const OrderAddScreen({this.order, super.key, this.organizationId, // Добавляем в конструктор
-  });
+  const OrderAddScreen({this.order, super.key, this.organizationId});
 
   @override
   State<OrderAddScreen> createState() => _OrderAddScreenState();
@@ -37,14 +36,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? _deliveryMethod;
   Branch? _selectedBranch;
   String? selectedDialCode;
+  String? baseUrl;
 
   @override
   void initState() {
     super.initState();
-    // Инициализация контроллеров с учетом того, что order может быть null
     _phoneController = TextEditingController(text: widget.order?.phone ?? '');
     _deliveryAddressController =
         TextEditingController(text: widget.order?.deliveryAddress ?? '');
+    _initializeBaseUrl();
     if (widget.order != null) {
       _items = widget.order!.goods
           .map((good) => {
@@ -52,10 +52,27 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 'name': good.goodName,
                 'price': good.price,
                 'quantity': good.quantity,
+                'imagePath': null, // Можно добавить из API, если доступно
               })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
       _deliveryMethod = widget.order!.delivery ? 'Доставка' : 'Самовывоз';
+    }
+  }
+
+  Future<void> _initializeBaseUrl() async {
+    final apiService = ApiService();
+    try {
+      final enteredDomainMap = await apiService.getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+      });
     }
   }
 
@@ -67,61 +84,76 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     super.dispose();
   }
 
-Widget _buildPlaceholderImage() {
-  return Container(
-    width: 48,
-    height: 48,
-    color: Colors.grey[200],
-    child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
-  );
-}
-
-// Обновляем _navigateToAddProduct
-void _navigateToAddProduct() async {
-  final Order tempOrder = widget.order ??
-      Order(
-        id: 0,
-        phone: _phoneController.text,
-        orderNumber: '',
-        delivery: _deliveryMethod == 'Доставка',
-        deliveryAddress: _deliveryAddressController.text,
-        lead: OrderLead(
-          id: int.tryParse(selectedLead ?? '0') ?? 0,
-          name: '',
-          channels: [],
-          phone: _phoneController.text,
-        ),
-        orderStatus: OrderStatusName(id: 0, name: ''),
-        goods: _items
-            .map((item) => Good(
-                  good: item['id'],
-                  goodName: item['name'],
-                  price: item['price'],
-                  quantity: item['quantity'],
-                  goodId: item['id'],
-                ))
-            .toList(),
-        organizationId: widget.organizationId,
-      );
-
-  final result = await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
-  );
-
-  if (result != null && result is List<Map<String, dynamic>>) {
-    setState(() {
-      _items.addAll(result.map((item) => {
-            'id': item['id'],
-            'name': item['name'],
-            'price': item['price'],
-            'quantity': item['quantity'],
-            'imagePath': item['imagePath'], // Добавляем путь к изображению
-          }));
-    });
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 48,
+      height: 48,
+      color: Colors.grey[200],
+      child:
+          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+    );
   }
-}
+
+  void _navigateToAddProduct() async {
+    final Order tempOrder = widget.order ??
+        Order(
+          id: 0,
+          phone: _phoneController.text,
+          orderNumber: '',
+          delivery: _deliveryMethod == 'Доставка',
+          deliveryAddress: _deliveryAddressController.text,
+          lead: OrderLead(
+            id: int.tryParse(selectedLead ?? '0') ?? 0,
+            name: '',
+            channels: [],
+            phone: _phoneController.text,
+          ),
+          orderStatus: OrderStatusName(id: 0, name: ''),
+          goods: _items
+              .map((item) => Good(
+                    good: GoodItem(
+                      id: item['id'],
+                      name: item['name'],
+                      description: '', // Пустое значение, так как нет данных
+                      quantity: item['quantity'],
+                      files: item['imagePath'] != null
+                          ? [
+                              GoodFile(
+                                id: 0, // Заглушка, если ID неизвестен
+                                name: '',
+                                path: item['imagePath'],
+                              )
+                            ]
+                          : [],
+                    ),
+                    goodId: item['id'],
+                    goodName: item['name'],
+                    price: item['price'],
+                    quantity: item['quantity'],
+                  ))
+              .toList(),
+          organizationId: widget.organizationId,
+        );
+
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
+    );
+
+    if (result != null && result is List<Map<String, dynamic>>) {
+      setState(() {
+        _items.addAll(result.map((item) => {
+              'id': item['id'],
+              'name': item['name'],
+              'price': item['price'],
+              'quantity': item['quantity'],
+              'imagePath': item['imagePath'],
+            }));
+        print('Добавленные товары: $_items');
+      });
+    }
+  }
 
   void _updateQuantity(int index, int newQuantity) {
     setState(() {
@@ -152,7 +184,6 @@ void _navigateToAddProduct() async {
                 SnackBar(content: Text(state.message)),
               );
             } else if (state is OrderLoaded && state.orderDetails != null) {
-              // Обновляем локальные данные после редактирования через ProductSelectionSheet
               setState(() {
                 _items = state.orderDetails!.goods
                     .map((good) => {
@@ -160,6 +191,9 @@ void _navigateToAddProduct() async {
                           'name': good.goodName,
                           'price': good.price,
                           'quantity': good.quantity,
+                          'imagePath': good.good.files.isNotEmpty
+                              ? good.good.files[0].path
+                              : null,
                         })
                     .toList();
                 _phoneController.text = state.orderDetails!.phone;
@@ -372,171 +406,158 @@ void _navigateToAddProduct() async {
     );
   }
 
- Widget _buildItemCard(int index, Map<String, dynamic> item) {
-  final ApiService apiService = ApiService();
-  String? baseUrl;
-
-  Future<void> _loadBaseUrl() async {
-    try {
-      final enteredDomainMap = await apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-    } catch (error) {
-      baseUrl = 'https://shamcrm.com/storage/';
-    }
-  }
-
-  return FutureBuilder(
-    future: _loadBaseUrl(),
-    builder: (context, snapshot) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 3,
-                offset: const Offset(0, 1))
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 48,
-              height: 48,
-              child: item['imagePath'] != null && baseUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        '$baseUrl/${item['imagePath']}',
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildPlaceholderImage(),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return _buildPlaceholderImage();
-                        },
-                      ),
-                    )
-                  : _buildPlaceholderImage(),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item['name'] ?? 'Без названия',
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(item['id'].toString(),
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA))),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+  Widget _buildItemCard(int index, Map<String, dynamic> item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1))
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: item['imagePath'] != null && baseUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      '$baseUrl/${item['imagePath']}',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildPlaceholderImage(),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff4759FF)),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : _buildPlaceholderImage(),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Цена',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA))),
-                        Text('${item['price'].toStringAsFixed(3)}',
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Сумма',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA))),
-                        Text(
-                            '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: const Color(0xffF4F7FD)),
-                      child: Row(
-                        children: [
-                          IconButton(
-                              icon: const Icon(Icons.remove, size: 20),
-                              color: const Color(0xff1E2E52),
-                              onPressed: () => _updateQuantity(
-                                  index, (item['quantity'] ?? 1) - 1)),
-                          Text('${item['quantity'] ?? 1}',
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52))),
-                          IconButton(
-                              icon: const Icon(Icons.add, size: 20),
-                              color: const Color(0xff1E2E52),
-                              onPressed: () => _updateQuantity(
-                                  index, (item['quantity'] ?? 1) + 1)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                        icon: const Icon(Icons.delete,
-                            color: Color(0xff99A4BA), size: 20),
-                        onPressed: () => _removeItem(index)),
-                  ],
-                ),
+                Text(item['name'] ?? 'Без названия',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(item['id'].toString(),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA))),
               ],
             ),
-          ],
-        ),
-      );
-    },
-  );
-}
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Цена',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text('${item['price'].toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Сумма',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text(
+                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF4F7FD)),
+                    child: Row(
+                      children: [
+                        IconButton(
+                            icon: const Icon(Icons.remove, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) - 1)),
+                        Text('${item['quantity'] ?? 1}',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52))),
+                        IconButton(
+                            icon: const Icon(Icons.add, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) + 1)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                      icon: const Icon(Icons.delete,
+                          color: Color(0xff99A4BA), size: 20),
+                      onPressed: () => _removeItem(index)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(
@@ -581,10 +602,10 @@ void _navigateToAddProduct() async {
                         goods: _items
                             .map((item) => {
                                   'good_id': item['id'],
-                                  'quantity': item['quantity'] ?? 1
+                                  'quantity': item['quantity'] ?? 1,
                                 })
                             .toList(),
-                        organizationId: 1, // Можно сделать динамическим
+                        organizationId: widget.organizationId ?? 1,
                       ));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
