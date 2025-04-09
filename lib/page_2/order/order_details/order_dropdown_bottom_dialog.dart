@@ -13,13 +13,14 @@ void OrderDropdownBottomSheet(
   BuildContext context,
   String defaultValue,
   Function(String, int) onSelect,
-  Order order,
-) {
+  Order order, {
+  required Function(int) onTabChange, // Новый коллбэк для переключения таба
+}) {
   String selectedValue = defaultValue;
   int? selectedStatusId = order.orderStatus.id;
 
-  // Проверяем текущее состояние и загружаем статусы только если их нет
   final currentState = context.read<OrderBloc>().state;
+  print('Состояние перед открытием BottomSheet: $currentState');
   if (currentState is! OrderLoaded || currentState.statuses.isEmpty) {
     context.read<OrderBloc>().add(FetchOrderStatuses());
     print('Отправлено событие FetchOrderStatuses');
@@ -36,10 +37,10 @@ void OrderDropdownBottomSheet(
     builder: (BuildContext context) {
       return BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
-          print('Текущее состояние в OrderDropdownBottomSheet: $state');
+          print('Текущее состояние в BlocBuilder: $state');
 
-          if (state is OrderLoaded && state.statuses.isNotEmpty) {
-            final orderStatuses = state.statuses;
+          if (currentState is OrderLoaded && currentState.statuses.isNotEmpty) {
+            final orderStatuses = currentState.statuses;
             return StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return Container(
@@ -116,10 +117,7 @@ void OrderDropdownBottomSheet(
 
                             final newTabIndex = orderStatuses.indexWhere((status) => status.id == selectedStatusId);
                             if (newTabIndex != -1) {
-                              final tabController = DefaultTabController.of(context);
-                              if (tabController != null) {
-                                tabController.animateTo(newTabIndex);
-                              }
+                              onTabChange(newTabIndex); // Передаем индекс таба через коллбэк
                               context.read<OrderBloc>().add(FetchOrders(statusId: selectedStatusId!));
                             }
                           } else {
