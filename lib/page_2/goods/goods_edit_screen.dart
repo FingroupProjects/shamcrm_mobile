@@ -41,22 +41,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeFields();
-    _loadInitialData();
+    _initializeFieldsWithDefaults();
+    _loadAllDataSequentially();
   }
 
-  Future<void> _loadInitialData() async {
-    await _initializeBaseUrl();
-    if (mounted) {
-      setState(() {
-        if (widget.goods.files.isNotEmpty) {
-          _imagePaths = widget.goods.files
-              .map((file) => '$baseUrl/${file.path}')
-              .toList();
-        }
-      });
-    }
-    await fetchSubCategories();
+  void _initializeFieldsWithDefaults() {
+    goodsNameController = TextEditingController(text: widget.goods.name ?? '');
+    goodsDescriptionController = TextEditingController(text: widget.goods.description ?? '');
+    discountPriceController = TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
+    stockQuantityController = TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    isActive = widget.goods.isActive ?? false;
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -69,17 +63,38 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       baseUrl = 'https://shamcrm.com/storage/';
     }
   }
+  Future<void> _loadAllDataSequentially() async {
+    setState(() => isLoading = true);
+    
+    try {
+      await _initializeBaseUrl();
+      
+      if (mounted && widget.goods.files.isNotEmpty) {
+        setState(() {
+          _imagePaths = widget.goods.files
+              .map((file) => '$baseUrl/${file.path}')
+              .toList();
+        });
+      }
+      
+      await fetchSubCategories();
+      
+      _initializeFieldsWithData();
+    } catch (e) {
+      print('Error loading all data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка загрузки данных: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
 
-  void _initializeFields() {
-    goodsNameController = TextEditingController(text: widget.goods.name);
-    goodsDescriptionController =
-        TextEditingController(text: widget.goods.description);
-    discountPriceController = TextEditingController(
-        text: widget.goods.discountPrice?.toString() ?? '');
-    stockQuantityController =
-        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
-    isActive = widget.goods.isActive ?? false;
-
+  void _initializeFieldsWithData() {
     selectedCategory = SubCategoryAttributesData(
       id: widget.goods.category.id,
       name: widget.goods.category.name,
@@ -92,65 +107,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           .toList(),
     );
 
-    // Инициализируем контроллеры атрибутов из данных товара
+    attributeControllers.clear();
     for (var attribute in widget.goods.attributes) {
-      attributeControllers[attribute.name] =
-          TextEditingController(text: attribute.value);
+      attributeControllers[attribute.name] = TextEditingController(text: attribute.value);
     }
   }
 
   Future<void> fetchSubCategories() async {
-    setState(() => isLoading = true);
     try {
       final categories = await _apiService.getSubCategoryAttributes();
       if (mounted) {
         setState(() {
           subCategories = categories;
-          final foundCategory = subCategories.isNotEmpty
-              ? subCategories.firstWhere(
-                  (cat) => cat.id == widget.goods.category.id,
-                  orElse: () => SubCategoryAttributesData(
-                    id: widget.goods.category.id,
-                    name: widget.goods.category.name,
-                    parent: ParentCategory(
-                        id: widget.goods.category.id,
-                        name: widget.goods.category.name),
-                    attributes: widget.goods.attributes
-                        .map((attr) => Attribute(
-                            id: 0, name: attr.name, value: attr.value))
-                        .toList(),
-                  ),
-                )
-              : selectedCategory!;
-          selectedCategory = foundCategory;
-
-          // Сохраняем существующие значения атрибутов
-          final existingAttributes = Map<String, String>.fromIterable(
-            widget.goods.attributes,
-            key: (attr) => attr.name,
-            value: (attr) => attr.value,
-          );
-
-          // Обновляем контроллеры для атрибутов текущей подкатегории
-          attributeControllers.clear();
-          for (var attribute in selectedCategory!.attributes) {
-            attributeControllers[attribute.name] = TextEditingController(
-              text: existingAttributes[attribute.name] ?? '',
-            );
-          }
         });
       }
     } catch (e) {
       print('Error fetching subcategories: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки подкатегорий: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      throw e; 
     }
   }
 
@@ -243,8 +216,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           onSelectCategory: (category) {
                             setState(() {
                               selectedCategory = category;
-                              final existingAttributes =
-                                  Map<String, String>.fromIterable(
+                              final existingAttributes = Map<String, String>.fromIterable(
                                 widget.goods.attributes,
                                 key: (attr) => attr.name,
                                 value: (attr) => attr.value,
@@ -300,11 +272,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               ),
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
-                                controller:
-                                    attributeControllers[attribute.name] ??
-                                        TextEditingController(),
-                                hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                controller: attributeControllers[attribute.name] ?? TextEditingController(),
+                                hintText: 'Введите ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -679,8 +648,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         attributeNames: attributes,
         images: images,
         isActive: isActive,
-        discountPrice:
-            double.tryParse(discountPriceController.text), // Добавлено
+        discountPrice: double.tryParse(discountPriceController.text), 
       );
 
       if (response['success'] == true) {

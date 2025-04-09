@@ -40,7 +40,7 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late String dropdownValue; 
   late int statusIdTask;
 
   @override
@@ -48,14 +48,12 @@ class _TaskCardState extends State<TaskCard> {
     super.initState();
     dropdownValue = widget.name;
     statusIdTask = widget.statusId;
-    print('=====------------------------================');
-    print(statusIdTask);
   }
 
   /// Форматирование даты в `dd.MM.yyyy`
   String formatDate(String dateString) {
-    DateTime dateTime = DateTime.parse(dateString); // Преобразование строки в дату
-    return DateFormat('dd.MM.yyyy').format(dateTime); // Форматирование даты
+    DateTime dateTime = DateTime.parse(dateString); 
+    return DateFormat('dd.MM.yyyy').format(dateTime); 
   }
 
   /// Получение количества просроченных дней
