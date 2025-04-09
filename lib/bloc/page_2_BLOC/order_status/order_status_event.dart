@@ -11,6 +11,14 @@ class FetchOrders extends OrderEvent {
   FetchOrders({this.statusId, this.page = 1, this.perPage = 20});
 }
 
+class FetchMoreOrders extends OrderEvent {
+  final int? statusId;
+  final int page;
+  final int perPage;
+
+  FetchMoreOrders({this.statusId, this.page = 1, this.perPage = 20});
+}
+
 class FetchOrderDetails extends OrderEvent {
   final int orderId;
 
@@ -35,8 +43,6 @@ class CreateOrder extends OrderEvent {
   });
 }
 
-
-// event.dart
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
@@ -56,17 +62,16 @@ class UpdateOrder extends OrderEvent {
     required this.organizationId,
   });
 }
-// В конец файла order_event.dart
+
 class DeleteOrder extends OrderEvent {
   final int orderId;
   final int? organizationId;
 
   DeleteOrder({
     required this.orderId,
-     this.organizationId,
+    this.organizationId,
   });
 }
-
 
 class ChangeOrderStatus extends OrderEvent {
   final int orderId;
