@@ -28,7 +28,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController stockQuantityController = TextEditingController();
 
   SubCategoryAttributesData? selectedCategory;
-  bool isActive = false;
+  bool isActive = true;
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true; 
   bool isImagesValid = true;   
@@ -235,16 +235,19 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   spacing: 20,
                                   runSpacing: 10,
                                   padding: const EdgeInsets.all(8),
-                                  children: _imagePaths.map((imagePath) {
-                                    return Container(
-                                      key: ValueKey(imagePath),
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        image: DecorationImage(
-                                          image: FileImage(File(imagePath)),
-                                          fit: BoxFit.cover,
+                                  children: [
+                                    ..._imagePaths.map((imagePath) {
+                                      return Container(
+                                        key: ValueKey(imagePath),
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          image: DecorationImage(
+                                            image: FileImage(File(imagePath)),
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
                                       ),
                                       child: Stack(
@@ -267,11 +270,33 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                 ),
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                    // Добавляем иконку для добавления нового изображения
+                                    GestureDetector(
+                                      onTap: _showImagePickerOptions,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xffF4F7FD),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Color(0xffF4F7FD)),
+                                        ),
+                                        child: Center(
+                                          child: Image.asset(
+                                            'assets/icons/files/add.png',
+                                            width: 100,
+                                            height: 100,
                                           ),
-                                        ],
+                                        ),
                                       ),
-                                    );
-                                  }).toList(),
+                                    ),
+                                  ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
                                       final item = _imagePaths.removeAt(oldIndex);
@@ -529,16 +554,18 @@ void _createProduct() async {
 
       List<File> images = _imagePaths.map((path) => File(path)).toList();
 
-      final response = await _apiService.createGoods(
-        name: goodsNameController.text,
-        parentId: selectedCategory!.id,
-        description: goodsDescriptionController.text,
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
-        attributeNames: attributes,
-        images: images,
-        isActive: isActive,
-        discountPrice: double.tryParse(discountPriceController.text),
-      );
+        // Вызываем API для создания товара
+        final response = await _apiService.createGoods(
+          name: goodsNameController.text,
+          parentId: selectedCategory!.id,
+          description: goodsDescriptionController.text,
+          quantity: int.tryParse(stockQuantityController.text) ?? 0,
+          attributeNames: attributes,
+          images: images, // Передаем список изображений вместо одного файла
+          isActive: isActive,
+          discountPrice:
+              double.tryParse(discountPriceController.text), // Добавлено
+        );
 
       if (response['success'] == true) {
         showCustomSnackBar(

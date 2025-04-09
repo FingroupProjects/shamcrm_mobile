@@ -20,12 +20,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   String _searchQuery = '';
   String? baseUrl;
   final ApiService _apiService = ApiService();
+  final ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
-    context.read<GoodsBloc>().add(FetchGoods());
+    context.read<GoodsBloc>().add(FetchGoods(page: _currentPage));
+    _resetGoodsSelection();
+    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -33,7 +39,6 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       final enteredDomainMap = await _apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
@@ -44,10 +49,39 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     }
   }
 
+  void _resetGoodsSelection() {
+    final state = context.read<GoodsBloc>().state;
+    if (state is GoodsDataLoaded) {
+      for (var product in state.goods) {
+        product.isSelected = false;
+        product.quantitySelected = 1;
+      }
+    }
+  }
+
   void _filterProducts(String query, List<Goods> goods) {
     setState(() {
       _searchQuery = query;
     });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _loadMoreGoods();
+    }
+  }
+
+  void _loadMoreGoods() {
+    final state = context.read<GoodsBloc>().state;
+    if (state is GoodsDataLoaded) {
+      setState(() {
+        _isLoadingMore = true;
+      });
+      context.read<GoodsBloc>().add(FetchMoreGoods(state.pagination.currentPage));
+    }
   }
 
   void _returnSelectedProducts(List<Goods> goods) {
@@ -58,6 +92,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               'name': product.name,
               'price': product.discountPrice ?? 0.0,
               'quantity': product.quantitySelected ?? 1,
+              'imagePath': product.files.isNotEmpty ? product.files[0].path : null,
             })
         .toList();
 
@@ -74,8 +109,13 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       return;
     }
 
-    // Возвращаем выбранные товары в OrderAddScreen
     Navigator.pop(context, selectedProducts);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -92,9 +132,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           _buildSearchField(),
           const SizedBox(height: 12),
           Expanded(
-            child: BlocBuilder<GoodsBloc, GoodsState>(
+            child: BlocConsumer<GoodsBloc, GoodsState>(
+              listener: (context, state) {
+                if (state is GoodsDataLoaded) {
+                  setState(() {
+                    _isLoadingMore = false;
+                    _hasMore = state.pagination.currentPage < state.pagination.totalPages;
+                  });
+                }
+              },
               builder: (context, state) {
-                if (state is GoodsLoading) {
+                // Показываем загрузку только для первой страницы
+                if (state is GoodsLoading && _currentPage == 1) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is GoodsDataLoaded) {
                   final filteredProducts = _searchQuery.isEmpty
@@ -104,7 +153,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                               .toLowerCase()
                               .contains(_searchQuery.toLowerCase()))
                           .toList();
-                  return _buildProductList(filteredProducts);
+                  return _buildProductList(filteredProducts, state);
                 } else if (state is GoodsEmpty) {
                   return const Center(child: Text('Товары не найдены'));
                 } else if (state is GoodsError) {
@@ -176,47 +225,62 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildProductList(List<Goods> products) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        final product = products[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                product.isSelected = !product.isSelected;
-                if (!product.isSelected) product.quantitySelected = 1;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
+  Widget _buildProductList(List<Goods> products, GoodsDataLoaded state) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: products.length + (_isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == products.length && _isLoadingMore) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(),
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  _buildProductImage(product),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildProductDetails(product)),
-                  _buildSelectionIndicator(product),
-                ],
-              ),
-            ),
+                );
+              }
+              final product = products[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      product.isSelected = !product.isSelected;
+                      if (!product.isSelected) product.quantitySelected = 1;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        _buildProductImage(product),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildProductDetails(product)),
+                        _buildSelectionIndicator(product),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -235,7 +299,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
-                  return _buildPlaceholderImage();
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
+                    ),
+                  );
                 },
               ),
             )
@@ -245,6 +314,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   Widget _buildPlaceholderImage() {
     return Container(
+      width: 48,
+      height: 48,
       color: Colors.grey[200],
       child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );

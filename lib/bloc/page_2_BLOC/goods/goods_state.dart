@@ -8,12 +8,16 @@ class GoodsLoading extends GoodsState {}
 
 class GoodsDataLoaded extends GoodsState {
   final List<Goods> goods;
+  final Pagination pagination;
   final int currentPage;
 
-  GoodsDataLoaded(this.goods, {this.currentPage = 1});
+  GoodsDataLoaded(this.goods, this.pagination, {this.currentPage = 1});
 
-  GoodsDataLoaded merge(List<Goods> newGoods) {
-    return GoodsDataLoaded([...goods, ...newGoods], currentPage: currentPage + 1);
+  GoodsDataLoaded merge(List<Goods> newGoods, Pagination newPagination) {
+    return GoodsDataLoaded(
+      [...goods, ...newGoods],
+      newPagination, currentPage: currentPage + 1
+    );
   }
 }
 
@@ -27,6 +31,33 @@ class GoodsEmpty extends GoodsState {}
 
 class GoodsSuccess extends GoodsState {
   final String message;
-  
+
   GoodsSuccess(this.message);
+}
+
+// Модель Pagination (добавлена для полноты)
+class Pagination {
+  final int total;
+  final int count;
+  final int perPage;
+  final int currentPage;
+  final int totalPages;
+
+  Pagination({
+    required this.total,
+    required this.count,
+    required this.perPage,
+    required this.currentPage,
+    required this.totalPages,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      total: json['total'] ?? 0,
+      count: json['count'] ?? 0,
+      perPage: json['per_page'] ?? 20,
+      currentPage: json['current_page'] ?? 1,
+      totalPages: json['total_pages'] ?? 1,
+    );
+  }
 }

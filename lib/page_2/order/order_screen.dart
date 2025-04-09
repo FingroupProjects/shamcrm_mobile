@@ -140,12 +140,19 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                             });
                             _scrollToActiveTab();
                             context.read<OrderBloc>().add(FetchOrders(
-                                statusId: _statuses[_currentTabIndex].id));
+                              statusId: _statuses[_currentTabIndex].id,
+                              page: 1,
+                              perPage: 20,
+                            ));
                           }
                         });
                       });
                       if (_isInitialLoad && _statuses.isNotEmpty) {
-                        context.read<OrderBloc>().add(FetchOrders(statusId: _statuses[0].id));
+                        context.read<OrderBloc>().add(FetchOrders(
+                          statusId: _statuses[0].id,
+                          page: 1,
+                          perPage: 20,
+                        ));
                         _isInitialLoad = false;
                       }
                     }
@@ -153,7 +160,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 },
                 child: BlocBuilder<OrderBloc, OrderState>(
                   builder: (context, state) {
-                    if (_statuses.isEmpty) {
+                    if (_statuses.isEmpty || state is OrderLoading) {
                       return const Center(
                         child: PlayStoreImageLoading(
                           size: 80.0,
@@ -164,15 +171,17 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
 
                     return Column(
                       children: [
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                         _buildCustomTabBar(),
                         Expanded(
                           child: TabBarView(
                             controller: _tabController,
-                            physics: NeverScrollableScrollPhysics(),
+                            physics: const NeverScrollableScrollPhysics(),
                             children: _statuses.map((status) {
                               final List<Order> statusOrders = state is OrderLoaded
-                                  ? state.orders.where((order) => order.orderStatus.id == status.id).toList()
+                                  ? state.orders
+                                      .where((order) => order.orderStatus.id == status.id)
+                                      .toList()
                                   : <Order>[];
 
                               return OrderColumn(
@@ -180,7 +189,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                                 name: status.name,
                                 searchQuery: _isSearching ? _searchController.text : null,
                                 orders: statusOrders,
-                                isLoading: state is OrderLoading && statusOrders.isEmpty,
+                                isLoading: false, // Убираем isLoading, так как управляем через OrderColumn
                                 organizationId: widget.organizationId,
                                 onStatusUpdated: () => _onStatusUpdated(status.id),
                                 onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
@@ -190,7 +199,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                                   });
                                   _tabController.animateTo(newTabIndex);
                                   _scrollToActiveTab();
-                                }, // Передаем коллбэк для переключения таба
+                                },
                               );
                             }).toList(),
                           ),
@@ -212,7 +221,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
             );
           },
           backgroundColor: const Color(0xff1E2E52),
-          child: Icon(Icons.add, color: Colors.white),
+          child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
     );
@@ -240,7 +249,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                     color: isActive ? Colors.black : const Color(0xff99A4BA),
                   ),
                 ),
-                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 child: Text(
                   _statuses[index].name,
                   style: TaskStyles.tabTextStyle.copyWith(

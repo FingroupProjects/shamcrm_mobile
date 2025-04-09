@@ -317,6 +317,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
+
   Widget _buildLabel(String label) {
     return Text(
       '$label:',
@@ -328,6 +329,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       ),
     );
   }
+Widget _buildDetailItem(String label, String value) {
+  // Список полей, для которых нужно показывать диалог при превышении 1 строки
+  final expandableFields = [
+    AppLocalizations.of(context)!.translate('goods_name_details'),
+    AppLocalizations.of(context)!.translate('goods_description_details'),
+    AppLocalizations.of(context)!.translate('category_details'),
+  ];
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
   if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
@@ -342,6 +350,31 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
+
+  // Проверяем, является ли текущее поле одним из тех, что требуют диалог
+  bool isExpandable = expandableFields.contains(label) || 
+      details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildLabel(label),
+      const SizedBox(width: 8),
+      Expanded(
+        child: isExpandable
+            ? GestureDetector(
+                onTap: () => _showFullTextDialog(
+                    label.replaceAll(':', ''), // Убираем двоеточие из заголовка
+                    value),
+                child: _buildValue(value, label, maxLines: 1),
+              )
+            : _buildValue(value, label, maxLines: 1),
+      ),
+    ],
+  );
+}
+
+Widget _buildValue(String value, String label, {int? maxLines}) {
   if (value.isEmpty) return Container();
   return Text(
     value,
@@ -358,6 +391,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     overflow: maxLines != null ? TextOverflow.ellipsis : null,
   );
 }
+
 
   void _showFullTextDialog(String title, String content) {
     showDialog(

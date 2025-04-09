@@ -11,7 +11,6 @@ import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-
 class ManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
   final List? initialManagers;
@@ -26,6 +25,8 @@ class ManagerFilterScreen extends StatefulWidget {
   final bool? initialHasNotices;
   final bool? initialHasContact;
   final bool? initialHasChat;
+  final bool? initialHasNoReplies; // Новый параметр
+  final bool? initialHasUnreadMessages; // Новый параметр
   final bool? initialHasDeal;
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
@@ -45,9 +46,11 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialHasNotices,
     this.initialHasContact,
     this.initialHasChat,
+    this.initialHasNoReplies, // Новый параметр
+    this.initialHasUnreadMessages, // Новый параметр
     this.initialHasDeal,
     this.initialDaysWithoutActivity,
-    this.onResetFilters, 
+    this.onResetFilters,
   }) : super(key: key);
 
   @override
@@ -66,9 +69,11 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   bool? _hasSuccessDeals;
   bool? _hasInProgressDeals;
   bool? _hasFailureDeals;
-  bool? _hasNotices ;
+  bool? _hasNotices;
   bool? _hasContact;
   bool? _hasChat;
+  bool? _hasNoReplies; // Новый параметр
+  bool? _hasUnreadMessages; // Новый параметр
   bool? _hasDeal;
 
   int? _daysWithoutActivity;
@@ -88,6 +93,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _hasNotices = widget.initialHasNotices;
     _hasContact = widget.initialHasContact;
     _hasChat = widget.initialHasChat;
+    _hasNoReplies = widget.initialHasNoReplies; // Новый параметр
+    _hasUnreadMessages = widget.initialHasUnreadMessages; // Новый параметр
     _hasDeal = widget.initialHasDeal;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
   }
@@ -122,12 +129,11 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +142,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-         AppLocalizations.of(context)!.translate('filter'),
+          AppLocalizations.of(context)!.translate('filter'),
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xfff1E2E52), fontFamily: 'Gilroy'),
         ),
         backgroundColor: Colors.white,
@@ -146,7 +152,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                widget.onResetFilters?.call(); 
+                widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedRegions.clear();
                 _selectedSources.clear();
@@ -158,7 +164,9 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _hasFailureDeals = false;
                 _hasNotices = false;
                 _hasContact = false;
-                _hasChat = false; 
+                _hasChat = false;
+                _hasNoReplies = false; // Новый параметр
+                _hasUnreadMessages = false; // Новый параметр
                 _hasDeal = false;
                 _daysWithoutActivity = null;
               });
@@ -172,10 +180,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-             AppLocalizations.of(context)!.translate('reset'),
+              AppLocalizations.of(context)!.translate('reset'),
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
                 fontFamily: 'Gilroy',
               ),
@@ -184,7 +192,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           SizedBox(width: 10),
           TextButton(
             onPressed: () async {
-              bool isAnyFilterSelected = 
+              bool isAnyFilterSelected =
                   _selectedManagers.isNotEmpty ||
                   _selectedRegions.isNotEmpty ||
                   _selectedSources.isNotEmpty ||
@@ -197,11 +205,13 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasNotices == true ||
                   _hasContact == true ||
                   _hasChat == true ||
+                  _hasNoReplies == true || // Новый параметр
+                  _hasUnreadMessages == true || // Новый параметр
                   _hasDeal == true ||
                   _daysWithoutActivity != null;
 
               if (isAnyFilterSelected) {
-              await LeadCache.clearAllLeads();
+                await LeadCache.clearAllLeads();
 
                 print('Start Filter');
                 widget.onManagersSelected?.call({
@@ -217,6 +227,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   'hasNotices': _hasNotices,
                   'hasContact': _hasContact,
                   'hasChat': _hasChat,
+                  'hasNoReplies': _hasNoReplies, // Новый параметр
+                  'hasUnreadMessages': _hasUnreadMessages, // Новый параметр
                   'hasDeal': _hasDeal,
                   'daysWithoutActivity': _daysWithoutActivity,
                 });
@@ -234,10 +246,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-             AppLocalizations.of(context)!.translate('apply'),
+              AppLocalizations.of(context)!.translate('apply'),
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
                 fontFamily: 'Gilroy',
               ),
@@ -246,7 +258,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           SizedBox(width: 10),
         ],
       ),
-       body: Padding(
+      body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
         child: Column(
           children: [
@@ -380,7 +392,17 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             _hasChat ?? false,
                             (value) => setState(() => _hasChat = value),
                           ),
-                           _buildSwitchTile(
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!.translate('without_replies'),
+                            _hasNoReplies ?? false,
+                            (value) => setState(() => _hasNoReplies = value),
+                          ),
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!.translate('with_unread_messages'),
+                            _hasUnreadMessages ?? false,
+                            (value) => setState(() => _hasUnreadMessages = value),
+                          ),
+                          _buildSwitchTile(
                             AppLocalizations.of(context)!.translate('withoutDeal'),
                             _hasDeal ?? false,
                             (value) => setState(() => _hasDeal = value),
@@ -388,7 +410,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         ],
                       ),
                     ),
-                     Card(
+                    Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
@@ -410,10 +432,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                               min: 0,
                               max: 100,
                               divisions: 100,
-                              label: _daysWithoutActivity.toString(), 
+                              label: _daysWithoutActivity.toString(),
                               onChanged: (double value) {
                                 setState(() {
-                                  _daysWithoutActivity = value.toInt(); 
+                                  _daysWithoutActivity = value.toInt();
                                 });
                               },
                               activeColor: ChatSmsStyles.messageBubbleSenderColor,

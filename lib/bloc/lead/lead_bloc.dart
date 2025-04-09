@@ -23,6 +23,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasNotices;
   bool? _currentHasContact;
   bool? _currentHasChat;
+  bool? _currentHasNoReplies; // Новый параметр
+  bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
   int? _currentDaysWithoutActivity;
 
@@ -39,8 +41,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
     on<FetchLeadStatus>(_fetchLeadStatus);
   }
-  Future<void> _fetchLeadStatus(
-      FetchLeadStatus event, Emitter<LeadState> emit) async {
+
+  Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     try {
       final leadStatus = await apiService.getLeadStatus(event.leadStatusId);
@@ -50,29 +52,28 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
-     _currentQuery = event.query;
-     _currentManagerIds = event.managerIds;
-     _currentRegionIds = event.regionsIds;
-     _currentSourceIds = event.sourcesIds;
-     _currentStatusId = event.statusIds;
-     _currentFromDate = event.fromDate;
-     _currentToDate = event.toDate;
-     _currentHasSuccessDeals = event.hasSuccessDeals;
-     _currentHasInProgressDeals = event.hasInProgressDeals;
-     _currentHasFailureDeals = event.hasFailureDeals;
-     _currentHasNotices = event.hasNotices;
-     _currentHasContact = event.hasContact;
-     _currentHasChat = event.hasChat;
-     _currentHasDeal = event.hasDeal;
-     _currentDaysWithoutActivity = event.daysWithoutActivity;
-
+    _currentQuery = event.query;
+    _currentManagerIds = event.managerIds;
+    _currentRegionIds = event.regionsIds;
+    _currentSourceIds = event.sourcesIds;
+    _currentStatusId = event.statusIds;
+    _currentFromDate = event.fromDate;
+    _currentToDate = event.toDate;
+    _currentHasSuccessDeals = event.hasSuccessDeals;
+    _currentHasInProgressDeals = event.hasInProgressDeals;
+    _currentHasFailureDeals = event.hasFailureDeals;
+    _currentHasNotices = event.hasNotices;
+    _currentHasContact = event.hasContact;
+    _currentHasChat = event.hasChat;
+    _currentHasNoReplies = event.hasNoReplies; // Новый параметр
+    _currentHasUnreadMessages = event.hasUnreadMessages; // Новый параметр
+    _currentHasDeal = event.hasDeal;
+    _currentDaysWithoutActivity = event.daysWithoutActivity;
 
     if (!await _checkInternetConnection()) {
-      // Если интернета нет, пробуем загрузить лиды из кэша
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
       if (cachedLeads.isNotEmpty) {
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
@@ -83,34 +84,36 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
 
     try {
-      // Сначала пробуем загрузить лиды из кэша
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
       if (cachedLeads.isNotEmpty) {
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
       }
 
-      final leads = await apiService.getLeads(event.statusId,
-          page: 1,
-          perPage: 20,
-          search: event.query,
-          managers: event.managerIds,
-          regions: event.regionsIds,
-          sources: event.sourcesIds,
-          statuses: event.statusIds,
-          fromDate: event.fromDate,
-          toDate: event.toDate,
-          hasSuccessDeals: event.hasSuccessDeals,
-          hasInProgressDeals: event.hasInProgressDeals,
-          hasFailureDeals: event.hasFailureDeals,
-          hasNotices: event.hasNotices,
-          hasContact: event.hasContact,
-          hasChat: event.hasChat,
-          hasDeal: event.hasDeal,
-          daysWithoutActivity: event.daysWithoutActivity);
-      // Сохраняем лиды в кэш
+      final leads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+        managers: event.managerIds,
+        regions: event.regionsIds,
+        sources: event.sourcesIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+        hasSuccessDeals: event.hasSuccessDeals,
+        hasInProgressDeals: event.hasInProgressDeals,
+        hasFailureDeals: event.hasFailureDeals,
+        hasNotices: event.hasNotices,
+        hasContact: event.hasContact,
+        hasChat: event.hasChat,
+        hasNoReplies: event.hasNoReplies, // Новый параметр
+        hasUnreadMessages: event.hasUnreadMessages, // Новый параметр
+        hasDeal: event.hasDeal,
+        daysWithoutActivity: event.daysWithoutActivity,
+      );
+
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
 
-      // Обновляем состояние
       final leadCounts = Map<int, int>.from(_leadCounts);
       for (var lead in leads) {
         leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
@@ -123,11 +126,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  Future<void> _fetchLeadStatuses(
-      FetchLeadStatuses event, Emitter<LeadState> emit) async {
+  Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
-    // Try fetching data from cache first
     final cachedStatuses = await LeadCache.getLeadStatuses();
     if (cachedStatuses.isNotEmpty) {
       emit(LeadLoaded(
@@ -136,7 +137,6 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       ));
     }
 
-    // Then fetch from API
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
       return;
@@ -144,23 +144,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     try {
       final response = await apiService.getLeadStatuses();
-      // if (response.isEmpty) {
-      //   emit(LeadError('Нет статусов'));
-      //   return;
-      // }
-      // Cache the statuses
       await LeadCache.cacheLeadStatuses(response
           .map((status) => {'id': status.id, 'title': status.title})
           .toList());
 
-      // Fetch lead counts for all statuses in parallel
       final futures = response.map((status) {
         return apiService.getLeads(status.id, page: 1, perPage: 1);
       }).toList();
 
       final leadCountsResults = await Future.wait(futures);
 
-      // Update lead counts
       for (int i = 0; i < response.length; i++) {
         _leadCounts[response[i].id] = leadCountsResults[i].length;
       }
@@ -171,9 +164,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  // Метод для загрузки всех лидов
-  Future<void> _fetchAllLeads(
-      FetchAllLeads event, Emitter<LeadState> emit) async {
+  Future<void> _fetchAllLeads(FetchAllLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
@@ -189,50 +180,51 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
- Future<void> _fetchMoreLeads(FetchMoreLeads event, Emitter<LeadState> emit) async {
-  if (allLeadsFetched) return;
+  Future<void> _fetchMoreLeads(FetchMoreLeads event, Emitter<LeadState> emit) async {
+    if (allLeadsFetched) return;
 
-  if (!await _checkInternetConnection()) {
-    emit(LeadError('Нет подключения к интернету'));
-    return;
-  }
-
-  try {
-    final leads = await apiService.getLeads(
-      _currentStatusId ?? event.statusId,
-      page: event.currentPage + 1,
-      perPage: 20,
-      search: _currentQuery,
-      managers: _currentManagerIds,
-      regions: _currentRegionIds,
-      sources: _currentSourceIds,
-      statuses: _currentStatusId,
-      fromDate: _currentFromDate,
-      toDate: _currentToDate,
-      hasSuccessDeals: _currentHasSuccessDeals,
-      hasInProgressDeals: _currentHasInProgressDeals,
-      hasFailureDeals: _currentHasFailureDeals,
-      hasNotices: _currentHasNotices,
-      hasContact: _currentHasContact,
-      hasChat: _currentHasChat,
-      hasDeal: _currentHasDeal,
-      daysWithoutActivity: _currentDaysWithoutActivity,
-    );
-
-    if (leads.isEmpty) {
-      allLeadsFetched = true;
+    if (!await _checkInternetConnection()) {
+      emit(LeadError('Нет подключения к интернету'));
       return;
     }
 
-    if (state is LeadDataLoaded) {
-      final currentState = state as LeadDataLoaded;
-      emit(currentState.merge(leads));
-    }
-  } catch (e) {
-    emit(LeadError('Не удалось загрузить дополнительные лиды!'));
-  }
-}
+    try {
+      final leads = await apiService.getLeads(
+        _currentStatusId ?? event.statusId,
+        page: event.currentPage + 1,
+        perPage: 20,
+        search: _currentQuery,
+        managers: _currentManagerIds,
+        regions: _currentRegionIds,
+        sources: _currentSourceIds,
+        statuses: _currentStatusId,
+        fromDate: _currentFromDate,
+        toDate: _currentToDate,
+        hasSuccessDeals: _currentHasSuccessDeals,
+        hasInProgressDeals: _currentHasInProgressDeals,
+        hasFailureDeals: _currentHasFailureDeals,
+        hasNotices: _currentHasNotices,
+        hasContact: _currentHasContact,
+        hasChat: _currentHasChat,
+        hasNoReplies: _currentHasNoReplies, // Новый параметр
+        hasUnreadMessages: _currentHasUnreadMessages, // Новый параметр
+        hasDeal: _currentHasDeal,
+        daysWithoutActivity: _currentDaysWithoutActivity,
+      );
 
+      if (leads.isEmpty) {
+        allLeadsFetched = true;
+        return;
+      }
+
+      if (state is LeadDataLoaded) {
+        final currentState = state as LeadDataLoaded;
+        emit(currentState.merge(leads));
+      }
+    } catch (e) {
+      emit(LeadError('Не удалось загрузить дополнительные лиды!'));
+    }
+  }
 
  Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
   emit(LeadLoading());

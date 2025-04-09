@@ -32,11 +32,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? _deliveryMethod;
   Branch? _selectedBranch;
   String? selectedDialCode;
+  String? baseUrl;
 
   @override
   void initState() {
     super.initState();
-    _phoneController = TextEditingController(text: widget.order.lead.phone);
+    _phoneController = TextEditingController(text: widget.order.phone);
     _deliveryAddressController =
         TextEditingController(text: widget.order.deliveryAddress);
     _items = widget.order.goods
@@ -45,10 +46,29 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               'name': good.goodName,
               'price': good.price,
               'quantity': good.quantity,
+              'imagePath':
+                  good.good.files.isNotEmpty ? good.good.files[0].path : null,
             })
         .toList();
     selectedLead = widget.order.lead.id.toString();
     _deliveryMethod = widget.order.delivery ? 'Доставка' : 'Самовывоз';
+    _initializeBaseUrl();
+  }
+
+  Future<void> _initializeBaseUrl() async {
+    final apiService = ApiService();
+    try {
+      final enteredDomainMap = await apiService.getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+      });
+    }
   }
 
   @override
@@ -59,13 +79,58 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   void _navigateToAddProduct() async {
+    final Order tempOrder = widget.order.copyWith(
+      phone: _phoneController.text,
+      delivery: _deliveryMethod == 'Доставка',
+      deliveryAddress: _deliveryAddressController.text,
+      lead: OrderLead(
+        id: int.tryParse(selectedLead ?? '0') ?? 0,
+        name: widget.order.lead.name,
+        channels: widget.order.lead.channels,
+        phone: _phoneController.text,
+      ),
+      goods: _items.map((item) {
+        final goodItem = GoodItem(
+          id: item['id'],
+          name: item['name'],
+          description: '',
+          quantity: item['quantity'],
+          files: item['imagePath'] != null
+              ? [
+                  GoodFile(
+                    id: 0,
+                    name: '',
+                    path: item['imagePath'],
+                  )
+                ]
+              : [],
+        );
+        return Good(
+          good: goodItem,
+          goodId: item['id'],
+          goodName: item['name'],
+          price: item['price'],
+          quantity: item['quantity'],
+        );
+      }).toList(),
+    );
+
     final result = await showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => ProductSelectionSheetAdd(order: widget.order));
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
+    );
+
     if (result != null && result is List<Map<String, dynamic>>) {
       setState(() {
-        _items.addAll(result);
+        _items.addAll(result.map((item) => {
+              'id': item['id'],
+              'name': item['name'],
+              'price': item['price'],
+              'quantity': item['quantity'],
+              'imagePath': item['imagePath'],
+            }));
+        print('Добавленные товары: $_items');
       });
     }
   }
@@ -89,8 +154,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         appBar: _buildAppBar(),
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
-            if (state is OrderLoaded && state.orderDetails != null) {
-              Navigator.pop(context, state.orderDetails);
+            print('OrderBloc state: $state'); // Добавляем отладочный вывод
+            if (state is OrderSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Заказ успешно обновлен')),
+              );
+              Navigator.pop(
+                  context, true); // Возвращаем true для обновления списка
             } else if (state is OrderError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
@@ -285,20 +355,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
-    final ApiService apiService = ApiService();
-    String? baseUrl;
-
-    Future<void> _loadBaseUrl() async {
-      try {
-        final enteredDomainMap = await apiService.getEnteredDomain();
-        String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-        String? enteredDomain = enteredDomainMap['enteredDomain'];
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      } catch (error) {
-        baseUrl = 'https://shamcrm.com/storage/';
-      }
-    }
-
     Widget _buildPlaceholderImage() {
       return Container(
         width: 48,
@@ -309,154 +365,155 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       );
     }
 
-    return FutureBuilder(
-      future: _loadBaseUrl(),
-      builder: (context, snapshot) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, 1))
-            ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1))
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: item['imagePath'] != null && baseUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      '$baseUrl/${item['imagePath']}',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildPlaceholderImage(),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff4759FF)),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : _buildPlaceholderImage(),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item['name'] ?? 'Без названия',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(item['id'].toString(),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA))),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              SizedBox(
-                width: 48,
-                height: 48,
-                child: item['imagePath'] != null && baseUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          '$baseUrl/${item['imagePath']}',
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildPlaceholderImage(),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return _buildPlaceholderImage();
-                          },
-                        ),
-                      )
-                    : _buildPlaceholderImage(),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item['name'] ?? 'Без названия',
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Text(item['id'].toString(),
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA))),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('Цена',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff99A4BA))),
-                          Text('${item['price'].toStringAsFixed(3)}',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52))),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('Сумма',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff99A4BA))),
-                          Text(
-                              '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52))),
-                        ],
-                      ),
+                      const Text('Цена',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text('${item['price'].toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: const Color(0xffF4F7FD)),
-                        child: Row(
-                          children: [
-                            IconButton(
-                                icon: const Icon(Icons.remove, size: 20),
-                                color: const Color(0xff1E2E52),
-                                onPressed: () => _updateQuantity(
-                                    index, (item['quantity'] ?? 1) - 1)),
-                            Text('${item['quantity'] ?? 1}',
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52))),
-                            IconButton(
-                                icon: const Icon(Icons.add, size: 20),
-                                color: const Color(0xff1E2E52),
-                                onPressed: () => _updateQuantity(
-                                    index, (item['quantity'] ?? 1) + 1)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                          icon: const Icon(Icons.delete,
-                              color: Color(0xff99A4BA), size: 20),
-                          onPressed: () => _removeItem(index)),
+                      const Text('Сумма',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA))),
+                      Text(
+                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52))),
                     ],
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF4F7FD)),
+                    child: Row(
+                      children: [
+                        IconButton(
+                            icon: const Icon(Icons.remove, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) - 1)),
+                        Text('${item['quantity'] ?? 1}',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52))),
+                        IconButton(
+                            icon: const Icon(Icons.add, size: 20),
+                            color: const Color(0xff1E2E52),
+                            onPressed: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) + 1)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                      icon: const Icon(Icons.delete,
+                          color: Color(0xff99A4BA), size: 20),
+                      onPressed: () => _removeItem(index)),
+                ],
+              ),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -504,10 +561,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         goods: _items
                             .map((item) => {
                                   'good_id': item['id'],
-                                  'quantity': item['quantity'] ?? 1
+                                  'quantity': item['quantity'] ?? 1,
                                 })
                             .toList(),
-                        organizationId: 1, // Можно сделать динамическим
+                        organizationId: widget.order.organizationId ?? 1,
                       ));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
