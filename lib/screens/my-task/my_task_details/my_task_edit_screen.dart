@@ -7,15 +7,15 @@ import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/mytask_status_list_edit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
+
 
 class MyTaskEditScreen extends StatefulWidget {
   final int taskId;
@@ -61,6 +61,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   List<MyTaskFiles> existingFiles = []; // Для существующих файлов
 
   final ApiService _apiService = ApiService();
+    int? _selectedStatuses;
+
 
   @override
   void initState() {
@@ -77,6 +79,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
+    _selectedStatuses = widget.statusId;
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
       startDateController.text =
@@ -591,6 +594,15 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                           return null;
                         },
                       ),
+                         const SizedBox(height: 8),
+                         MyTaskStatusEditWidget(
+                          selectedStatus: _selectedStatuses?.toString(),
+                          onSelectStatus: (MyTaskStatus selectedStatusData) {
+                            setState(() {
+                              _selectedStatuses = selectedStatusData.id;
+                            });
+                          },
+                        ),
                       // const SizedBox(height: 8),
                       // CustomTextFieldDate(
                       //   controller: startDateController,
@@ -725,7 +737,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                           UpdateMyTask(
                                             taskId: widget.taskId,
                                             name: nameController.text,
-                                            taskStatusId: widget.statusId,
+                                            taskStatusId: _selectedStatuses!.toInt(),
                                             // startDate: startDate,
                                             endDate: endDate,
                                             description:
