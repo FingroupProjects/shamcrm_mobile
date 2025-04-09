@@ -300,27 +300,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        const SizedBox(width: 8),
-        Expanded(
-          child: label ==
-                  AppLocalizations.of(context)!.translate('description_details')
-              ? GestureDetector(
-                  onTap: () => _showFullTextDialog(
-                      AppLocalizations.of(context)!
-                          .translate('description_details'),
-                      value),
-                  child: _buildValue(value, label, maxLines: 2),
-                )
-              : _buildValue(value, label, maxLines: 2),
-        ),
-      ],
-    );
-  }
 
   Widget _buildLabel(String label) {
     return Text(
@@ -333,26 +312,54 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       ),
     );
   }
+Widget _buildDetailItem(String label, String value) {
+  // Список полей, для которых нужно показывать диалог при превышении 1 строки
+  final expandableFields = [
+    AppLocalizations.of(context)!.translate('goods_name_details'),
+    AppLocalizations.of(context)!.translate('goods_description_details'),
+    AppLocalizations.of(context)!.translate('category_details'),
+  ];
 
-  Widget _buildValue(String value, String label, {int? maxLines}) {
-    if (value.isEmpty) return Container();
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: const Color(0xFF1E2E52),
-        decoration: label ==
-                AppLocalizations.of(context)!.translate('description_details')
-            ? TextDecoration.underline
-            : TextDecoration.none,
+  // Проверяем, является ли текущее поле одним из тех, что требуют диалог
+  bool isExpandable = expandableFields.contains(label) || 
+      details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildLabel(label),
+      const SizedBox(width: 8),
+      Expanded(
+        child: isExpandable
+            ? GestureDetector(
+                onTap: () => _showFullTextDialog(
+                    label.replaceAll(':', ''), // Убираем двоеточие из заголовка
+                    value),
+                child: _buildValue(value, label, maxLines: 1),
+              )
+            : _buildValue(value, label, maxLines: 1),
       ),
-      maxLines: maxLines,
-      overflow: maxLines != null ? TextOverflow.ellipsis : null,
-    );
-  }
+    ],
+  );
+}
 
+Widget _buildValue(String value, String label, {int? maxLines}) {
+  if (value.isEmpty) return Container();
+  return Text(
+    value,
+    style: TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFF1E2E52),
+      decoration: maxLines != null && maxLines < value.split('\n').length
+          ? TextDecoration.underline
+          : TextDecoration.none,
+    ),
+    maxLines: maxLines,
+    overflow: maxLines != null ? TextOverflow.ellipsis : null,
+  );
+}
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,

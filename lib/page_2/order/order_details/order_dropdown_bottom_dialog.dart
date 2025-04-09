@@ -8,13 +8,12 @@ import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 void OrderDropdownBottomSheet(
   BuildContext context,
   String defaultValue,
   Function(String, int) onSelect,
   Order order, {
-  required Function(int) onTabChange, // Новый коллбэк для переключения таба
+  required Function(int) onTabChange,
 }) {
   String selectedValue = defaultValue;
   int? selectedStatusId = order.orderStatus.id;
@@ -51,7 +50,7 @@ void OrderDropdownBottomSheet(
                       Container(
                         width: 100,
                         height: 4,
-                        margin: const EdgeInsets.only(bottom: 7),
+                        margin: const EdgeInsets.only(top: 7),
                         decoration: BoxDecoration(
                           color: const Color(0xffDFE3EC),
                           borderRadius: BorderRadius.circular(1200),
@@ -117,8 +116,7 @@ void OrderDropdownBottomSheet(
 
                             final newTabIndex = orderStatuses.indexWhere((status) => status.id == selectedStatusId);
                             if (newTabIndex != -1) {
-                              onTabChange(newTabIndex); // Передаем индекс таба через коллбэк
-                              context.read<OrderBloc>().add(FetchOrders(statusId: selectedStatusId!));
+                              onTabChange(newTabIndex);
                             }
                           } else {
                             print('Статус не выбран');

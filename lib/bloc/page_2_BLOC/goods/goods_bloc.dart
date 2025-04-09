@@ -7,14 +7,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
+  List<Goods> allGoods = []; // Храним все загруженные товары
   bool allGoodsFetched = false;
   final int _perPage = 20;
 
   GoodsBloc(this.apiService) : super(GoodsInitial()) {
     on<FetchGoods>(_fetchGoods);
     on<FetchMoreGoods>(_fetchMoreGoods);
-    on<CreateGoods>(_createCategory);
-    on<UpdateGoods>(_updateCategory);
+    on<CreateGoods>(_createGoods);
+    on<UpdateGoods>(_updateGoods);
   }
 
   Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
@@ -22,11 +23,26 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
     if (await _checkInternetConnection()) {
       try {
-        final goods = await apiService.getGoods(page: 1);
+        final goods = await apiService.getGoods(page: event.page);
+
+        allGoods = goods; // Очищаем и обновляем список для первой страницы
         allGoodsFetched = goods.length < _perPage;
-        emit(GoodsDataLoaded(goods));
+
+        final pagination = Pagination(
+          total: goods.length, // Предполагаем, что total неизвестен без API
+          count: goods.length,
+          perPage: _perPage,
+          currentPage: event.page,
+          totalPages: allGoodsFetched ? event.page : event.page + 1, // Примерная логика
+        );
+
+        if (goods.isEmpty) {
+          emit(GoodsEmpty());
+        } else {
+          emit(GoodsDataLoaded(goods, pagination));
+        }
       } catch (e) {
-        emit(GoodsError('Не удалось загрузить товары!'));
+        emit(GoodsError('Не удалось загрузить товары: $e'));
       }
     } else {
       emit(GoodsError('Нет подключения к интернету'));
@@ -34,28 +50,34 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   }
 
   Future<void> _fetchMoreGoods(FetchMoreGoods event, Emitter<GoodsState> emit) async {
-    if (allGoodsFetched) return;
+    if (allGoodsFetched || state is! GoodsDataLoaded) return;
 
     if (await _checkInternetConnection()) {
       try {
         final newGoods = await apiService.getGoods(page: event.currentPage + 1);
-        if (newGoods.isEmpty || newGoods.length < _perPage) {
-          allGoodsFetched = true;
-        }
-        if (state is GoodsDataLoaded) {
-          final currentState = state as GoodsDataLoaded;
-          emit(currentState.merge(newGoods));
-        }
+
+        allGoods.addAll(newGoods);
+        allGoodsFetched = newGoods.length < _perPage;
+
+        final currentState = state as GoodsDataLoaded;
+        final newPagination = Pagination(
+          total: allGoods.length, // Предполагаем, что total неизвестен
+          count: newGoods.length,
+          perPage: _perPage,
+          currentPage: event.currentPage + 1,
+          totalPages: allGoodsFetched ? event.currentPage + 1 : event.currentPage + 2,
+        );
+
+        emit(currentState.merge(newGoods, newPagination));
       } catch (e) {
-        emit(GoodsError('Не удалось загрузить дополнительные товары!'));
+        emit(GoodsError('Не удалось загрузить дополнительные товары: $e'));
       }
     } else {
       emit(GoodsError('Нет подключения к интернету'));
     }
   }
 
-  Future<void> _createCategory(
-      CreateGoods event, Emitter<GoodsState> emit) async {
+  Future<void> _createGoods(CreateGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
 
     if (await _checkInternetConnection()) {
@@ -66,13 +88,14 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           description: event.description,
           quantity: event.quantity,
           attributeNames: event.attributeNames,
-          images: event.images, // Передаем список изображений
+          images: event.images,
           isActive: event.isActive,
-          discountPrice: event.discountPrice, // Добавлено
+          discountPrice: event.discountPrice,
         );
 
         if (response['success'] == true) {
           emit(GoodsSuccess("Товар успешно создан"));
+          add(FetchGoods(page: 1)); // Обновляем список после создания
         } else {
           emit(GoodsError(response['message'] ?? 'Не удалось создать товар'));
         }
@@ -84,17 +107,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     }
   }
 
-  Future<bool> _checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('example.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException {
-      return false;
-    }
-  }
-
-  Future<void> _updateCategory(
-      UpdateGoods event, Emitter<GoodsState> emit) async {
+  Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
 
     if (await _checkInternetConnection()) {
@@ -108,11 +121,12 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           attributeNames: event.attributeNames,
           images: event.images,
           isActive: event.isActive,
-          discountPrice: event.discountPrice, // Добавлено
+          discountPrice: event.discountPrice,
         );
 
         if (response['success'] == true) {
           emit(GoodsSuccess("Товар успешно обновлен"));
+          add(FetchGoods(page: 1)); // Обновляем список после обновления
         } else {
           emit(GoodsError(response['message'] ?? 'Не удалось обновить товар'));
         }
@@ -121,6 +135,15 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
       }
     } else {
       emit(GoodsError('Нет подключения к интернету'));
+    }
+  }
+
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
     }
   }
 }

@@ -86,11 +86,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       emit(OrderError('Ошибка создания заказа: $e'));
     }
   }
-
-  Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     emit(OrderLoading());
+
     try {
-      final success = await apiService.updateOrder(
+      final response = await apiService.updateOrder(
         orderId: event.orderId,
         phone: event.phone,
         leadId: event.leadId,
@@ -99,17 +99,19 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         goods: event.goods,
         organizationId: event.organizationId,
       );
-      if (success) {
-        final updatedOrder = await apiService.getOrderDetails(event.orderId);
-        emit(OrderLoaded(await apiService.getOrderStatuses(),
-            orderDetails: updatedOrder));
+
+      // Проверяем, что response — это bool
+      if (response == true) {
+        emit(OrderSuccess()); // Если OrderSuccess не принимает аргументов
+        // Или emit(OrderSuccess('Заказ успешно обновлен')); если OrderSuccess принимает сообщение
       } else {
         emit(OrderError('Не удалось обновить заказ'));
       }
     } catch (e) {
-      emit(OrderError('Ошибка обновления заказа: $e'));
+      emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
     }
   }
+
 
   Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
     emit(OrderLoading());
@@ -128,38 +130,44 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
-    emit(OrderLoading());
-    try {
-      final success = await apiService.changeOrderStatus(
-        orderId: event.orderId,
-        statusId: event.statusId,
-        organizationId: event.organizationId,
-      );
-      if (success) {
-        final statuses = await apiService.getOrderStatuses();
-        if (state is OrderLoaded) {
-          final currentState = state as OrderLoaded;
-          final updatedOrders = currentState.orders.map((order) {
-            if (order.id == event.orderId) {
-              return order.copyWith(
-                orderStatus: OrderStatusName.fromOrderStatus(
-                  statuses.firstWhere((status) => status.id == event.statusId),
-                ),
-              );
-            }
-            return order;
-          }).toList();
-          emit(OrderLoaded(statuses,
-              orders: updatedOrders, pagination: currentState.pagination));
-        } else {
-          emit(OrderLoaded(statuses));
-        }
+Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
+  emit(OrderLoading());
+  try {
+    final success = await apiService.changeOrderStatus(
+      orderId: event.orderId,
+      statusId: event.statusId,
+      organizationId: event.organizationId,
+    );
+    print('Результат смены статуса: $success'); // Отладка
+    if (success) {
+      final statuses = await apiService.getOrderStatuses();
+      if (state is OrderLoaded) {
+        final currentState = state as OrderLoaded;
+        final updatedOrders = currentState.orders.map((order) {
+          if (order.id == event.orderId) {
+            return order.copyWith(
+              orderStatus: OrderStatusName.fromOrderStatus(
+                statuses.firstWhere((status) => status.id == event.statusId),
+              ),
+            );
+          }
+          return order;
+        }).toList();
+        emit(OrderLoaded(statuses,
+            orders: updatedOrders, pagination: currentState.pagination));
       } else {
-        emit(OrderError('Не удалось сменить статус заказа'));
+        emit(OrderLoaded(statuses));
       }
-    } catch (e) {
-      emit(OrderError('Ошибка смены статуса заказа: $e'));
+      // После успешной смены статуса сразу загружаем данные нового статуса
+      emit(OrderLoading()); // Показываем загрузку
+      final orderResponse = await apiService.getOrders(statusId: event.statusId);
+      emit(OrderLoaded(statuses, orders: orderResponse.data, pagination: orderResponse.pagination));
+    } else {
+      emit(OrderError('Не удалось сменить статус заказа: сервер вернул ошибку'));
     }
+  } catch (e) {
+    print('Детали ошибки смены статуса: $e'); // Детали ошибки
+    emit(OrderError('Ошибка смены статуса заказа: $e'));
   }
+}
 }
