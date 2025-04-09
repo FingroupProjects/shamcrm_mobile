@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
-import 'package:crm_task_manager/page_2/order/order_details/order_delete.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:flutter/material.dart';
