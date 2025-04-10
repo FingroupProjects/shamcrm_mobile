@@ -201,7 +201,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     onTap: _showImagePickerOptions,
                     child: Container(
                       width: double.infinity,
-                      height: 220,
+                      height: 275,
                       decoration: BoxDecoration(
                         color: const Color(0xffF4F7FD),
                         borderRadius: BorderRadius.circular(12),
@@ -249,7 +249,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             fit: BoxFit.cover,
                                           ),
                                         ),
-                                      ),
                                       child: Stack(
                                         children: [
                                           Positioned(
@@ -270,32 +269,37 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                 ),
                                               ),
                                             ),
+                                            ),
                                           ],
                                         ),
                                       );
                                     }).toList(),
-                                    // Добавляем иконку для добавления нового изображения
-                                    GestureDetector(
-                                      onTap: _showImagePickerOptions,
-                                      child: Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          color: Color(0xffF4F7FD),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                              color: Color(0xffF4F7FD)),
-                                        ),
-                                        child: Center(
-                                          child: Image.asset(
-                                            'assets/icons/files/add.png',
-                                            width: 100,
-                                            height: 100,
+                                   GestureDetector(
+                                    onTap: _showImagePickerOptions,
+                                    child: Container(
+                                      width: 100,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        color: Color(0xffF4F7FD),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Color(0xffF4F7FD)),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            "Добавить +",
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xff99A4BA),
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
+                                  ),
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {

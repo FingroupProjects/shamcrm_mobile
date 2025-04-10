@@ -298,36 +298,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        const SizedBox(width: 8),
-        Expanded(
-          child: label == AppLocalizations.of(context)!.translate('description_details')
-              ? GestureDetector(
-                  onTap: () => _showFullTextDialog( AppLocalizations.of(context)!.translate('description_details'), value),
-                  child: _buildValue(value, label, maxLines: 2),
-                )
-              : _buildValue(value, label, maxLines: 2),
-        ),
-      ],
-    );
-  }
-
-
-  Widget _buildLabel(String label) {
-    return Text(
-      '$label:',
-      style: const TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
-      ),
-    );
-  }
 Widget _buildDetailItem(String label, String value) {
   // Список полей, для которых нужно показывать диалог при превышении 1 строки
   final expandableFields = [
@@ -335,20 +305,6 @@ Widget _buildDetailItem(String label, String value) {
     AppLocalizations.of(context)!.translate('goods_description_details'),
     AppLocalizations.of(context)!.translate('category_details'),
   ];
-
-  Widget _buildValue(String value, String label, {int? maxLines}) {
-  if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
-    return const Text( '', 
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
-      ),
-
-    );
-  }
-
 
   // Проверяем, является ли текущее поле одним из тех, что требуют диалог
   bool isExpandable = expandableFields.contains(label) || 
@@ -373,7 +329,34 @@ Widget _buildDetailItem(String label, String value) {
   );
 }
 
-Widget _buildValue(String value, String label, {int? maxLines}) {
+
+  Widget _buildLabel(String label) {
+    return Text(
+      '$label:',
+      style: const TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w400,
+        color: Color(0xff99A4BA),
+      ),
+    );
+  }
+
+
+  Widget _buildValue(String value, String label, {int? maxLines}) {
+ if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
+    return Text( '', 
+      style: const TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF1E2E52),
+      ),
+    maxLines: maxLines,
+    overflow: maxLines != null ? TextOverflow.ellipsis : null,
+  );
+}
+
   if (value.isEmpty) return Container();
   return Text(
     value,
@@ -390,7 +373,6 @@ Widget _buildValue(String value, String label, {int? maxLines}) {
     overflow: maxLines != null ? TextOverflow.ellipsis : null,
   );
 }
-
 
   void _showFullTextDialog(String title, String content) {
     showDialog(

@@ -47,6 +47,21 @@ class _MyNavBarState extends State<MyNavBar> {
     fontSize: 14,
   );
 
+@override
+void initState() {
+  super.initState();
+  currentIndexGroup1 = widget.currentIndexGroup1;
+  currentIndexGroup2 = widget.currentIndexGroup2;
+  
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (widget.currentIndexGroup2 != -1) {
+      _pageController.jumpToPage(1);
+    } else {
+      _pageController.jumpToPage(0);
+    }
+  });
+}
+
   BottomNavyBarItem _buildNavBarItem(
       int index, String title, String activeIconPath, String inactiveIconPath, bool isActive) {
     return BottomNavyBarItem(
@@ -70,8 +85,7 @@ class _MyNavBarState extends State<MyNavBar> {
       inactiveColor: Colors.grey,
     );
   }
-
-  @override
+@override
 Widget build(BuildContext context) {
   return Container(
     height: _navBarHeight,
@@ -83,13 +97,17 @@ Widget build(BuildContext context) {
             onPageChanged: (page) {
               setState(() {
                 if (page == 0) {
-                  currentIndexGroup1 = 0;
+                  currentIndexGroup1 = widget.currentIndexGroup1 != -1 
+                      ? widget.currentIndexGroup1 
+                      : 0;
                   currentIndexGroup2 = -1;
-                  widget.onItemSelectedGroup1(0);
+                  widget.onItemSelectedGroup1(currentIndexGroup1);
                 } else {
                   currentIndexGroup1 = -1;
-                  currentIndexGroup2 = 0; 
-                  widget.onItemSelectedGroup2(0);
+                  currentIndexGroup2 = widget.currentIndexGroup2 != -1 
+                      ? widget.currentIndexGroup2 
+                      : 0;
+                  widget.onItemSelectedGroup2(currentIndexGroup2);
                 }
               });
             },
@@ -101,6 +119,7 @@ Widget build(BuildContext context) {
                   setState(() {
                     currentIndexGroup1 = index;
                     currentIndexGroup2 = -1;
+                    _pageController.jumpToPage(0);
                   });
                   widget.onItemSelectedGroup1(index);
                 },
@@ -126,6 +145,7 @@ Widget build(BuildContext context) {
                   setState(() {
                     currentIndexGroup2 = index;
                     currentIndexGroup1 = -1;
+                    _pageController.jumpToPage(1);
                   });
                   widget.onItemSelectedGroup2(index);
                 },
