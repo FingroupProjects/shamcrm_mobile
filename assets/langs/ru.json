@@ -884,8 +884,18 @@
       "deal_name":"Название",
       "select_deal_name":"Введите название",
       "with_unread_messages":"С непрочитанными сообщениями",
-      "without_replies":"Без ответа"
-      
+      "without_replies":"Без ответа",
+      "edit_order": "Редактирование заказа",
+      "items_list": "Список товаров",
+      "add_product": "Добавить товар",
+      "total": "Итого",
+      "currency": "сом",
+      "add_at_least_one_product": "Добавьте хотя бы один товар",
+      "fill_all_required_fields": "Заполните все обязательные поля",
+      "order_updated_successfully": "Заказ успешно обновлен",
+      "enter_delivery_address": "Введите адрес доставки",
+      "delivery_address": "Адрес доставки",
+      "please_enter_delivery_address": "Пожалуйста, введите адрес доставки"
 
 
     }

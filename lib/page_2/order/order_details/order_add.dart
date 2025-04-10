@@ -38,7 +38,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? selectedDialCode;
   String? baseUrl;
 
-  @override
+@override
   void initState() {
     super.initState();
     _phoneController = TextEditingController(text: widget.order?.phone ?? '');
@@ -52,11 +52,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 'name': good.goodName,
                 'price': good.price,
                 'quantity': good.quantity,
-                'imagePath': null, // Можно добавить из API, если доступно
+                'imagePath': null,
               })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
       _deliveryMethod = widget.order!.delivery ? 'Доставка' : 'Самовывоз';
+      selectedDialCode = widget.order!.phone;
+      // _selectedBranch будет установлено позже в BlocListener, если есть данные
+    } else {
+      _selectedBranch = null; // Явно устанавливаем null для нового заказа
     }
   }
 
@@ -89,8 +93,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       width: 48,
       height: 48,
       color: Colors.grey[200],
-      child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -98,7 +101,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final Order tempOrder = widget.order ??
         Order(
           id: 0,
-          phone: _phoneController.text,
+          phone: selectedDialCode ?? _phoneController.text,
           orderNumber: '',
           delivery: _deliveryMethod == 'Доставка',
           deliveryAddress: _deliveryAddressController.text,
@@ -106,7 +109,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             id: int.tryParse(selectedLead ?? '0') ?? 0,
             name: '',
             channels: [],
-            phone: _phoneController.text,
+            phone: selectedDialCode ?? _phoneController.text,
           ),
           orderStatus: OrderStatusName(id: 0, name: ''),
           goods: _items
@@ -114,12 +117,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     good: GoodItem(
                       id: item['id'],
                       name: item['name'],
-                      description: '', // Пустое значение, так как нет данных
+                      description: '',
                       quantity: item['quantity'],
                       files: item['imagePath'] != null
                           ? [
                               GoodFile(
-                                id: 0, // Заглушка, если ID неизвестен
+                                id: 0,
                                 name: '',
                                 path: item['imagePath'],
                               )
@@ -150,7 +153,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               'quantity': item['quantity'],
               'imagePath': item['imagePath'],
             }));
-        print('Добавленные товары: $_items');
       });
     }
   }
@@ -166,6 +168,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => OrderBloc(context.read<ApiService>()),
@@ -178,7 +181,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Заказ успешно создан')),
               );
-              Navigator.pop(context);
+              Navigator.pop(context, 1); // Возвращаем статус нового заказа (по умолчанию 1)
             } else if (state is OrderError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
@@ -197,11 +200,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         })
                     .toList();
                 _phoneController.text = state.orderDetails!.phone;
+                selectedDialCode = state.orderDetails!.phone;
                 _deliveryAddressController.text =
                     state.orderDetails!.deliveryAddress ?? '';
                 selectedLead = state.orderDetails!.lead.id.toString();
                 _deliveryMethod =
                     state.orderDetails!.delivery ? 'Доставка' : 'Самовывоз';
+                // Устанавливаем _selectedBranch, если он есть в данных
+                // Предполагается, что у Order есть поле branch или аналогичное
+                // Если его нет, оставьте _selectedBranch как null
               });
             }
           },
@@ -243,7 +250,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
-                              setState(() => selectedDialCode = number);
+                              setState(() {
+                                selectedDialCode = number;
+                              });
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -593,7 +602,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onPressed: () {
                 if (_formKey.currentState!.validate() && _items.isNotEmpty) {
                   context.read<OrderBloc>().add(CreateOrder(
-                        phone: _phoneController.text,
+                        phone: selectedDialCode ?? _phoneController.text,
                         leadId: int.parse(selectedLead ?? '0'),
                         delivery: _deliveryMethod == 'Доставка',
                         deliveryAddress: _deliveryMethod == 'Самовывоз'

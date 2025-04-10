@@ -41,9 +41,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     details = [
       {'label': 'Номер заказа:', 'value': order.orderNumber},
+      {'label': 'Клиент:', 'value': order.lead.name},
       {'label': 'Номер телефона:', 'value': order.phone},
       {'label': 'Дата заказа:', 'value': formattedDate},
-      {'label': 'Клиент:', 'value': order.lead.name},
       {'label': 'Статус заказа:', 'value': order.orderStatus.name},
       if (order.deliveryAddress != null)
         {
@@ -264,6 +264,38 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    // Обработка для адреса доставки
+    if (label == 'Адрес доставки:') {
+      return GestureDetector(
+        onTap: () {
+          if (value.isNotEmpty) {
+            _showFullTextDialog(label.replaceAll(':', ''), value);
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     if (label == 'Комментарий клиента:') {
       return GestureDetector(
         onTap: () {

@@ -868,7 +868,18 @@
   "deal_name": "Name",
   "select_deal_name": "Enter name",
   "with_unread_messages": "With unread messages",
-  "without_replies": "No reply"
+  "without_replies": "No reply",
+  "edit_order": "Edit Order",
+  "items_list": "Items List",
+  "add_product": "Add Product",
+  "total": "Total",
+  "currency": "TJS",
+  "add_at_least_one_product": "Add at least one product",
+  "fill_all_required_fields": "Fill all required fields",
+  "order_updated_successfully": "Order updated successfully",
+  "enter_delivery_address": "Enter delivery address",
+  "delivery_address": "Delivery Address",
+  "please_enter_delivery_address": "Please enter the delivery address"
 
 
 

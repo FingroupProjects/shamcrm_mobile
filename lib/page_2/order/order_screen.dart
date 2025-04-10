@@ -189,7 +189,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                                 name: status.name,
                                 searchQuery: _isSearching ? _searchController.text : null,
                                 orders: statusOrders,
-                                isLoading: false, // Убираем isLoading, так как управляем через OrderColumn
+                                isLoading: false,
                                 organizationId: widget.organizationId,
                                 onStatusUpdated: () => _onStatusUpdated(status.id),
                                 onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
@@ -210,8 +210,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 ),
               ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
@@ -219,6 +219,22 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 ),
               ),
             );
+            if (result != null && result is int && _statuses.isNotEmpty) {
+              final newStatusId = result;
+              final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
+              if (newTabIndex != -1) {
+                setState(() {
+                  _currentTabIndex = newTabIndex;
+                });
+                _tabController.animateTo(newTabIndex);
+                _scrollToActiveTab();
+                context.read<OrderBloc>().add(FetchOrders(
+                  statusId: _statuses[_currentTabIndex].id,
+                  page: 1,
+                  perPage: 20,
+                ));
+              }
+            }
           },
           backgroundColor: const Color(0xff1E2E52),
           child: const Icon(Icons.add, color: Colors.white),

@@ -185,24 +185,16 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  void _navigateToGoodsDetails(Good good) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GoodsDetailsByOrderScreen(
-          id: good.good.id, // Используем ID из GoodItem
-          goodsName: good.good.name, // Используем имя из GoodItem
-          goodsDescription:
-              good.good.description, // Используем описание из GoodItem
-          discountGoodsPrice: 0,
-          stockQuantity: good.quantity,
-          imagePaths: ['assets/images/goods_photo.jpg'],
-          selectedCategory: '',
-          isActive: true,
-        ),
+void _navigateToGoodsDetails(Good good) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => GoodsDetailsScreen(
+        id: good.good.id, // Передаем только ID, так как GoodsDetailsScreen сам загрузит данные
       ),
-    );
-  }
+    ),
+  );
+}
 
   Row _buildTitleRow(String title) {
     return Row(
