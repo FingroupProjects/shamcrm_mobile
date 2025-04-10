@@ -892,7 +892,11 @@ Widget build(BuildContext context) {
     // Специальная обработка для названия и описания
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
         label ==
-            AppLocalizations.of(context)!.translate('description_details')) {
+            AppLocalizations.of(context)!.translate('description_details') ||
+        label ==
+            AppLocalizations.of(context)!.translate('project_details') ||
+        label ==
+            AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {

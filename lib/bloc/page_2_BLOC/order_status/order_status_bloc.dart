@@ -45,38 +45,38 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
-    // Показываем загрузку только для первой страницы
-    if (event.page == 1) {
-      emit(OrderLoading());
-    }
-
-    try {
-      final statuses = await apiService.getOrderStatuses();
-      final orderResponse = await apiService.getOrders(
-        statusId: event.statusId,
-        page: event.page,
-        perPage: event.perPage,
-      );
-
-      // Если это первая страница, очищаем список заказов для данного статуса
-      if (event.page == 1) {
-        allOrders[event.statusId] = [];
-      }
-
-      // Добавляем новые заказы к существующим
-      allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + orderResponse.data;
-      allOrdersFetched[event.statusId] = orderResponse.data.length < event.perPage;
-
-      emit(OrderLoaded(
-        statuses,
-        orders: allOrders[event.statusId] ?? [],
-        pagination: orderResponse.pagination,
-      ));
-    } catch (e) {
-      emit(OrderError('Не удалось загрузить заказы: ${e.toString()}'));
-    }
+Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
+  // Показываем загрузку только для первой страницы
+  if (event.page == 1) {
+    emit(OrderLoading());
   }
+
+  try {
+    final statuses = await apiService.getOrderStatuses();
+    final orderResponse = await apiService.getOrders(
+      statusId: event.statusId,
+      page: event.page,
+      perPage: event.perPage,
+    );
+
+    // Если это первая страница, очищаем список заказов для данного статуса
+    if (event.page == 1) {
+      allOrders[event.statusId] = [];
+    }
+
+    // Добавляем новые заказы к существующим
+    allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + orderResponse.data;
+    allOrdersFetched[event.statusId] = orderResponse.data.length < event.perPage;
+
+    emit(OrderLoaded(
+      statuses,
+      orders: allOrders[event.statusId] ?? [],
+      pagination: orderResponse.pagination,
+    ));
+  } catch (e) {
+    emit(OrderError('Не удалось загрузить заказы: ${e.toString()}'));
+  }
+}
 
 Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) async {
   if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) return;

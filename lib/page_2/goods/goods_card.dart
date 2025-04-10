@@ -159,7 +159,7 @@ Widget _buildImageWidget(GoodsFile file) {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: AppLocalizations.of(context)!.translate('category_card'), 
+                              text: AppLocalizations.of(context)!.translate('subcategory_card'), 
                               style: TaskCardStyles.priorityStyle.copyWith(
                                 color: Color(0xff99A4BA),
                               ),
