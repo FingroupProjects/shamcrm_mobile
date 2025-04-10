@@ -692,8 +692,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               _selectedStatuses = selectedStatusData.id;
                             });
                           },
-                        ),                      
-                        CustomTextField(
+                        ),                     
+                      const SizedBox(height: 8),
+                      CustomTextField(
                         controller: descriptionController,
                         hintText: AppLocalizations.of(context)!
                             .translate('enter_description'),

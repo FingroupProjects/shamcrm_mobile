@@ -722,6 +722,10 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           'value':
               '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
         },
+         {
+        'label': AppLocalizations.of(context)!.translate('Статус:'),
+        'value': task.taskStatus!.title.toString()
+      },
     ];
   }
 

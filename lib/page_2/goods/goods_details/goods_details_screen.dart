@@ -91,8 +91,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 'value': goods.name ?? '',
               },
               {
-                'label': AppLocalizations.of(context)!
-                    .translate('goods_description_details'),
+                'label': AppLocalizations.of(context)!.translate('goods_description_details'),
                 'value': goods.description ?? '',
               },
               {
@@ -299,6 +298,24 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
+  Widget _buildDetailItem(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(width: 8),
+        Expanded(
+          child: label == AppLocalizations.of(context)!.translate('description_details')
+              ? GestureDetector(
+                  onTap: () => _showFullTextDialog( AppLocalizations.of(context)!.translate('description_details'), value),
+                  child: _buildValue(value, label, maxLines: 2),
+                )
+              : _buildValue(value, label, maxLines: 2),
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildLabel(String label) {
     return Text(
@@ -318,6 +335,20 @@ Widget _buildDetailItem(String label, String value) {
     AppLocalizations.of(context)!.translate('goods_description_details'),
     AppLocalizations.of(context)!.translate('category_details'),
   ];
+
+  Widget _buildValue(String value, String label, {int? maxLines}) {
+  if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
+    return const Text( '', 
+      style: TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF1E2E52),
+      ),
+
+    );
+  }
+
 
   // Проверяем, является ли текущее поле одним из тех, что требуют диалог
   bool isExpandable = expandableFields.contains(label) || 
@@ -351,14 +382,16 @@ Widget _buildValue(String value, String label, {int? maxLines}) {
       fontFamily: 'Gilroy',
       fontWeight: FontWeight.w500,
       color: const Color(0xFF1E2E52),
-      decoration: maxLines != null && maxLines < value.split('\n').length
+      decoration: label == AppLocalizations.of(context)!.translate('goods_description_details')
           ? TextDecoration.underline
           : TextDecoration.none,
     ),
-    maxLines: maxLines,
+    maxLines: maxLines, 
     overflow: maxLines != null ? TextOverflow.ellipsis : null,
   );
 }
+
+
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,

@@ -209,7 +209,7 @@ class _TasksWidgetState extends State<TasksWidget> {
           taskNumber: task.taskNumber,
           taskName: task.name ?? '',
           taskStatus: '',
-          statusId: 1,
+          statusId: 0,
           taskCustomFields: [],
         ),
       ),
