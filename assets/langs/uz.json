@@ -867,5 +867,16 @@
   "deal_name": "Nomi",
   "select_deal_name": "Nomini kiriting",
   "with_unread_messages": "Oʻqilmagan xabarlar bilan",
-  "without_replies": "Javobsiz"
+  "without_replies": "Javobsiz",
+  "edit_order": "Buyurtmani tahrirlash",
+  "items_list": "Mahsulotlar roʻyxati",
+  "add_product": "Mahsulot qoʻshish",
+  "total": "Jami",
+  "currency": "soʻm",
+  "add_at_least_one_product": "Hech bo‘lmaganda bitta mahsulot qo‘shing",
+  "fill_all_required_fields": "Barcha majburiy maydonlarni to‘ldiring",
+  "order_updated_successfully": "Buyurtma muvaffaqiyatli yangilandi",
+  "enter_delivery_address": "Yetkazib berish manzilini kiriting",
+  "delivery_address": "Yetkazib berish manzili",
+  "please_enter_delivery_address": "Iltimos, yetkazib berish manzilini kiriting"
 }

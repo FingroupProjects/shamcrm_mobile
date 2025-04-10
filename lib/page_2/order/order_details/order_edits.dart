@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_even
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
@@ -11,6 +12,7 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_method_drop
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -31,13 +33,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
-  String? selectedDialCode;
+  String? selectedDialCode; // Полный номер телефона с кодом страны
   String? baseUrl;
 
   @override
   void initState() {
     super.initState();
-    _phoneController = TextEditingController(text: widget.order.phone);
+    _phoneController = TextEditingController();
     _deliveryAddressController =
         TextEditingController(text: widget.order.deliveryAddress);
     _items = widget.order.goods
@@ -52,6 +54,21 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         .toList();
     selectedLead = widget.order.lead.id.toString();
     _deliveryMethod = widget.order.delivery ? 'Доставка' : 'Самовывоз';
+
+    // Инициализация номера телефона
+    String phoneText = widget.order.phone;
+    for (var country in countries) {
+      if (phoneText.startsWith(country.dialCode)) {
+        selectedDialCode = country.dialCode;
+        _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
+        break;
+      }
+    }
+    if (selectedDialCode == null) {
+      selectedDialCode = '+992'; // Код по умолчанию, если не удалось определить
+      _phoneController.text = phoneText;
+    }
+
     _initializeBaseUrl();
   }
 
@@ -80,14 +97,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   void _navigateToAddProduct() async {
     final Order tempOrder = widget.order.copyWith(
-      phone: _phoneController.text,
+      phone: selectedDialCode ?? _phoneController.text, // Используем полный номер
       delivery: _deliveryMethod == 'Доставка',
       deliveryAddress: _deliveryAddressController.text,
       lead: OrderLead(
         id: int.tryParse(selectedLead ?? '0') ?? 0,
         name: widget.order.lead.name,
         channels: widget.order.lead.channels,
-        phone: _phoneController.text,
+        phone: selectedDialCode ?? _phoneController.text, // Полный номер
       ),
       goods: _items.map((item) {
         final goodItem = GoodItem(
@@ -106,7 +123,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               : [],
         );
         return Good(
-          good: goodItem,
+          good: goodItem, // Исправлено
           goodId: item['id'],
           goodName: item['name'],
           price: item['price'],
@@ -154,10 +171,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         appBar: _buildAppBar(),
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
-            print('OrderBloc state: $state'); // Добавляем отладочный вывод
+            print('OrderBloc state: $state'); // Отладочный вывод
             if (state is OrderSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Заказ успешно обновлен')),
+                SnackBar(
+                    content: Text(AppLocalizations.of(context)!
+                        .translate('order_updated_successfully'))),
               );
               Navigator.pop(
                   context, true); // Возвращаем true для обновления списка
@@ -205,15 +224,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
-                              setState(() => selectedDialCode = number);
+                              setState(() => selectedDialCode = number); // Сохраняем полный номер
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Поле обязательно для заполнения';
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
-                            label: 'Телефон',
+                            label: AppLocalizations.of(context)!
+                                .translate('phone'),
+                            selectedDialCode: selectedDialCode, // Передаем начальный код страны
+                            // phoneNumberLengths: const {
+                            //   '+992': 9, // Таджикистан
+                            //   '+7': 10,  // Россия
+                            //   // Добавьте другие коды стран и длины номеров
+                            // },
                           ),
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
@@ -226,13 +253,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           if (_deliveryMethod == 'Доставка')
                             CustomTextField(
                               controller: _deliveryAddressController,
-                              hintText: 'Введите адрес доставки',
-                              label: 'Адрес доставки',
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_delivery_address'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('delivery_address'),
                               maxLines: 3,
                               keyboardType: TextInputType.streetAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Пожалуйста, введите адрес доставки';
+                                  return AppLocalizations.of(context)!
+                                      .translate('please_enter_delivery_address');
                                 }
                                 return null;
                               },
@@ -262,7 +292,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'Редактирование заказа #${widget.order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('edit_order')} #${widget.order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -283,9 +313,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Список товаров',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.translate('items_list'),
+              style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -293,12 +323,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             ),
             GestureDetector(
               onTap: _navigateToAddProduct,
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
-                  SizedBox(width: 4),
-                  Text('Добавить товар',
-                      style: TextStyle(
+                  const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                      AppLocalizations.of(context)!.translate('add_product'),
+                      style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
@@ -335,13 +366,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Итого:',
-                    style: TextStyle(
+                Text(AppLocalizations.of(context)!.translate('total'),
+                    style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52))),
-                Text('${total.toStringAsFixed(3)} сом',
+                Text('${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
                     style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -414,7 +445,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'] ?? 'Без названия',
+                Text(item['name'] ?? AppLocalizations.of(context)!.translate('no_name'),
                     style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -440,8 +471,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Цена',
-                          style: TextStyle(
+                      Text(AppLocalizations.of(context)!.translate('price'),
+                          style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -458,8 +489,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Сумма',
-                          style: TextStyle(
+                      Text(AppLocalizations.of(context)!.translate('total_amount'),
+                          style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -537,8 +568,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text('Отмена',
-                  style: TextStyle(
+              child: Text(AppLocalizations.of(context)!.translate('cancel'),
+                  style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -552,7 +583,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 if (_formKey.currentState!.validate() && _items.isNotEmpty) {
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
-                        phone: _phoneController.text,
+                        phone: selectedDialCode ?? _phoneController.text, // Используем полный номер
                         leadId: int.parse(selectedLead ?? '0'),
                         delivery: _deliveryMethod == 'Доставка',
                         deliveryAddress: _deliveryMethod == 'Самовывоз'
@@ -570,8 +601,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(_items.isEmpty
-                            ? 'Добавьте хотя бы один товар'
-                            : 'Заполните все обязательные поля')),
+                            ? AppLocalizations.of(context)!
+                                .translate('add_at_least_one_product')
+                            : AppLocalizations.of(context)!
+                                .translate('fill_all_required_fields'))),
                   );
                 }
               },
@@ -580,8 +613,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text('Сохранить',
-                  style: TextStyle(
+              child: Text(AppLocalizations.of(context)!.translate('save'),
+                  style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,

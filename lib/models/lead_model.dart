@@ -17,6 +17,7 @@ class Lead {
   final int? successefullyDealsCount;
   final int? failedDealsCount;
   final int? lastUpdate;
+  final String? messageStatus; // Новое поле для messageStatus
 
   Lead({
     required this.id,
@@ -33,6 +34,7 @@ class Lead {
     this.successefullyDealsCount,
     this.failedDealsCount,
     this.lastUpdate,
+    this.messageStatus,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -42,15 +44,23 @@ class Lead {
       source: json['source'] != null ? Source.fromJson(json['source']) : null,
       createdAt: json['created_at']?.toString(),
       statusId: leadStatusId,
-      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
-      sourceLead: json['source'] != null ? SourceLead.fromJson(json['source']) : null,
-      organization: json['organization'] != null ? Organization.fromJson(json['organization']) : null,
-      leadStatus: json['leadStatus'] != null ? LeadStatus.fromJson(json['leadStatus']) : null,
+      manager: json['manager'] != null
+          ? ManagerData.fromJson(json['manager'])
+          : null,
+      sourceLead:
+          json['source'] != null ? SourceLead.fromJson(json['source']) : null,
+      organization: json['organization'] != null
+          ? Organization.fromJson(json['organization'])
+          : null,
+      leadStatus: json['leadStatus'] != null
+          ? LeadStatus.fromJson(json['leadStatus'])
+          : null,
       phone: json['phone']?.toString() ?? '',
       inProgressDealsCount: json['in_progress_deals_count'],
       successefullyDealsCount: json['successful_deals_count'],
       failedDealsCount: json['failed_deals_count'],
       lastUpdate: json['last_update'],
+      messageStatus: json['messageStatus']?.toString(), // Парсим messageStatus как строку
     );
   }
 
@@ -70,6 +80,7 @@ class Lead {
       'successful_deals_count': successefullyDealsCount,
       'failed_deals_count': failedDealsCount,
       'last_update': lastUpdate,
+      'messageStatus': messageStatus,
     };
   }
 }
@@ -80,7 +91,8 @@ class Author {
   final String? login;
   final String? email;
   final String? phone;
-  final dynamic image;  // Changed from String? to dynamic to handle both string and map
+  final dynamic
+      image; // Changed from String? to dynamic to handle both string and map
   final String? lastSeen;
   final String? deletedAt;
   final String? telegramUserId;
@@ -112,7 +124,7 @@ class Author {
       login: json['login'],
       email: json['email'],
       phone: json['phone'],
-      image: json['image'],  // Accept image as-is without type conversion
+      image: json['image'], // Accept image as-is without type conversion
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
       telegramUserId: json['telegram_user_id']?.toString(),

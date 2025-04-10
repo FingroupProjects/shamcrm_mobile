@@ -10,7 +10,18 @@ class Branch {
   Branch({required this.name, required this.address});
 
   @override
-  String toString() => name; // Для отображения в выпадающем списке
+  String toString() => name;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Branch &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          address == other.address;
+
+  @override
+  int get hashCode => name.hashCode ^ address.hashCode;
 }
 
 class BranchesDropdown extends StatefulWidget {
@@ -29,8 +40,6 @@ class BranchesDropdown extends StatefulWidget {
 
 class _BranchesDropdownState extends State<BranchesDropdown> {
   Branch? selectedBranch;
-
-  // Локальный список филиалов (пока без API)
   final List<Branch> branches = [
     Branch(name: 'Центральный офис', address: 'ул. Ленина, 10, Москва'),
     Branch(name: 'Северный филиал', address: 'пр. Мира, 25, Санкт-Петербург'),
@@ -40,7 +49,12 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
   @override
   void initState() {
     super.initState();
-    selectedBranch = widget.selectedBranch;
+    // Проверяем, содержится ли widget.selectedBranch в списке branches
+    if (widget.selectedBranch != null && branches.contains(widget.selectedBranch)) {
+      selectedBranch = widget.selectedBranch;
+    } else {
+      selectedBranch = null; // Сбрасываем, если не найден
+    }
   }
 
   @override
