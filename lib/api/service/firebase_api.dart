@@ -147,22 +147,24 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
+
       case 'myTaskOutDated':
         print('Переход на экран мои задачи с ID: $id');
         screenIndex = -1;
         await navigateToScreen(screenIndex, id, 'myTask', message);
         break;
+
       case 'eventId':
         print('Переход на экран лида с ID: $id');
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'eventId', message);
         break;
       
-      // case 'orders':
-      //   print('Переход на экран лида с ID: $id');
-      //   screenIndex = 3;
-      //   await navigateToScreen(screenIndex, id, 'orders', message);
-      //   break;
+      case 'orders':
+        print('Переход на экран заказов с ID: $id');
+        screenIndex = 3;
+        await navigateToScreen(screenIndex, id, 'orders', message);
+        break;
       default:
         print('handleMessage: Неизвестный тип: $type');
     }

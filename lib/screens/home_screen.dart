@@ -158,14 +158,16 @@ void didChangeDependencies() {
   super.didChangeDependencies();
   final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-  if (args != null && args['screenIndex'] != null && !_isPushHandled) {
+  if (args != null && !_isPushHandled) {
     setState(() {
       if (args['group'] == 1) {
-        _selectedIndexGroup1 = args['screenIndex'];
+        _selectedIndexGroup1 = args['screenIndex'] ?? 0;
+        _selectedIndexGroup2 = -1;
       } else if (args['group'] == 2) {
-        _selectedIndexGroup2 = args['screenIndex'];
+        _selectedIndexGroup2 = args['screenIndex'] ?? 0;
+        _selectedIndexGroup1 = -1;
       }
-      _isPushHandled = true; 
+      _isPushHandled = true;
     });
   }
 }
