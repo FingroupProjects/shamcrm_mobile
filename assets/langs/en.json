@@ -879,8 +879,14 @@
   "order_updated_successfully": "Order updated successfully",
   "enter_delivery_address": "Enter delivery address",
   "delivery_address": "Delivery Address",
-  "please_enter_delivery_address": "Please enter the delivery address"
-
+  "please_enter_delivery_address": "Please enter the delivery address",
+  "category_not_found": "Categories not found",
+  "select_characteristic": "Select a characteristic",
+  "parent_category": "Parent category",
+  "required_image": "    Image is required",
+  "add_characteristic": "Add characteristic",
+  "error_create_category": "Error creating category!"
+  
 
 
 

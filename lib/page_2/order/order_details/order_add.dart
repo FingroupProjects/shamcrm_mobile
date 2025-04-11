@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/order/order_details/goods_selection_shee
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -178,14 +179,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
             if (state is OrderSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Заказ успешно создан')),
-              );
+             showCustomSnackBar(
+               context: context,
+               message:'Заказ успешно создан!',
+               isSuccess: true,
+             );
               Navigator.pop(context, 1); // Возвращаем статус нового заказа (по умолчанию 1)
             } else if (state is OrderError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              showCustomSnackBar(
+               context: context,
+               message: state.message,
+               isSuccess: false,
+             );
             } else if (state is OrderLoaded && state.orderDetails != null) {
               setState(() {
                 _items = state.orderDetails!.goods
@@ -617,12 +622,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         organizationId: widget.organizationId ?? 1,
                       ));
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(_items.isEmpty
-                            ? 'Добавьте хотя бы один товар'
-                            : 'Заполните все обязательные поля')),
-                  );
+                 showCustomSnackBar(
+                  context: context,
+                  message: _items.isEmpty
+                  ? 'Добавьте хотя бы один товар'
+                  : 'Заполните все обязательные поля',
+                  isSuccess: false,
+        );
                 }
               },
               style: ElevatedButton.styleFrom(

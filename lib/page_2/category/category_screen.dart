@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
@@ -57,28 +58,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
           : BlocConsumer<CategoryBloc, CategoryState>(
               listener: (context, state) {
                 if (state is CategorySuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.translate(state.message),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
+                  showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: true,
+                 );
                 }
               },
               builder: (context, state) {
@@ -88,7 +72,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   context.read<CategoryBloc>().add(FetchCategories());
                   return Center(child: Text(state.message));
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
-                  return Center(child: Text('Категории не найдены'));
+                  return Center(child: Text(AppLocalizations.of(context)!.translate('category_not_found')));
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
                   return ListView.builder(
