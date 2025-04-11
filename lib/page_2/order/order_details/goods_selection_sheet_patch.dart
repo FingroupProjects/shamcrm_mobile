@@ -13,7 +13,8 @@ class ProductSelectionSheetAdd extends StatefulWidget {
   const ProductSelectionSheetAdd({required this.order, super.key});
 
   @override
-  State<ProductSelectionSheetAdd> createState() => _ProductSelectionSheetAddState();
+  State<ProductSelectionSheetAdd> createState() =>
+      _ProductSelectionSheetAddState();
 }
 
 class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
@@ -80,7 +81,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       setState(() {
         _isLoadingMore = true;
       });
-      context.read<GoodsBloc>().add(FetchMoreGoods(state.pagination.currentPage));
+      context
+          .read<GoodsBloc>()
+          .add(FetchMoreGoods(state.pagination.currentPage));
     }
   }
 
@@ -92,18 +95,32 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               'name': product.name,
               'price': product.discountPrice ?? 0.0,
               'quantity': product.quantitySelected ?? 1,
-              'imagePath': product.files.isNotEmpty ? product.files[0].path : null,
+              'imagePath':
+                  product.files.isNotEmpty ? product.files[0].path : null,
             })
         .toList();
 
     if (selectedProducts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Выберите хотя бы один товар',
-            style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
         ),
       );
       return;
@@ -137,7 +154,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 if (state is GoodsDataLoaded) {
                   setState(() {
                     _isLoadingMore = false;
-                    _hasMore = state.pagination.currentPage < state.pagination.totalPages;
+                    _hasMore = state.pagination.currentPage <
+                        state.pagination.totalPages;
                   });
                 }
               },
@@ -296,13 +314,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholderImage(),
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return const Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
                     ),
                   );
                 },
@@ -317,7 +337,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       width: 48,
       height: 48,
       color: Colors.grey[200],
-      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child:
+          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -415,7 +436,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         child: const Center(

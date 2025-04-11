@@ -45,16 +45,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   }
 
   Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
-    print('Fetching orders for statusId: ${event.statusId}, page: ${event.page}, forceRefresh: ${event.forceRefresh}');
+    print(
+        'Fetching orders for statusId: ${event.statusId}, page: ${event.page}, forceRefresh: ${event.forceRefresh}');
 
-    // Проверяем, нужно ли выполнять запрос
+    // Если forceRefresh включен, очищаем кэш для этого статуса
+    if (event.forceRefresh) {
+      allOrders[event.statusId] = [];
+      allOrdersFetched[event.statusId] = false;
+    }
+
+    // Проверяем, можно ли использовать кэшированные данные
     if (!event.forceRefresh &&
         event.page == 1 &&
         (allOrders[event.statusId]?.isNotEmpty ?? false)) {
       emit(OrderLoaded(
         state is OrderLoaded ? (state as OrderLoaded).statuses : [],
         orders: allOrders[event.statusId]!,
-        pagination: state is OrderLoaded ? (state as OrderLoaded).pagination : null,
+        pagination:
+            state is OrderLoaded ? (state as OrderLoaded).pagination : null,
       ));
       return;
     }
@@ -75,8 +83,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
       print('Received orders: ${orderResponse.data.length}');
 
-      // Очищаем данные только если это первая страница или принудительное обновление
-      if (event.page == 1 || event.forceRefresh) {
+      // Очищаем данные для первой страницы, если не было forceRefresh
+      if (event.page == 1 && !event.forceRefresh) {
         allOrders[event.statusId] = [];
         allOrdersFetched[event.statusId] = false;
       }
@@ -110,7 +118,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   Future<void> _fetchMoreOrders(
       FetchMoreOrders event, Emitter<OrderState> emit) async {
-    if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) return;
+    if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded)
+      return;
 
     print(
         'Fetching more orders for statusId: ${event.statusId}, page: ${event.page}');
@@ -148,7 +157,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         ),
       ));
     } catch (e) {
-      emit(OrderError('Не удалось загрузить дополнительные заказы: ${e.toString()}'));
+      emit(OrderError(
+          'Не удалось загрузить дополнительные заказы: ${e.toString()}'));
     }
   }
 
