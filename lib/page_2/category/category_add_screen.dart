@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -120,7 +121,7 @@ class CategoryAddBottomSheet {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          AppLocalizations.of(context)!.translate('Родительская категория'),
+                                          AppLocalizations.of(context)!.translate('parent_category'),
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w500,
@@ -195,7 +196,7 @@ class CategoryAddBottomSheet {
                                   },
                                 ),
                               const SizedBox(height: 8),
-                               Text( AppLocalizations.of(context)!.translate('Изображение'),
+                               Text( AppLocalizations.of(context)!.translate('image_message'),
                                  style: const TextStyle(
                                    fontSize: 16,
                                    fontFamily: 'Gilroy',
@@ -290,7 +291,7 @@ class CategoryAddBottomSheet {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('    Изоброжения обязательно'),
+                                          AppLocalizations.of(context)!.translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -304,7 +305,7 @@ class CategoryAddBottomSheet {
                               const SizedBox(height: 10),
                               if (!isActive)
                                 CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
+                                  buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
                                   buttonColor: Color(0xff1E2E52),
                                   textColor: Colors.white,
                                   onPressed: _showAddCharacterCustomFieldDialog,
@@ -409,11 +410,11 @@ class CategoryAddBottomSheet {
       ));
       
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ошибка при создании категории: ${e.toString()}'),
-        ),
-      );
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('error_create_category'),
+          isSuccess: false,
+        );
     }
   }
 }

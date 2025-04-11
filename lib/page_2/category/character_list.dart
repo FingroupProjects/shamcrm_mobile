@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class CharacteristicData {
@@ -58,9 +59,9 @@ Future<void> _loadCharacteristics() async {
       });
     }
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Не удалось загрузить характеристики: ${e.toString()}')),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text('Не удалось загрузить характеристики: ${e.toString()}')),
+    // );
   }
 }
 
@@ -131,7 +132,7 @@ Widget _buildTextField() {
                     color: Color(0xff1E2E52), 
                   ),
                   decoration: InputDecoration(
-                    hintText: "Выберите характеристику",
+                    hintText: AppLocalizations.of(context)!.translate('select_characteristic'),
                     hintStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -196,7 +197,7 @@ Widget _buildTextField() {
                     controller: _searchController,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: "Поиск",
+                      hintText: AppLocalizations.of(context)!.translate('search'),
                       prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -220,8 +221,7 @@ Widget _buildTextField() {
                 Expanded(
                   child: filteredList.isEmpty && _searchController.text.isNotEmpty
                       ? Center(
-                          child: Text(
-                            "Нет данных для отображения",
+                          child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,

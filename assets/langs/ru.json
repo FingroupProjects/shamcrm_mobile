@@ -898,7 +898,13 @@
       "please_enter_delivery_address": "Пожалуйста, введите адрес доставки",
       "description_details_lead":"Доп. информация клиента:",
       "description_details_lead_add":"Доп. информация клиента",
-      "description_details_lead_edit":"Введите информацию"
+      "description_details_lead_edit":"Введите информацию",
+      "category_not_found": "Категории не найдены",
+      "select_characteristic": "Выберите характеристику",
+      "parent_category": "Родительская категория",
+      "required_image": "    Изоброжения обязательно",
+      "add_characteristic": "Добавить характеристику",
+      "error_create_category": "Ошибка при создании категории!"
 
 
     }

@@ -882,8 +882,14 @@
   "please_enter_delivery_address": "Please enter the delivery address",
   "description_details_lead": "Client's additional info:",
   "description_details_lead_add": "Client's additional info",
-  "description_details_lead_edit": "Enter information"
-
+  "description_details_lead_edit": "Enter information",
+  "category_not_found": "Categories not found",
+  "select_characteristic": "Select a characteristic",
+  "parent_category": "Parent category",
+  "required_image": "    Image is required",
+  "add_characteristic": "Add characteristic",
+  "error_create_category": "Error creating category!"
+  
 
 
 
