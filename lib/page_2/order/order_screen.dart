@@ -23,7 +23,8 @@ class OrderScreen extends StatefulWidget {
   _OrderScreenState createState() => _OrderScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin {
+class _OrderScreenState extends State<OrderScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -55,7 +56,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
       double targetOffset = _scrollController.offset +
           position.dx -
@@ -76,7 +78,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
   }
 
   void _onStatusUpdated(int newStatusId) {
-    final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
+    final newTabIndex =
+        _statuses.indexWhere((status) => status.id == newStatusId);
     if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
       setState(() {
         _currentTabIndex = newTabIndex;
@@ -127,12 +130,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 listener: (context, state) {
                   if (state is OrderLoaded) {
                     if (_statuses.length != state.statuses.length ||
-                        !_statuses.every((s) => state.statuses.any((st) => st.id == s.id))) {
+                        !_statuses.every(
+                            (s) => state.statuses.any((st) => st.id == s.id))) {
                       setState(() {
                         _statuses = state.statuses;
-                        _tabKeys = List.generate(_statuses.length, (_) => GlobalKey());
+                        _tabKeys =
+                            List.generate(_statuses.length, (_) => GlobalKey());
                         _tabController.dispose();
-                        _tabController = TabController(length: _statuses.length, vsync: this);
+                        _tabController = TabController(
+                            length: _statuses.length, vsync: this);
                         _tabController.addListener(() {
                           if (_currentTabIndex != _tabController.index) {
                             setState(() {
@@ -140,19 +146,19 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                             });
                             _scrollToActiveTab();
                             context.read<OrderBloc>().add(FetchOrders(
-                              statusId: _statuses[_currentTabIndex].id,
-                              page: 1,
-                              perPage: 20,
-                            ));
+                                  statusId: _statuses[_currentTabIndex].id,
+                                  page: 1,
+                                  perPage: 20,
+                                ));
                           }
                         });
                       });
                       if (_isInitialLoad && _statuses.isNotEmpty) {
                         context.read<OrderBloc>().add(FetchOrders(
-                          statusId: _statuses[0].id,
-                          page: 1,
-                          perPage: 20,
-                        ));
+                              statusId: _statuses[0].id,
+                              page: 1,
+                              perPage: 20,
+                            ));
                         _isInitialLoad = false;
                       }
                     }
@@ -169,48 +175,69 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                       );
                     }
 
-                    return Column(
-                      children: [
-                        const SizedBox(height: 15),
-                        _buildCustomTabBar(),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: _statuses.map((status) {
-                              final List<Order> statusOrders = state is OrderLoaded
-                                  ? state.orders
-                                      .where((order) => order.orderStatus.id == status.id)
-                                      .toList()
-                                  : <Order>[];
+                    // В OrderScreen, внутри build, замените Column в BlocBuilder на:
+                    return RefreshIndicator(
+                      color: const Color(0xff1E2E52),
+                      backgroundColor: Colors.white,
+                      onRefresh: () async {
+                        context.read<OrderBloc>().add(FetchOrderStatuses());
+                        if (_statuses.isNotEmpty) {
+                          context.read<OrderBloc>().add(FetchOrders(
+                                statusId: _statuses[_currentTabIndex].id,
+                                page: 1,
+                                perPage: 20,
+                              ));
+                        }
+                        return Future.delayed(Duration(milliseconds: 1));
+                      },
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 15),
+                          _buildCustomTabBar(),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: _statuses.map((status) {
+                                final List<Order> statusOrders = state
+                                        is OrderLoaded
+                                    ? state.orders
+                                        .where((order) =>
+                                            order.orderStatus.id == status.id)
+                                        .toList()
+                                    : <Order>[];
 
-                              return OrderColumn(
-                                statusId: status.id,
-                                name: status.name,
-                                searchQuery: _isSearching ? _searchController.text : null,
-                                orders: statusOrders,
-                                isLoading: false,
-                                organizationId: widget.organizationId,
-                                onStatusUpdated: () => _onStatusUpdated(status.id),
-                                onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
-                                onTabChange: (newTabIndex) {
-                                  setState(() {
-                                    _currentTabIndex = newTabIndex;
-                                  });
-                                  _tabController.animateTo(newTabIndex);
-                                  _scrollToActiveTab();
-                                },
-                              );
-                            }).toList(),
+                                return OrderColumn(
+                                  statusId: status.id,
+                                  name: status.name,
+                                  searchQuery: _isSearching
+                                      ? _searchController.text
+                                      : null,
+                                  organizationId: widget.organizationId,
+                                  onStatusUpdated: () =>
+                                      _onStatusUpdated(status.id),
+                                  onStatusId: (newStatusId) =>
+                                      _onStatusUpdated(newStatusId),
+                                  onTabChange: (newTabIndex) {
+                                    setState(() {
+                                      _currentTabIndex = newTabIndex;
+                                    });
+                                    _tabController.animateTo(newTabIndex);
+                                    _scrollToActiveTab();
+                                  },
+                                );
+                              }).toList(),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     );
                   },
                 ),
               ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
+            // Открываем экран добавления заказа
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
@@ -219,20 +246,42 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 ),
               ),
             );
-            if (result != null && result is int && _statuses.isNotEmpty) {
-              final newStatusId = result;
-              final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
-              if (newTabIndex != -1) {
-                setState(() {
-                  _currentTabIndex = newTabIndex;
-                });
-                _tabController.animateTo(newTabIndex);
-                _scrollToActiveTab();
-                context.read<OrderBloc>().add(FetchOrders(
-                  statusId: _statuses[_currentTabIndex].id,
-                  page: 1,
-                  perPage: 20,
-                ));
+
+            // Обновляем данные для текущего статуса при любом возврате
+            if (_statuses.isNotEmpty) {
+              final currentStatusId = _statuses[_currentTabIndex].id;
+              // Очищаем кэш для текущего статуса
+              context.read<OrderBloc>().allOrders[currentStatusId] = [];
+              context.read<OrderBloc>().allOrdersFetched[currentStatusId] =
+                  false;
+              // Загружаем свежие данные
+              context.read<OrderBloc>().add(FetchOrders(
+                    statusId: currentStatusId,
+                    page: 1,
+                    perPage: 20,
+                  ));
+
+              // Если заказ был создан, переключаемся на нужную вкладку
+              if (result.ConcurrentModificationError != null && result is int) {
+                final newStatusId = result;
+                final newTabIndex =
+                    _statuses.indexWhere((status) => status.id == newStatusId);
+                if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+                  setState(() {
+                    _currentTabIndex = newTabIndex;
+                  });
+                  _tabController.animateTo(newTabIndex);
+                  _scrollToActiveTab();
+                  // Обновляем данные для нового статуса
+                  context.read<OrderBloc>().allOrders[newStatusId] = [];
+                  context.read<OrderBloc>().allOrdersFetched[newStatusId] =
+                      false;
+                  context.read<OrderBloc>().add(FetchOrders(
+                        statusId: newStatusId,
+                        page: 1,
+                        perPage: 20,
+                      ));
+                }
               }
             }
           },
@@ -265,11 +314,14 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                     color: isActive ? Colors.black : const Color(0xff99A4BA),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 child: Text(
                   _statuses[index].name,
                   style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
               ),

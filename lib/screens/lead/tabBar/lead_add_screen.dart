@@ -295,8 +295,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         const SizedBox(height: 15),
                         CustomTextField(
                           controller: descriptionController,
-                          hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                          label: AppLocalizations.of(context)!.translate('description_list'),
+                          hintText: AppLocalizations.of(context)!.translate('description_details_lead_edit'),
+                          label: AppLocalizations.of(context)!.translate('description_details_lead_add'),
                           maxLines: 5,
                           keyboardType: TextInputType.multiline,
                         ),

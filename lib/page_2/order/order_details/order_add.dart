@@ -8,7 +8,6 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
-import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -38,7 +37,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? selectedDialCode;
   String? baseUrl;
 
-@override
+  @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController(text: widget.order?.phone ?? '');
@@ -93,7 +92,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       width: 48,
       height: 48,
       color: Colors.grey[200],
-      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child:
+          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -181,7 +181,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Заказ успешно создан')),
               );
-              Navigator.pop(context, 1); // Возвращаем статус нового заказа (по умолчанию 1)
+              Navigator.pop(
+                  context, state.statusId ?? 1); // Возвращаем statusId
             } else if (state is OrderError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
@@ -206,9 +207,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 selectedLead = state.orderDetails!.lead.id.toString();
                 _deliveryMethod =
                     state.orderDetails!.delivery ? 'Доставка' : 'Самовывоз';
-                // Устанавливаем _selectedBranch, если он есть в данных
-                // Предполагается, что у Order есть поле branch или аналогичное
-                // Если его нет, оставьте _selectedBranch как null
               });
             }
           },
@@ -584,16 +582,21 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffF4F7FD),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text('Отмена',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black)),
+                backgroundColor: const Color(0xffF4F7FD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                'Отмена',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 16),

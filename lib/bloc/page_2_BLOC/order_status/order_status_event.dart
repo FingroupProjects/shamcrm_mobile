@@ -1,4 +1,3 @@
-// bloc/order/order_event.dart
 abstract class OrderEvent {}
 
 class FetchOrderStatuses extends OrderEvent {}
@@ -7,16 +6,30 @@ class FetchOrders extends OrderEvent {
   final int? statusId;
   final int page;
   final int perPage;
+  final String? query;
+  final bool forceRefresh;
 
-  FetchOrders({this.statusId, this.page = 1, this.perPage = 20});
+  FetchOrders({
+    this.statusId,
+    this.page = 1,
+    this.perPage = 20,
+    this.query,
+    this.forceRefresh = false,
+  });
 }
 
 class FetchMoreOrders extends OrderEvent {
   final int? statusId;
   final int page;
   final int perPage;
+  final String? query;
 
-  FetchMoreOrders({this.statusId, this.page = 1, this.perPage = 20});
+  FetchMoreOrders({
+    this.statusId,
+    this.page = 1,
+    this.perPage = 20,
+    this.query,
+  });
 }
 
 class FetchOrderDetails extends OrderEvent {

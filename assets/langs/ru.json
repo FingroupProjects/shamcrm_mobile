@@ -895,7 +895,10 @@
       "order_updated_successfully": "Заказ успешно обновлен",
       "enter_delivery_address": "Введите адрес доставки",
       "delivery_address": "Адрес доставки",
-      "please_enter_delivery_address": "Пожалуйста, введите адрес доставки"
+      "please_enter_delivery_address": "Пожалуйста, введите адрес доставки",
+      "description_details_lead":"Доп. информация клиента:",
+      "description_details_lead_add":"Доп. информация клиента",
+      "description_details_lead_edit":"Введите информацию"
 
 
     }
