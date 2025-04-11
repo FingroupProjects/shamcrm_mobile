@@ -895,7 +895,14 @@
       "order_updated_successfully": "Заказ успешно обновлен",
       "enter_delivery_address": "Введите адрес доставки",
       "delivery_address": "Адрес доставки",
-      "please_enter_delivery_address": "Пожалуйста, введите адрес доставки"
+      "please_enter_delivery_address": "Пожалуйста, введите адрес доставки",
+
+      "category_not_found": "Категории не найдены",
+      "select_characteristic": "Выберите характеристику",
+      "parent_category": "Родительская категория",
+      "required_image": "    Изоброжения обязательно",
+      "add_characteristic": "Добавить характеристику",
+      "error_create_category": "Ошибка при создании категории!"
 
 
     }

@@ -33,7 +33,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
-  String? selectedDialCode; // Полный номер телефона с кодом страны
+  String? selectedDialCode; 
   String? baseUrl;
 
   @override

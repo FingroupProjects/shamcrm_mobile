@@ -878,5 +878,12 @@
   "order_updated_successfully": "Buyurtma muvaffaqiyatli yangilandi",
   "enter_delivery_address": "Yetkazib berish manzilini kiriting",
   "delivery_address": "Yetkazib berish manzili",
-  "please_enter_delivery_address": "Iltimos, yetkazib berish manzilini kiriting"
+  "please_enter_delivery_address": "Iltimos, yetkazib berish manzilini kiriting",
+  "category_not_found": "Kategoriyalar topilmadi",
+  "select_characteristic": "Xususiyatni tanlang",
+  "parent_category": "Asosiy kategoriya",
+  "required_image": "    Rasm majburiy",
+  "add_characteristic": "Xususiyat qo‘shish",
+  "error_create_category": "Kategoriya yaratishda xatolik yuz berdi!"
+
 }
