@@ -301,7 +301,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                      onTap: _showImagePickerOptions,
                      child: Container(
                        width: double.infinity,
-                       height: 220,
+                       height: 275,
                        decoration: BoxDecoration(
                          color: const Color(0xffF4F7FD),
                          borderRadius: BorderRadius.circular(12),

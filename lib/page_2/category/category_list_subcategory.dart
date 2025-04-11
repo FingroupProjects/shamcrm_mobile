@@ -50,7 +50,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('Категория'),
+                AppLocalizations.of(context)!.translate('category_details'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -61,7 +61,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
               const SizedBox(height: 4),
               CustomDropdown<String>.search(
                 closeDropDownOnClearFilterSearch: true,
-                items: subCategoryNames, // Показываем только названия
+                items: subCategoryNames, 
                 searchHintText: AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 300,
                 enabled: true,
@@ -85,7 +85,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
-                  AppLocalizations.of(context)!.translate('Выберите категорию'),
+                  AppLocalizations.of(context)!.translate('select_category'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
