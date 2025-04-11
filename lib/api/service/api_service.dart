@@ -6569,52 +6569,52 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> createOrder({
-    required String phone,
-    required int leadId,
-    required bool delivery,
-    required String deliveryAddress,
-    required List<Map<String, dynamic>> goods,
-    required int organizationId,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
+Future<Map<String, dynamic>> createOrder({
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  required String deliveryAddress,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
 
-      final uri = Uri.parse('$baseUrl/order?organization_id=$organizationId');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'phone': phone,
-          'lead_id': leadId,
-          'delivery': delivery,
-          'delivery_address': deliveryAddress,
-          'goods': goods,
-          'organization_id': organizationId.toString(),
-        }),
-      );
+    final uri = Uri.parse('$baseUrl/order?organization_id=$organizationId');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'phone': phone,
+        'lead_id': leadId,
+        'delivery': delivery,
+        'delivery_address': deliveryAddress,
+        'goods': goods,
+        'organization_id': organizationId.toString(),
+      }),
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final jsonResponse = jsonDecode(response.body);
-        final statusId = jsonResponse['result']['status_id'] ??
-            1; // Предполагаем, что сервер возвращает status_id
-        return {'success': true, 'statusId': statusId};
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при создании заказа');
-      }
-    } catch (e) {
-      print('Ошибка создания заказа: $e');
-      return {'success': false, 'error': e.toString()};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final jsonResponse = jsonDecode(response.body);
+      final statusId = jsonResponse['result']['status_id'] ??
+          1; // Убедитесь, что сервер возвращает status_id
+      return {'success': true, 'statusId': statusId};
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при создании заказа');
     }
+  } catch (e) {
+    print('Ошибка создания заказа: $e');
+    return {'success': false, 'error': e.toString()};
   }
+}
 
   // Метод для редактирование заказа
   Future<bool> updateOrder({

@@ -79,7 +79,9 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       setState(() {
         _isLoadingMore = true;
       });
-      context.read<GoodsBloc>().add(FetchMoreGoods(state.pagination.currentPage));
+      context
+          .read<GoodsBloc>()
+          .add(FetchMoreGoods(state.pagination.currentPage));
     }
   }
 
@@ -95,12 +97,25 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
 
     if (selectedProducts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Выберите хотя бы один товар',
-            style: TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
         ),
       );
       return;
@@ -121,14 +136,14 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     print('Updated goods: $updatedGoods');
 
     context.read<OrderBloc>().add(UpdateOrder(
-      orderId: widget.order.id,
-      phone: widget.order.phone,
-      leadId: widget.order.lead.id,
-      delivery: widget.order.delivery,
-      deliveryAddress: widget.order.deliveryAddress ?? '',
-      goods: updatedGoods,
-      organizationId: 1,
-    ));
+          orderId: widget.order.id,
+          phone: widget.order.phone,
+          leadId: widget.order.lead.id,
+          delivery: widget.order.delivery,
+          deliveryAddress: widget.order.deliveryAddress ?? '',
+          goods: updatedGoods,
+          organizationId: 1,
+        ));
 
     Navigator.pop(context);
   }
@@ -158,7 +173,8 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                 if (state is GoodsDataLoaded) {
                   setState(() {
                     _isLoadingMore = false;
-                    _hasMore = state.pagination.currentPage < state.pagination.totalPages;
+                    _hasMore = state.pagination.currentPage <
+                        state.pagination.totalPages;
                   });
                 }
               },
@@ -316,7 +332,8 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholderImage(),
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return _buildPlaceholderImage();
@@ -330,7 +347,8 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   Widget _buildPlaceholderImage() {
     return Container(
       color: Colors.grey[200],
-      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child:
+          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -424,11 +442,13 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       child: ElevatedButton(
         onPressed: () {
           final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) _updateOrderWithSelectedProducts(state.goods);
+          if (state is GoodsDataLoaded)
+            _updateOrderWithSelectedProducts(state.goods);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         child: const Center(

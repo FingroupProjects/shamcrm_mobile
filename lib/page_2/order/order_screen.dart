@@ -197,7 +197,7 @@ class _OrderScreenState extends State<OrderScreen>
                           Expanded(
                             child: TabBarView(
                               controller: _tabController,
-                              physics: const NeverScrollableScrollPhysics(),
+                              physics: const AlwaysScrollableScrollPhysics(),
                               children: _statuses.map((status) {
                                 final List<Order> statusOrders = state
                                         is OrderLoaded
@@ -247,23 +247,18 @@ class _OrderScreenState extends State<OrderScreen>
               ),
             );
 
-            // Обновляем данные для текущего статуса при любом возврате
-            if (_statuses.isNotEmpty) {
-              final currentStatusId = _statuses[_currentTabIndex].id;
-              // Очищаем кэш для текущего статуса
-              context.read<OrderBloc>().allOrders[currentStatusId] = [];
-              context.read<OrderBloc>().allOrdersFetched[currentStatusId] =
-                  false;
-              // Загружаем свежие данные
-              context.read<OrderBloc>().add(FetchOrders(
-                    statusId: currentStatusId,
-                    page: 1,
-                    perPage: 20,
-                  ));
+            // Обновляем данные после возврата
+            final orderBloc = context.read<OrderBloc>();
 
-              // Если заказ был создан, переключаемся на нужную вкладку
-              if (result.ConcurrentModificationError != null && result is int) {
+            // Очищаем кэш для всех статусов
+            orderBloc.allOrders.clear();
+            orderBloc.allOrdersFetched.clear();
+
+            if (_statuses.isNotEmpty) {
+              if (result != null && result is int) {
                 final newStatusId = result;
+
+                // Переключаемся на вкладку нового статуса
                 final newTabIndex =
                     _statuses.indexWhere((status) => status.id == newStatusId);
                 if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
@@ -272,17 +267,28 @@ class _OrderScreenState extends State<OrderScreen>
                   });
                   _tabController.animateTo(newTabIndex);
                   _scrollToActiveTab();
-                  // Обновляем данные для нового статуса
-                  context.read<OrderBloc>().allOrders[newStatusId] = [];
-                  context.read<OrderBloc>().allOrdersFetched[newStatusId] =
-                      false;
-                  context.read<OrderBloc>().add(FetchOrders(
-                        statusId: newStatusId,
-                        page: 1,
-                        perPage: 20,
-                      ));
                 }
+
+                // Загружаем данные для нового статуса
+                orderBloc.add(FetchOrders(
+                  statusId: newStatusId,
+                  page: 1,
+                  perPage: 20,
+                  forceRefresh: true,
+                ));
+              } else {
+                // Если заказ не создан, обновляем текущий статус
+                final currentStatusId = _statuses[_currentTabIndex].id;
+                orderBloc.add(FetchOrders(
+                  statusId: currentStatusId,
+                  page: 1,
+                  perPage: 20,
+                  forceRefresh: true,
+                ));
               }
+
+              // Дополнительно обновляем статусы, чтобы учесть возможные изменения
+              orderBloc.add(FetchOrderStatuses());
             }
           },
           backgroundColor: const Color(0xff1E2E52),
