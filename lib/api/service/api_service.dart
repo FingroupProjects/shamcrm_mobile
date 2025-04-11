@@ -6463,7 +6463,7 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ END____API_SCREEN__GOODS____________________________________________//
 
-  //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
+  //_________________________________ START_____API_SCREEN__ORDER____________________________________________//
 // Метод для получение статусов заказы
   Future<List<OrderStatus>> getOrderStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -6505,53 +6505,38 @@ Future<Map<String, dynamic>> createMyTask({
   }
 
   // Метод для получение карточки
-  Future<OrderResponse> getOrders(
-      {int page = 1, int perPage = 20, int? statusId}) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
+ Future<OrderResponse> getOrders({
+  int page = 1,
+  int perPage = 20,
+  int? statusId,
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    try {
-      String url =
-          '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
-      url += '&page=$page&per_page=$perPage';
-      if (statusId != null) {
-        url += '&status_id=$statusId';
-      }
-
-      final response = await _getRequest(
-          url); // Предполагается, что это ваш метод HTTP-запроса
-
-      // print('Response status: ${response.statusCode}');
-      // print('Raw response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        // print('Decoded JSON: $rawData');
-        final data = rawData['result'];
-        // print('Result data: $data');
-        // print('Data type: ${data.runtimeType}');
-
-        final orderResponse = OrderResponse.fromJson(data);
-        // print('Deserialized OrderResponse: $orderResponse');
-        await prefs.setString(
-            'cachedOrders_$organizationId', json.encode(data));
-        return orderResponse;
-      } else {
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      print('Ошибка загрузки заказов: $e. Использ?уем кэшированные данные.');
-      final cachedOrders = prefs.getString('cachedOrders_$organizationId');
-      if (cachedOrders != null) {
-        final decodedData = json.decode(cachedOrders);
-        // print('Cached data: $decodedData');
-        return OrderResponse.fromJson(decodedData);
-      } else {
-        throw Exception('Ошибка загрузки заказов и нет кэшированных данных!');
-      }
+  try {
+    String url =
+        '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    url += '&page=$page&per_page=$perPage';
+    if (statusId != null) {
+      url += '&status_id=$statusId';
     }
-  }
 
+    final response = await _getRequest(url);
+    print('Request URL: $url'); // Логи для отладки
+    print('Response status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body);
+      final data = rawData['result'];
+      print('Response data: $data'); // Логи для отладки
+      return OrderResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    print('Ошибка загрузки заказов: $e');
+    throw e;
+  }
+}
   //Метод для получение просмотра заказов
   Future<Order> getOrderDetails(int orderId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -6584,7 +6569,7 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<bool> createOrder({
+  Future<Map<String, dynamic>> createOrder({
     required String phone,
     required int leadId,
     required bool delivery,
@@ -6616,7 +6601,10 @@ Future<Map<String, dynamic>> createMyTask({
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        final jsonResponse = jsonDecode(response.body);
+        final statusId = jsonResponse['result']['status_id'] ??
+            1; // Предполагаем, что сервер возвращает status_id
+        return {'success': true, 'statusId': statusId};
       } else {
         final jsonResponse = jsonDecode(response.body);
         throw Exception(
@@ -6624,7 +6612,7 @@ Future<Map<String, dynamic>> createMyTask({
       }
     } catch (e) {
       print('Ошибка создания заказа: $e');
-      return false;
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -6746,5 +6734,5 @@ Future<Map<String, dynamic>> createMyTask({
       return false;
     }
   }
-  //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
+  //_________________________________ END_____API_SCREEN__ORDER____________________________________________//
 }

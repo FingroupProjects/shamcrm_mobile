@@ -23,5 +23,6 @@ class OrderError extends OrderState {
 }
 
 class OrderSuccess extends OrderState {
-   OrderSuccess();
+  final int? statusId; // Добавляем поле для статуса заказа
+  OrderSuccess({this.statusId});
 }

@@ -394,7 +394,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'value': formatDate(lead.birthday)
       },
       {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
+        'label': AppLocalizations.of(context)!.translate('description_details_lead'),
         'value': lead.description ?? ''
       },
       {
@@ -742,7 +742,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               child: (label.contains(
                           AppLocalizations.of(context)!.translate('lead')) ||
                       label.contains(AppLocalizations.of(context)!
-                          .translate('description_list')))
+                          .translate('description_details_lead')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value, label),
             ),
