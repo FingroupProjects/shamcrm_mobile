@@ -237,7 +237,6 @@ class _OrderScreenState extends State<OrderScreen>
               ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            // Открываем экран добавления заказа
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
@@ -247,48 +246,29 @@ class _OrderScreenState extends State<OrderScreen>
               ),
             );
 
-            // Обновляем данные после возврата
             final orderBloc = context.read<OrderBloc>();
 
-            // Очищаем кэш для всех статусов
-            orderBloc.allOrders.clear();
-            orderBloc.allOrdersFetched.clear();
+            if (result != null && result is int) {
+              final newStatusId = result;
 
-            if (_statuses.isNotEmpty) {
-              if (result != null && result is int) {
-                final newStatusId = result;
-
-                // Переключаемся на вкладку нового статуса
-                final newTabIndex =
-                    _statuses.indexWhere((status) => status.id == newStatusId);
-                if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
-                  setState(() {
-                    _currentTabIndex = newTabIndex;
-                  });
-                  _tabController.animateTo(newTabIndex);
-                  _scrollToActiveTab();
-                }
-
-                // Загружаем данные для нового статуса
-                orderBloc.add(FetchOrders(
-                  statusId: newStatusId,
-                  page: 1,
-                  perPage: 20,
-                  forceRefresh: true,
-                ));
-              } else {
-                // Если заказ не создан, обновляем текущий статус
-                final currentStatusId = _statuses[_currentTabIndex].id;
-                orderBloc.add(FetchOrders(
-                  statusId: currentStatusId,
-                  page: 1,
-                  perPage: 20,
-                  forceRefresh: true,
-                ));
+              // Переключаемся на вкладку нового статуса
+              final newTabIndex =
+                  _statuses.indexWhere((status) => status.id == newStatusId);
+              if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+                setState(() {
+                  _currentTabIndex = newTabIndex;
+                });
+                _tabController.animateTo(newTabIndex);
+                _scrollToActiveTab();
               }
 
-              // Дополнительно обновляем статусы, чтобы учесть возможные изменения
-              orderBloc.add(FetchOrderStatuses());
+              // Запрашиваем новые данные только для нужного статуса
+              orderBloc.add(FetchOrders(
+                statusId: newStatusId,
+                page: 1,
+                perPage: 20,
+                forceRefresh: true,
+              ));
             }
           },
           backgroundColor: const Color(0xff1E2E52),
