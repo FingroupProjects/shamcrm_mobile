@@ -56,6 +56,7 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -268,6 +269,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => OrderBloc(widget.apiService)),
           BlocProvider(create: (context) => GoodsBloc(widget.apiService)),
           BlocProvider(create: (context) => GoodsByIdBloc(widget.apiService)),
+          BlocProvider(create: (context) => BranchBloc(widget.apiService)),
 
           ],
       child: MaterialApp(
