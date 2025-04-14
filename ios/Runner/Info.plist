@@ -121,6 +121,7 @@
 	<string>Для загрузки изображения с QR-кодом</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Это приложение требует доступа к вашим контактам.</string>
-
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
