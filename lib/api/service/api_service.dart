@@ -39,6 +39,7 @@ import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
@@ -6485,7 +6486,7 @@ Future<Map<String, dynamic>> createMyTask({
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка ${response.statusCode}!');
+        throw Exception('Ошибка сервера');
       }
     } catch (e) {
       print(
@@ -6505,38 +6506,39 @@ Future<Map<String, dynamic>> createMyTask({
   }
 
   // Метод для получение карточки
- Future<OrderResponse> getOrders({
-  int page = 1,
-  int perPage = 20,
-  int? statusId,
-}) async {
-  final organizationId = await getSelectedOrganization();
+  Future<OrderResponse> getOrders({
+    int page = 1,
+    int perPage = 20,
+    int? statusId,
+  }) async {
+    final organizationId = await getSelectedOrganization();
 
-  try {
-    String url =
-        '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    url += '&page=$page&per_page=$perPage';
-    if (statusId != null) {
-      url += '&status_id=$statusId';
+    try {
+      String url =
+          '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
+      url += '&page=$page&per_page=$perPage';
+      if (statusId != null) {
+        url += '&order_status_id=$statusId';
+      }
+
+      final response = await _getRequest(url);
+      print('Request URL: $url'); // Логи для отладки
+      print('Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        final data = rawData['result'];
+        print('Response data: $data'); // Логи для отладки
+        return OrderResponse.fromJson(data);
+      } else {
+        throw Exception('Ошибка сервера!');
+      }
+    } catch (e) {
+      print('Ошибка загрузки заказов: $e');
+      throw e;
     }
-
-    final response = await _getRequest(url);
-    print('Request URL: $url'); // Логи для отладки
-    print('Response status: ${response.statusCode}');
-
-    if (response.statusCode == 200) {
-      final rawData = json.decode(response.body);
-      final data = rawData['result'];
-      print('Response data: $data'); // Логи для отладки
-      return OrderResponse.fromJson(data);
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  } catch (e) {
-    print('Ошибка загрузки заказов: $e');
-    throw e;
   }
-}
+
   //Метод для получение просмотра заказов
   Future<Order> getOrderDetails(int orderId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -6553,7 +6555,7 @@ Future<Map<String, dynamic>> createMyTask({
         await prefs.setString('cachedOrder_$orderId', json.encode(data));
         return order;
       } else {
-        throw Exception('Ошибка ${response.statusCode}!');
+        throw Exception('Ошибка сервера!');
       }
     } catch (e) {
       print(
@@ -6576,6 +6578,7 @@ Future<Map<String, dynamic>> createMyTask({
     required String deliveryAddress,
     required List<Map<String, dynamic>> goods,
     required int organizationId,
+    required int statusId, // Новый параметр
   }) async {
     try {
       final token = await getToken();
@@ -6597,14 +6600,19 @@ Future<Map<String, dynamic>> createMyTask({
           'delivery_address': deliveryAddress,
           'goods': goods,
           'organization_id': organizationId.toString(),
+          'status_id': statusId, // Добавляем status_id в тело запроса
         }),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonResponse = jsonDecode(response.body);
-        final statusId = jsonResponse['result']['status_id'] ??
-            1; // Предполагаем, что сервер возвращает status_id
-        return {'success': true, 'statusId': statusId};
+        final returnedStatusId = jsonResponse['result']['status_id'] ??
+            statusId; // Используем возвращенный или переданный statusId
+        return {
+          'success': true,
+          'statusId': returnedStatusId,
+          'order': jsonResponse['result'], // Возвращаем данные заказа
+        };
       } else {
         final jsonResponse = jsonDecode(response.body);
         throw Exception(
@@ -6663,7 +6671,6 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-//
   Future<bool> deleteOrder({
     required int orderId,
     required int? organizationId,
@@ -6732,6 +6739,26 @@ Future<Map<String, dynamic>> createMyTask({
     } catch (e) {
       print('Ошибка смены статуса заказа: $e');
       return false;
+    }
+  }
+
+  Future<List<Branch>> getBranches() async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+        '/branch${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        List<Branch> branches = List<Branch>.from(
+            data['result'].map((branch) => Branch.fromJson(branch)));
+        return branches;
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении данных: ${response.statusCode}');
     }
   }
   //_________________________________ END_____API_SCREEN__ORDER____________________________________________//

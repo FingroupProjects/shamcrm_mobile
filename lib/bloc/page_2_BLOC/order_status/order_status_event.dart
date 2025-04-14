@@ -45,6 +45,7 @@ class CreateOrder extends OrderEvent {
   final String deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
+  final int statusId; // Новый параметр
 
   CreateOrder({
     required this.phone,
@@ -53,6 +54,7 @@ class CreateOrder extends OrderEvent {
     required this.deliveryAddress,
     required this.goods,
     required this.organizationId,
+    required this.statusId,
   });
 }
 

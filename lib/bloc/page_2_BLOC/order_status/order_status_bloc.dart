@@ -44,113 +44,74 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
-    print('Fetching orders for statusId: ${event.statusId}, page: ${event.page}, forceRefresh: ${event.forceRefresh}');
+Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
+  if (event.page == 1) {
+    emit(OrderLoading());
+  }
 
-    // Проверяем, нужно ли выполнять запрос
-    if (!event.forceRefresh &&
-        event.page == 1 &&
-        (allOrders[event.statusId]?.isNotEmpty ?? false)) {
-      emit(OrderLoaded(
-        state is OrderLoaded ? (state as OrderLoaded).statuses : [],
-        orders: allOrders[event.statusId]!,
-        pagination: state is OrderLoaded ? (state as OrderLoaded).pagination : null,
-      ));
-      return;
-    }
+  try {
+    final statuses = await apiService.getOrderStatuses();
+    final orderResponse = await apiService.getOrders(
+      statusId: event.statusId,
+      page: event.page,
+      perPage: event.perPage,
+    );
 
+    // Очищаем данные для первой страницы
     if (event.page == 1) {
-      emit(OrderLoading());
+      allOrders[event.statusId] = [];
+      allOrdersFetched[event.statusId] = false;
     }
 
-    try {
-      final statuses = state is OrderLoaded
-          ? (state as OrderLoaded).statuses
-          : await apiService.getOrderStatuses();
-      final orderResponse = await apiService.getOrders(
-        statusId: event.statusId,
-        page: event.page,
-        perPage: event.perPage,
-      );
+    // Проверяем на дубликаты
+    final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+    final newOrders = orderResponse.data.where((order) => !existingOrderIds.contains(order.id)).toList();
 
-      print('Received orders: ${orderResponse.data.length}');
+    // Обновляем список заказов
+    allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
+    allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
 
-      // Очищаем данные только если это первая страница или принудительное обновление
-      if (event.page == 1 || event.forceRefresh) {
-        allOrders[event.statusId] = [];
-        allOrdersFetched[event.statusId] = false;
-      }
+    // print('Fetched orders: statusId=${event.statusId}, page=${event.page}, newOrders=${newOrders.length}, hasMore=${!allOrdersFetched[event.statusId]}');
 
-      // Проверяем дубликаты
-      final existingOrderIds =
-          (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
-      final newOrders = orderResponse.data
-          .where((order) => !existingOrderIds.contains(order.id))
-          .toList();
-
-      allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] =
-          orderResponse.data.length < event.perPage;
-
-      emit(OrderLoaded(
-        statuses,
-        orders: allOrders[event.statusId] ?? [],
-        pagination: Pagination(
-          currentPage: orderResponse.pagination.currentPage,
-          totalPages: orderResponse.pagination.totalPages,
-          total: orderResponse.pagination.total,
-          count: orderResponse.pagination.count,
-          perPage: orderResponse.pagination.perPage,
-        ),
-      ));
-    } catch (e) {
-      emit(OrderError('Не удалось загрузить заказы: ${e.toString()}'));
-    }
+    emit(OrderLoaded(
+      statuses,
+      orders: allOrders[event.statusId] ?? [],
+      pagination: orderResponse.pagination,
+    ));
+  } catch (e) {
+    emit(OrderError('Не удалось загрузить заказы: ${e.toString()}'));
   }
+}
+Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) async {
+  if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) return;
 
-  Future<void> _fetchMoreOrders(
-      FetchMoreOrders event, Emitter<OrderState> emit) async {
-    if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) return;
+  try {
+    final orderResponse = await apiService.getOrders(
+      statusId: event.statusId,
+      page: event.page,
+      perPage: event.perPage,
+    );
 
-    print(
-        'Fetching more orders for statusId: ${event.statusId}, page: ${event.page}');
+    // Проверяем, не дублируются ли заказы
+    final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+    final newOrders = orderResponse.data.where((order) => !existingOrderIds.contains(order.id)).toList();
 
-    try {
-      final orderResponse = await apiService.getOrders(
-        statusId: event.statusId,
-        page: event.page,
-        perPage: event.perPage,
-      );
+    // Обновляем список заказов
+    allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
+    allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
 
-      final existingOrderIds =
-          (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
-      final newOrders = orderResponse.data
-          .where((order) => !existingOrderIds.contains(order.id))
-          .toList();
+    // print('Fetched more orders: statusId=${event.statusId}, page=${event.page}, newOrders=${newOrders.length}, hasMore=${!allOrdersFetched[event.statusId]}');
 
-      allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] =
-          orderResponse.data.length < event.perPage || newOrders.isEmpty;
-
-      print(
-          'Loaded more orders: ${newOrders.length}, total: ${allOrders[event.statusId]?.length}, fetched: ${allOrdersFetched[event.statusId]}');
-
-      final currentState = state as OrderLoaded;
-      emit(OrderLoaded(
-        currentState.statuses,
-        orders: allOrders[event.statusId] ?? [],
-        pagination: Pagination(
-          currentPage: orderResponse.pagination.currentPage,
-          totalPages: orderResponse.pagination.totalPages,
-          total: orderResponse.pagination.total,
-          count: orderResponse.pagination.count,
-          perPage: orderResponse.pagination.perPage,
-        ),
-      ));
-    } catch (e) {
-      emit(OrderError('Не удалось загрузить дополнительные заказы: ${e.toString()}'));
-    }
+    final currentState = state as OrderLoaded;
+    emit(OrderLoaded(
+      currentState.statuses,
+      orders: allOrders[event.statusId] ?? [],
+      pagination: orderResponse.pagination,
+    ));
+  } catch (e) {
+    emit(OrderError('Не удалось загрузить дополнительные заказы: ${e.toString()}'));
   }
+}
 
   Future<void> _fetchOrderDetails(
       FetchOrderDetails event, Emitter<OrderState> emit) async {
@@ -165,26 +126,60 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   }
 
   Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
-    emit(OrderLoading());
-    try {
-      final result = await apiService.createOrder(
-        phone: event.phone,
-        leadId: event.leadId,
-        delivery: event.delivery,
-        deliveryAddress: event.deliveryAddress,
-        goods: event.goods,
-        organizationId: event.organizationId,
-      );
-      if (result['success']) {
-        emit(OrderSuccess(statusId: result['statusId'] ?? 1));
-      } else {
-        emit(OrderError('Не удалось создать заказ: ${result['error']}'));
-      }
-    } catch (e) {
-      emit(OrderError('Ошибка создания заказа: $e'));
-    }
-  }
+  emit(OrderLoading());
+  try {
+    final result = await apiService.createOrder(
+      phone: event.phone,
+      leadId: event.leadId,
+      delivery: event.delivery,
+      deliveryAddress: event.deliveryAddress,
+      goods: event.goods,
+      organizationId: event.organizationId,
+      statusId: event.statusId, // Передаем statusId
+    );
+    if (result['success']) {
+      final statusId = result['statusId'] ?? event.statusId;
 
+      // Очищаем кэш для данного statusId
+      allOrders[statusId] = [];
+      allOrdersFetched[statusId] = false;
+
+      // Загружаем новые данные с сервера
+      final orderResponse = await apiService.getOrders(
+        statusId: statusId,
+        page: 1,
+        perPage: 20,
+      );
+
+      // Обновляем кэш
+      allOrders[statusId] = orderResponse.data;
+      allOrdersFetched[statusId] = orderResponse.data.length < 20;
+
+      // Получаем актуальные статусы
+      final statuses = await apiService.getOrderStatuses();
+
+      // Обновляем состояние
+      emit(OrderLoaded(
+        statuses,
+        orders: allOrders[statusId] ?? [],
+        pagination: Pagination(
+          total: orderResponse.pagination.total,
+          count: orderResponse.pagination.count,
+          perPage: orderResponse.pagination.perPage,
+          currentPage: orderResponse.pagination.currentPage,
+          totalPages: orderResponse.pagination.totalPages,
+        ),
+      ));
+
+      // Уведомляем о успешном создании
+      emit(OrderSuccess(statusId: statusId));
+    } else {
+      emit(OrderError('Не удалось создать заказ: ${result['error']}'));
+    }
+  } catch (e) {
+    emit(OrderError('Ошибка создания заказа: $e'));
+  }
+}
   Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     emit(OrderLoading());
     try {

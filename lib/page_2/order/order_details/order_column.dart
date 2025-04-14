@@ -36,29 +36,11 @@ class _OrderColumnState extends State<OrderColumn> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   final int _perPage = 20;
-  bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Начальная загрузка только если данные еще не загружены
-    if (_isInitialLoad) {
-      _loadInitialOrders();
-      _isInitialLoad = false;
-    }
-  }
-
-  void _loadInitialOrders() {
-    final orderBloc = context.read<OrderBloc>();
-    if (orderBloc.allOrders[widget.statusId]?.isEmpty ?? true) {
-      context.read<OrderBloc>().add(FetchOrders(
-        statusId: widget.statusId,
-        page: _currentPage,
-        perPage: _perPage,
-        query: widget.searchQuery,
-      ));
-    }
   }
 
   void _onScroll() {
@@ -71,45 +53,32 @@ class _OrderColumnState extends State<OrderColumn> {
   }
 
   void _loadMoreOrders() {
-    if (_isLoadingMore || !_hasMore) return;
+    if (_isLoadingMore || !_hasMore) return; // Предотвращаем повторные вызовы
 
-    setState(() {
-      _isLoadingMore = true;
-    });
+    final state = context.read<OrderBloc>().state;
+    if (state is OrderLoaded) {
+      final orderBloc = context.read<OrderBloc>();
+      if (orderBloc.allOrdersFetched[widget.statusId] == true) {
+        setState(() {
+          _hasMore = false;
+          _isLoadingMore = false;
+        });
+        return;
+      }
 
-    context.read<OrderBloc>().add(FetchMoreOrders(
-      statusId: widget.statusId,
-      page: _currentPage + 1,
-      perPage: _perPage,
-      query: widget.searchQuery,
-    ));
-  }
-
-  Future<void> _onRefresh() async {
-    setState(() {
-      _currentPage = 1;
-      _hasMore = true;
-      _isLoadingMore = false;
-    });
-
-    context.read<OrderBloc>().add(FetchOrders(
-      statusId: widget.statusId,
-      page: _currentPage,
-      perPage: _perPage,
-      query: widget.searchQuery,
-      forceRefresh: true,
-    ));
-
-    // Ждем завершения обновления
-    await Future.doWhile(() async {
-      await Future.delayed(Duration(milliseconds: 100));
-      return context.read<OrderBloc>().state is OrderLoading;
-    });
+      setState(() {
+        _isLoadingMore = true;
+      });
+      context.read<OrderBloc>().add(FetchMoreOrders(
+        statusId: widget.statusId,
+        page: _currentPage + 1, // Следующая страница
+        perPage: _perPage,
+      ));
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -119,18 +88,19 @@ class _OrderColumnState extends State<OrderColumn> {
     return BlocListener<OrderBloc, OrderState>(
       listener: (context, state) {
         if (state is OrderLoaded) {
+          final orderBloc = context.read<OrderBloc>();
           setState(() {
             _isLoadingMore = false;
-            final orderBloc = context.read<OrderBloc>();
             _hasMore = !(orderBloc.allOrdersFetched[widget.statusId] == true);
             if (!_isLoadingMore && _hasMore) {
               _currentPage = state.pagination?.currentPage ?? _currentPage;
             }
           });
         } else if (state is OrderError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          setState(() {
+            _isLoadingMore = false;
+            _hasMore = false; // Останавливаем подгрузку при ошибке
+          });
         }
       },
       child: BlocBuilder<OrderBloc, OrderState>(
@@ -138,7 +108,7 @@ class _OrderColumnState extends State<OrderColumn> {
           List<Order> orders = [];
           bool isLoading = false;
 
-          if (state is OrderLoading && orders.isEmpty) {
+          if (state is OrderLoading) {
             isLoading = true;
           } else if (state is OrderLoaded) {
             orders = state.orders
@@ -154,59 +124,46 @@ class _OrderColumnState extends State<OrderColumn> {
             }
           }
 
-          return RefreshIndicator(
-            color: const Color(0xff1E2E52),
-            backgroundColor: Colors.white,
-            onRefresh: _onRefresh,
-            child: Column(
-              children: [
-                Expanded(
-                  child: isLoading
-                      ? const Center(
-                          child: PlayStoreImageLoading(
-                            size: 80.0,
-                            duration: Duration(milliseconds: 1000),
-                          ),
-                        )
-                      : orders.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: const [
-                                SizedBox(height: 200),
-                                Center(child: Text('Нет заказов')),
-                              ],
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount:
-                                  orders.length + (_isLoadingMore ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == orders.length && _isLoadingMore) {
-                                  return const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: PlayStoreImageLoading(
-                                        size: 80.0,
-                                        duration: Duration(milliseconds: 1000),
-                                      ),
+          return Column(
+            children: [
+              Expanded(
+                child: isLoading
+                    ? const Center(
+                        child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      )
+                    : orders.isEmpty && !_isLoadingMore
+                        ? const Center(child: Text('Нет заказов'))
+                        : ListView.builder(
+                            controller: _scrollController,
+                            itemCount: orders.length + (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == orders.length && _isLoadingMore) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: PlayStoreImageLoading(
+                                      size: 80.0,
+                                      duration: Duration(milliseconds: 1000),
                                     ),
-                                  );
-                                }
-                                final order = orders[index];
-                                return OrderCard(
-                                  order: order,
-                                  organizationId: widget.organizationId ??
-                                      order.organizationId,
-                                  onStatusUpdated: widget.onStatusUpdated,
-                                  onStatusId: widget.onStatusId,
-                                  onTabChange: widget.onTabChange,
+                                  ),
                                 );
-                              },
-                            ),
-                ),
-              ],
-            ),
+                              }
+                              final order = orders[index];
+                              return OrderCard(
+                                order: order,
+                                organizationId:
+                                    widget.organizationId ?? order.organizationId,
+                                onStatusUpdated: widget.onStatusUpdated,
+                                onStatusId: widget.onStatusId,
+                                onTabChange: widget.onTabChange,
+                              );
+                            },
+                          ),
+              ),
+            ],
           );
         },
       ),

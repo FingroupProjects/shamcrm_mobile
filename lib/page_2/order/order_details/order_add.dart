@@ -5,7 +5,9 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
@@ -30,7 +32,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _deliveryAddressController;
   final TextEditingController _commentController = TextEditingController();
-
+  int? selectedStatusId;
+  List<OrderStatus> statuses = [];
   List<Map<String, dynamic>> _items = [];
   String? selectedLead;
   String? _deliveryMethod;
@@ -62,6 +65,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     } else {
       _selectedBranch = null; // Явно устанавливаем null для нового заказа
     }
+    _loadStatuses();
+  }
+
+  Future<void> _loadStatuses() async {
+    final apiService = context.read<ApiService>();
+    statuses = await apiService.getOrderStatuses();
+    setState(() {
+      selectedStatusId = statuses.isNotEmpty ? statuses[0].id : null;
+    });
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -180,17 +192,52 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           listener: (context, state) {
             if (state is OrderSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Заказ успешно создан')),
+                SnackBar(
+                  content: Text(
+                    'Заказ успешно создан',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.green,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
               );
               Navigator.pop(
                   context, state.statusId ?? 1); // Возвращаем statusId
-
             } else if (state is OrderError) {
-              showCustomSnackBar(
-               context: context,
-               message: state.message,
-               isSuccess: false,
-             );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
             } else if (state is OrderLoaded && state.orderDetails != null) {
               setState(() {
                 _items = state.orderDetails!.goods
@@ -622,15 +669,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                 })
                             .toList(),
                         organizationId: widget.organizationId ?? 1,
+                        statusId:
+                            1, // Передаем statusId (можно сделать динамическим)
                       ));
                 } else {
-                 showCustomSnackBar(
-                  context: context,
-                  message: _items.isEmpty
-                  ? 'Добавьте хотя бы один товар'
-                  : 'Заполните все обязательные поля',
-                  isSuccess: false,
-        );
+                  showCustomSnackBar(
+                    context: context,
+                    message: _items.isEmpty
+                        ? 'Добавьте хотя бы один товар'
+                        : 'Заполните все обязательные поля',
+                    isSuccess: false,
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
