@@ -90,7 +90,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _initializeControllers();
     _loadInitialData();
     _checkAdditionalFields(); // Проверяем поля при инициализации
-
     selectedPriority ??= 1; // или другое значение по умолчанию из priorityLevels
     // Сохраняем существующие файлы
     if (widget.files != null) {
