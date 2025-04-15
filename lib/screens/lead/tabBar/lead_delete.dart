@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeleteLeadDialog extends StatelessWidget {
-  final int leadId; // Изменили тип на int
+  final int leadId;
 
   DeleteLeadDialog({required this.leadId});
 
@@ -19,7 +19,7 @@ class DeleteLeadDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                  style: TextStyle(
                    fontFamily: 'Gilroy',
                    fontSize: 16, 
