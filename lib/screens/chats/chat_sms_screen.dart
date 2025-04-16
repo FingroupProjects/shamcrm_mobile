@@ -67,7 +67,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final TextEditingController _messageController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final FocusNode _focusNode = FocusNode(); 
+  final FocusNode _focusNode = FocusNode();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
@@ -81,14 +81,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isSearching = false;
   String? _searchQuery;
 
-
- void _onSearchChanged(String query) {
+  void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
     });
     context.read<MessagingCubit>().getMessages(widget.chatId, search: query);
   }
-
 
   Future<void> _checkPermissions() async {
     if (widget.endPointInTab == 'lead') {
@@ -129,14 +127,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   //   }
   // }
 
-    Future<void> _playSound() async {
-  try {
-    await _audioPlayer.setAsset('assets/audio/send.mp3');
-    await _audioPlayer.play();
-  } catch (e) {
-    print('Error playing sound: $e');
+  Future<void> _playSound() async {
+    try {
+      await _audioPlayer.setAsset('assets/audio/send.mp3');
+      await _audioPlayer.play();
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
   }
-}
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
@@ -195,8 +193,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToMessageIndex(date);
                       });
-                    } else {
-                    }
+                    } else {}
                   },
                 ),
               ),
@@ -212,37 +209,39 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     for (int i = 0; i < messages.length; i++) {
       final messageDate = DateTime.parse(messages[i].createMessateTime);
       if (isSameDay(messageDate, targetDate)) {
-        lastIndex = i; 
+        lastIndex = i;
       }
     }
     return lastIndex;
   }
 
-void _scrollToMessageIndex(DateTime selectedDate) {
-  final state = context.read<MessagingCubit>().state;
-  if (state is MessagesLoadedState || state is PinnedMessagesState) {
-    final messages = state is MessagesLoadedState
-        ? state.messages
-        : (state as PinnedMessagesState).messages;
+  void _scrollToMessageIndex(DateTime selectedDate) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState || state is PinnedMessagesState) {
+      final messages = state is MessagesLoadedState
+          ? state.messages
+          : (state as PinnedMessagesState).messages;
 
-    final messageIndex = messages.indexWhere((msg) {
-      final messageDate = DateTime.parse(msg.createMessateTime);
-      return isSameDay(messageDate, selectedDate);
-    });
+      final messageIndex = messages.indexWhere((msg) {
+        final messageDate = DateTime.parse(msg.createMessateTime);
+        return isSameDay(messageDate, selectedDate);
+      });
 
-    if (messageIndex != -1) {
-      _scrollControllerMessage.scrollTo(
-        index: messageIndex,
-        duration: const Duration(milliseconds: 1),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No messages found for ${formatDate(selectedDate)}')),
-      );
+      if (messageIndex != -1) {
+        _scrollControllerMessage.scrollTo(
+          index: messageIndex,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('No messages found for ${formatDate(selectedDate)}')),
+        );
+      }
     }
   }
-}
 
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
@@ -339,461 +338,426 @@ void _scrollToMessageIndex(DateTime selectedDate) {
     return null;
   }
 
- @override
-Widget build(BuildContext context) {
-  return BlocListener<DeleteMessageBloc, DeleteMessageState>(
-    listener: (context, state) {
-      if (state is DeleteMessageSuccess) {
-        context.read<MessagingCubit>().getMessages(widget.chatId);
-        if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
-          final chatsBloc = context.read<ChatsBloc>();
-          chatsBloc.add(ClearChats());
-          chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<DeleteMessageBloc, DeleteMessageState>(
+      listener: (context, state) {
+        if (state is DeleteMessageSuccess) {
+          context.read<MessagingCubit>().getMessages(widget.chatId);
+          if (widget.endPointInTab == 'task' ||
+              widget.endPointInTab == 'corporate') {
+            final chatsBloc = context.read<ChatsBloc>();
+            chatsBloc.add(ClearChats());
+            chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+          }
         }
-      }
-    },
-    child: Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        forceMaterialTransparency: false,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        centerTitle: false,
-        leadingWidth: 40,
-        leading: Transform.translate(
-          offset: const Offset(6, 0),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 40,
-              height: 40,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),  
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          forceMaterialTransparency: false,
+          scrolledUnderElevation: 0,
+          elevation: 0,
+          centerTitle: false,
+          leadingWidth: 40,
+          leading: Transform.translate(
+            offset: const Offset(6, 0),
             child: IconButton(
-              icon: _isSearching
-                  ? Icon(Icons.close)
-                  : Image.asset('assets/icons/AppBar/search.png', width: 24, height: 24),
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 40,
+                height: 40,
+              ),
               onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  _searchQuery = null;
-                });
-                if (!_isSearching) {
-                  context.read<MessagingCubit>().getMessages(widget.chatId);
-                }
+                Navigator.pop(context);
               },
             ),
           ),
-        ],
-        title: Transform.translate(
-          offset: const Offset(-12, 0),
-          child: _isSearching
-              ? TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-                  ),
-                  onChanged: _onSearchChanged,
-                )
-              : InkWell(
-                  onTap: () async {
-                    if (_isRequestInProgress) return;
-                    setState(() {
-                      _isRequestInProgress = true;
-                    });
-                    try {
-                      if (widget.endPointInTab == 'lead') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                UserProfileScreen(chatId: widget.chatId),
-                          ),
-                        );
-                      } else if (widget.endPointInTab == 'task') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                TaskByIdScreen(chatId: widget.chatId),
-                          ),
-                        );
-                      } else if (widget.endPointInTab == 'corporate') {
-                        final getChatById = await ApiService().getChatById(widget.chatId);
-                        if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
-                          String userIdCheck = '';
-                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                          userIdCheck = prefs.getString('userID') ?? '';
-                          final participant = getChatById.chatUsers .firstWhere((user) => 
-                          user.participant.id.toString() != userIdCheck).participant;
-                          Navigator.push(context, 
-                          MaterialPageRoute(
-                              builder: (context) => ParticipantProfileScreen(
-                                userId: participant.id.toString(),
-                                image: participant.image,
-                                name: participant.name,
-                                email: participant.email,
-                                phone: participant.phone,
-                                login: participant.login,
-                                lastSeen: participant.lastSeen.toString(),
-                                buttonChat: false,
-                              ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: IconButton(
+                icon: _isSearching
+                    ? Icon(Icons.close)
+                    : Image.asset('assets/icons/AppBar/search.png',
+                        width: 24, height: 24),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    _searchQuery = null;
+                  });
+                  if (!_isSearching) {
+                    context.read<MessagingCubit>().getMessages(widget.chatId);
+                  }
+                },
+              ),
+            ),
+          ],
+          title: Transform.translate(
+            offset: const Offset(-12, 0),
+            child: _isSearching
+                ? TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)!
+                          .translate('search_appbar'),
+                      border: InputBorder.none,
+                      hintStyle:
+                          TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
+                    ),
+                    onChanged: _onSearchChanged,
+                  )
+                : InkWell(
+                    onTap: () async {
+                      if (_isRequestInProgress) return;
+                      setState(() {
+                        _isRequestInProgress = true;
+                      });
+                      try {
+                        if (widget.endPointInTab == 'lead') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  UserProfileScreen(chatId: widget.chatId),
                             ),
                           );
-                        } else {
-                          Navigator.push( context,
+                        } else if (widget.endPointInTab == 'task') {
+                          Navigator.push(
+                            context,
                             MaterialPageRoute(
-                              builder: (context) => CorporateProfileScreen(
-                                chatId: widget.chatId,
-                                chatItem: widget.chatItem,
+                              builder: (context) =>
+                                  TaskByIdScreen(chatId: widget.chatId),
+                            ),
+                          );
+                        } else if (widget.endPointInTab == 'corporate') {
+                          final getChatById =
+                              await ApiService().getChatById(widget.chatId);
+                          if (getChatById.chatUsers.length == 2 &&
+                              getChatById.group == null) {
+                            String userIdCheck = '';
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                            userIdCheck = prefs.getString('userID') ?? '';
+                            final participant = getChatById.chatUsers
+                                .firstWhere((user) =>
+                                    user.participant.id.toString() !=
+                                    userIdCheck)
+                                .participant;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ParticipantProfileScreen(
+                                  userId: participant.id.toString(),
+                                  image: participant.image,
+                                  name: participant.name,
+                                  email: participant.email,
+                                  phone: participant.phone,
+                                  login: participant.login,
+                                  lastSeen: participant.lastSeen.toString(),
+                                  buttonChat: false,
+                                ),
                               ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CorporateProfileScreen(
+                                  chatId: widget.chatId,
+                                  chatItem: widget.chatItem,
+                                ),
+                              ),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'ОШИБКА!',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 3),
                             ),
                           );
                         }
+                      } finally {
+                        setState(() {
+                          _isRequestInProgress = false;
+                        });
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        _buildAvatar(widget.chatItem.avatar),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.chatItem.name.isEmpty
+                                ? AppLocalizations.of(context)!
+                                    .translate('no_name')
+                                : widget.chatItem.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: ChatSmsStyles.appBarTitleColor,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Gilroy',
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+        backgroundColor: const Color(0xffF4F7FD),
+        body: Column(
+          children: [
+            Expanded(child: messageListUi()),
+            if (widget.canSendMessage && _canCreateChat)
+              inputWidget()
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: 50),
+                child: Center(
+                  child: Text(
+                    widget.canSendMessage
+                        ? AppLocalizations.of(context)!
+                            .translate('not_premission_to_send_sms')
+                        : AppLocalizations.of(context)!
+                            .translate('24_hour_leads'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      color: AppColors.textPrimary700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _scrollToMessageReply(int messageId) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState || state is PinnedMessagesState) {
+      final messages = state is MessagesLoadedState
+          ? state.messages
+          : (state as PinnedMessagesState).messages;
+
+      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+
+      if (messageIndex != -1) {
+        _scrollControllerMessage.scrollTo(
+          index: messageIndex,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeInOut,
+        );
+
+        setState(() {
+          _highlightedMessageId = messageId;
+        });
+
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted && _highlightedMessageId == messageId) {
+            setState(() {
+              _highlightedMessageId = null;
+            });
+          }
+        });
+      }
+    }
+  }
+
+  Widget messageListUi() {
+    return BlocBuilder<MessagingCubit, MessagingState>(
+      builder: (context, state) {
+        if (state is MessagesErrorState) {
+          return Center(child: Text("Ошибка!"));
+        }
+        if (state is MessagesLoadingState) {
+          return Center(child: CircularProgressIndicator.adaptive());
+        }
+        if (state is MessagesLoadedState ||
+            state is ReplyingToMessageState ||
+            state is PinnedMessagesState ||
+            state is EditingMessageState) {
+          final messages = state is MessagesLoadedState
+              ? state.messages
+              : state is ReplyingToMessageState
+                  ? state.messages
+                  : state is PinnedMessagesState
+                      ? state.messages
+                      : (state as EditingMessageState).messages;
+          final pinnedMessages = state is PinnedMessagesState
+              ? state.pinnedMessages
+              : state is ReplyingToMessageState
+                  ? state.pinnedMessages
+                  : state is EditingMessageState
+                      ? state.pinnedMessages
+                      : [];
+
+          if (messages.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('not_sms'),
+                style: TextStyle(color: AppColors.textPrimary700),
+              ),
+            );
+          }
+
+          return Stack(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: ScrollablePositionedList.builder(
+                    itemScrollController: _scrollControllerMessage,
+                    itemCount: messages.length,
+                    reverse: true,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final messageDate =
+                          DateTime.parse(message.createMessateTime);
+
+                      bool shouldShowDate = false;
+                      if (index == messages.length - 1) {
+                        shouldShowDate = true;
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'ОШИБКА!',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                        final previousMessage = messages[index + 1];
+                        final previousMessageDate =
+                            DateTime.parse(previousMessage.createMessateTime);
+                        shouldShowDate =
+                            !isSameDay(messageDate, previousMessageDate);
+                      }
+
+                      // Определяем, является ли сообщение первым
+                      bool isFirstMessage = index == messages.length - 1;
+
+                      List<Widget> widgets = [];
+
+                      if (shouldShowDate) {
+                        widgets.add(
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16, bottom: 8),
+                            child: GestureDetector(
+                              onTap: () => _showDatePicker(context, messages),
+                              child: Center(
+                                child: Text(
+                                  formatDate(messageDate),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Gilroy",
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.black,
+                                  ),
+                                ),
                               ),
                             ),
-                            backgroundColor: Colors.red,
-                            duration: Duration(seconds: 3),
                           ),
                         );
                       }
-                    } finally {
-                      setState(() {
-                        _isRequestInProgress = false;
-                      });
-                    }
-                  },
-                  child: Row(
+                      widgets.add(
+                        MessageItemWidget(
+                          message: message,
+                          chatId: widget.chatId,
+                          endPointInTab: widget.endPointInTab,
+                          apiServiceDownload: widget.apiServiceDownload,
+                          baseUrl: baseUrl,
+                          onReplyTap: _scrollToMessageReply,
+                          highlightedMessageId: _highlightedMessageId,
+                          onMenuStateChanged: (isOpen) {
+                            setState(() {
+                              _isMenuOpen = isOpen;
+                            });
+                          },
+                          focusNode: _focusNode,
+                          isRead: message.isRead,
+                          isFirstMessage: isFirstMessage, // Передаем флаг
+                        ),
+                      );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: widgets,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              if (pinnedMessages.isNotEmpty)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Column(
                     children: [
-                      _buildAvatar(widget.chatItem.avatar),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.chatItem.name.isEmpty
-                              ? AppLocalizations.of(context)!.translate('no_name')
-                              : widget.chatItem.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: ChatSmsStyles.appBarTitleColor,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                      Material(
+                        color: Colors.transparent,
+                        child: PinnedMessageWidget(
+                          message: pinnedMessages.last.text,
+                          onUnpin: () {
+                            context
+                                .read<MessagingCubit>()
+                                .unpinMessage(pinnedMessages.last);
+                          },
+                          onTap: () {
+                            _scrollToMessageReply(pinnedMessages.last.id);
+                            if (pinnedMessages.isNotEmpty) {
+                              final updatedPinnedMessages =
+                                  List<Message>.from(pinnedMessages);
+                              final firstPinnedMessage =
+                                  updatedPinnedMessages.removeAt(0);
+                              updatedPinnedMessages.add(firstPinnedMessage);
+                              context
+                                  .read<MessagingCubit>()
+                                  .updatePinnedMessages(updatedPinnedMessages);
+                            }
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
-          ),
-        ),
-      backgroundColor: const Color(0xffF4F7FD),
-      body: Column(
-        children: [
-          Expanded(child: messageListUi()),
-          if (widget.canSendMessage && _canCreateChat)
-            inputWidget()
-          else
-            Padding(
-              padding: const EdgeInsets.only(bottom: 50),
-              child: Center(
-                child: Text(
-                  widget.canSendMessage
-                      ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
-                      : AppLocalizations.of(context)!.translate('24_hour_leads'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    color: AppColors.textPrimary700,
-                    fontWeight: FontWeight.w600,
+              if (_isMenuOpen)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.3),
                   ),
                 ),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-
-void _scrollToMessageReply(int messageId) {
-  final state = context.read<MessagingCubit>().state;
-  if (state is MessagesLoadedState || state is PinnedMessagesState) {
-    final messages = state is MessagesLoadedState
-        ? state.messages
-        : (state as PinnedMessagesState).messages;
-
-    final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
-
-    if (messageIndex != -1) {
-      _scrollControllerMessage.scrollTo(
-        index: messageIndex,
-        duration: const Duration(milliseconds: 1),
-        curve: Curves.easeInOut,
-      );
-
-      setState(() {
-        _highlightedMessageId = messageId;
-      });
-
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && _highlightedMessageId == messageId) {
-          setState(() {
-            _highlightedMessageId = null;
-          });
-        }
-      });
-    }
-  }
-}
-
-
-
-Widget messageListUi() {
-  return BlocBuilder<MessagingCubit, MessagingState>(builder: (context, state) {
-    if (state is MessagesErrorState) {
-      return Center(child: Text("Ошибка!"));
-    }
-    if (state is MessagesLoadingState) {
-      return Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (state is MessagesLoadedState ||
-        state is ReplyingToMessageState ||
-        state is PinnedMessagesState ||
-        state is EditingMessageState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : state is ReplyingToMessageState
-              ? state.messages
-              : state is PinnedMessagesState
-                  ? state.messages
-                  : (state as EditingMessageState).messages;
-      final pinnedMessages = state is PinnedMessagesState
-          ? state.pinnedMessages
-          : state is ReplyingToMessageState
-              ? state.pinnedMessages
-              : state is EditingMessageState
-                  ? state.pinnedMessages
-                  : [];
-
-      if (messages.isEmpty) {
-        return Center(
-          child: Text(
-            AppLocalizations.of(context)!.translate('not_sms'),
-            style: TextStyle(color: AppColors.textPrimary700),
-          ),
-        );
-      }
-
-      List<Widget> messageWidgets = [];
-      DateTime? currentDate;
-      List<Widget> currentGroup = [];
-
-      for (int i = messages.length - 1; i >= 0; i--) {
-        final message = messages[i];
-        final messageDate = DateTime.parse(message.createMessateTime);
-
-        if (currentDate == null || !isSameDay(currentDate, messageDate)) {
-          if (currentGroup.isNotEmpty) {
-            messageWidgets.addAll(currentGroup);
-            currentGroup = [];
-          }
-
-          currentGroup.add(
-            Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 8),
-              child: GestureDetector(
-                onTap: () => _showDatePicker(context, messages),
-                child: Center(
-                  child: Text(
-                    formatDate(messageDate),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: "Gilroy",
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            ],
           );
-          currentDate = messageDate;
         }
-
-        currentGroup.add(
-          MessageItemWidget(
-            message: message,
-            chatId: widget.chatId,
-            endPointInTab: widget.endPointInTab,
-            apiServiceDownload: widget.apiServiceDownload,
-            baseUrl: baseUrl,
-            onReplyTap: _scrollToMessageReply,
-            highlightedMessageId: _highlightedMessageId,
-            onMenuStateChanged: (isOpen) {
-              setState(() {
-                _isMenuOpen = isOpen;
-              });
-            },
-            focusNode: _focusNode,
-            isRead: message.isRead,
-          ),
-        );
-      }
-
-      if (currentGroup.isNotEmpty) {
-        messageWidgets.addAll(currentGroup);
-      }
-
-        return Stack(
-          children: [
-          GestureDetector(
-            onTap: () {
-              FocusScope.of(context).unfocus();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ScrollablePositionedList.builder(
-                itemScrollController: _scrollControllerMessage,
-                itemCount: messages.length,
-                reverse: true,
-                itemBuilder: (context, index) {
-                  final message = messages[index];
-                  final messageDate = DateTime.parse(message.createMessateTime);
-
-                  bool shouldShowDate = false;
-                  if (index == messages.length - 1) {
-                    shouldShowDate = true;
-                  } else {
-                    final previousMessage = messages[index + 1];
-                    final previousMessageDate = DateTime.parse(previousMessage.createMessateTime);
-                    shouldShowDate = !isSameDay(messageDate, previousMessageDate);
-                  }
-
-                  List<Widget> widgets = [];
-
-                  if (shouldShowDate) {
-                    widgets.add(
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16, bottom: 8),
-                        child: GestureDetector(
-                          onTap: () => _showDatePicker(context, messages),
-                          child: Center(
-                            child: Text(
-                              formatDate(messageDate),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: "Gilroy",
-                                fontWeight: FontWeight.w400,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  widgets.add(
-                    MessageItemWidget(
-                      message: message,
-                      chatId: widget.chatId,
-                      endPointInTab: widget.endPointInTab,
-                      apiServiceDownload: widget.apiServiceDownload,
-                      baseUrl: baseUrl,
-                      onReplyTap: _scrollToMessageReply,
-                      highlightedMessageId: _highlightedMessageId,
-                      onMenuStateChanged: (isOpen) {
-                        setState(() {
-                          _isMenuOpen = isOpen;
-                        });
-                      },
-                      focusNode: _focusNode,
-                      isRead: message.isRead,
-                    ),
-                  );
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: widgets,
-                  );
-                },
-              ),
-            ),
-          ),
-         if (pinnedMessages.isNotEmpty)
-           Positioned(
-             top: 0,
-             left: 0,
-             right: 0,
-             child: Column(
-               children: [
-                 Material(
-                   color: Colors.transparent,
-                   child: PinnedMessageWidget(
-                     message: pinnedMessages.last.text,
-                     onUnpin: () {
-                       context.read<MessagingCubit>().unpinMessage(pinnedMessages.last);
-                     },
-                     onTap: () {
-                       _scrollToMessageReply(pinnedMessages.last.id);
-                       if (pinnedMessages.isNotEmpty) {
-                         final updatedPinnedMessages = List<Message>.from(pinnedMessages);
-                         final firstPinnedMessage = updatedPinnedMessages.removeAt(0);
-                         updatedPinnedMessages.add(firstPinnedMessage);
-                         context.read<MessagingCubit>().updatePinnedMessages(updatedPinnedMessages);
-                       }
-                     },
-                   ),
-                 ),
-               ],
-             ),
-           ),
-       if (_isMenuOpen)
-         Positioned.fill(
-           child: Container(color: Colors.black.withOpacity(0.3),
-           ),
-         ),
-        ],
-      );
-    }
-    return Container();
-  });
-}
-
-
+        return Container();
+      },
+    );
+  }
 
   Widget inputWidget() {
     return InputField(
       onSend: _onSendInButton,
       onAttachFile: _onPickFilePressed,
-      focusNode: _focusNode, 
+      focusNode: _focusNode,
       isLeadChat: widget.endPointInTab == 'lead',
       onRecordVoice: () {
         debugPrint('Record voice triggered');
       },
       messageController: _messageController,
       sendRequestFunction: (File soundFile, String time) async {
-
         Duration calculateDuration(String time) {
           List<String> parts = time.split(':');
           int minutes = int.parse(parts[0]);
@@ -802,7 +766,7 @@ Widget messageListUi() {
         }
 
         final tempMessage = Message(
-          id: -DateTime.now().millisecondsSinceEpoch, 
+          id: -DateTime.now().millisecondsSinceEpoch,
           text: "Голосовое сообщение",
           type: 'voice',
           createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
@@ -813,7 +777,7 @@ Widget messageListUi() {
         );
 
         context.read<MessagingCubit>().addLocalMessage(tempMessage);
-      
+
         await _playSound();
 
         String inputPath = soundFile.path;
@@ -837,8 +801,6 @@ Widget messageListUi() {
     );
   }
 
-
-
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
     return '${directory.path}/$fileName';
@@ -850,12 +812,13 @@ Widget messageListUi() {
     String? token = prefs.getString('token');
 
     final enteredDomainMap = await ApiService().getEnteredDomain();
-    
+
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -872,9 +835,11 @@ Widget messageListUi() {
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-chat.${widget.chatId}',
-      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate
-      .forPresenceChannel( authorizationEndpoint: Uri.parse(
-      'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',
@@ -885,154 +850,165 @@ Widget messageListUi() {
       ),
     );
 
- socketClient.onConnectionEstablished.listen((_) {
-  myPresenceChannel.subscribeIfNotUnsubscribed();
-  chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-    MessageSocketData mm = messageSocketDataFromJson(event.data);
+    socketClient.onConnectionEstablished.listen((_) {
+      myPresenceChannel.subscribeIfNotUnsubscribed();
+      chatSubscribtion =
+          myPresenceChannel.bind('chat.message').listen((event) async {
+        MessageSocketData mm = messageSocketDataFromJson(event.data);
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userID') ?? '';
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String UUID = prefs.getString('userID') ?? '';
 
-    Message msg;
-    if (mm.message?.type == 'voice' ||
-        mm.message?.type == 'file' ||
-        mm.message?.type == 'image' ||
-        mm.message?.type == 'document') {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-      }
+        Message msg;
+        if (mm.message?.type == 'voice' ||
+            mm.message?.type == 'file' ||
+            mm.message?.type == 'image' ||
+            mm.message?.type == 'document') {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage =
+                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
 
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        filePath: mm.message?.filePath.toString() ?? '',
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        duration: Duration( seconds: (mm.message?.voiceDuration != null)
-           ? double.parse(mm.message!.voiceDuration.toString()).round()
-           : 20),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-      );
-    } else {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-      }
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-      );
-    }
+          msg = Message(
+            id: mm.message?.id ?? 0,
+            filePath: mm.message?.filePath.toString() ?? '',
+            text: mm.message?.text ?? mm.message?.type ?? '',
+            type: mm.message?.type ?? '',
+            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                mm.message?.sender?.type == 'user'),
+            createMessateTime: mm.message?.createdAt?.toString() ?? '',
+            duration: Duration(
+                seconds: (mm.message?.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString()).round()
+                    : 20),
+            senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
+          );
+        } else {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage =
+                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
+          msg = Message(
+            id: mm.message?.id ?? 0,
+            text: mm.message?.text ?? mm.message?.type ?? '',
+            type: mm.message?.type ?? '',
+            createMessateTime: mm.message?.createdAt?.toString() ?? '',
+            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                mm.message?.sender?.type == 'user'),
+            senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
+          );
+        }
 
-    setState(() {
-      context.read<MessagingCubit>().updateMessageFromSocket(msg);
+        setState(() {
+          context.read<MessagingCubit>().updateMessageFromSocket(msg);
+        });
+
+        if (!msg.isMyMessage) {
+          await _audioPlayer.setAsset('assets/audio/get.mp3');
+          await _audioPlayer.play();
+        }
+
+        _scrollToBottom();
+      });
+      myPresenceChannel.bind('chat.messageEdited').listen((event) async {
+        try {
+          MessageSocketData mm = messageSocketDataFromJson(event.data);
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          String UUID = prefs.getString('userID') ?? '';
+          print('userID : $UUID');
+
+          Message msg;
+          if (mm.message?.type == 'voice' ||
+              mm.message?.type == 'file' ||
+              mm.message?.type == 'image' ||
+              mm.message?.type == 'document') {
+            ForwardedMessage? forwardedMessage;
+            if (mm.message?.forwardedMessage != null) {
+              forwardedMessage =
+                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+            }
+
+            msg = Message(
+              id: mm.message?.id ?? 0,
+              filePath: mm.message?.filePath.toString() ?? '',
+              text: mm.message?.text ?? mm.message?.type ?? '',
+              type: mm.message?.type ?? '',
+              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                  mm.message?.sender?.type == 'user'),
+              createMessateTime: mm.message?.createdAt?.toString() ?? '',
+              duration: Duration(
+                  seconds: (mm.message?.voiceDuration != null)
+                      ? double.parse(mm.message!.voiceDuration.toString())
+                          .round()
+                      : 20),
+              senderName: mm.message?.sender?.name ?? 'Unknown sender',
+              forwardedMessage: forwardedMessage,
+              isChanged: mm.message?.isChanged ?? false,
+              isRead: true,
+            );
+          } else {
+            ForwardedMessage? forwardedMessage;
+            if (mm.message?.forwardedMessage != null) {
+              forwardedMessage =
+                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+            }
+            msg = Message(
+              id: mm.message?.id ?? 0,
+              text: mm.message?.text ?? mm.message?.type ?? '',
+              type: mm.message?.type ?? '',
+              createMessateTime: mm.message?.createdAt?.toString() ?? '',
+              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                  mm.message?.sender?.type == 'user'),
+              senderName: mm.message?.sender?.name ?? 'Unknown sender',
+              forwardedMessage: forwardedMessage,
+              isChanged: mm.message?.isChanged ?? false,
+              isRead: true,
+            );
+          }
+
+          setState(() {
+            context.read<MessagingCubit>().updateMessageFromSocket(msg);
+          });
+        } catch (e) {
+          print('Error processing messageEdited event: $e');
+        }
+      });
+
+      myPresenceChannel.bind('chat.pinned').listen((event) async {
+        try {
+          final data = jsonDecode(event.data);
+          final type = data['type'];
+          final messageData = data['message'];
+          final message = Message.fromJson(messageData);
+          final messageId = message.id;
+
+          if (type == 'pinned') {
+            context.read<MessagingCubit>().pinMessageFromSocket(message);
+          } else if (type == 'unpinned') {
+            context.read<MessagingCubit>().unpinMessageFromSocket(messageId);
+          }
+        } catch (e) {
+          print("Error handling pinned event: $e");
+        }
+      });
+
+      myPresenceChannel.bind('chat.read').listen((event) async {
+        final readData = jsonDecode(event.data);
+        if (readData['messages'] is List) {
+          context
+              .read<MessagingCubit>()
+              .updateMessageReadStatusFromSocket(readData);
+          setState(() {});
+        } else {
+          print(
+              'Error: Expected "messages" to be a List but found ${readData['messages']}');
+        }
+      });
     });
-
-      if (!msg.isMyMessage) {
-      await _audioPlayer.setAsset('assets/audio/get.mp3');
-      await _audioPlayer.play();
-    }
-
-    _scrollToBottom();
-  });
-    myPresenceChannel.bind('chat.messageEdited').listen((event) async {
-
-  try {
-    MessageSocketData mm = messageSocketDataFromJson(event.data);
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userID') ?? '';
-    print('userID : $UUID');
-
-    Message msg;
-    if (mm.message?.type == 'voice' ||
-        mm.message?.type == 'file' ||
-        mm.message?.type == 'image' ||
-        mm.message?.type == 'document') {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-      }
-
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        filePath: mm.message?.filePath.toString() ?? '',
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        duration: Duration(seconds: (mm.message?.voiceDuration != null)
-          ? double.parse(mm.message!.voiceDuration.toString()).round()
-          : 20),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-        isChanged: mm.message?.isChanged ?? false,
-        isRead: true,
-      );
-    } else {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-      }
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-        mm.message?.sender?.type == 'user'),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-        isChanged: mm.message?.isChanged ?? false, 
-        isRead: true,
-      );
-    }
-
-    setState(() {
-      context.read<MessagingCubit>().updateMessageFromSocket(msg);
-    });
-  } catch (e) {
-    print('Error processing messageEdited event: $e');
-  }
-});
-
- myPresenceChannel.bind('chat.pinned').listen((event) async {
-  try {
-    final data = jsonDecode(event.data);
-    final type = data['type']; 
-    final messageData = data['message'];
-    final message = Message.fromJson(messageData); 
-    final messageId = message.id;
-
-    if (type == 'pinned') {
-      context.read<MessagingCubit>().pinMessageFromSocket(message);
-    } else if (type == 'unpinned') {
-      context.read<MessagingCubit>().unpinMessageFromSocket(messageId);
-    }
-  } catch (e) {
-    print("Error handling pinned event: $e");
-  }
-});
-
-myPresenceChannel.bind('chat.read').listen((event) async {
-  final readData = jsonDecode(event.data);
-  if (readData['messages'] is List) {
-    context.read<MessagingCubit>().updateMessageReadStatusFromSocket(readData);
-    setState(() {}); 
-  } else {
-    print('Error: Expected "messages" to be a List but found ${readData['messages']}');
-  }
-});
-});
 
     try {
       await socketClient.connect();
@@ -1053,123 +1029,124 @@ myPresenceChannel.bind('chat.read').listen((event) async {
     }
   }
 
-Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
+  Future<void> _onSendInButton(
+      String messageText, String? replyMessageId) async {
+    if (messageText.trim().isNotEmpty) {
+      try {
+        final localMessage = Message(
+          id: -DateTime.now().millisecondsSinceEpoch,
+          text: messageText,
+          type: 'text',
+          createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+          isMyMessage: true,
+          senderName: '',
+        );
 
-  if (messageText.trim().isNotEmpty) {
-    try {
-      final localMessage = Message(
-        id: -DateTime.now().millisecondsSinceEpoch, 
-        text: messageText,
-        type: 'text',
-        createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
-        isMyMessage: true,
-        senderName: '', 
-      );
+        context.read<MessagingCubit>().addLocalMessage(localMessage);
 
-      context.read<MessagingCubit>().addLocalMessage(localMessage);
+        await _playSound();
 
-      await _playSound();
+        _messageController.clear();
 
-      _messageController.clear();
+        await widget.apiService.sendMessage(
+          widget.chatId,
+          messageText.trim(),
+          replyMessageId: replyMessageId,
+        );
 
-      await widget.apiService.sendMessage(
-        widget.chatId,
-        messageText.trim(),
-        replyMessageId: replyMessageId,
-      );
-
-      context.read<ListenSenderTextCubit>().updateValue(false);
-    } catch (e) {
-      debugPrint('Ошибка отправки сообщения через API!');
-    }
-  } else {
-    debugPrint('Сообщение пустое, отправка не выполнена');
-  }
-}
-
-void _onPickFilePressed() async {
-  final source = await _showPickerDialog();
-  if (source == null) return;
-
-  if (source == 'gallery') {
-    final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      _handlePickedFile(image.path, image.name);
-    }
-  } else if (source == 'file') {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: false);
-    if (result != null && result.files.single.path != null) {
-      _handlePickedFile(result.files.single.path!, result.files.single.name);
+        context.read<ListenSenderTextCubit>().updateValue(false);
+      } catch (e) {
+        debugPrint('Ошибка отправки сообщения через API!');
+      }
+    } else {
+      debugPrint('Сообщение пустое, отправка не выполнена');
     }
   }
-}
 
-Future<String?> _showPickerDialog() async {
-  return await showModalBottomSheet<String>(
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    context: context,
-    builder: (context) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
-              title: Text(
-                'Выбрать из галереи',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xFF1E1E1E),
+  void _onPickFilePressed() async {
+    final source = await _showPickerDialog();
+    if (source == null) return;
+
+    if (source == 'gallery') {
+      final XFile? image =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        _handlePickedFile(image.path, image.name);
+      }
+    } else if (source == 'file') {
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: false);
+      if (result != null && result.files.single.path != null) {
+        _handlePickedFile(result.files.single.path!, result.files.single.name);
+      }
+    }
+  }
+
+  Future<String?> _showPickerDialog() async {
+    return await showModalBottomSheet<String>(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
+                title: Text(
+                  'Выбрать из галереи',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
                 ),
+                onTap: () => Navigator.pop(context, 'gallery'),
               ),
-              onTap: () => Navigator.pop(context, 'gallery'),
-            ),
-            ListTile(
-              leading: Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
-              title: Text(
-                'Выбрать файл',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xFF1E1E1E),
+              ListTile(
+                leading:
+                    Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
+                title: Text(
+                  'Выбрать файл',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
                 ),
+                onTap: () => Navigator.pop(context, 'file'),
               ),
-              onTap: () => Navigator.pop(context, 'file'),
-            ),
-            SizedBox(height: 10),
-          ],
-        ),
-      );
-    },
-  );
-}
+              SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
+  void _handlePickedFile(String path, String name) async {
+    final localMessage = Message(
+      id: -DateTime.now().millisecondsSinceEpoch,
+      text: name,
+      type: 'file',
+      createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+      isMyMessage: true,
+      senderName: "Вы",
+      filePath: path,
+    );
 
-void _handlePickedFile(String path, String name) async {
-  final localMessage = Message(
-    id: -DateTime.now().millisecondsSinceEpoch,
-    text: name,
-    type: 'file',
-    createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
-    isMyMessage: true,
-    senderName: "Вы",
-    filePath: path,
-  );
+    context.read<MessagingCubit>().addLocalMessage(localMessage);
+    await _playSound();
 
-  context.read<MessagingCubit>().addLocalMessage(localMessage);
-  await _playSound();
-
-  await widget.apiService.sendChatFile(widget.chatId, path);
-  context.read<ListenSenderFileCubit>().updateValue(false);
-}
-
+    await widget.apiService.sendChatFile(widget.chatId, path);
+    context.read<ListenSenderFileCubit>().updateValue(false);
+  }
 
   void _onScroll() {
     if (_scrollController.hasClients) {
@@ -1188,26 +1165,25 @@ void _handlePickedFile(String path, String name) async {
     }
   }
 
-@override
-void dispose() {
-  apiService.closeChatSocket(widget.chatId);
-  
-  if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
-    _webSocket?.close();
-  }
-  if (chatSubscribtion != null) {
-    chatSubscribtion?.cancel();
-    chatSubscribtion = null;
-  }
-  _scrollController.removeListener(_onScroll);
-  _scrollController.dispose();
-  _messageController.dispose();
-  socketClient.dispose();
-  _focusNode.dispose(); 
-  super.dispose();
-}
-}
+  @override
+  void dispose() {
+    apiService.closeChatSocket(widget.chatId);
 
+    if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
+      _webSocket?.close();
+    }
+    if (chatSubscribtion != null) {
+      chatSubscribtion?.cancel();
+      chatSubscribtion = null;
+    }
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _messageController.dispose();
+    socketClient.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+}
 
 extension on Key? {
   get currentContext => null;
@@ -1224,10 +1200,11 @@ class MessageItemWidget extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final int? highlightedMessageId;
   final void Function(bool)? onMenuStateChanged;
-  final FocusNode focusNode; 
+  final FocusNode focusNode;
   final bool isRead;
+  final bool isFirstMessage; // Новый параметр для определения первого сообщения
 
-   MessageItemWidget({
+  MessageItemWidget({
     super.key,
     required this.message,
     required this.endPointInTab,
@@ -1237,8 +1214,9 @@ class MessageItemWidget extends StatelessWidget {
     this.onReplyTap,
     this.highlightedMessageId,
     this.onMenuStateChanged,
-    required this.focusNode, 
-    required this.isRead, 
+    required this.focusNode,
+    required this.isRead,
+    required this.isFirstMessage, // Добавляем параметр
   });
 
   @override
@@ -1248,15 +1226,16 @@ class MessageItemWidget extends StatelessWidget {
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         if (endPointInTab == 'task' || endPointInTab == 'corporate') {
-        focusNode.requestFocus(); 
-        context.read<MessagingCubit>().setReplyMessage(message);
-        return false;
+          focusNode.requestFocus();
+          context.read<MessagingCubit>().setReplyMessage(message);
+          return false;
         }
+        return false;
       },
       child: GestureDetector(
-      onLongPress: () {
+        onLongPress: () {
           _showMessageContextMenu(context, message, focusNode);
-      },
+        },
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(2),
@@ -1266,13 +1245,47 @@ class MessageItemWidget extends StatelessWidget {
     );
   }
 
-
   Widget _buildMessageContent(BuildContext context) {
+    // Если это первое сообщение и есть referral_body, передаем его как replyMessage
+    String? replyMessageText;
+    if (isFirstMessage &&
+        message.referralBody != null &&
+        message.referralBody!.isNotEmpty) {
+      replyMessageText = '${message.referralBody}';
+    } else if (message.forwardedMessage != null) {
+      replyMessageText = message.forwardedMessage!.type == 'voice'
+          ? "Голосовое сообщение"
+          : message.forwardedMessage!.text;
+    }
+
     switch (message.type) {
       case 'text':
-        return textState();
+        return MessageBubble(
+          message: message.text,
+          time: time(message.createMessateTime),
+          isSender: message.isMyMessage,
+          senderName: message.senderName.toString(),
+          replyMessage: replyMessageText,
+          replyMessageId: message.forwardedMessage?.id,
+          onReplyTap: (int replyMessageId) {
+            onReplyTap?.call(replyMessageId);
+          },
+          isHighlighted: highlightedMessageId == message.id,
+          isChanged: message.isChanged,
+          isRead: message.isRead,
+        );
       case 'image':
-        return imageState();
+        return ImageMessageBubble(
+          time: time(message.createMessateTime),
+          isSender: message.isMyMessage,
+          filePath: message.filePath ?? 'Unknown file format',
+          fileName: message.text,
+          message: message,
+          senderName: message.senderName,
+          replyMessage: replyMessageText,
+          isHighlighted: highlightedMessageId == message.id,
+          isRead: message.isRead,
+        );
       case 'file':
       case 'document':
         return FileMessageBubble(
@@ -1296,7 +1309,7 @@ class MessageItemWidget extends StatelessWidget {
               }
             }
           },
-          senderName: message.senderName, 
+          senderName: message.senderName,
           isRead: message.isRead,
         );
       case 'voice':
@@ -1313,7 +1326,7 @@ class MessageItemWidget extends StatelessWidget {
     String? replyMessageText;
     if (message.forwardedMessage != null &&
         message.forwardedMessage!.type == 'voice') {
-        replyMessageText = "Голосовое сообщение";
+      replyMessageText = "Голосовое сообщение";
     } else {
       replyMessageText = message.forwardedMessage?.text;
     }
@@ -1328,7 +1341,7 @@ class MessageItemWidget extends StatelessWidget {
         onReplyTap?.call(replyMessageId);
       },
       isHighlighted: highlightedMessageId == message.id,
-      isChanged: message.isChanged, 
+      isChanged: message.isChanged,
       isRead: message.isRead,
     );
   }
@@ -1347,52 +1360,55 @@ class MessageItemWidget extends StatelessWidget {
     );
   }
 
-void _showMessageContextMenu(BuildContext context, Message message, FocusNode focusNode) {
-  final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-  final RenderBox messageBox = context.findRenderObject() as RenderBox;
-  final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+  void _showMessageContextMenu(
+      BuildContext context, Message message, FocusNode focusNode) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox messageBox = context.findRenderObject() as RenderBox;
+    final Offset position =
+        messageBox.localToGlobal(Offset.zero, ancestor: overlay);
 
-  onMenuStateChanged?.call(true);
+    onMenuStateChanged?.call(true);
 
-  bool showReadersList = false;
-  bool isSingleUserChat = message.readStatus?.read.length == 1;
+    bool showReadersList = false;
+    bool isSingleUserChat = message.readStatus?.read.length == 1;
 
-   if (endPointInTab == 'lead') {
-    showMenu(
-      context: context,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-      ),
-      position: RelativeRect.fromLTRB(
-        position.dx + messageBox.size.width / 2.5,
-        position.dy,
-        position.dx + messageBox.size.width / 2 + 1,
-        position.dy + messageBox.size.height,
-      ),
-      items: [
-        _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/copy.svg',
-          text: AppLocalizations.of(context)!.translate('copy'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
-          onTap: () {
-            Navigator.pop(context);
-          _copyMessageToClipboard(context, message.text);
-          },
+    if (endPointInTab == 'lead') {
+      showMenu(
+        context: context,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
         ),
-      ],
-    ).then((_) {
-      onMenuStateChanged?.call(false);
-    });
-    return;
-  }
+        position: RelativeRect.fromLTRB(
+          position.dx + messageBox.size.width / 2.5,
+          position.dy,
+          position.dx + messageBox.size.width / 2 + 1,
+          position.dy + messageBox.size.height,
+        ),
+        items: [
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/copy.svg',
+            text: AppLocalizations.of(context)!.translate('copy'),
+            iconColor: Colors.black,
+            textColor: Colors.black,
+            onTap: () {
+              Navigator.pop(context);
+              _copyMessageToClipboard(context, message.text);
+            },
+          ),
+        ],
+      ).then((_) {
+        onMenuStateChanged?.call(false);
+      });
+      return;
+    }
 
-  void showMenuItems() {
-  final List<PopupMenuItem> menuItems = [];
+    void showMenuItems() {
+      final List<PopupMenuItem> menuItems = [];
 
-  if (showReadersList) {
-  final List<PopupMenuItem> menuItems = [];
+      if (showReadersList) {
+        final List<PopupMenuItem> menuItems = [];
 
         menuItems.add(
           PopupMenuItem(
@@ -1409,9 +1425,10 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.arrow_back, color: Colors.black),  
+                        Icon(Icons.arrow_back, color: Colors.black),
                         const SizedBox(width: 10),
-                        Text( AppLocalizations.of(context)!.translate('back'),
+                        Text(
+                          AppLocalizations.of(context)!.translate('back'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -1421,11 +1438,11 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),  
-                    const Divider( 
-                      color: Colors.grey, 
-                      height: 10,  
-                      thickness: 0.5,  
+                    const SizedBox(height: 6),
+                    const Divider(
+                      color: Colors.grey,
+                      height: 10,
+                      thickness: 0.5,
                     ),
                   ],
                 ),
@@ -1433,9 +1450,9 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
             ),
           ),
         );
-        
-        bool isUserNavigating = false; 
-        
+
+        bool isUserNavigating = false;
+
         for (var user in message.readStatus?.read ?? []) {
           String formattedTime = user.readAt != null
               ? DateFormat('HH:mm').format(user.readAt!)
@@ -1447,13 +1464,16 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
               textColor: Colors.black,
               onTap: () async {
                 if (isUserNavigating) return;
-                isUserNavigating = true; 
+                isUserNavigating = true;
                 final getChatById = await ApiService().getChatById(chatId);
-                final selectedUser = getChatById.chatUsers.firstWhere(
-                  (chatUser) =>
-                      chatUser.participant.id.toString() == user.id.toString(),
-                )?.participant;
-        
+                final selectedUser = getChatById.chatUsers
+                    .firstWhere(
+                      (chatUser) =>
+                          chatUser.participant.id.toString() ==
+                          user.id.toString(),
+                    )
+                    ?.participant;
+
                 if (selectedUser != null) {
                   Navigator.push(
                     context,
@@ -1465,321 +1485,328 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                         email: selectedUser.email,
                         phone: selectedUser.phone,
                         login: selectedUser.login,
-                        lastSeen: selectedUser.lastSeen?.toString() ?? AppLocalizations.of(context)!.translate('unknow'),
+                        lastSeen: selectedUser.lastSeen?.toString() ??
+                            AppLocalizations.of(context)!.translate('unknow'),
                         buttonChat: true,
                       ),
                     ),
                   ).then((_) {
-                    isUserNavigating = false; 
+                    isUserNavigating = false;
                   });
                 } else {
-                  isUserNavigating = false; 
+                  isUserNavigating = false;
                 }
               },
             ),
           );
         }
 
-    showMenu(
-      context: context,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-      ),
-      position: RelativeRect.fromLTRB(
-        position.dx + messageBox.size.width / 2.5,
-        position.dy,
-        position.dx + messageBox.size.width / 2 + 1,
-        position.dy + messageBox.size.height,
-      ),
-      items: menuItems,
-    ).then((_) {
-      onMenuStateChanged?.call(false);
-    });
-    return;
-  }
+        showMenu(
+          context: context,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          position: RelativeRect.fromLTRB(
+            position.dx + messageBox.size.width / 2.5,
+            position.dy,
+            position.dx + messageBox.size.width / 2 + 1,
+            position.dy + messageBox.size.height,
+          ),
+          items: menuItems,
+        ).then((_) {
+          onMenuStateChanged?.call(false);
+        });
+        return;
+      }
 
-
-    if (message.isMyMessage) {
-  if (message.readStatus?.read.isNotEmpty ?? false) {
-    if (isSingleUserChat) {
-      User reader = message.readStatus!.read.first;
-      String formattedTime = reader.readAt != null
-          ? DateFormat('HH:mm').format(reader.readAt!)
-          : AppLocalizations.of(context)!.translate('unknown_time');
-      menuItems.add(
-        PopupMenuItem(
-          child: Row(
-            children: [
-              const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
-              const SizedBox(width: 10),
-              Expanded( 
-                child: Text("${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: ChatSmsStyles.messageBubbleSenderColor,
-                  ),
-                  softWrap: true, 
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis, 
+      if (message.isMyMessage) {
+        if (message.readStatus?.read.isNotEmpty ?? false) {
+          if (isSingleUserChat) {
+            User reader = message.readStatus!.read.first;
+            String formattedTime = reader.readAt != null
+                ? DateFormat('HH:mm').format(reader.readAt!)
+                : AppLocalizations.of(context)!.translate('unknown_time');
+            menuItems.add(
+              PopupMenuItem(
+                child: Row(
+                  children: [
+                    const Icon(Icons.done_all,
+                        color: ChatSmsStyles.messageBubbleSenderColor),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: ChatSmsStyles.messageBubbleSenderColor,
+                        ),
+                        softWrap: true,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      );
-    } else {
-      menuItems.add(
-        PopupMenuItem(
-          child: InkWell(
-            onTap: () {
-              Navigator.pop(context);
-              showReadersList = true;
-              showMenuItems();
-            },
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+            );
+          } else {
+            menuItems.add(
+              PopupMenuItem(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    showReadersList = true;
+                    showMenuItems();
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.done_all,
+                            color: ChatSmsStyles.messageBubbleSenderColor),
+                        const SizedBox(width: 10),
+                        Text(
+                          "${message.readStatus!.read.length} ${AppLocalizations.of(context)!.translate('views')}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: ChatSmsStyles.messageBubbleSenderColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        } else {
+          menuItems.add(
+            PopupMenuItem(
               child: Row(
                 children: [
-                  const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
+                  const Icon(Icons.done, color: Colors.grey),
                   const SizedBox(width: 10),
                   Text(
-                    "${message.readStatus!.read.length} ${AppLocalizations.of(context)!.translate('views')}",
-                    style: const TextStyle(
+                    AppLocalizations.of(context)!.translate('not_read_at'),
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: ChatSmsStyles.messageBubbleSenderColor,
+                      color: Colors.grey,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-      );
-    }
-  } else {
-    menuItems.add(
-      PopupMenuItem(
-        child: Row(
-          children: [
-            const Icon(Icons.done, color: Colors.grey),
-            const SizedBox(width: 10),
-            Text(AppLocalizations.of(context)!.translate('not_read_at'),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+          );
+        }
+      }
 
-    menuItems.add(
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/reply.svg',
-        text: AppLocalizations.of(context)!.translate('reply'),
-        iconColor: Colors.black,
-        textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          focusNode.requestFocus();
-          context.read<MessagingCubit>().setReplyMessage(message);
-        },
-      ),
-    );
-
-    menuItems.add(
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/pin.svg',
-        text: message.isPinned ? AppLocalizations.of(context)!.translate('un_pin') : AppLocalizations.of(context)!.translate('pin'),
-        iconColor: Colors.black,
-        textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          context.read<MessagingCubit>().pinMessage(message);
-        },
-      ),
-    );
-
-      menuItems.add(
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/copy.svg',
-        text: AppLocalizations.of(context)!.translate('copy'),
-        iconColor: Colors.black,
-        textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          _copyMessageToClipboard(context, message.text);
-        },
-      ),
-    );
-
-    if (message.isMyMessage) {
       menuItems.add(
         _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/edit.svg',
-          text: AppLocalizations.of(context)!.translate('edit'),
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: AppLocalizations.of(context)!.translate('reply'),
           iconColor: Colors.black,
           textColor: Colors.black,
           onTap: () {
             Navigator.pop(context);
             focusNode.requestFocus();
-            context.read<MessagingCubit>().startEditingMessage(message);
+            context.read<MessagingCubit>().setReplyMessage(message);
           },
         ),
       );
 
       menuItems.add(
         _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-          text: AppLocalizations.of(context)!.translate('delete'),
-          iconColor: Colors.red,
-          textColor: Colors.red,
+          icon: 'assets/icons/chats/menu_icons/pin.svg',
+          text: message.isPinned
+              ? AppLocalizations.of(context)!.translate('un_pin')
+              : AppLocalizations.of(context)!.translate('pin'),
+          iconColor: Colors.black,
+          textColor: Colors.black,
           onTap: () {
             Navigator.pop(context);
-            _deleteMessage(context);
+            context.read<MessagingCubit>().pinMessage(message);
           },
         ),
       );
+
+      menuItems.add(
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/copy.svg',
+          text: AppLocalizations.of(context)!.translate('copy'),
+          iconColor: Colors.black,
+          textColor: Colors.black,
+          onTap: () {
+            Navigator.pop(context);
+            _copyMessageToClipboard(context, message.text);
+          },
+        ),
+      );
+
+      if (message.isMyMessage) {
+        menuItems.add(
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/edit.svg',
+            text: AppLocalizations.of(context)!.translate('edit'),
+            iconColor: Colors.black,
+            textColor: Colors.black,
+            onTap: () {
+              Navigator.pop(context);
+              focusNode.requestFocus();
+              context.read<MessagingCubit>().startEditingMessage(message);
+            },
+          ),
+        );
+
+        menuItems.add(
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/delete-red.svg',
+            text: AppLocalizations.of(context)!.translate('delete'),
+            iconColor: Colors.red,
+            textColor: Colors.red,
+            onTap: () {
+              Navigator.pop(context);
+              _deleteMessage(context);
+            },
+          ),
+        );
+      }
+
+      showMenu(
+        context: context,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+        position: RelativeRect.fromLTRB(
+          position.dx + messageBox.size.width / 2.5,
+          position.dy,
+          position.dx + messageBox.size.width / 2 + 1,
+          position.dy + messageBox.size.height,
+        ),
+        items: menuItems,
+      ).then((_) {
+        onMenuStateChanged?.call(false);
+      });
     }
 
-    showMenu(
-      context: context,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-      ),
-      position: RelativeRect.fromLTRB(
-        position.dx + messageBox.size.width / 2.5,
-        position.dy,
-        position.dx + messageBox.size.width / 2 + 1,
-        position.dy + messageBox.size.height,
-      ),
-      items: menuItems,
-    ).then((_) {
-      onMenuStateChanged?.call(false);
-    });
+    showMenuItems();
   }
 
-  showMenuItems();
-}
-
-void _copyMessageToClipboard(BuildContext context, String messageText) {
-  Clipboard.setData(ClipboardData(text: messageText));
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        AppLocalizations.of(context)!.translate('copy_message'), 
-        style: TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.white,
+  void _copyMessageToClipboard(BuildContext context, String messageText) {
+    Clipboard.setData(ClipboardData(text: messageText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('copy_message'),
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
         ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.green,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
       ),
-      behavior: SnackBarBehavior.floating,
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      backgroundColor: Colors.green,
-      elevation: 3,
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      duration: Duration(seconds: 3),
-    ),
     );
- }
+  }
 
-PopupMenuItem _buildMenuItemWithAvatar({
-  required String avatarSvg,
-  required String text,
-  required Color textColor,
-  required VoidCallback onTap,
-}) {
-  return PopupMenuItem(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Row(
-          children: [
-            SvgPicture.string(
-              avatarSvg,
-              width: 30,
-              height: 30,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                text,
-                overflow: TextOverflow.ellipsis,  
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: textColor,
+  PopupMenuItem _buildMenuItemWithAvatar({
+    required String avatarSvg,
+    required String text,
+    required Color textColor,
+    required VoidCallback onTap,
+  }) {
+    return PopupMenuItem(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          child: Row(
+            children: [
+              SvgPicture.string(
+                avatarSvg,
+                width: 30,
+                height: 30,
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  text,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-PopupMenuItem _buildMenuItem({
-  required String icon,
-  required String text,
-  required Color iconColor,
-  required Color textColor,
-  required VoidCallback onTap,
-}) {
-  return PopupMenuItem(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Row(
-          children: [
-            if (icon.isNotEmpty)
-              SvgPicture.asset(
-                icon,
-                width: 24,
-                height: 24,
-                color: iconColor,
-              ),
-            if (icon.isNotEmpty) const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                text,
-                overflow: TextOverflow.ellipsis,  
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: textColor,
+  PopupMenuItem _buildMenuItem({
+    required String icon,
+    required String text,
+    required Color iconColor,
+    required Color textColor,
+    required VoidCallback onTap,
+  }) {
+    return PopupMenuItem(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          child: Row(
+            children: [
+              if (icon.isNotEmpty)
+                SvgPicture.asset(
+                  icon,
+                  width: 24,
+                  height: 24,
+                  color: iconColor,
+                ),
+              if (icon.isNotEmpty) const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  text,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _deleteMessage(BuildContext context) {
     if (message.isMyMessage) {
@@ -1836,5 +1863,3 @@ PopupMenuItem _buildMenuItem({
     }
   }
 }
-
-

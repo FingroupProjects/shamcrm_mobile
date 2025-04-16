@@ -7,18 +7,29 @@ class FetchCategories extends CategoryEvent {}
 class CreateCategory extends CategoryEvent {
   final String name;
   final int parentId;
-  final List<String> attributeNames; 
+  final List<String> attributeNames;
   final File? image;
+  final String displayType; // Новое поле для типа отображения
+  final bool hasPriceCharacteristics; // Новое поле для влияния на цену
 
   CreateCategory({
     required this.name,
     required this.parentId,
     required this.attributeNames,
     this.image,
+    required this.displayType,
+    required this.hasPriceCharacteristics,
   });
 
   @override
-  List<Object?> get props => [name, parentId, attributeNames, image];
+  List<Object?> get props => [
+        name,
+        parentId,
+        attributeNames,
+        image,
+        displayType,
+        hasPriceCharacteristics
+      ];
 }
 
 class UpdateCategory extends CategoryEvent {

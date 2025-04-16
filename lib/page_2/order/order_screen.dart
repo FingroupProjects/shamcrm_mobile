@@ -246,15 +246,16 @@ class _OrderScreenState extends State<OrderScreen>
               ),
             );
 
-            final orderBloc = context.read<OrderBloc>();
-
-            if (result != null && result is int) {
-              final newStatusId = result;
+            if (result != null &&
+                result is Map<String, dynamic> &&
+                result['success'] == true) {
+              final newStatusId = result['statusId'];
+              final orderBloc = context.read<OrderBloc>();
 
               // Переключаемся на вкладку нового статуса
               final newTabIndex =
                   _statuses.indexWhere((status) => status.id == newStatusId);
-              if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+              if (newTabIndex != -1) {
                 setState(() {
                   _currentTabIndex = newTabIndex;
                 });
@@ -262,13 +263,23 @@ class _OrderScreenState extends State<OrderScreen>
                 _scrollToActiveTab();
               }
 
-              // Запрашиваем новые данные только для нужного статуса
+              // Принудительно обновляем данные
               orderBloc.add(FetchOrders(
                 statusId: newStatusId,
                 page: 1,
                 perPage: 20,
                 forceRefresh: true,
               ));
+
+              // Также обновляем данные для текущей вкладки, если это не та же самая вкладка
+              if (newTabIndex != _currentTabIndex) {
+                orderBloc.add(FetchOrders(
+                  statusId: _statuses[_currentTabIndex].id,
+                  page: 1,
+                  perPage: 20,
+                  forceRefresh: true,
+                ));
+              }
             }
           },
           backgroundColor: const Color(0xff1E2E52),
