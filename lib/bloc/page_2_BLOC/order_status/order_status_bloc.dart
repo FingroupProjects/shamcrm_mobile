@@ -125,7 +125,7 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
     }
   }
 
-  Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
+ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
   emit(OrderLoading());
   try {
     final result = await apiService.createOrder(
@@ -135,25 +135,21 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
       deliveryAddress: event.deliveryAddress,
       goods: event.goods,
       organizationId: event.organizationId,
-      statusId: event.statusId, // Передаем statusId
+      statusId: event.statusId,
     );
+    
     if (result['success']) {
       final statusId = result['statusId'] ?? event.statusId;
+      final orderData = result['order'];
 
-      // Очищаем кэш для данного statusId
-      allOrders[statusId] = [];
-      allOrdersFetched[statusId] = false;
-
-      // Загружаем новые данные с сервера
-      final orderResponse = await apiService.getOrders(
-        statusId: statusId,
-        page: 1,
-        perPage: 20,
-      );
-
-      // Обновляем кэш
-      allOrders[statusId] = orderResponse.data;
-      allOrdersFetched[statusId] = orderResponse.data.length < 20;
+      // Создаем новый Order из полученных данных
+      final newOrder = Order.fromJson(orderData);
+      
+      // Добавляем новый заказ в соответствующий статус
+      if (allOrders[statusId] == null) {
+        allOrders[statusId] = [];
+      }
+      allOrders[statusId]!.insert(0, newOrder); // Добавляем в начало списка
 
       // Получаем актуальные статусы
       final statuses = await apiService.getOrderStatuses();
@@ -163,11 +159,11 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
         statuses,
         orders: allOrders[statusId] ?? [],
         pagination: Pagination(
-          total: orderResponse.pagination.total,
-          count: orderResponse.pagination.count,
-          perPage: orderResponse.pagination.perPage,
-          currentPage: orderResponse.pagination.currentPage,
-          totalPages: orderResponse.pagination.totalPages,
+          total: (allOrders[statusId]?.length ?? 0) + 1,
+          count: allOrders[statusId]?.length ?? 0,
+          perPage: 20,
+          currentPage: 1,
+          totalPages: 1,
         ),
       ));
 

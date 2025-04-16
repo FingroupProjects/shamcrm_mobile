@@ -38,7 +38,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
 
 Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) async {
   emit(CategoryLoading());
-  
+
   if (await _checkInternetConnection()) {
     try {
       final response = await apiService.createCategory(
@@ -46,6 +46,8 @@ Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) 
         parentId: event.parentId,
         attributeNames: event.attributeNames,
         image: event.image,
+        displayType: event.displayType, // Передаем тип отображения
+        hasPriceCharacteristics: event.hasPriceCharacteristics, // Передаем влияние на цену
       );
 
       if (response['success'] == true) {

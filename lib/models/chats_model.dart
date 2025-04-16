@@ -12,7 +12,7 @@ class Chats {
   final String lastMessage;
   final String? messageType;
   final String createDate;
-   int unreadCount;
+  int unreadCount;
   final bool canSendMessage;
   final String? type;
   final List<ChatUser> chatUsers;
@@ -73,8 +73,8 @@ class Chats {
       image: json['image'] ?? '',
       user: user,
       createDate: json['lastMessage'] != null
-      ? json['lastMessage']['created_at'] ?? ''
-      : '',
+          ? json['lastMessage']['created_at'] ?? ''
+          : '',
       unreadCount: json['unread_count'],
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
@@ -267,6 +267,7 @@ class Message {
   bool isChanged;
   bool isRead;
   final ReadStatus? readStatus;
+  final String? referralBody;
 
   Message({
     required this.id,
@@ -285,6 +286,7 @@ class Message {
     this.isChanged = false,
     this.isRead = false,
     this.readStatus,
+    this.referralBody,
   });
 
   // Метод copyWith
@@ -344,29 +346,29 @@ class Message {
       }
     } catch (e) {
       print('Error parsing read_status: $e');
-      readStatus = null; 
+      readStatus = null;
     }
     return Message(
-      id: json['id'],
-      text: text,
-      type: json['type'],
-      senderName: json['sender'] == null
-          ? 'Без имени'
-          : json['sender']['name'] ?? 'Без имени',
-      createMessateTime: json['created_at'] ?? '',
-      filePath: json['file_path'],
-      isPinned: json['is_pinned'] ?? false,
-      isChanged: json['is_changed'] ?? false,
-      isMyMessage: json['is_my_message'] ?? false,
-      forwardedMessage: forwardedMessage,
-      isRead: json['is_read'] ?? false,
-      readStatus: readStatus, 
-      duration: Duration(
-      seconds: json['voice_duration'] != null
-          ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
-          : 20,
-    )
-    );
+        id: json['id'],
+        text: text,
+        type: json['type'],
+        senderName: json['sender'] == null
+            ? 'Без имени'
+            : json['sender']['name'] ?? 'Без имени',
+        referralBody: json['chat']?['referral_body'],
+        createMessateTime: json['created_at'] ?? '',
+        filePath: json['file_path'],
+        isPinned: json['is_pinned'] ?? false,
+        isChanged: json['is_changed'] ?? false,
+        isMyMessage: json['is_my_message'] ?? false,
+        forwardedMessage: forwardedMessage,
+        isRead: json['is_read'] ?? false,
+        readStatus: readStatus,
+        duration: Duration(
+          seconds: json['voice_duration'] != null
+              ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
+              : 20,
+        ));
   }
 
   @override
@@ -414,14 +416,11 @@ class ReadStatus {
 
   factory ReadStatus.fromJson(Map<String, dynamic> json) {
     return ReadStatus(
-      read: (json['read'] as List<dynamic>?)
-              ?.map((e) {
-                DateTime? readAt = e['read_at'] != null
-                    ? DateTime.tryParse(e['read_at'])
-                    : null;
-                return User.fromJson(e['user'], readAt);
-              })
-              .toList() ??
+      read: (json['read'] as List<dynamic>?)?.map((e) {
+            DateTime? readAt =
+                e['read_at'] != null ? DateTime.tryParse(e['read_at']) : null;
+            return User.fromJson(e['user'], readAt);
+          }).toList() ??
           [],
       unread: (json['unread'] as List<dynamic>?)
               ?.map((e) => User.fromJson(e['user'], null))
@@ -441,14 +440,12 @@ class ReadUser {
     required this.readAt,
     required this.user,
   });
-  
 
   @override
   String toString() {
     return 'ReadUser{userId: $userId, readAt: $readAt, user: $user}';
   }
 }
-
 
 class User {
   final int id;
@@ -464,7 +461,7 @@ class User {
   final String? jobTitle;
   final bool? online;
   final String fullName;
-  final DateTime? readAt; 
+  final DateTime? readAt;
 
   User({
     required this.id,
@@ -478,42 +475,41 @@ class User {
     this.deletedAt,
     this.telegramUserId,
     this.jobTitle,
-   this.online,
+    this.online,
     required this.fullName,
     this.readAt,
   });
 
   factory User.fromJson(Map json, [DateTime? readAt]) {
-  DateTime? parsedReadAt;
+    DateTime? parsedReadAt;
 
-  if (json['read_at'] != null) {
-    parsedReadAt = DateTime.tryParse(json['read_at']) ?? readAt;
-  } else if (readAt != null) {
-    parsedReadAt = readAt;
+    if (json['read_at'] != null) {
+      parsedReadAt = DateTime.tryParse(json['read_at']) ?? readAt;
+    } else if (readAt != null) {
+      parsedReadAt = readAt;
+    }
+
+    return User(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
+      login: json['login'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      image: json['image'] ?? '',
+      lastSeen: json['last_seen'] != null
+          ? DateTime.parse(json['last_seen'])
+          : DateTime.now(),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
+      telegramUserId: json['telegram_user_id'],
+      jobTitle: json['job_title'],
+      online: json['online'] ?? false,
+      fullName: json['full_name'] ?? 'Без имени',
+      readAt: parsedReadAt,
+    );
   }
-
-  return User(
-    id: json['id'] ?? 0,
-    name: json['name'] ?? '',
-    lastname: json['lastname'] ?? '',
-    login: json['login'] ?? '',
-    email: json['email'] ?? '',
-    phone: json['phone'] ?? '',
-    image: json['image'] ?? '',
-    lastSeen: json['last_seen'] != null
-      ? DateTime.parse(json['last_seen'])
-      : DateTime.now(),
-    deletedAt: json['deleted_at'] != null
-      ? DateTime.parse(json['deleted_at'])
-      : null,
-    telegramUserId: json['telegram_user_id'],
-    jobTitle: json['job_title'],
-    online: json['online'] ?? false,
-    fullName: json['full_name'] ?? 'Без имени',
-    readAt: parsedReadAt, 
-  );
-}
-
 
   @override
   String toString() {

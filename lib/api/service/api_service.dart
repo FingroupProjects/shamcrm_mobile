@@ -6042,6 +6042,8 @@ Future<Map<String, dynamic>> createMyTask({
     required int parentId,
     required List<String> attributeNames,
     File? image,
+    required String displayType, // a или b
+    required bool hasPriceCharacteristics, // bool
   }) async {
     try {
       final token = await getToken();
@@ -6061,6 +6063,9 @@ Future<Map<String, dynamic>> createMyTask({
       if (parentId != 0) {
         request.fields['parent_id'] = parentId.toString();
       }
+      request.fields['display_type'] = displayType; // a или b
+      request.fields['has_price_characteristics'] =
+          hasPriceCharacteristics ? '1' : '0'; // Преобразуем bool в 1/0
 
       for (int i = 0; i < attributeNames.length; i++) {
         request.fields['attributes[$i][attribute]'] = attributeNames[i];
