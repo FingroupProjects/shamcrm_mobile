@@ -132,6 +132,7 @@ flutter:
     - assets/icons/files/file.png
     - assets/icons/files/ppt.png
     - assets/icons/files/pptx.png
+    - assets/icons/Profile/support_chat.png
     # - assets/audio/send.mp3
     # - assets/audio/get.mp3
     - assets/audio/
