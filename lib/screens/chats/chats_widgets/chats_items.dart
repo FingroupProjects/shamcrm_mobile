@@ -33,6 +33,9 @@ class ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Проверяем, является ли аватарка чатом поддержки
+    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/support_avatar_2.png';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
@@ -40,10 +43,13 @@ class ChatListItem extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.black,
-                width: 2,
-              ),
+              // Убираем обводку для support, оставляем для остальных
+              border: isSupportAvatar
+                  ? null
+                  : Border.all(
+                      color: Colors.black,
+                      width: 2,
+                    ),
             ),
             child: _buildAvatar(chatItem.avatar),
           ),
@@ -62,14 +68,17 @@ class ChatListItem extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        chatItem.name.isNotEmpty ? chatItem.name : AppLocalizations.of(context)!.translate('no_name'),
+                        chatItem.name.isNotEmpty
+                            ? chatItem.name
+                            : AppLocalizations.of(context)!.translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(formatChatTime(chatItem.time),
+                    Text(
+                      formatChatTime(chatItem.time),
                       style: AppStyles.chatTimeStyle,
                     ),
                   ],
@@ -108,7 +117,7 @@ class ChatListItem extends StatelessWidget {
                                 ),
                               ),
                             )
-                          : const SizedBox(), // Пустой SizedBox сохраняет размер
+                          : const SizedBox(),
                     ),
                   ],
                 ),
@@ -120,8 +129,10 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-
   Widget _buildAvatar(String avatar) {
+    print('Avatar path: $avatar'); // Отладочный вывод для проверки пути
+
+    // Проверяем, является ли строка SVG
     if (avatar.contains('<svg')) {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
@@ -175,26 +186,41 @@ class ChatListItem extends StatelessWidget {
       }
     }
 
-    return CircleAvatar(
-      backgroundImage: AssetImage(avatar),
-      radius: 24,
-      backgroundColor: Colors.white,
-    );
+    // Проверяем, является ли это аватарка чата поддержки
+    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+
+    try {
+      return CircleAvatar(
+        backgroundImage: AssetImage(avatar),
+        radius: 24,
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white, // Черный фон для support
+        onBackgroundImageError: (exception, stackTrace) {
+          print('Error loading asset image: $avatar, $exception');
+        },
+      );
+    } catch (e) {
+      print('Fallback avatar due to error: $e');
+      return CircleAvatar(
+        backgroundImage: AssetImage('assets/images/AvatarChat.png'),
+        radius: 24,
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white, // Черный фон для support
+      );
+    }
   }
 
- String formatChatTime(String time) {
-  if (time.isEmpty) {
-    return '';
-  }
+  String formatChatTime(String time) {
+    if (time.isEmpty) {
+      return '';
+    }
 
-  try {
-    DateTime parsedTime = DateTime.parse(time);
-    return DateFormat('dd.MM.yyyy').format(parsedTime);
-  } catch (e) {
-    print("Ошибка парсинга даты: $e");
-    return '';
+    try {
+      DateTime parsedTime = DateTime.parse(time);
+      return DateFormat('dd.MM.yyyy').format(parsedTime);
+    } catch (e) {
+      print("Ошибка парсинга даты: $e");
+      return '';
+    }
   }
-}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {

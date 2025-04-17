@@ -18,7 +18,9 @@ class Chats {
   final List<ChatUser> chatUsers;
   final Group? group;
   final Task? task;
-  final ChatUser? user; // добавим поле user
+  final ChatUser? user;
+  final String? customName; // Новое поле для кастомного названия
+  final String? customImage; // Новое поле для кастомной аватарки
 
   Chats({
     required this.id,
@@ -38,9 +40,15 @@ class Chats {
     this.group,
     this.task,
     this.user, // добавим в конструктор
+    this.customName, // Добавляем в конструктор
+    this.customImage, // Добавляем в конструктор
   });
 
-  factory Chats.fromJson(Map<String, dynamic> json) {
+  factory Chats.fromJson(
+    Map<String, dynamic> json, {
+    String? supportChatName, // Добавляем необязательный параметр
+    String? supportChatImage,
+  }) {
     List<ChatUser> users = [];
     if (json['chatUsers'] != null) {
       for (var userJson in json['chatUsers']) {
@@ -61,6 +69,16 @@ class Chats {
     if (json['user'] != null) {
       user = ChatUser.fromJson({'participant': json['user']});
     }
+    // Задаем кастомные значения для чата типа support
+    String? customName;
+    String? customImage;
+    if (json['type'] == 'support') {
+      customName = supportChatName ??
+          'Техподдержка'; // Используем переданное значение или дефолтное
+      customImage =
+          supportChatImage ?? 'assets/icons/Profile/support_avatar_2.png';
+    }
+
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
@@ -72,6 +90,8 @@ class Chats {
                   : '',
       image: json['image'] ?? '',
       user: user,
+      customName: customName,
+      customImage: customImage,
       createDate: json['lastMessage'] != null
           ? json['lastMessage']['created_at'] ?? ''
           : '',
@@ -95,7 +115,10 @@ class Chats {
   }
 
   String? get displayName {
-    if (group != null && group!.name.isNotEmpty) {
+    // Используем кастомное название для support, если оно задано
+    if (type == 'support' && customName != null) {
+      return customName;
+    } else if (group != null && group!.name.isNotEmpty) {
       return group!.name;
     } else if (task != null && task!.name!.isNotEmpty) {
       return task!.name;
@@ -130,7 +153,10 @@ class Chats {
 
   ChatItem toChatItem() {
     String avatar;
-    if (group != null) {
+    // Используем кастомную аватарку для support, если она задана
+    if (type == 'support' && customImage != null) {
+      avatar = customImage!;
+    } else if (group != null) {
       avatar = "assets/images/GroupChat.png";
     } else if (chatUsers.isNotEmpty) {
       int currentUserId = user?.id ?? 0;
