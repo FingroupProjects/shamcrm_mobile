@@ -823,8 +823,7 @@ Widget build(BuildContext context) {
                             user: currentTask!.user != null && currentTask!.user!.isNotEmpty
                                 ? currentTask!.user!.map((user) => user.id) .toList()
                                 : null,
-                            statusId: currentTask!.taskStatus?.taskStatus.id ?? 0,
-                            // statusId: widget.statusId ?? 0,
+                            statusId: widget.statusId ?? 0,
                             description: currentTask!.description,
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
