@@ -907,5 +907,14 @@
   "show_as": "Показать как товар либо как характеристика",
   "show_as_description": "Если включено, категория будет отображаться как товар, иначе как характеристика",
   "product": "Товар",
-  "characteristic": "Характеристика"
+  "characteristic": "Характеристика",
+  "support_chat_name": "Техподдержка",
+  "edit_subcategory": "Редактирование подкатегории",
+  "individual": "Уникальный",
+  "common": "Общий",
+  "error_update_subcategory": "Ошибка обновления подкатегории",
+  "failed_to_update_subcategory": "Не удалось обновить подкатегорию",
+  "error_occurred": "Произошла ошибка: {0}",
+  "has_price_characteristics": "Влияет на цену:",
+  "attributes": "Характеристики"
 }

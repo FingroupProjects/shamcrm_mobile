@@ -887,6 +887,15 @@
   "parent_category": "Asosiy kategoriya",
   "required_image": "    Rasm majburiy",
   "add_characteristic": "Xususiyat qo‘shish",
-  "error_create_category": "Kategoriya yaratishda xatolik yuz berdi!"
+  "error_create_category": "Kategoriya yaratishda xatolik yuz berdi!",
+  "edit_subcategory": "Subkategoriya tahriri",
+  "individual": "Yagona",
+  "common": "Umumiy",
+  "error_update_subcategory": "Subkategoriyani yangilashda xatolik",
+  "failed_to_update_subcategory": "Subkategoriyani yangilab bo‘lmadi",
+  "error_occurred": "Xatolik yuz berdi: {0}",
+  "has_price_characteristics": "Narxga ta’sir qiladi:",
+   "attributes": "Xususiyatlar"
+
 
 }

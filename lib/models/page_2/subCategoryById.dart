@@ -2,6 +2,9 @@ class CategoryDataById {
   final int id;
   final String name;
   final String? image;
+  final String? displayType;
+  final bool hasPriceCharacteristics;
+  final ParentCategory? parent;
   final List<Attribute> attributes;
   final List<CategoryDataById> subcategories;
 
@@ -9,6 +12,9 @@ class CategoryDataById {
     required this.id,
     required this.name,
     this.image,
+    this.displayType,
+    required this.hasPriceCharacteristics,
+    this.parent,
     required this.attributes,
     required this.subcategories,
   });
@@ -17,6 +23,9 @@ class CategoryDataById {
     int? id,
     String? name,
     String? image,
+    String? displayType,
+    bool? hasPriceCharacteristics,
+    ParentCategory? parent,
     List<Attribute>? attributes,
     List<CategoryDataById>? subcategories,
   }) {
@@ -24,6 +33,9 @@ class CategoryDataById {
       id: id ?? this.id,
       name: name ?? this.name,
       image: image ?? this.image,
+      displayType: displayType ?? this.displayType,
+      hasPriceCharacteristics: hasPriceCharacteristics ?? this.hasPriceCharacteristics,
+      parent: parent ?? this.parent,
       attributes: attributes ?? this.attributes,
       subcategories: subcategories ?? this.subcategories,
     );
@@ -34,6 +46,9 @@ class CategoryDataById {
       id: json['id'] as int,
       name: json['name'] as String,
       image: json['image'] as String?,
+      displayType: json['display_type'] as String?,
+      hasPriceCharacteristics: json['has_price_characteristics'] as bool,
+      parent: json['parent'] != null ? ParentCategory.fromJson(json['parent']) : null,
       attributes: (json['attributes'] as List<dynamic>)
           .map((attr) => Attribute.fromJson(attr as Map<String, dynamic>))
           .toList(),
@@ -44,20 +59,45 @@ class CategoryDataById {
   }
 }
 
-class Attribute {
+class ParentCategory {
   final int id;
   final String name;
+  final String? image;
 
-  Attribute({required this.id, required this.name});
+  ParentCategory({
+    required this.id,
+    required this.name,
+    this.image,
+  });
 
-  factory Attribute.fromJson(Map<String, dynamic> json) {
-    return Attribute(
+  factory ParentCategory.fromJson(Map<String, dynamic> json) {
+    return ParentCategory(
       id: json['id'] as int,
       name: json['name'] as String,
+      image: json['image'] as String?,
     );
   }
 }
 
+class Attribute {
+  final int id;
+  final String name;
+  final bool isIndividual;
+
+  Attribute({
+    required this.id,
+    required this.name,
+    required this.isIndividual,
+  });
+
+  factory Attribute.fromJson(Map<String, dynamic> json) {
+    return Attribute(
+      id: json['id'] as int,
+      name: json['attribute']['name'] as String,
+      isIndividual: json['is_individual'] as bool,
+    );
+  }
+}
 class SubCategoryResponseASD {
   final List<CategoryDataById> categories;
 

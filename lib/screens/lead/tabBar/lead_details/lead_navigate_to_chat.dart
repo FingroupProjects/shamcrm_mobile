@@ -15,11 +15,8 @@ class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
   final String leadName;
 
-  LeadNavigateToChat({
-    Key? key, 
-    required this.leadId, 
-    required this.leadName
-    }) : super(key: key);
+  LeadNavigateToChat({Key? key, required this.leadId, required this.leadName})
+      : super(key: key);
 
   @override
   _LeadNavigateToChatDialogState createState() =>
@@ -57,7 +54,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                AppLocalizations.of(context)!
+                    .translate(state.message), // Локализация сообщения
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -126,7 +124,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               Container(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  AppLocalizations.of(context)!.translate('list_chat'), 
+                  AppLocalizations.of(context)!.translate('list_chat'),
                   style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
@@ -149,7 +147,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                       if (leadtochat.isEmpty) {
                         return Center(
                           child: Text(
-                            AppLocalizations.of(context)!.translate('no_chat_in_list'),
+                            AppLocalizations.of(context)!
+                                .translate('no_chat_in_list'),
                             style: TextStyle(
                                 color: Color(0xff1E2E52), fontSize: 16),
                           ),
@@ -162,11 +161,16 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                             final channelName = LeadNavigateToChat.channel.name;
                             final iconPath = sourceIcons[channelName] ??
                                 'assets/icons/leads/default.png';
-                            final displayName =
-                                customChannelNames[channelName] ??
+                            // Проверяем, если имя канала или чата "support"
+                            final displayName = channelName.toLowerCase() ==
+                                    'support'
+                                ? AppLocalizations.of(context)!.translate(
+                                    'support_chat_name') // Локализованное имя
+                                : customChannelNames[channelName] ??
                                     (channelName.isNotEmpty
                                         ? channelName
-                                        : AppLocalizations.of(context)!.translate('no_name_chat'));
+                                        : AppLocalizations.of(context)!
+                                            .translate('no_name_chat'));
                             return ListTile(
                               leading: Image.asset(
                                 iconPath,
@@ -191,7 +195,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     } else {
                       return Center(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('no_chat_in_list'),
+                          AppLocalizations.of(context)!
+                              .translate('no_chat_in_list'),
                           style: TextStyle(color: Color(0xff1E2E52)),
                         ),
                       );

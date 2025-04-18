@@ -44,10 +44,10 @@ Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) 
       final response = await apiService.createCategory(
         name: event.name,
         parentId: event.parentId,
-        attributeNames: event.attributeNames,
+        attributes: event.attributes, // Обновлено
         image: event.image,
-        displayType: event.displayType, // Передаем тип отображения
-        hasPriceCharacteristics: event.hasPriceCharacteristics, // Передаем влияние на цену
+        displayType: event.displayType,
+        hasPriceCharacteristics: event.hasPriceCharacteristics,
       );
 
       if (response['success'] == true) {
@@ -98,23 +98,24 @@ Future<void> _updateSubCategory(UpdateSubCategory event, Emitter<CategoryState> 
         subCategoryId: event.subCategoryId,
         name: event.name,
         image: event.image,
-        attributeNames: event.attributeNames
+        attributes: event.attributes,
+        displayType: event.displayType,
+        hasPriceCharacteristics: event.hasPriceCharacteristics,
       );
 
       if (response['success'] == true) {
-        add(FetchCategories()); 
-        emit(CategorySuccess(response['message'] ?? 'Подкатегория успешно обновлена'));
+        add(FetchCategories());
+        emit(CategorySuccess(response['message'] ?? 'subcategory_updated_successfully'));
       } else {
-        emit(CategoryError(response['message'] ?? 'Ошибка при обновлении подкатегории'));
+        emit(CategoryError(response['message'] ?? 'error_update_subcategory'));
       }
     } catch (e) {
-      emit(CategoryError('Не удалось обновить подкатегорию: ${e.toString()}'));
+      emit(CategoryError('failed_to_update_subcategory: ${e.toString()}'));
     }
   } else {
-    emit(CategoryError('Нет подключения к интернету'));
+    emit(CategoryError('no_internet_connection'));
   }
 }
-
   Future<void> _deleteCategory(DeleteCategory event, Emitter<CategoryState> emit) async {
     emit(CategoryLoading());
 
