@@ -17,19 +17,17 @@ import 'package:image_picker/image_picker.dart';
 class CategoryAddBottomSheet {
   static void show(BuildContext context) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController categoryNameController =
-        TextEditingController();
+    final TextEditingController categoryNameController = TextEditingController();
     bool isActive = false;
     String? subSelectedCategory;
     File? _image;
     bool _isImageSelected = true;
     List<CustomField> customFields = [];
-   String selectedType = 'a'; // Изменяем начальное значение
+    String selectedType = 'a';
     bool isAffectingPrice = false;
 
     Future<void> _pickImage() async {
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _isImageSelected = true;
@@ -48,20 +46,14 @@ class CategoryAddBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            void _addCustomField(String fieldName) {
-              setState(() {
-                customFields.add(CustomField(name: fieldName));
-              });
-            }
-
             void _showAddCharacterCustomFieldDialog() {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName) {
+                    onAddField: (fieldName, isIndividual) { // Обновляем обработчик
                       setState(() {
-                        customFields.add(CustomField(name: fieldName));
+                        customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
                       });
                     },
                   );
@@ -110,14 +102,11 @@ class CategoryAddBottomSheet {
                             children: [
                               CustomTextField(
                                 controller: categoryNameController,
-                                hintText: AppLocalizations.of(context)!
-                                    .translate('enter_category_name'),
-                                label: AppLocalizations.of(context)!
-                                    .translate('category_name'),
+                                hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
+                                label: AppLocalizations.of(context)!.translate('category_name'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!
-                                        .translate('field_required');
+                                    return AppLocalizations.of(context)!.translate('field_required');
                                   }
                                   return null;
                                 },
@@ -127,12 +116,10 @@ class CategoryAddBottomSheet {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('parent_category'),
+                                          AppLocalizations.of(context)!.translate('parent_category'),
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w500,
@@ -152,12 +139,10 @@ class CategoryAddBottomSheet {
                                             });
                                           },
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 4, horizontal: 12),
+                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFF4F7FD),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: Row(
                                               children: [
@@ -167,24 +152,15 @@ class CategoryAddBottomSheet {
                                                     setState(() {
                                                       isActive = value;
                                                       if (isActive) {
-                                                        subSelectedCategory =
-                                                            null;
+                                                        subSelectedCategory = null;
                                                         customFields = [];
                                                       }
                                                     });
                                                   },
-                                                  activeColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
-                                                  inactiveTrackColor:
-                                                      const Color.fromARGB(255,
-                                                              179, 179, 179)
-                                                          .withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles
-                                                      .messageBubbleSenderColor,
-                                                  inactiveThumbColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
+                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                                                 ),
                                                 const SizedBox(width: 10),
                                                 Text(
@@ -240,8 +216,7 @@ class CategoryAddBottomSheet {
                               ],
                               const SizedBox(height: 8),
                               Text(
-                                AppLocalizations.of(context)!
-                                    .translate('image_message'),
+                                AppLocalizations.of(context)!.translate('image_message'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
@@ -265,17 +240,14 @@ class CategoryAddBottomSheet {
                                         color: const Color(0xffF4F7FD),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: !_isImageSelected
-                                              ? Colors.red
-                                              : const Color(0xffF4F7FD),
+                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
                                           width: 1.5,
                                         ),
                                       ),
                                       child: _image == null
                                           ? Center(
                                               child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
                                                   const Icon(
                                                     Icons.camera_alt,
@@ -284,14 +256,10 @@ class CategoryAddBottomSheet {
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    AppLocalizations.of(
-                                                            context)!
-                                                        .translate(
-                                                            'pick_image'),
+                                                    AppLocalizations.of(context)!.translate('pick_image'),
                                                     style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                                      fontWeight: FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff99A4BA),
                                                     ),
@@ -300,21 +268,16 @@ class CategoryAddBottomSheet {
                                               ),
                                             )
                                           : Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Row(
                                                 children: [
                                                   Container(
                                                     width: 54,
                                                     height: 54,
                                                     decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
+                                                      borderRadius: BorderRadius.circular(8),
                                                       image: DecorationImage(
-                                                        image:
-                                                            FileImage(_image!),
+                                                        image: FileImage(_image!),
                                                         fit: BoxFit.cover,
                                                       ),
                                                     ),
@@ -322,26 +285,18 @@ class CategoryAddBottomSheet {
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
-                                                      _image!.path
-                                                          .split('/')
-                                                          .last,
+                                                      _image!.path.split('/').last,
                                                       style: const TextStyle(
                                                         fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                                        fontWeight: FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff1E2E52),
+                                                        color: Color(0xff1E2E52),
                                                       ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   IconButton(
-                                                    icon: const Icon(
-                                                        Icons.close,
-                                                        color:
-                                                            Color(0xff1E2E52)),
+                                                    icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
@@ -356,8 +311,7 @@ class CategoryAddBottomSheet {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('required_image'),
+                                          AppLocalizations.of(context)!.translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -371,8 +325,7 @@ class CategoryAddBottomSheet {
                               const SizedBox(height: 10),
                               if (!isActive)
                                 CustomButton(
-                                  buttonText: AppLocalizations.of(context)!
-                                      .translate('add_characteristic'),
+                                  buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
                                   buttonColor: const Color(0xff1E2E52),
                                   textColor: Colors.white,
                                   onPressed: _showAddCharacterCustomFieldDialog,
@@ -382,21 +335,30 @@ class CategoryAddBottomSheet {
                                 children: customFields.map((field) {
                                   return Card(
                                     color: const Color(0xffF4F7FD),
-                                    margin:
-                                        const EdgeInsets.symmetric(vertical: 4),
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
-                                      contentPadding: const EdgeInsets.only(
-                                          left: 16, right: 16),
+                                      contentPadding: const EdgeInsets.only(left: 16, right: 16),
                                       title: Text(
                                         field.name,
                                         style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'Gilroy'),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        field.isIndividual
+                                            ? AppLocalizations.of(context)!.translate('Уникальный')
+                                            : AppLocalizations.of(context)!.translate('Общий'),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Gilroy',
+                                          color: Color(0x991E2E52),
+                                        ),
                                       ),
                                       trailing: IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Color(0xff1E2E52)),
+                                        icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
                                         onPressed: () {
                                           setState(() {
                                             customFields.remove(field);
@@ -417,8 +379,7 @@ class CategoryAddBottomSheet {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () => Navigator.pop(context),
@@ -427,13 +388,11 @@ class CategoryAddBottomSheet {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                                AppLocalizations.of(context)!.translate('add'),
+                            buttonText: AppLocalizations.of(context)!.translate('add'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() &&
-                                  _image != null) {
+                              if (formKey.currentState!.validate() && _image != null) {
                                 _createCategory(
                                   categoryNameController.text,
                                   subSelectedCategory,
@@ -441,7 +400,7 @@ class CategoryAddBottomSheet {
                                   context,
                                   isActive,
                                   customFields,
-                                  selectedType == 'product' ? 'a' : 'b', // Преобразуем product/characteristic в a/bп
+                                  selectedType,
                                   isAffectingPrice,
                                 );
                               } else {
@@ -472,32 +431,34 @@ class CategoryAddBottomSheet {
     BuildContext context,
     bool isActive,
     List<CustomField> customFields,
-    String selectedType, // Тип отображения
-    bool isAffectingPrice, // Влияние на цену
+    String selectedType,
+    bool isAffectingPrice,
   ) async {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
-      List<String> attributeNames =
-          customFields.map((field) => field.name).toList();
+      // Формируем список атрибутов с учетом isIndividual
+      List<Map<String, dynamic>> attributes = customFields
+          .map((field) => {
+                'name': field.name,
+                'is_individual': field.isIndividual,
+              })
+          .toList();
 
       Navigator.pop(context);
 
       categoryBloc.add(CreateCategory(
         name: name,
-        parentId: isActive
-            ? 0
-            : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
-        attributeNames: attributeNames,
+        parentId: isActive ? 0 : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
+        attributes: attributes, // Используем attributes вместо attributeNames
         image: image,
-        displayType: selectedType, // Передаем тип отображения
-        hasPriceCharacteristics: isAffectingPrice, // Передаем влияние на цену
+        displayType: selectedType,
+        hasPriceCharacteristics: isAffectingPrice,
       ));
     } catch (e) {
       showCustomSnackBar(
         context: context,
-        message:
-            AppLocalizations.of(context)!.translate('error_create_category'),
+        message: AppLocalizations.of(context)!.translate('error_create_category'),
         isSuccess: false,
       );
     }
@@ -506,6 +467,10 @@ class CategoryAddBottomSheet {
 
 class CustomField {
   final String name;
+  final bool isIndividual; // Добавляем поле isIndividual
 
-  CustomField({required this.name});
+  CustomField({
+    required this.name,
+    required this.isIndividual,
+  });
 }

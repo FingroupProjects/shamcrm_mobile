@@ -48,7 +48,7 @@ class CategoryTypeSelector extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           RadioListTile<String>(
-            value: 'PRODUCT',
+            value: 'a',
             groupValue: selectedType,
             onChanged: (value) {
               if (value != null) onTypeChanged(value);
@@ -66,7 +66,7 @@ class CategoryTypeSelector extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
           ),
           RadioListTile<String>(
-            value: 'CHARACTERISTIC',
+            value: 'b',
             groupValue: selectedType,
             onChanged: (value) {
               if (value != null) onTypeChanged(value);

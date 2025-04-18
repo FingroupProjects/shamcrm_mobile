@@ -36,7 +36,6 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
 
   late CategoryDataById _currentCategory;
   File? _cachedImageFile;
-  String? currentName;
 
   @override
   void initState() {
@@ -82,7 +81,26 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': _currentCategory.name},
+      {
+        'label': AppLocalizations.of(context)!.translate('name_deal_details'),
+        'value': _currentCategory.name
+      },
+      if (_currentCategory.displayType != null)
+        {
+          'label': AppLocalizations.of(context)!.translate('display_type'),
+          'value': _currentCategory.displayType!
+        },
+      {
+        'label': AppLocalizations.of(context)!.translate('has_price_characteristics'),
+        'value': _currentCategory.hasPriceCharacteristics
+            ? AppLocalizations.of(context)!.translate('yes')
+            : AppLocalizations.of(context)!.translate('no')
+      },
+      if (_currentCategory.parent != null)
+        {
+          'label': AppLocalizations.of(context)!.translate('parent_category'),
+          'value': _currentCategory.parent!.name
+        },
     ];
   }
 
@@ -104,7 +122,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 (c) => c.id == _currentCategory.id,
                 orElse: () => _currentCategory,
               );
-              
+
               setState(() {
                 _currentCategory = updatedSubCategory;
                 if (updatedSubCategory.image != null) {
@@ -127,23 +145,23 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         body: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
           builder: (context, state) {
             if (state is CategoryByIdLoading) {
-              // return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator());
             }
-            
+
             if (state is CategoryByIdError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Ошибка загрузки данных'),
+                    Text(AppLocalizations.of(context)!.translate('error_loading_data')),
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
                         context.read<CategoryByIdBloc>().add(
-                          FetchCategoryByIdEvent(categoryId: widget.ctgId)
-                        );
+                              FetchCategoryByIdEvent(categoryId: widget.ctgId),
+                            );
                       },
-                      child: Text('Повторить'),
+                      child: Text(AppLocalizations.of(context)!.translate('retry')),
                     ),
                   ],
                 ),
@@ -159,42 +177,48 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
+                        child: _cachedImageFile != null
+                            ? Image.file(
+                                _cachedImageFile!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.contain,
+                              )
+                            : Image.network(
                                 '$baseUrl/${_currentCategory.image!}',
                                 width: double.infinity,
                                 height: 200,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: double.infinity,
-                              height: 200,
-                              color: Colors.white,
-                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: double.infinity,
-                              height: 200,
-                              color: Colors.white,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            );
-                          },
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 200,
+                                    color: Colors.white,
+                                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
+                                  );
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 200,
+                                    color: Colors.white,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded /
+                                                loadingProgress.expectedTotalBytes!
+                                            : null,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                       ),
                     ),
                   _buildDetailsList(),
-                  if (_currentCategory.attributes.isNotEmpty) 
-                    _buildAttributesSection(),
+                  if (_currentCategory.attributes.isNotEmpty) _buildAttributesSection(),
                 ],
               ),
             );
@@ -204,14 +228,13 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
     );
   }
 
-  // Остальные методы остаются без изменений
   Widget _buildAttributesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 0),
+        SizedBox(height: 8),
         Text(
-          'Характеристики',
+          AppLocalizations.of(context)!.translate('attributes'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -222,22 +245,38 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _currentCategory.attributes.map((attr) => 
-            Container(
+          children: _currentCategory.attributes.map((attr) {
+            return Container(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Color(0xffF4F7FD),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                attr.name,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xff1E2E52),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    attr.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  if (attr.isIndividual)
+                    Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Text(
+                        '(${AppLocalizations.of(context)!.translate('individual')})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ).toList(),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -282,7 +321,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-           IconButton(
+            IconButton(
               icon: Image.asset(
                 'assets/icons/edit.png',
                 width: 24,
@@ -290,13 +329,13 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
               ),
               onPressed: () async {
                 await SubCategoryEditBottomSheet.show(
-                 context,
-                 initialSubCategoryId: widget.category.id,
-                 initialName:  _currentCategory.name  ,
-                 initialImage: _cachedImageFile,
-                 initialAttributes: _currentCategory.attributes,
-               );
-              } ,
+                  context,
+                  initialSubCategoryId: widget.category.id,
+                  initialName: _currentCategory.name,
+                  initialImage: _cachedImageFile,
+                  initialAttributes: _currentCategory.attributes,
+                );
+              },
             ),
             IconButton(
               padding: EdgeInsets.only(right: 8),
@@ -313,9 +352,9 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 ).then((deleted) {
                   if (deleted == true) {
                     context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
-                    Navigator.of(context).pop(true); 
+                    Navigator.of(context).pop(true);
                   }
-                });        
+                });
               },
             ),
           ],
@@ -350,14 +389,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: label == AppLocalizations.of(context)!.translate('description_details') 
-                ? GestureDetector(
-                    onTap: () {
-                      _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
-                    },
-                    child: _buildValue(value, label, maxLines: 2),
-                  )
-                : _buildValue(value, label, maxLines: 2)
+              child: label == AppLocalizations.of(context)!.translate('description_details')
+                  ? GestureDetector(
+                      onTap: () {
+                        _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
+                      },
+                      child: _buildValue(value, label, maxLines: 2),
+                    )
+                  : _buildValue(value, label, maxLines: 2),
             ),
           ],
         );
@@ -372,7 +411,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xfff99A4BA),
+        color: Color(0xff99A4BA),
       ),
     );
   }
@@ -386,9 +425,9 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
-        decoration: label == AppLocalizations.of(context)!.translate('description_details') 
-          ? TextDecoration.underline 
-          : TextDecoration.none,
+        decoration: label == AppLocalizations.of(context)!.translate('description_details')
+            ? TextDecoration.underline
+            : TextDecoration.none,
       ),
       maxLines: maxLines,
       overflow: maxLines != null ? TextOverflow.ellipsis : TextOverflow.visible,
@@ -456,6 +495,6 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
     super.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       cleanTempFiles();
-    });  
+    });
   }
 }

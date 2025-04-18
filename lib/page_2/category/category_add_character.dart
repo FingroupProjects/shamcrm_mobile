@@ -4,7 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class AddCustomCharacterFieldDialog extends StatefulWidget {
-  final Function(String) onAddField;
+  final Function(String, bool) onAddField; // Обновляем для передачи isIndividual
 
   AddCustomCharacterFieldDialog({required this.onAddField});
 
@@ -16,8 +16,8 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   String? selectedCharacter;
   bool _isDropdownVisible = false;
   bool _isKeyboardVisible = false;
-  bool isCommonActive = false; // For "Общий"
-  bool isUniqueActive = false; // For "Уникальный"
+  bool isCommonActive = true; // По умолчанию "Общий" активен
+  bool isUniqueActive = false; // "Уникальный" по умолчанию выключен
 
   @override
   void initState() {
@@ -46,13 +46,13 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   @override
   Widget build(BuildContext context) {
     final double dialogHeight = _isDropdownVisible
-        ? MediaQuery.of(context).size.height * 0.60 // Increased height when dropdown is visible
-        : MediaQuery.of(context).size.height * 0.35; // Increased height when dropdown is not visible
+        ? MediaQuery.of(context).size.height * 0.60
+        : MediaQuery.of(context).size.height * 0.35;
 
     return Dialog(
       insetPadding: EdgeInsets.zero,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.85, // Slightly increased width
+        width: MediaQuery.of(context).size.width * 0.85,
         height: dialogHeight,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -87,7 +87,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                 },
               ),
               SizedBox(height: 8),
-              // Switch for "Общий" (Switch first, then Text)
+              // Switch for "Общий"
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -97,8 +97,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       setState(() {
                         isCommonActive = value;
                         if (isCommonActive) {
-                          isUniqueActive = false; // Turn off "Уникальный"
-                          selectedCharacter = null; // Reset selection if needed
+                          isUniqueActive = false; // Выключаем "Уникальный"
                         }
                       });
                     },
@@ -119,7 +118,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   ),
                 ],
               ),
-              // Switch for "Уникальный" (Switch first, then Text)
+              // Switch for "Уникальный"
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -129,8 +128,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       setState(() {
                         isUniqueActive = value;
                         if (isUniqueActive) {
-                          isCommonActive = false; // Turn off "Общий"
-                          selectedCharacter = null; // Reset selection if needed
+                          isCommonActive = false; // Выключаем "Общий"
                         }
                       });
                     },
@@ -171,7 +169,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       buttonText: AppLocalizations.of(context)!.translate('add'),
                       onPressed: () {
                         if (selectedCharacter != null && selectedCharacter!.isNotEmpty) {
-                          widget.onAddField(selectedCharacter!);
+                          widget.onAddField(selectedCharacter!, isUniqueActive); // Передаем isUniqueActive
                           Navigator.of(context).pop();
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(

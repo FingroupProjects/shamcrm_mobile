@@ -5,7 +5,10 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
+import 'package:crm_task_manager/page_2/category/category_details/category_add_character.dart';
+import 'package:crm_task_manager/page_2/category/category_details/switch.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,29 +20,35 @@ class SubCategoryEditBottomSheet {
     required String initialName,
     File? initialImage,
     required List<Attribute> initialAttributes,
+    String initialDisplayType = 'a',
+    bool initialHasPriceCharacteristics = false,
   }) async {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    int subCategoryId=initialSubCategoryId;
     final TextEditingController categoryNameController = TextEditingController(text: initialName);
     File? _image = initialImage;
-    bool _isImageSelected = true;
+    bool _isImageSelected = initialImage != null;
     bool _isImageChanged = false;
     List<CustomField> customFields = initialAttributes
-        .map((attr) => CustomField(name: attr.name))
+        .map((attr) => CustomField(
+              name: attr.name,
+              isIndividual: attr.isIndividual,
+            ))
         .toList();
+    String selectedType = initialDisplayType;
+    bool isAffectingPrice = initialHasPriceCharacteristics;
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
-        _isImageSelected = true; 
+        _isImageSelected = true;
         _isImageChanged = true;
       } else {
-        _isImageSelected = false; 
+        _isImageSelected = false;
       }
     }
 
-    showModalBottomSheet(
+    return await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -49,20 +58,14 @@ class SubCategoryEditBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            void _addCustomField(String fieldName) {
-              setState(() {
-                customFields.add(CustomField(name: fieldName));
-              });
-            }
-      
             void _showAddCharacterCustomFieldDialog() {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName) {
+                    onAddField: (fieldName, isIndividual) {
                       setState(() {
-                        customFields.add(CustomField(name: fieldName));
+                        customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
                       });
                     },
                   );
@@ -88,18 +91,18 @@ class SubCategoryEditBottomSheet {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 5),
                       decoration: BoxDecoration(
-                        color: Color(0xfffDFE3EC),
+                        color: const Color(0xffDFE3EC),
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
                     Text(
-                      AppLocalizations.of(context)!.translate('Редактирования подкатегории'),
+                      AppLocalizations.of(context)!.translate('edit_subcategory'),
                       style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
-                    ),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Expanded(
@@ -121,14 +124,33 @@ class SubCategoryEditBottomSheet {
                                 },
                               ),
                               const SizedBox(height: 8),
-                               Text( AppLocalizations.of(context)!.translate('Изображение'),
-                                 style: const TextStyle(
-                                   fontSize: 16,
-                                   fontFamily: 'Gilroy',
-                                   fontWeight: FontWeight.w500,
-                                   color: Color(0xff1E2E52),
-                                 ),
-                               ),
+                              PriceAffectSwitcher(
+                                isActive: isAffectingPrice,
+                                onChanged: (value) {
+                                  setState(() {
+                                    isAffectingPrice = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              CategoryTypeSelector(
+                                selectedType: selectedType,
+                                onTypeChanged: (type) {
+                                  setState(() {
+                                    selectedType = type;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                AppLocalizations.of(context)!.translate('image_message'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               GestureDetector(
                                 onTap: () async {
@@ -154,7 +176,7 @@ class SubCategoryEditBottomSheet {
                                               child: Row(
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
-                                                  Icon(
+                                                  const Icon(
                                                     Icons.camera_alt,
                                                     color: Color(0xff99A4BA),
                                                     size: 24,
@@ -162,7 +184,7 @@ class SubCategoryEditBottomSheet {
                                                   const SizedBox(width: 8),
                                                   Text(
                                                     AppLocalizations.of(context)!.translate('pick_image'),
-                                                    style: TextStyle(
+                                                    style: const TextStyle(
                                                       fontSize: 14,
                                                       fontWeight: FontWeight.w500,
                                                       fontFamily: 'Gilroy',
@@ -175,49 +197,50 @@ class SubCategoryEditBottomSheet {
                                           : Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Row(
-                                              children: [
-                                                Container(
-                                                  width: 54,
-                                                  height: 54,
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    image: DecorationImage(
-                                                      image: FileImage(_image!),
-                                                      fit: BoxFit.cover,
+                                                children: [
+                                                  Container(
+                                                    width: 54,
+                                                    height: 54,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      image: DecorationImage(
+                                                        image: FileImage(_image!),
+                                                        fit: BoxFit.cover,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8), 
-                                                Expanded(
-                                                  child: Text(
-                                                    _image!.path.split('/').last,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff1E2E52),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _image!.path.split('/').last,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color: Color(0xff1E2E52),
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    overflow: TextOverflow.ellipsis, 
                                                   ),
-                                                ),
-                                                IconButton(
-                                                  icon: Icon(Icons.close, color: Color(0xff1E2E52)),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _image = null;
-                                                      _isImageChanged = true;
-                                                    });
-                                                  },
-                                                ),
-                                              ],
-                                            ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _image = null;
+                                                        _isImageSelected = false;
+                                                        _isImageChanged = true;
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                     ),
                                     if (!_isImageSelected)
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('    Изоброжения обязательно'),
+                                          AppLocalizations.of(context)!.translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -230,8 +253,8 @@ class SubCategoryEditBottomSheet {
                               ),
                               const SizedBox(height: 10),
                               CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('Добавить характеристику'),
-                                buttonColor: Color(0xff1E2E52),
+                                buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
+                                buttonColor: const Color(0xff1E2E52),
                                 textColor: Colors.white,
                                 onPressed: _showAddCharacterCustomFieldDialog,
                               ),
@@ -242,13 +265,28 @@ class SubCategoryEditBottomSheet {
                                     color: const Color(0xffF4F7FD),
                                     margin: const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
-                                      contentPadding: EdgeInsets.only(left: 16, right: 16),
+                                      contentPadding: const EdgeInsets.only(left: 16, right: 16),
                                       title: Text(
                                         field.name,
-                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        field.isIndividual
+                                            ? AppLocalizations.of(context)!.translate('individual')
+                                            : AppLocalizations.of(context)!.translate('common'),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Gilroy',
+                                          color: Color(0x991E2E52),
+                                        ),
                                       ),
                                       trailing: IconButton(
-                                        icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                        icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
                                         onPressed: () {
                                           setState(() {
                                             customFields.remove(field);
@@ -278,20 +316,22 @@ class SubCategoryEditBottomSheet {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('add'),
+                            buttonText: AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate()) {
-                              // if (formKey.currentState!.validate() && _image != null) {
-                                _createCategory(
-                                  subCategoryId,
+                              if (formKey.currentState!.validate() && _isImageSelected) {
+                                final result = _createCategory(
+                                  initialSubCategoryId,
                                   categoryNameController.text,
                                   _image,
                                   _isImageChanged,
                                   context,
                                   customFields,
+                                  selectedType,
+                                  isAffectingPrice,
                                 );
+                                Navigator.pop(context, result);
                               } else {
                                 setState(() {
                                   _isImageSelected = _image != null;
@@ -313,39 +353,61 @@ class SubCategoryEditBottomSheet {
     );
   }
 
-static void _createCategory(
-  int subCatgeoryId,
-  String name,
-  File? image,
-  bool isImageChanged,
-  BuildContext context,
-  List<CustomField> customFields,
-) async {
-  try {
-    final categoryBloc = BlocProvider.of<CategoryBloc>(context);
-    
-    List<String> attributeNames = customFields.map((field) => field.name).toList();
-    
-    Navigator.pop(context,);      
-    
-    categoryBloc.add(UpdateSubCategory(
-      subCategoryId: subCatgeoryId,
-      name: name,
-      attributeNames: attributeNames,
-      image: isImageChanged ? image : null, 
-    ));
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ошибка при обновлении подкатегории!'),
-      ),
-    );
+  static Map<String, dynamic> _createCategory(
+    int subCategoryId,
+    String name,
+    File? image,
+    bool isImageChanged,
+    BuildContext context,
+    List<CustomField> customFields,
+    String displayType,
+    bool hasPriceCharacteristics,
+  ) {
+    try {
+      final categoryBloc = BlocProvider.of<CategoryBloc>(context);
+
+      // Формируем список атрибутов с учетом isIndividual
+      List<Map<String, dynamic>> attributes = customFields
+          .map((field) => {
+                'name': field.name,
+                'is_individual': field.isIndividual,
+              })
+          .toList();
+
+      categoryBloc.add(UpdateSubCategory(
+        subCategoryId: subCategoryId,
+        name: name,
+        attributes: attributes,
+        image: isImageChanged ? image : null,
+        displayType: displayType,
+        hasPriceCharacteristics: hasPriceCharacteristics,
+      ));
+
+      return {
+        'updatedName': name,
+        'updatedImage': isImageChanged ? image : null,
+        'isImageRemoved': image == null && isImageChanged,
+        'updatedAttributes': attributes,
+        'displayType': displayType,
+        'hasPriceCharacteristics': hasPriceCharacteristics,
+      };
+    } catch (e) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('error_update_subcategory'),
+        isSuccess: false,
+      );
+      return {};
+    }
   }
-}
 }
 
 class CustomField {
   final String name;
-  
-  CustomField({required this.name});
+  final bool isIndividual;
+
+  CustomField({
+    required this.name,
+    required this.isIndividual,
+  });
 }

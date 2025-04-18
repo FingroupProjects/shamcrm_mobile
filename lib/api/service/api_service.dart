@@ -6037,72 +6037,70 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> createCategory({
-    required String name,
-    required int parentId,
-    required List<String> attributeNames,
-    File? image,
-    required String displayType, // a или b
-    required bool hasPriceCharacteristics, // bool
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
+ Future<Map<String, dynamic>> createCategory({
+  required String name,
+  required int parentId,
+  required List<Map<String, dynamic>> attributes, // Обновлено
+  File? image,
+  required String displayType,
+  required bool hasPriceCharacteristics,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      if (parentId != 0) {
-        request.fields['parent_id'] = parentId.toString();
-      }
-      request.fields['display_type'] = displayType; // a или b
-      request.fields['has_price_characteristics'] =
-          hasPriceCharacteristics ? '1' : '0'; // Преобразуем bool в 1/0
+    request.fields['name'] = name;
+    if (parentId != 0) {
+      request.fields['parent_id'] = parentId.toString();
+    }
+    request.fields['display_type'] = displayType;
+    request.fields['has_price_characteristics'] = hasPriceCharacteristics ? '1' : '0';
 
-      for (int i = 0; i < attributeNames.length; i++) {
-        request.fields['attributes[$i][attribute]'] = attributeNames[i];
-      }
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
+      request.fields['attributes[$i][is_individual]'] = attributes[i]['is_individual'] ? '1' : '0'; // Отправляем "1" или "0"
+    }
 
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      final responseBody = json.decode(response.body);
+    final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'category_created_successfully',
-          'data': CategoryData.fromJson(responseBody),
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to create category',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'category_created_successfully',
+        'data': CategoryData.fromJson(responseBody),
+      };
+    } else {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': responseBody['message'] ?? 'Failed to create category',
+        'error': responseBody,
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
   }
-
+}
   Future<Map<String, dynamic>> updateCategory({
     required int categoryId,
     required String name,
@@ -6168,63 +6166,66 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> updateSubCategory({
-    required int subCategoryId,
-    required String name,
-    File? image,
-    required List<String> attributeNames,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<Map<String, dynamic>> updateSubCategory({
+  required int subCategoryId,
+  required String name,
+  File? image,
+  required List<Map<String, dynamic>> attributes,
+  required String displayType,
+  required bool hasPriceCharacteristics,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
+    request.fields['name'] = name;
+    request.fields['display_type'] = displayType;
+    request.fields['has_price_characteristics'] = hasPriceCharacteristics ? '1' : '0';
 
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
+      request.fields['attributes[$i][is_individual]'] = attributes[i]['is_individual'] ? '1' : '0';
+    }
 
-      for (int i = 0; i < attributeNames.length; i++) {
-        request.fields['attributes[$i][attribute]'] = attributeNames[i];
-      }
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Подкатегория успешно обновлена',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to update subcategory',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'subcategory_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': responseBody['message'] ?? 'failed_to_update_subcategory',
+        'error': responseBody,
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_occurred: $e',
+    };
   }
-
+}
   //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
 
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//

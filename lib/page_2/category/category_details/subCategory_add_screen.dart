@@ -18,8 +18,8 @@ class SubCategoryAddBottomSheet {
     File? _image;
     bool _isImageSelected = true;
     List<CustomField> customFields = [];
-    String selectedType = 's'; // Новое состояние для типа (Товар/Характеристика)
-    bool isAffectingPrice = false; // Новое состояние для влияния на цену
+    String selectedType = 'a'; // Обновлено на 'a' для согласованности
+    bool isAffectingPrice = false;
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -41,20 +41,14 @@ class SubCategoryAddBottomSheet {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            void _addCustomField(String fieldName) {
-              setState(() {
-                customFields.add(CustomField(name: fieldName));
-              });
-            }
-
             void _showAddCharacterCustomFieldDialog() {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName) {
+                    onAddField: (fieldName, isIndividual) { // Обновляем обработчик
                       setState(() {
-                        customFields.add(CustomField(name: fieldName));
+                        customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
                       });
                     },
                   );
@@ -80,7 +74,7 @@ class SubCategoryAddBottomSheet {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 5),
                       decoration: BoxDecoration(
-                        color: Color(0xffDFE3EC), // Исправлен цвет
+                        color: Color(0xffDFE3EC),
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
@@ -103,14 +97,11 @@ class SubCategoryAddBottomSheet {
                             children: [
                               CustomTextField(
                                 controller: categoryNameController,
-                                hintText: AppLocalizations.of(context)!
-                                    .translate('enter_category_name'),
-                                label: AppLocalizations.of(context)!
-                                    .translate('category_name'),
+                                hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
+                                label: AppLocalizations.of(context)!.translate('category_name'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!
-                                        .translate('field_required');
+                                    return AppLocalizations.of(context)!.translate('field_required');
                                   }
                                   return null;
                                 },
@@ -135,8 +126,7 @@ class SubCategoryAddBottomSheet {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                AppLocalizations.of(context)!
-                                    .translate('image_message'),
+                                AppLocalizations.of(context)!.translate('image_message'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
@@ -160,17 +150,14 @@ class SubCategoryAddBottomSheet {
                                         color: const Color(0xffF4F7FD),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: !_isImageSelected
-                                              ? Colors.red
-                                              : const Color(0xffF4F7FD),
+                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
                                           width: 1.5,
                                         ),
                                       ),
                                       child: _image == null
                                           ? Center(
                                               child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
                                                   Icon(
                                                     Icons.camera_alt,
@@ -179,12 +166,10 @@ class SubCategoryAddBottomSheet {
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    AppLocalizations.of(context)!
-                                                        .translate('pick_image'),
+                                                    AppLocalizations.of(context)!.translate('pick_image'),
                                                     style: TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                                      fontWeight: FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff99A4BA),
                                                     ),
@@ -193,20 +178,16 @@ class SubCategoryAddBottomSheet {
                                               ),
                                             )
                                           : Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16),
                                               child: Row(
                                                 children: [
                                                   Container(
                                                     width: 54,
                                                     height: 54,
                                                     decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
+                                                      borderRadius: BorderRadius.circular(8),
                                                       image: DecorationImage(
-                                                        image:
-                                                            FileImage(_image!),
+                                                        image: FileImage(_image!),
                                                         fit: BoxFit.cover,
                                                       ),
                                                     ),
@@ -214,25 +195,18 @@ class SubCategoryAddBottomSheet {
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
-                                                      _image!.path
-                                                          .split('/')
-                                                          .last,
+                                                      _image!.path.split('/').last,
                                                       style: TextStyle(
                                                         fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                                        fontWeight: FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff1E2E52),
+                                                        color: Color(0xff1E2E52),
                                                       ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   IconButton(
-                                                    icon: Icon(Icons.close,
-                                                        color:
-                                                            Color(0xff1E2E52)),
+                                                    icon: Icon(Icons.close, color: Color(0xff1E2E52)),
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
@@ -247,8 +221,7 @@ class SubCategoryAddBottomSheet {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('required_image'),
+                                          AppLocalizations.of(context)!.translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -261,8 +234,7 @@ class SubCategoryAddBottomSheet {
                               ),
                               const SizedBox(height: 10),
                               CustomButton(
-                                buttonText: AppLocalizations.of(context)!
-                                    .translate('add_characteristic'),
+                                buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
                                 buttonColor: Color(0xff1E2E52),
                                 textColor: Colors.white,
                                 onPressed: _showAddCharacterCustomFieldDialog,
@@ -272,21 +244,30 @@ class SubCategoryAddBottomSheet {
                                 children: customFields.map((field) {
                                   return Card(
                                     color: const Color(0xffF4F7FD),
-                                    margin:
-                                        const EdgeInsets.symmetric(vertical: 4),
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
-                                      contentPadding:
-                                          EdgeInsets.only(left: 16, right: 16),
+                                      contentPadding: const EdgeInsets.only(left: 16, right: 16),
                                       title: Text(
                                         field.name,
                                         style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'Gilroy'),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        field.isIndividual
+                                            ? AppLocalizations.of(context)!.translate('Уникальный')
+                                            : AppLocalizations.of(context)!.translate('Общий'),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Gilroy',
+                                          color: Color(0x991E2E52),
+                                        ),
                                       ),
                                       trailing: IconButton(
-                                        icon: Icon(Icons.delete,
-                                            color: Color(0xff1E2E52)),
+                                        icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
                                         onPressed: () {
                                           setState(() {
                                             customFields.remove(field);
@@ -307,8 +288,7 @@ class SubCategoryAddBottomSheet {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () => Navigator.pop(context),
@@ -317,13 +297,11 @@ class SubCategoryAddBottomSheet {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('add'),
+                            buttonText: AppLocalizations.of(context)!.translate('add'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() &&
-                                  _image != null) {
+                              if (formKey.currentState!.validate() && _image != null) {
                                 _createCategory(
                                   categoryNameController.text,
                                   categoryId,
@@ -366,15 +344,20 @@ class SubCategoryAddBottomSheet {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
-      List<String> attributeNames =
-          customFields.map((field) => field.name).toList();
+      // Формируем список атрибутов с учетом isIndividual
+      List<Map<String, dynamic>> attributes = customFields
+          .map((field) => {
+                'name': field.name,
+                'is_individual': field.isIndividual,
+              })
+          .toList();
 
       Navigator.pop(context);
 
       categoryBloc.add(CreateCategory(
         name: name,
         parentId: categoryId,
-        attributeNames: attributeNames,
+        attributes: attributes, // Используем attributes вместо attributeNames
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
@@ -382,8 +365,7 @@ class SubCategoryAddBottomSheet {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!
-              .translate('error_create_category')),
+          content: Text(AppLocalizations.of(context)!.translate('error_create_category')),
         ),
       );
     }
@@ -392,6 +374,10 @@ class SubCategoryAddBottomSheet {
 
 class CustomField {
   final String name;
+  final bool isIndividual; // Добавляем поле isIndividual
 
-  CustomField({required this.name});
+  CustomField({
+    required this.name,
+    required this.isIndividual,
+  });
 }

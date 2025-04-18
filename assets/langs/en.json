@@ -888,7 +888,16 @@
   "parent_category": "Parent category",
   "required_image": "    Image is required",
   "add_characteristic": "Add characteristic",
-  "error_create_category": "Error creating category!"
+  "error_create_category": "Error creating category!",
+  "edit_subcategory": "Edit Subcategory",
+  "individual": "Individual",
+  "common": "Common",
+  "error_update_subcategory": "Subcategory update error",
+  "failed_to_update_subcategory": "Failed to update subcategory",
+  "error_occurred": "An error occurred: {0}",
+  "has_price_characteristics": "Affects price:",
+    "attributes": "Attributes"
+
   
 
 
