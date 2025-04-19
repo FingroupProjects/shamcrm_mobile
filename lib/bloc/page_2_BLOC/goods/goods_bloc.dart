@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
-  List<Goods> allGoods = []; // Храним все загруженные товары
+  List<Goods> allGoods = [];
   bool allGoodsFetched = false;
   final int _perPage = 20;
 
@@ -25,15 +25,15 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
       try {
         final goods = await apiService.getGoods(page: event.page);
 
-        allGoods = goods; // Очищаем и обновляем список для первой страницы
+        allGoods = goods;
         allGoodsFetched = goods.length < _perPage;
 
         final pagination = Pagination(
-          total: goods.length, // Предполагаем, что total неизвестен без API
+          total: goods.length,
           count: goods.length,
           perPage: _perPage,
           currentPage: event.page,
-          totalPages: allGoodsFetched ? event.page : event.page + 1, // Примерная логика
+          totalPages: allGoodsFetched ? event.page : event.page + 1,
         );
 
         if (goods.isEmpty) {
@@ -61,7 +61,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
         final currentState = state as GoodsDataLoaded;
         final newPagination = Pagination(
-          total: allGoods.length, // Предполагаем, что total неизвестен
+          total: allGoods.length,
           count: newGoods.length,
           perPage: _perPage,
           currentPage: event.currentPage + 1,
@@ -86,16 +86,18 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           name: event.name,
           parentId: event.parentId,
           description: event.description,
+          // unitId: event.unitId,
           quantity: event.quantity,
-          attributeNames: event.attributeNames,
-          images: event.images,
+          attributes: event.attributes,
+          variants: event.variants,
+          images: event.images ?? [],
           isActive: event.isActive,
           discountPrice: event.discountPrice,
         );
 
         if (response['success'] == true) {
           emit(GoodsSuccess("Товар успешно создан"));
-          add(FetchGoods(page: 1)); // Обновляем список после создания
+          add(FetchGoods(page: 1));
         } else {
           emit(GoodsError(response['message'] ?? 'Не удалось создать товар'));
         }
@@ -117,16 +119,18 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           name: event.name,
           parentId: event.parentId,
           description: event.description,
+          // unitId: event.unitId,
           quantity: event.quantity,
-          attributeNames: event.attributeNames,
-          images: event.images,
+          attributes: event.attributes,
+          variants: event.variants,
+          images: event.images ?? [],
           isActive: event.isActive,
           discountPrice: event.discountPrice,
         );
 
         if (response['success'] == true) {
           emit(GoodsSuccess("Товар успешно обновлен"));
-          add(FetchGoods(page: 1)); // Обновляем список после обновления
+          add(FetchGoods(page: 1));
         } else {
           emit(GoodsError(response['message'] ?? 'Не удалось обновить товар'));
         }

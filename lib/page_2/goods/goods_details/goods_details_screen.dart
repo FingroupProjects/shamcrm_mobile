@@ -86,8 +86,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             final goods = state.goods;
             details = [
               {
-                'label': AppLocalizations.of(context)!
-                    .translate('goods_name_details'),
+                'label': AppLocalizations.of(context)!.translate('goods_name_details'),
                 'value': goods.name ?? '',
               },
               {
@@ -95,25 +94,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 'value': goods.description ?? '',
               },
               {
-                'label': AppLocalizations.of(context)!
-                    .translate('discount_price_details'),
+                'label': AppLocalizations.of(context)!.translate('discount_price_details'),
                 'value': goods.discountPrice?.toString() ?? '0',
               },
               {
-                'label': AppLocalizations.of(context)!
-                    .translate('stock_quantity_details'),
+                'label': AppLocalizations.of(context)!.translate('stock_quantity_details'),
                 'value': goods.quantity?.toString() ?? '0',
               },
               {
-                'label':
-                    AppLocalizations.of(context)!.translate('category_details'),
+                'label': AppLocalizations.of(context)!.translate('category_details'),
                 'value': goods.category.name ?? '',
               },
-              ...goods.attributes
-                  .map((attr) => {'label': attr.name, 'value': attr.value}),
+              ...goods.attributes.map((attr) => {
+                    'label': attr.name,
+                    'value': attr.value,
+                  }),
               {
-                'label':
-                    AppLocalizations.of(context)!.translate('goods_finished'),
+                'label': AppLocalizations.of(context)!.translate('goods_finished'),
                 'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
               },
             ];
@@ -122,8 +119,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
                 children: [
-                  if (goods.files != null && goods.files!.isNotEmpty)
-                    _buildImageSlider(goods.files!),
+                  if (goods.files != null && goods.files.isNotEmpty)
+                    _buildImageSlider(goods.files),
                   _buildDetailsList(),
                 ],
               ),
@@ -154,7 +151,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${files[index].path}';
-              if (files[index].path == null || files[index].path!.isEmpty) {
+              if (files[index].path.isEmpty) {
                 return _buildPlaceholder();
               }
               return ClipRRect(
@@ -163,8 +160,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildPlaceholder(),
+                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
                 ),
               );
             },
@@ -210,8 +206,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png',
-                width: 24, height: 24),
+            icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -237,46 +232,82 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 IconButton(
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  icon: Image.asset('assets/icons/edit.png',
-                      width: 24, height: 24),
+                  icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
                   onPressed: state is GoodsByIdLoaded
                       ? () async {
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  GoodsEditScreen(goods: state.goods),
+                              builder: (context) => GoodsEditScreen(goods: state.goods),
                             ),
                           );
                           if (result == true) {
-                            context
-                                .read<GoodsByIdBloc>()
-                                .add(FetchGoodsById(widget.id));
+                            context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
                           }
                         }
                       : null,
                 ),
-                // IconButton(
-                //   padding: const EdgeInsets.only(right: 8),
-                //   constraints: const BoxConstraints(),
-                //   icon: Image.asset('assets/icons/delete.png',
-                //       width: 24, height: 24),
-                //   onPressed: state is GoodsByIdLoaded
-                //       ? () {
-                //           showDialog(
-                //             context: context,
-                //             builder: (context) => DeleteGoodsDialog(
-                //               goodId: widget.id,
-                //               onDelete: () {
-                //                 context.read<GoodsByIdBloc>().add(
-                //                       DeleteGoods(widget.id, null),
-                //                     );
-                //               },
-                //             ),
-                //           );
-                //         }
-                //       : null,
-                // ),
+                IconButton(
+                  padding: const EdgeInsets.only(right: 8),
+                  constraints: const BoxConstraints(),
+                  icon: Image.asset('assets/icons/delete.png', width: 24, height: 24),
+                  onPressed: state is GoodsByIdLoaded
+                      ? () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(
+                                AppLocalizations.of(context)!.translate('delete_goods'),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                              content: Text(
+                                AppLocalizations.of(context)!.translate('confirm_delete_goods'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('cancel'),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff99A4BA),
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    context.read<GoodsByIdBloc>().add(DeleteGoods(widget.id, null));
+                                  },
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('delete'),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      : null,
+                ),
               ],
             );
           },
@@ -298,37 +329,33 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-Widget _buildDetailItem(String label, String value) {
-  // Список полей, для которых нужно показывать диалог при превышении 1 строки
-  final expandableFields = [
-    AppLocalizations.of(context)!.translate('goods_name_details'),
-    AppLocalizations.of(context)!.translate('goods_description_details'),
-    AppLocalizations.of(context)!.translate('category_details'),
-  ];
+  Widget _buildDetailItem(String label, String value) {
+    final expandableFields = [
+      AppLocalizations.of(context)!.translate('goods_name_details'),
+      AppLocalizations.of(context)!.translate('goods_description_details'),
+      AppLocalizations.of(context)!.translate('category_details'),
+    ];
 
-  // Проверяем, является ли текущее поле одним из тех, что требуют диалог
-  bool isExpandable = expandableFields.contains(label) || 
-      details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
+    bool isExpandable = expandableFields.contains(label) ||
+        details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
 
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel(label),
-      const SizedBox(width: 8),
-      Expanded(
-        child: isExpandable
-            ? GestureDetector(
-                onTap: () => _showFullTextDialog(
-                    label.replaceAll(':', ''), // Убираем двоеточие из заголовка
-                    value),
-                child: _buildValue(value, label, maxLines: 1),
-              )
-            : _buildValue(value, label, maxLines: 1),
-      ),
-    ],
-  );
-}
-
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(width: 8),
+        Expanded(
+          child: isExpandable
+              ? GestureDetector(
+                  onTap: () => _showFullTextDialog(
+                      label.replaceAll(':', ''), value),
+                  child: _buildValue(value, label, maxLines: 1),
+                )
+              : _buildValue(value, label, maxLines: 1),
+        ),
+      ],
+    );
+  }
 
   Widget _buildLabel(String label) {
     return Text(
@@ -342,37 +369,37 @@ Widget _buildDetailItem(String label, String value) {
     );
   }
 
-
   Widget _buildValue(String value, String label, {int? maxLines}) {
- if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
-    return Text( '', 
-      style: const TextStyle(
+    if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
+      return const Text(
+        '',
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1E2E52),
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    if (value.isEmpty) return Container();
+    return Text(
+      value,
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
+        color: const Color(0xFF1E2E52),
+        decoration: label == AppLocalizations.of(context)!.translate('goods_description_details')
+            ? TextDecoration.underline
+            : TextDecoration.none,
       ),
-    maxLines: maxLines,
-    overflow: maxLines != null ? TextOverflow.ellipsis : null,
-  );
-}
-
-  if (value.isEmpty) return Container();
-  return Text(
-    value,
-    style: TextStyle(
-      fontSize: 16,
-      fontFamily: 'Gilroy',
-      fontWeight: FontWeight.w500,
-      color: const Color(0xFF1E2E52),
-      decoration: label == AppLocalizations.of(context)!.translate('goods_description_details')
-          ? TextDecoration.underline
-          : TextDecoration.none,
-    ),
-    maxLines: maxLines, 
-    overflow: maxLines != null ? TextOverflow.ellipsis : null,
-  );
-}
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+    );
+  }
 
   void _showFullTextDialog(String title, String content) {
     showDialog(

@@ -6297,17 +6297,18 @@ Future<Map<String, dynamic>> updateSubCategory({
     required String name,
     required int parentId,
     required String description,
+    // required int unitId,
     required int quantity,
-    required List<String> attributeNames,
-    List<File>? images,
+    required List<Map<String, dynamic>> attributes,
+    required List<Map<String, dynamic>> variants,
+    required List<File> images,
     required bool isActive,
-    double? discountPrice, // Добавлено
+    double? discountPrice,
   }) async {
     try {
       final token = await getToken();
       final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      var uri = Uri.parse('$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
       var request = http.MultipartRequest('POST', uri);
       request.headers.addAll({
         'Authorization': 'Bearer $token',
@@ -6318,24 +6319,44 @@ Future<Map<String, dynamic>> updateSubCategory({
       request.fields['name'] = name;
       request.fields['category_id'] = parentId.toString();
       request.fields['description'] = description;
+      // request.fields['unit_id'] = unitId.toString();
       request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive.toString();
+      request.fields['is_active'] = isActive ? '1' : '0';
       if (discountPrice != null) {
-        // Добавлено
         request.fields['discount_price'] = discountPrice.toString();
       }
 
-      for (int i = 0; i < attributeNames.length; i++) {
-        request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
-        request.fields['attributes[$i][value]'] = attributeNames[i];
+      for (int i = 0; i < attributes.length; i++) {
+        request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
+        request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
       }
 
-      if (images != null && images.isNotEmpty) {
-        for (var image in images) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[]', image.path);
+      for (int i = 0; i < variants.length; i++) {
+        // Add price for the variant
+        if (variants[i].containsKey('price')) {
+          request.fields['variants[$i][price]'] = variants[i]['price'].toString();
+        } else {
+          request.fields['variants[$i][price]'] = '0'; // Default price if not provided
+        }
+
+        // Add variant attributes
+        if (variants[i].containsKey('category_attribute_id') && variants[i].containsKey('value')) {
+          request.fields['variants[$i][variant_attributes][0][category_attribute_id]'] = variants[i]['category_attribute_id'].toString();
+          request.fields['variants[$i][variant_attributes][0][value]'] = variants[i]['value'].toString();
+          request.fields['variants[$i][variant_attributes][0][is_active]'] = (variants[i]['is_active'] as bool) ? '1' : '0';
+        }
+
+        // Add files for the variant
+        List<File> variantFiles = variants[i]['files'] ?? [];
+        for (int j = 0; j < variantFiles.length; j++) {
+          final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', variantFiles[j].path);
           request.files.add(imageFile);
         }
+      }
+
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
       }
 
       final streamedResponse = await request.send();
@@ -6345,20 +6366,20 @@ Future<Map<String, dynamic>> updateSubCategory({
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'goods_created_successfully',
-          'data': CategoryData.fromJson(responseBody),
+          'message': 'Товар успешно создан',
+          'data': responseBody,
         };
       } else {
         return {
           'success': false,
-          'message': responseBody['message'] ?? 'Failed to create goods',
+          'message': responseBody['message'] ?? 'Не удалось создать товар',
           'error': responseBody,
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': 'Произошла ошибка: $e',
       };
     }
   }
@@ -6368,11 +6389,13 @@ Future<Map<String, dynamic>> updateSubCategory({
     required String name,
     required int parentId,
     required String description,
+    // required int unitId,
     required int quantity,
-    required List<String> attributeNames,
-    List<File>? images,
+    required List<Map<String, dynamic>> attributes,
+    required List<Map<String, dynamic>> variants,
+    required List<File> images,
     required bool isActive,
-    double? discountPrice, // Добавлено
+    double? discountPrice,
   }) async {
     try {
       final token = await getToken();
@@ -6389,24 +6412,47 @@ Future<Map<String, dynamic>> updateSubCategory({
       request.fields['name'] = name;
       request.fields['category_id'] = parentId.toString();
       request.fields['description'] = description;
+      // request.fields['unit_id'] = unitId.toString();
       request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive.toString();
+      request.fields['is_active'] = isActive ? '1' : '0';
       if (discountPrice != null) {
-        // Добавлено
         request.fields['discount_price'] = discountPrice.toString();
       }
 
-      for (int i = 0; i < attributeNames.length; i++) {
-        request.fields['attributes[$i][attribute_id]'] = (i + 1).toString();
-        request.fields['attributes[$i][value]'] = attributeNames[i];
+      for (int i = 0; i < attributes.length; i++) {
+        request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
+        request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
       }
 
-      if (images != null && images.isNotEmpty) {
-        for (var image in images) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[]', image.path);
+      for (int i = 0; i < variants.length; i++) {
+        if (variants[i].containsKey('id')) {
+          request.fields['variants[$i][id]'] = variants[i]['id'].toString();
+        }
+        // Add price for the variant
+        if (variants[i].containsKey('price')) {
+          request.fields['variants[$i][price]'] = variants[i]['price'].toString();
+        } else {
+          request.fields['variants[$i][price]'] = '0'; // Default price if not provided
+        }
+
+        // Add variant attributes
+        if (variants[i].containsKey('category_attribute_id') && variants[i].containsKey('value')) {
+          request.fields['variants[$i][variant_attributes][0][category_attribute_id]'] = variants[i]['category_attribute_id'].toString();
+          request.fields['variants[$i][variant_attributes][0][value]'] = variants[i]['value'].toString();
+          request.fields['variants[$i][variant_attributes][0][is_active]'] = (variants[i]['is_active'] as bool) ? '1' : '0';
+        }
+
+        // Add files for the variant
+        List<File> variantFiles = variants[i]['files'] ?? [];
+        for (int j = 0; j < variantFiles.length; j++) {
+          final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', variantFiles[j].path);
           request.files.add(imageFile);
         }
+      }
+
+      for (var image in images) {
+        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+        request.files.add(imageFile);
       }
 
       final streamedResponse = await request.send();
@@ -6433,7 +6479,6 @@ Future<Map<String, dynamic>> updateSubCategory({
       };
     }
   }
-
   Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
     try {
       final token = await getToken();

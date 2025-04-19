@@ -347,7 +347,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
  @override
 Widget build(BuildContext context) {
   // Проверяем, является ли чат типом support
-  bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/support_avatar_2.png';
+  bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
   print('ChatSmsScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
 
   return BlocListener<DeleteMessageBloc, DeleteMessageState>(
@@ -368,7 +368,7 @@ Widget build(BuildContext context) {
         forceMaterialTransparency: false,
         scrolledUnderElevation: 0,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: false, 
         leadingWidth: 40,
         leading: Transform.translate(
           offset: const Offset(6, 0),

@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +15,7 @@ import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Goods goods;
@@ -28,15 +32,19 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController goodsDescriptionController;
   late TextEditingController discountPriceController;
   late TextEditingController stockQuantityController;
+  late TextEditingController unitIdController;
 
   SubCategoryAttributesData? selectedCategory;
   bool isActive = true;
   List<SubCategoryAttributesData> subCategories = [];
+  bool isCategoryValid = true;
+  bool isImagesValid = true;
   bool isLoading = false;
   final ApiService _apiService = ApiService();
   String? baseUrl;
   List<String> _imagePaths = [];
   Map<String, TextEditingController> attributeControllers = {};
+  List<Map<String, dynamic>> tableAttributes = [];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -48,9 +56,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   void _initializeFieldsWithDefaults() {
     goodsNameController = TextEditingController(text: widget.goods.name ?? '');
-    goodsDescriptionController = TextEditingController( text: (widget.goods.description ?? '') == 'null' ? '' : (widget.goods.description ?? ''),);
+    goodsDescriptionController = TextEditingController(
+      text: (widget.goods.description ?? '') == 'null' ? '' : (widget.goods.description ?? ''),
+    );
     discountPriceController = TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
     stockQuantityController = TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    unitIdController = TextEditingController(text: widget.goods.unitId?.toString() ?? '2'); // Default value
     isActive = widget.goods.isActive ?? false;
   }
 
@@ -64,22 +75,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       baseUrl = 'https://shamcrm.com/storage/';
     }
   }
+
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);
-    
     try {
       await _initializeBaseUrl();
-      
       if (mounted && widget.goods.files.isNotEmpty) {
         setState(() {
-          _imagePaths = widget.goods.files
-              .map((file) => '$baseUrl/${file.path}')
-              .toList();
+          _imagePaths = widget.goods.files.map((file) => '$baseUrl/${file.path}').toList();
         });
       }
-      
       await fetchSubCategories();
-      
       _initializeFieldsWithData();
     } catch (e) {
       print('Error loading all data: $e');
@@ -103,14 +109,49 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         id: widget.goods.category.id,
         name: widget.goods.category.name,
       ),
-      attributes: widget.goods.attributes
-          .map((attr) => Attribute(id: 0, name: attr.name, value: attr.value))
-          .toList(),
+      attributes: widget.goods.attributes.map((attr) {
+        return Attribute(
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          isIndividual: attr.isIndividual,
+        );
+      }).toList(),
+      hasPriceCharacteristics: widget.goods.attributes.any((attr) => attr.name.toLowerCase() == 'price'),
     );
 
     attributeControllers.clear();
+    tableAttributes.clear();
     for (var attribute in widget.goods.attributes) {
-      attributeControllers[attribute.name] = TextEditingController(text: attribute.value);
+      if (attribute.isIndividual) {
+        Map<String, dynamic> newRow = {};
+        for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          if (attr.name == attribute.name) {
+            newRow[attr.name] = TextEditingController(text: attribute.value);
+          } else {
+            newRow[attr.name] = TextEditingController();
+          }
+        }
+        if (selectedCategory!.hasPriceCharacteristics) {
+          newRow['price'] = TextEditingController(
+            text: widget.goods.attributes
+                .firstWhere(
+                  (attr) => attr.name.toLowerCase() == 'price',
+                  orElse: () => GoodsAttribute(
+                    id: 0,
+                    name: 'price',
+                    value: '',
+                    isIndividual: false,
+                  ),
+                )
+                .value,
+          );
+        }
+        newRow['images'] = attribute.images ?? [];
+        tableAttributes.add(newRow);
+      } else {
+        attributeControllers[attribute.name] = TextEditingController(text: attribute.value);
+      }
     }
   }
 
@@ -124,7 +165,112 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       }
     } catch (e) {
       print('Error fetching subcategories: $e');
-      throw e; 
+      throw e;
+    }
+  }
+
+  void validateForm() {
+    setState(() {
+      isCategoryValid = selectedCategory != null;
+      isImagesValid = _imagePaths.isNotEmpty;
+    });
+  }
+
+  void addTableRow({List<String>? images}) {
+    if (selectedCategory == null) return;
+    setState(() {
+      Map<String, dynamic> newRow = {};
+      for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+        newRow[attr.name] = TextEditingController();
+      }
+      if (selectedCategory!.hasPriceCharacteristics) {
+        newRow['price'] = TextEditingController();
+      }
+      newRow['images'] = images ?? [];
+      tableAttributes.add(newRow);
+    });
+  }
+
+  void removeTableRow(int index) {
+    setState(() {
+      tableAttributes.removeAt(index);
+    });
+  }
+
+  void _showImageListPopup(List<String> images) {
+    showDialog(
+      context: context,
+      builder: (context) => ImageListPopup(imagePaths: images),
+    );
+  }
+
+  void _showImagePickerOptionsForRow(int rowIndex) async {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text(
+                  AppLocalizations.of(context)!.translate('make_photo'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageForRow(rowIndex, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text(
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMultipleImagesForRow(rowIndex);
+                },
+              ),
+              SizedBox(height: 0),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        tableAttributes[rowIndex]['images'].add(pickedFile.path);
+      });
+      _showImageListPopup(tableAttributes[rowIndex]['images']);
+    }
+  }
+
+  Future<void> _pickMultipleImagesForRow(int rowIndex) async {
+    final pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        tableAttributes[rowIndex]['images'].addAll(pickedFiles.map((file) => file.path));
+      });
+      _showImageListPopup(tableAttributes[rowIndex]['images']);
     }
   }
 
@@ -166,96 +312,90 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_name'),
-                    label:
-                        AppLocalizations.of(context)!.translate('goods_name'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                    label: AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!
-                            .translate('field_required')
+                        ? AppLocalizations.of(context)!.translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!
-                        .translate('goods_description'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
                   const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: discountPriceController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_discount_price'),
-                    label: AppLocalizations.of(context)!
-                        .translate('discount_price'),
-                    keyboardType: TextInputType.number,
-                  ),
+                  if (selectedCategory == null || !selectedCategory!.hasPriceCharacteristics)
+                    CustomTextField(
+                      controller: discountPriceController,
+                      hintText: AppLocalizations.of(context)!.translate('enter_discount_price'),
+                      label: AppLocalizations.of(context)!.translate('discount_price'),
+                      keyboardType: TextInputType.number,
+                    ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: stockQuantityController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_stock_quantity'),
-                    label: AppLocalizations.of(context)!
-                        .translate('stock_quantity'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
+                    label: AppLocalizations.of(context)!.translate('stock_quantity'),
                     keyboardType: TextInputType.number,
                   ),
+                  // const SizedBox(height: 8),
+                  // CustomTextField(
+                  //   controller: unitIdController,
+                  //   hintText: AppLocalizations.of(context)!.translate('enter_unit_id'),
+                  //   label: 'Unit ID',
+                  //   keyboardType: TextInputType.number,
+                  //   validator: (value) => value == null || value.isEmpty
+                  //       ? 'Please enter a Unit ID'
+                  //       : null,
+                  // ),
                   const SizedBox(height: 8),
-                subCategories.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CategoryDropdownWidget(
-                            selectedCategory: selectedCategory?.name,
-                            onSelectCategory: (category) {
-                              setState(() {
-                                selectedCategory = category;
-                                isCategoryValid = category != null;
-                                final existingAttributes = Map<String, String>.fromIterable(
-                                  widget.goods.attributes,
-                                  key: (attr) => attr.name,
-                                  value: (attr) => attr.value,
-                                );
-                                attributeControllers.clear();
-                                if (category != null && category.attributes.isNotEmpty) {
-                                  for (var attribute in category.attributes) {
-                                    attributeControllers[attribute.name] =
-                                        TextEditingController(
-                                      text: existingAttributes[attribute.name] ?? '',
-                                    );
-                                  }
-                                }
-                              });
-                            },
-                            subCategories: subCategories.isEmpty ? [] : subCategories,
-                            isValid: isCategoryValid,
+                  subCategories.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                           ),
-                          if (!isCategoryValid)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'Пожалуйста, выберите подкатегорию',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.w400,
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CategoryDropdownWidget(
+                              selectedCategory: selectedCategory?.name,
+                              onSelectCategory: (category) {
+                                setState(() {
+                                  selectedCategory = category;
+                                  isCategoryValid = category != null;
+                                  attributeControllers.clear();
+                                  tableAttributes.clear();
+                                  if (category != null && category.attributes.isNotEmpty) {
+                                    for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
+                                      attributeControllers[attribute.name] = TextEditingController();
+                                    }
+                                  }
+                                });
+                              },
+                              subCategories: subCategories.isEmpty ? [] : subCategories,
+                              isValid: isCategoryValid,
+                            ),
+                            if (!isCategoryValid)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Пожалуйста, выберите подкатегорию',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
+                          ],
+                        ),
                   const SizedBox(height: 8),
-                  if (selectedCategory != null &&
-                      selectedCategory!.attributes.isNotEmpty)
+                  if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -272,7 +412,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ),
                         ),
                         Divider(color: Color(0xff1E2E52)),
-                        ...selectedCategory!.attributes.map((attribute) {
+                        ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -294,42 +434,250 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             ],
                           );
                         }).toList(),
+                        if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Column(
+                                  children: [
+                                    DataTable(
+                                      columnSpacing: 16,
+                                      dataRowHeight: 60,
+                                      headingRowHeight: 56,
+                                      dividerThickness: 0,
+                                      columns: [
+                                        ...selectedCategory!.attributes
+                                            .where((attr) => attr.isIndividual)
+                                            .map((attr) => DataColumn(
+                                                  label: Text(
+                                                    attr.name,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff1E2E52),
+                                                    ),
+                                                  ),
+                                                ))
+                                            .toList(),
+                                        if (selectedCategory!.hasPriceCharacteristics)
+                                          DataColumn(
+                                            label: Text(
+                                              'Цена',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                        DataColumn(
+                                          label: Text(
+                                            'Изображение',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            '',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      rows: tableAttributes.asMap().entries.map((entry) {
+                                        int index = entry.key;
+                                        Map<String, dynamic> row = entry.value;
+                                        return DataRow(
+                                          cells: [
+                                            ...selectedCategory!.attributes
+                                                .where((attr) => attr.isIndividual)
+                                                .map((attr) => DataCell(
+                                                      SizedBox(
+                                                        width: 150,
+                                                        child: TextField(
+                                                          controller: row[attr.name],
+                                                          decoration: InputDecoration(
+                                                            hintText: 'Введите ${attr.name}',
+                                                            hintStyle: TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w500,
+                                                              fontFamily: 'Gilroy',
+                                                              color: Color(0xff99A4BA),
+                                                            ),
+                                                            border: OutlineInputBorder(
+                                                              borderRadius: BorderRadius.circular(12),
+                                                            ),
+                                                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ))
+                                                .toList(),
+                                            if (selectedCategory!.hasPriceCharacteristics)
+                                              DataCell(
+                                                SizedBox(
+                                                  width: 150,
+                                                  child: TextField(
+                                                    controller: row['price'],
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Введите цену',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color: Color(0xff99A4BA),
+                                                      ),
+                                                      border: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                    ),
+                                                    keyboardType: TextInputType.number,
+                                                  ),
+                                                ),
+                                              ),
+                                            DataCell(
+                                              Row(
+                                                children: [
+                                                  if (row['images'].isNotEmpty)
+                                                    Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        image: DecorationImage(
+                                                          image: row['images'].first.startsWith('http')
+                                                              ? NetworkImage(row['images'].first) as ImageProvider
+                                                              : FileImage(File(row['images'].first)),
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  const SizedBox(width: 8),
+                                                  Stack(
+                                                    children: [
+                                                      IconButton(
+                                                        icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
+                                                        onPressed: () => _showImagePickerOptionsForRow(index),
+                                                      ),
+                                                      if (row['images'].isNotEmpty)
+                                                        Positioned(
+                                                          top: 4,
+                                                          right: 4,
+                                                          child: Container(
+                                                            padding: EdgeInsets.all(4),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.red,
+                                                              shape: BoxShape.circle,
+                                                            ),
+                                                            child: Text(
+                                                              '${row['images'].length}',
+                                                              style: TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 10,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  IconButton(
+                                                    icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
+                                                    onPressed: row['images'].isNotEmpty
+                                                        ? () => _showImageListPopup(row['images'])
+                                                        : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            DataCell(
+                                              IconButton(
+                                                icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                                                onPressed: () => removeTableRow(index),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                    ...tableAttributes.asMap().entries.map((entry) {
+                                      int index = entry.key;
+                                      if (index < tableAttributes.length - 1) {
+                                        return Divider(
+                                          color: Color(0xffE0E6F5),
+                                          thickness: 1,
+                                          height: 8,
+                                        );
+                                      }
+                                      return SizedBox.shrink();
+                                    }).toList(),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () => addTableRow(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Icon(Icons.add, color: Colors.white),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   const SizedBox(height: 8),
-                 GestureDetector(
-                     onTap: _showImagePickerOptions,
-                     child: Container(
-                       width: double.infinity,
-                       height: 275,
-                       decoration: BoxDecoration(
-                         color: const Color(0xffF4F7FD),
-                         borderRadius: BorderRadius.circular(12),
-                         border: Border.all(
-                           color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
-                           width: 1.5,
-                         ),
-                       ),
-                       child: _imagePaths.isEmpty
-                           ? Center(
-                               child: Column(
-                                 mainAxisAlignment: MainAxisAlignment.center,
-                                 children: [
-                                   Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
-                                   const SizedBox(height: 8),
-                                   Text(
-                                     AppLocalizations.of(context)!.translate('pick_image'),
-                                     style: TextStyle(
-                                       fontSize: 14,
-                                       fontWeight: FontWeight.w500,
-                                       fontFamily: 'Gilroy',
-                                       color: Color(0xff99A4BA),
-                                   ),
-                                   ),
-                                 ],
-                               ),
-                             )
-                           : Stack(
+                  GestureDetector(
+                    onTap: _showImagePickerOptions,
+                    child: Container(
+                      width: double.infinity,
+                      height: 275,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: _imagePaths.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('pick_image'),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff99A4BA),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Stack(
                               children: [
                                 ReorderableWrap(
                                   spacing: 20,
@@ -342,12 +690,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         width: 100,
                                         height: 100,
                                         decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           image: DecorationImage(
                                             image: imagePath.startsWith('http')
-                                                ? NetworkImage(imagePath)
-                                                    as ImageProvider
+                                                ? NetworkImage(imagePath) as ImageProvider
                                                 : FileImage(File(imagePath)),
                                             fit: BoxFit.cover,
                                           ),
@@ -358,14 +704,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               top: 4,
                                               right: 4,
                                               child: GestureDetector(
-                                                onTap: () =>
-                                                    _removeImage(imagePath),
+                                                onTap: () => _removeImage(imagePath),
                                                 child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
+                                                  padding: const EdgeInsets.all(4),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.5),
+                                                    color: Colors.black.withOpacity(0.5),
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: Icon(
@@ -380,37 +723,36 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                       );
                                     }).toList(),
-                                   GestureDetector(
-                                    onTap: _showImagePickerOptions,
-                                    child: Container(
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        color: Color(0xffF4F7FD),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Color(0xffF4F7FD)),
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            "Добавить +",
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Color(0xff99A4BA),
+                                    GestureDetector(
+                                      onTap: _showImagePickerOptions,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xffF4F7FD),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Color(0xffF4F7FD)),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              "Добавить +",
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Color(0xff99A4BA),
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item =
-                                          _imagePaths.removeAt(oldIndex);
+                                      final item = _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                     });
                                   },
@@ -419,8 +761,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.5),
                                       borderRadius: BorderRadius.circular(12),
@@ -448,7 +789,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
-                          fontWeight: FontWeight.w400),
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -459,8 +801,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('status_goods'),
+                              AppLocalizations.of(context)!.translate('status_goods'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -476,8 +817,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 4, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF4F7FD),
                                   borderRadius: BorderRadius.circular(12),
@@ -491,23 +831,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           isActive = value;
                                         });
                                       },
-                                      activeColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
-                                      inactiveTrackColor: const Color.fromARGB(
-                                              255, 179, 179, 179)
-                                          .withOpacity(0.5),
-                                      activeTrackColor: ChatSmsStyles
-                                          .messageBubbleSenderColor,
-                                      inactiveThumbColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
+                                      activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
                                       isActive
-                                          ? AppLocalizations.of(context)!
-                                              .translate('active')
-                                          : AppLocalizations.of(context)!
-                                              .translate('inactive'),
+                                          ? AppLocalizations.of(context)!.translate('active')
+                                          : AppLocalizations.of(context)!.translate('inactive'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -531,42 +864,53 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           ),
         ),
       ),
-    bottomSheet: Container(
-  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-  decoration: const BoxDecoration(color: Colors.white),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Expanded(
-        child: CustomButton(
-          buttonText: AppLocalizations.of(context)!.translate('cancel'),
-          buttonColor: const Color(0xffF4F7FD),
-          textColor: Colors.black,
-          onPressed: () => Navigator.pop(context),
+      bottomSheet: Container(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
+        decoration: const BoxDecoration(color: Colors.white),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                buttonColor: const Color(0xffF4F7FD),
+                textColor: Colors.black,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: isLoading
+                  ? SizedBox(
+                      height: 48,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: CircularProgressIndicator(
+                          color: const Color(0xff4759FF),
+                        ),
+                      ),
+                    )
+                  : CustomButton(
+                      buttonText: AppLocalizations.of(context)!.translate('save'),
+                      buttonColor: const Color(0xff4759FF),
+                      textColor: Colors.white,
+                      onPressed: () {
+                        validateForm();
+                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+                          _updateProduct();
+                        } else {
+                          showCustomSnackBar(
+                            context: context,
+                            message: 'Пожалуйста, заполните все обязательные поля!',
+                            isSuccess: false,
+                          );
+                        }
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
-      const SizedBox(width: 16),
-      Expanded(
-        child: isLoading
-            ? SizedBox(
-                height: 48,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: CircularProgressIndicator(
-                    color: const Color(0xff4759FF),
-                  ),
-                ),
-              )
-            : CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('save'),
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: _updateProduct,
-              ),
-      ),
-    ],
-  ),
-),
     );
   }
 
@@ -599,8 +943,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!
-                      .translate('select_from_gallery'),
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -621,59 +964,82 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     );
   }
 
-Future<void> _pickImage(ImageSource source) async {
-  final pickedFile = await _picker.pickImage(source: source);
-  if (pickedFile != null) {
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _imagePaths.add(pickedFile.path);
+        isImagesValid = true;
+      });
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    final pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        _imagePaths.addAll(pickedFiles.map((file) => file.path));
+        isImagesValid = true;
+      });
+    }
+  }
+
+  void _removeImage(String imagePath) {
     setState(() {
-      _imagePaths.add(pickedFile.path);
-      isImagesValid = true;
+      _imagePaths.remove(imagePath);
+      isImagesValid = _imagePaths.isNotEmpty;
     });
   }
-}
-
-Future<void> _pickMultipleImages() async {
-  final pickedFiles = await _picker.pickMultiImage();
-  if (pickedFiles != null) {
-    setState(() {
-      _imagePaths.addAll(pickedFiles.map((file) => file.path));
-      isImagesValid = true;
-    });
-  }
-}
-
-void _removeImage(String imagePath) {
-  setState(() {
-    _imagePaths.remove(imagePath);
-    isImagesValid = _imagePaths.isNotEmpty;
-  });
-}
-
-bool isCategoryValid = true;
-bool isImagesValid = true;
-
-
-void validateForm() {
-  setState(() {
-    isCategoryValid = selectedCategory != null;
-    isImagesValid = _imagePaths.isNotEmpty;
-  });
-}
-
-
 
   void _updateProduct() async {
     setState(() => isLoading = true);
-
     try {
-      List<String> attributes = [];
-      for (var attribute in selectedCategory!.attributes) {
-        final controller = attributeControllers[attribute.name];
-        if (controller != null && controller.text.isNotEmpty) {
-          attributes.add(controller.text);
+      List<Map<String, dynamic>> attributes = [];
+      List<Map<String, dynamic>> variants = [];
+
+      if (selectedCategory != null) {
+        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+          final controller = attributeControllers[attribute.name];
+          if (controller != null && controller.text.isNotEmpty) {
+            attributes.add({
+              'category_attribute_id': attribute.id,
+              'value': controller.text,
+            });
+          }
+        }
+
+        for (var row in tableAttributes) {
+          Map<String, dynamic> variant = {
+            'is_active': true,
+          };
+          List<File> variantImages = [];
+          if (row['images'] != null) {
+            variantImages = row['images']
+                .where((path) => !path.startsWith('http'))
+                .map<File>((path) => File(path))
+                .toList();
+          }
+          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+            final controller = row[attr.name];
+            if (controller != null && controller.text.isNotEmpty) {
+              variant['category_attribute_id'] = attr.id;
+              variant['value'] = controller.text;
+            }
+          }
+          if (selectedCategory!.hasPriceCharacteristics) {
+            final priceController = row['price'];
+            if (priceController != null && priceController.text.isNotEmpty) {
+              variant['price'] = double.tryParse(priceController.text) ?? 0.0;
+            }
+          }
+          variant['files'] = variantImages;
+          if (variant.containsKey('category_attribute_id')) {
+            variants.add(variant);
+          }
         }
       }
 
-      List<File> images = _imagePaths
+      List<File> generalImages = _imagePaths
           .where((path) => !path.startsWith('http'))
           .map((path) => File(path))
           .toList();
@@ -683,28 +1049,33 @@ void validateForm() {
         name: goodsNameController.text,
         parentId: selectedCategory!.id,
         description: goodsDescriptionController.text,
+        // unitId: int.tryParse(unitIdController.text) ?? 0,
         quantity: int.tryParse(stockQuantityController.text) ?? 0,
-        attributeNames: attributes,
-        images: images,
+        attributes: attributes,
+        variants: variants,
+        images: generalImages,
         isActive: isActive,
-        discountPrice: double.tryParse(discountPriceController.text), 
+        discountPrice: selectedCategory != null && selectedCategory!.hasPriceCharacteristics
+            ? null
+            : double.tryParse(discountPriceController.text),
       );
 
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
-          message:'Товар успешно обновлен!',
+          message: 'Товар успешно обновлен!',
           isSuccess: true,
         );
         Navigator.pop(context, true);
+        context.read<GoodsBloc>().add(FetchGoods());
       } else {
         if (mounted) {
           setState(() => isLoading = false);
-       showCustomSnackBar(
-          context: context,
-          message: response['message'] ?? 'Ошибка при обновлении товара',
-          isSuccess: false,
-        );
+          showCustomSnackBar(
+            context: context,
+            message: response['message'] ?? 'Ошибка при обновлении товара',
+            isSuccess: false,
+          );
         }
       }
     } catch (e) {
@@ -712,7 +1083,7 @@ void validateForm() {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message:'Ошибка при обновлении товара!',
+          message: 'Ошибка при обновлении товара: ${e.toString()}',
           isSuccess: false,
         );
       }
@@ -725,7 +1096,15 @@ void validateForm() {
     goodsDescriptionController.dispose();
     discountPriceController.dispose();
     stockQuantityController.dispose();
+    unitIdController.dispose();
     attributeControllers.values.forEach((controller) => controller.dispose());
+    for (var row in tableAttributes) {
+      for (var attr in row.values) {
+        if (attr is TextEditingController) {
+          attr.dispose();
+        }
+      }
+    }
     super.dispose();
   }
 }
