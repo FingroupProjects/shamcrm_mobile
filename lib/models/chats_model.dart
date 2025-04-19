@@ -76,7 +76,7 @@ class Chats {
       customName = supportChatName ??
           'Техподдержка'; // Используем переданное значение или дефолтное
       customImage =
-          supportChatImage ?? 'assets/icons/Profile/support_avatar_2.png';
+          supportChatImage ?? 'assets/icons/Profile/chat_support.png';
     }
 
     return Chats(

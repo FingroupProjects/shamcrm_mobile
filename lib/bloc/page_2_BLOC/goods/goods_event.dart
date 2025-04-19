@@ -16,9 +16,11 @@ class FetchMoreGoods extends GoodsEvent {
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
+  final int unitId;
   final int quantity;
   final int parentId;
-  final List<String> attributeNames;
+  final List<Map<String, dynamic>> attributes;
+  final List<Map<String, dynamic>> variants;
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
@@ -26,9 +28,11 @@ class CreateGoods extends GoodsEvent {
   CreateGoods({
     required this.name,
     required this.description,
+    required this.unitId,
     required this.quantity,
     required this.parentId,
-    required this.attributeNames,
+    required this.attributes,
+    required this.variants,
     this.images,
     required this.isActive,
     this.discountPrice,
@@ -39,9 +43,11 @@ class UpdateGoods extends GoodsEvent {
   final int goodId;
   final String name;
   final String description;
+  final int unitId;
   final int quantity;
   final int parentId;
-  final List<String> attributeNames;
+  final List<Map<String, dynamic>> attributes;
+  final List<Map<String, dynamic>> variants;
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
@@ -50,9 +56,11 @@ class UpdateGoods extends GoodsEvent {
     required this.goodId,
     required this.name,
     required this.description,
+    required this.unitId,
     required this.quantity,
     required this.parentId,
-    required this.attributeNames,
+    required this.attributes,
+    required this.variants,
     this.images,
     required this.isActive,
     this.discountPrice,

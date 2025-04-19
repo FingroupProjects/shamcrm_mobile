@@ -34,7 +34,7 @@ class ChatListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Проверяем, является ли аватарка чатом поддержки
-    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/support_avatar_2.png';
+    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/chat_support.png';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

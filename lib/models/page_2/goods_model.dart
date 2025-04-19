@@ -5,17 +5,19 @@ class Goods {
   final String name;
   final CategoryData category;
   final String? description;
+  final int? unitId;
   final int? quantity;
-  final double? discountPrice; // Добавлено
-  final bool? isActive; // Добавлено
+  final double? discountPrice;
+  final bool? isActive;
   final List<GoodsFile> files;
-  final List<GoodsAttribute> attributes; // Изменено на GoodsAttribute
+  final List<GoodsAttribute> attributes;
 
   Goods({
     required this.id,
     required this.name,
     required this.category,
     this.description,
+    this.unitId,
     this.quantity,
     this.discountPrice,
     this.isActive,
@@ -31,6 +33,15 @@ class Goods {
           quantity = json['quantity'];
         } else if (json['quantity'] is String) {
           quantity = int.tryParse(json['quantity']);
+        }
+      }
+
+      int? unitId;
+      if (json['unit_id'] != null) {
+        if (json['unit_id'] is int) {
+          unitId = json['unit_id'];
+        } else if (json['unit_id'] is String) {
+          unitId = int.tryParse(json['unit_id']);
         }
       }
 
@@ -50,6 +61,7 @@ class Goods {
             ? CategoryData.fromJson(json['category'])
             : CategoryData(id: 0, name: 'Без категории', subcategories: []),
         description: json['description'] as String?,
+        unitId: unitId,
         quantity: quantity,
         discountPrice: discountPrice,
         isActive: json['is_active'] as bool?,
@@ -58,8 +70,7 @@ class Goods {
                 .toList() ??
             [],
         attributes: (json['attributes'] as List<dynamic>?)
-                ?.map((attr) =>
-                    GoodsAttribute.fromJson(attr as Map<String, dynamic>))
+                ?.map((attr) => GoodsAttribute.fromJson(attr as Map<String, dynamic>))
                 .toList() ??
             [],
       );
@@ -84,27 +95,35 @@ class GoodsFile {
 
   factory GoodsFile.fromJson(Map<String, dynamic> json) {
     return GoodsFile(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      path: json['path'] as String,
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      path: json['path'] as String? ?? '',
     );
   }
 }
 
 class GoodsAttribute {
+  final int id;
   final String name;
   final String value;
+  final bool isIndividual;
+  final List<String>? images;
 
   GoodsAttribute({
+    required this.id,
     required this.name,
     required this.value,
+    required this.isIndividual,
+    this.images,
   });
 
   factory GoodsAttribute.fromJson(Map<String, dynamic> json) {
-  final attrData = json['attributes'] as Map<String, dynamic>?;
-  return GoodsAttribute(
-    name: attrData != null ? (attrData['name'] as String? ?? '') : '',
-    value: json['value'] as String? ?? '',
-  );
-}
+    return GoodsAttribute(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      value: json['value'] as String? ?? '',
+      isIndividual: json['is_individual'] as bool? ?? false,
+      images: (json['images'] as List<dynamic>?)?.cast<String>(),
+    );
+  }
 }
