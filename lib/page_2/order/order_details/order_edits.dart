@@ -247,19 +247,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          _buildItemsSection(),
-                          const SizedBox(height: 16),
-                          DeliveryMethodDropdown(
-                            selectedDeliveryMethod: _deliveryMethod,
-                            onSelectDeliveryMethod: (value) {
-                              setState(() {
-                                _deliveryMethod = value;
-                                _selectedBranch = null;
-                                _deliveryAddressController.clear();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
@@ -282,6 +269,19 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             //   '+7': 10,  // Россия
                             //   // Добавьте другие коды стран и длины номеров
                             // },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildItemsSection(),
+                          const SizedBox(height: 16),
+                          DeliveryMethodDropdown(
+                            selectedDeliveryMethod: _deliveryMethod,
+                            onSelectDeliveryMethod: (value) {
+                              setState(() {
+                                _deliveryMethod = value;
+                                _selectedBranch = null;
+                                _deliveryAddressController.clear();
+                              });
+                            },
                           ),
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
