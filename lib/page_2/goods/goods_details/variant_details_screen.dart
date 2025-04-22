@@ -1,0 +1,312 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:flutter/material.dart';
+
+class VariantDetailsScreen extends StatefulWidget {
+  final GoodsVariant variant;
+
+  const VariantDetailsScreen({required this.variant, super.key});
+
+  @override
+  State<VariantDetailsScreen> createState() => _VariantDetailsScreenState();
+}
+
+class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
+  List<Map<String, String>> details = [];
+  int _currentPage = 0;
+  final ApiService _apiService = ApiService();
+  String? baseUrl;
+
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final enteredDomainMap = await _apiService.getEnteredDomain();
+      final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      final enteredDomain = enteredDomainMap['enteredDomain'];
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+      });
+      print('VariantDetailsScreen: baseUrl set to $baseUrl');
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+      });
+      print('VariantDetailsScreen: Error initializing baseUrl: $error');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    print('VariantDetailsScreen: Initializing for variant ID ${widget.variant.id}');
+    _initializeBaseUrl();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateDetails();
+  }
+
+  void _updateDetails() {
+    final variant = widget.variant;
+    print('VariantDetailsScreen: Updating details for variant ID ${variant.id}');
+    print('VariantDetailsScreen: Variant attributes count: ${variant.variantAttributes.length}');
+
+    details = [
+      {
+        'label': 'Цена',
+        'value': variant.variantPrice?.price.toString() ?? '0',
+      },
+      {
+        'label': 'Дата начала',
+        'value': variant.variantPrice?.startDate ?? 'Не указано',
+      },
+      // {
+      //   'label': 'Дата окончания',
+      //   'value': variant.variantPrice?.endDate ?? 'Не указано',
+      // },
+      {
+        'label': 'Статус',
+        'value': variant.isActive ? 'Активно' : 'Неактивно',
+      },
+      // Добавляем все атрибуты
+      ...variant.variantAttributes.expand((attr) {
+        return attr.attributeValues.map((val) {
+          final label = val.categoryAttribute?.attribute?.name ?? 'Характеристика';
+          print('VariantDetailsScreen: Adding detail - label: $label, value: ${val.value}');
+          return {
+            'label': label,
+            'value': val.value,
+          };
+        });
+      }).toList(),
+    ];
+    print('VariantDetailsScreen: Details populated with ${details.length} items');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<String> variantImages = widget.variant.files?.map((file) => file.path).toList() ?? [];
+    print('VariantDetailsScreen: Building UI with ${variantImages.length} images');
+
+    return Scaffold(
+      appBar: _buildAppBar(context, 'Просмотр варианта'),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ListView(
+          children: [
+            if (variantImages.isNotEmpty) _buildImageSlider(variantImages),
+            _buildDetailsList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSlider(List<String> images) {
+    if (baseUrl == null) {
+      print('VariantDetailsScreen: baseUrl is null, showing loading indicator');
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    print('VariantDetailsScreen: Building image slider with ${images.length} images');
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          height: 250,
+          child: PageView.builder(
+            itemCount: images.length,
+            onPageChanged: (index) => setState(() {
+              _currentPage = index;
+              print('VariantDetailsScreen: Image page changed to $index');
+            }),
+            itemBuilder: (context, index) {
+              final imageUrl = '$baseUrl/${images[index]}';
+              print('VariantDetailsScreen: Loading image $imageUrl');
+              if (images[index].isEmpty) {
+                print('VariantDetailsScreen: Empty image path at index $index');
+                return _buildPlaceholder();
+              }
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('VariantDetailsScreen: Image load error for $imageUrl: $error');
+                    return _buildPlaceholder();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            '${_currentPage + 1}/${images.length}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    print('VariantDetailsScreen: Displaying image placeholder');
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context, String title) {
+    print('VariantDetailsScreen: Building AppBar with title $title');
+    return AppBar(
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      centerTitle: false,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+            onPressed: () {
+              print('VariantDetailsScreen: Back button pressed');
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsList() {
+    print('VariantDetailsScreen: Building details list with ${details.length} items');
+    return ListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: details
+          .map((detail) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: _buildDetailItem(detail['label']!, detail['value']!),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    print('VariantDetailsScreen: Building detail item - label: $label, value: $value');
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600, // Имя жирным
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w400, // Значение обычным шрифтом
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullTextDialog(String title, String content) {
+    print('VariantDetailsScreen: Showing full text dialog - title: $title');
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 400),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
+                child: Text(
+                  content,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: CustomButton(
+                buttonText: 'Закрыть',
+                onPressed: () {
+                  print('VariantDetailsScreen: Closing full text dialog');
+                  Navigator.pop(context);
+                },
+                buttonColor: const Color(0xff1E2E52),
+                textColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -71,6 +71,9 @@ class MessageBubble extends StatelessWidget {
                     }
                   },
                   child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                    ),
                     padding: const EdgeInsets.all(8),
                     margin: const EdgeInsets.only(bottom: 5),
                     decoration: BoxDecoration(
@@ -85,6 +88,8 @@ class MessageBubble extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                         color: Colors.black87,
                       ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
@@ -153,164 +158,169 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  
- Widget _buildMessageWithLinks(BuildContext context, String text) {
-  final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
-  final matches = linkRegExp.allMatches(text);
-  
-  final double maxWidth = MediaQuery.of(context).size.width * 0.75; 
-  
-  Widget textWidget;
-  if (matches.isEmpty) {
-    textWidget = Text( text,
-      style: isSender
-          ? ChatSmsStyles.senderMessageTextStyle
-          : ChatSmsStyles.receiverMessageTextStyle,
-    );
-  } else {
-    List<TextSpan> spans = [];
-    int start = 0;
-    for (final match in matches) {
-      if (match.start > start) {
-        spans.add(TextSpan(text: text.substring(start, match.start)));
-      }
-      final String url = match.group(0)!;
-      spans.add(
-        TextSpan(
-          text: url,
-          style: TextStyle(
-            color: isSender ? Colors.white : Colors.blue,
-            fontWeight: FontWeight.w600,
-            decoration: TextDecoration.underline,
-            fontSize: 14,
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () {
-              final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-              final RenderBox messageBox = context.findRenderObject() as RenderBox;
-              final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
-          
-              showMenu(
-                context: context,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                position: RelativeRect.fromLTRB(
-                  position.dx + messageBox.size.width / 2.5,
-                  position.dy,
-                  position.dx + messageBox.size.width / 2 + 1,
-                  position.dy + messageBox.size.height,
-                ),
-                items: [
-                  _buildMenuItem(
-                    icon: 'assets/icons/chats/menu_icons/open.svg',
-                    text: AppLocalizations.of(context)!.translate('open_url_source'),
-                    iconColor: Colors.black,
-                    textColor: Colors.black,
-                    onTap: () async {
-                      Navigator.pop(context);
-                      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                    },
-                  ),
-                  _buildMenuItem(
-                    icon: 'assets/icons/chats/menu_icons/copy.svg',
-                    text: AppLocalizations.of(context)!.translate('copy'),
-                    iconColor: Colors.black,
-                    textColor: Colors.black,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Clipboard.setData(ClipboardData(text: url));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!.translate('copy_url_source_text'), 
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-        ),
-      );
-      start = match.end;
-    }
-    if (start < text.length) {
-      spans.add(TextSpan(text: text.substring(start)));
-    }
-    textWidget = RichText(
-      text: TextSpan(
+  Widget _buildMessageWithLinks(BuildContext context, String text) {
+    final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+    final matches = linkRegExp.allMatches(text);
+
+    final double maxWidth = MediaQuery.of(context).size.width * 0.7;
+
+    Widget textWidget;
+    if (matches.isEmpty) {
+      textWidget = Text(
+        text,
         style: isSender
             ? ChatSmsStyles.senderMessageTextStyle
             : ChatSmsStyles.receiverMessageTextStyle,
-        children: spans,
+        maxLines: 10000000,
+        overflow: TextOverflow.ellipsis,
+      );
+    } else {
+      List<TextSpan> spans = [];
+      int start = 0;
+      for (final match in matches) {
+        if (match.start > start) {
+          spans.add(TextSpan(text: text.substring(start, match.start)));
+        }
+        final String url = match.group(0)!;
+        spans.add(
+          TextSpan(
+            text: url,
+            style: TextStyle(
+              color: isSender ? Colors.white : Colors.blue,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+              fontSize: 14,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+                final RenderBox messageBox = context.findRenderObject() as RenderBox;
+                final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+
+                showMenu(
+                  context: context,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  position: RelativeRect.fromLTRB(
+                    position.dx + messageBox.size.width / 2.5,
+                    position.dy,
+                    position.dx + messageBox.size.width / 2 + 1,
+                    position.dy + messageBox.size.height,
+                  ),
+                  items: [
+                    _buildMenuItem(
+                      icon: 'assets/icons/chats/menu_icons/open.svg',
+                      text: AppLocalizations.of(context)!.translate('open_url_source'),
+                      iconColor: Colors.black,
+                      textColor: Colors.black,
+                      onTap: () async {
+                        Navigator.pop(context);
+                        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: 'assets/icons/chats/menu_icons/copy.svg',
+                      text: AppLocalizations.of(context)!.translate('copy'),
+                      iconColor: Colors.black,
+                      textColor: Colors.black,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Clipboard.setData(ClipboardData(text: url));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)!.translate('copy_url_source_text'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+          ),
+        );
+        start = match.end;
+      }
+      if (start < text.length) {
+        spans.add(TextSpan(text: text.substring(start)));
+      }
+      textWidget = RichText(
+        text: TextSpan(
+          style: isSender
+              ? ChatSmsStyles.senderMessageTextStyle
+              : ChatSmsStyles.receiverMessageTextStyle,
+          children: spans,
+        ),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth,
       ),
+      child: textWidget,
     );
   }
 
-  return Container(
-    constraints: BoxConstraints(
-      maxWidth: maxWidth,
-    ),
-    child: textWidget,
-  );
-}
-  
   PopupMenuItem _buildMenuItem({
-  required String icon,
-  required String text,
-  required Color iconColor,
-  required Color textColor,
-  required VoidCallback onTap,
-}) {
-  return PopupMenuItem(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Row(
-          children: [
-            if (icon.isNotEmpty)
-              SvgPicture.asset(
-                icon,
-                width: 24,
-                height: 24,
-                color: iconColor,
-              ),
-            if (icon.isNotEmpty) const SizedBox(width: 10),
-            Flexible(
-              child: Text( text,
-                overflow: TextOverflow.ellipsis,  
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: textColor,
+    required String icon,
+    required String text,
+    required Color iconColor,
+    required Color textColor,
+    required VoidCallback onTap,
+  }) {
+    return PopupMenuItem(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          child: Row(
+            children: [
+              if (icon.isNotEmpty)
+                SvgPicture.asset(
+                  icon,
+                  width: 24,
+                  height: 24,
+                  color: iconColor,
+                ),
+              if (icon.isNotEmpty) const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  text,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

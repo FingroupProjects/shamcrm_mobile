@@ -43,6 +43,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
@@ -70,6 +71,7 @@ import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/page_2/order/order_details/lead_order_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
@@ -6293,96 +6295,102 @@ Future<Map<String, dynamic>> updateSubCategory({
     }
   }
 
-  Future<Map<String, dynamic>> createGoods({
-    required String name,
-    required int parentId,
-    required String description,
-    // required int unitId,
-    required int quantity,
-    required List<Map<String, dynamic>> attributes,
-    required List<Map<String, dynamic>> variants,
-    required List<File> images,
-    required bool isActive,
-    double? discountPrice,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse('$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+ Future<Map<String, dynamic>> createGoods({
+  required String name,
+  required int parentId,
+  required String description,
+  // required int unitId,
+  required int quantity,
+  required List<Map<String, dynamic>> attributes,
+  required List<Map<String, dynamic>> variants,
+  required List<File> images,
+  required bool isActive,
+  double? discountPrice,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      // request.fields['unit_id'] = unitId.toString();
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-      if (discountPrice != null) {
-        request.fields['discount_price'] = discountPrice.toString();
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    // request.fields['unit_id'] = unitId.toString();
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive ? '1' : '0';
+    if (discountPrice != null) {
+      request.fields['discount_price'] = discountPrice.toString();
+    }
+
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
+      request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
+    }
+
+    for (int i = 0; i < variants.length; i++) {
+      // Add price for the variant
+      if (variants[i].containsKey('price')) {
+        request.fields['variants[$i][price]'] = variants[i]['price'].toString();
+      } else {
+        request.fields['variants[$i][price]'] = '0'; // Default price if not provided
       }
 
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
-      }
-
-      for (int i = 0; i < variants.length; i++) {
-        // Add price for the variant
-        if (variants[i].containsKey('price')) {
-          request.fields['variants[$i][price]'] = variants[i]['price'].toString();
-        } else {
-          request.fields['variants[$i][price]'] = '0'; // Default price if not provided
-        }
-
-        // Add variant attributes
-        if (variants[i].containsKey('category_attribute_id') && variants[i].containsKey('value')) {
-          request.fields['variants[$i][variant_attributes][0][category_attribute_id]'] = variants[i]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][0][value]'] = variants[i]['value'].toString();
-          request.fields['variants[$i][variant_attributes][0][is_active]'] = (variants[i]['is_active'] as bool) ? '1' : '0';
-        }
-
-        // Add files for the variant
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', variantFiles[j].path);
-          request.files.add(imageFile);
+      // Add variant attributes
+      if (variants[i].containsKey('variant_attributes')) {
+        List<dynamic> variantAttributes = variants[i]['variant_attributes'];
+        for (int j = 0; j < variantAttributes.length; j++) {
+          request.fields['variants[$i][variant_attributes][$j][category_attribute_id]'] =
+              variantAttributes[j]['category_attribute_id'].toString();
+          request.fields['variants[$i][variant_attributes][$j][value]'] =
+              variantAttributes[j]['value'].toString();
+          request.fields['variants[$i][variant_attributes][$j][is_active]'] =
+              variantAttributes[j]['is_active'] ? '1' : '0';
         }
       }
 
-      for (var image in images) {
-        final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+      // Add files for the variant
+      List<File> variantFiles = variants[i]['files'] ?? [];
+      for (int j = 0; j < variantFiles.length; j++) {
+        final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', variantFiles[j].path);
         request.files.add(imageFile);
       }
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
+    for (var image in images) {
+      final imageFile = await http.MultipartFile.fromPath('files[]', image.path);
+      request.files.add(imageFile);
+    }
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Товар успешно создан',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Не удалось создать товар',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Товар успешно создан',
+        'data': responseBody,
+      };
+    } else {
       return {
         'success': false,
-        'message': 'Произошла ошибка: $e',
+        'message': responseBody['message'] ?? 'Не удалось создать товар',
+        'error': responseBody,
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Произошла ошибка: $e',
+    };
   }
+}
 
   Future<Map<String, dynamic>> updateGoods({
     required int goodId,
@@ -6810,6 +6818,25 @@ Future<Map<String, dynamic>> updateSubCategory({
       }
     } else {
       throw Exception('Ошибка при получении данных: ${response.statusCode}');
+    }
+  }
+  Future<List<LeadOrderData>> getLeadOrders() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/lead?organization_id=$organizationId';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      if (data.containsKey('result') && data['result']['data'] is List) {
+        return (data['result']['data'] as List<dynamic>)
+            .map((e) => LeadOrderData.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Ошибка: Неверный формат данных');
+      }
+    } else {
+      throw Exception('Ошибка загрузки LeadOrder: ${response.statusCode}');
     }
   }
   //_________________________________ END_____API_SCREEN__ORDER____________________________________________//

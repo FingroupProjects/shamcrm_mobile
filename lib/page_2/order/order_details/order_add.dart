@@ -283,19 +283,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          _buildItemsSection(),
-                          const SizedBox(height: 16),
-                          DeliveryMethodDropdown(
-                            selectedDeliveryMethod: _deliveryMethod,
-                            onSelectDeliveryMethod: (value) {
-                              setState(() {
-                                _deliveryMethod = value;
-                                _selectedBranch = null;
-                                _deliveryAddressController.clear();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
@@ -313,6 +300,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             label: AppLocalizations.of(context)!
                                 .translate('phone'),
                           ),
+                          const SizedBox(height: 16),
+                          _buildItemsSection(),
+                          const SizedBox(height: 16),
+                          DeliveryMethodDropdown(
+                            selectedDeliveryMethod: _deliveryMethod,
+                            onSelectDeliveryMethod: (value) {
+                              setState(() {
+                                _deliveryMethod = value;
+                                _selectedBranch = null;
+                                _deliveryAddressController.clear();
+                              });
+                            },
+                          ),
+                          
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
                             BranchesDropdown(
