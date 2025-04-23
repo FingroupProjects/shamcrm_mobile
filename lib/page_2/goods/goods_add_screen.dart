@@ -976,22 +976,20 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     });
   }
 
-void _createProduct() async {
-  if (formKey.currentState!.validate() &&
-      selectedCategory != null &&
-      _imagePaths.isNotEmpty) {
-    setState(() => isLoading = true);
+  void _createProduct() async {
+    if (formKey.currentState!.validate() &&
+        selectedCategory != null &&
+        _imagePaths.isNotEmpty) {
+      setState(() => isLoading = true);
 
-    try {
-      List<Map<String, dynamic>> attributes = [];
-      List<Map<String, dynamic>> variants = [];
+      try {
+        List<Map<String, dynamic>> attributes = [];
+        List<Map<String, dynamic>> variants = [];
 
-      // Debugging: Log tableAttributes and selectedCategory attributes
-      print('tableAttributes: $tableAttributes');
-      print('Selected category attributes: ${selectedCategory!.attributes}');
+        print('tableAttributes: $tableAttributes');
+        print('Selected category attributes: ${selectedCategory!.attributes}');
 
-      if (selectedCategory != null) {
-        // Add non-individual attributes to attributes array
+        // Формируем неиндивидуальные атрибуты
         for (var attribute
             in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
@@ -1003,19 +1001,26 @@ void _createProduct() async {
           }
         }
 
-        // Create variants from tableAttributes
+        // Формируем варианты
         for (var row in tableAttributes) {
           Map<String, dynamic> variant = {
             'is_active': true,
             'variant_attributes': [],
           };
+
+          List<String> variantImagePaths =
+              (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
           List<File> variantImages = [];
-          if (row['images'] != null && row['images'].isNotEmpty) {
-            variantImages =
-                row['images'].map<File>((path) => File(path)).toList();
+          for (var path in variantImagePaths) {
+            File file = File(path);
+            if (await file.exists()) {
+              variantImages.add(file);
+            } else {
+              print('File not found, skipping: $path');
+            }
           }
 
-          // Add all isIndividual: true attributes to variant_attributes
+          // Добавляем индивидуальные атрибуты
           for (var attr
               in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
@@ -1026,97 +1031,112 @@ void _createProduct() async {
                 'is_active': true,
               });
             } else {
-              // Debugging: Log missing or empty controllers
-              print(
-                  'Missing or empty controller for attribute: ${attr.name}, controller: $controller, value: ${controller?.text}');
+              print('Missing or empty controller for attribute: ${attr.name}');
             }
           }
 
-          if (selectedCategory!.hasPriceCharacteristics) {
-            final priceController = row['price'] as TextEditingController?;
-            if (priceController != null && priceController.text.trim().isNotEmpty) {
-              variant['price'] =
-                  double.tryParse(priceController.text.trim()) ?? 0.0;
-            } else {
-              variant['price'] = 0.0; // Default price if not provided
-            }
+          // Добавляем цену
+          final priceController = row['price'] as TextEditingController?;
+          if (selectedCategory!.hasPriceCharacteristics &&
+              priceController != null &&
+              priceController.text.trim().isNotEmpty) {
+            variant['price'] =
+                double.tryParse(priceController.text.trim()) ?? 0.0;
           } else {
-            variant['price'] = 0.0; // Default price for variants
+            variant['price'] = 0.0;
           }
 
+          // Добавляем изображения, если они существуют
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
           }
 
-          // Only add variant if it has non-empty variant_attributes
           if (variant['variant_attributes'].isNotEmpty) {
             variants.add(variant);
           } else {
-            // Debugging: Log why variant was skipped
-            print(
-                'Skipped variant: No valid variant_attributes (count: ${variant['variant_attributes'].length}), files: ${variantImages.length}');
+            print('Skipped variant: No valid variant_attributes');
           }
         }
-      }
 
-      // Debugging: Log final payload data
-      print('Attributes: $attributes');
-      print('Variants: $variants');
+        print('Attributes: $attributes');
+        print('Variants: $variants');
 
-      // Prevent submission if no valid variants
-      if (variants.isEmpty) {
+        if (variants.isEmpty) {
+          setState(() => isLoading = false);
+          showCustomSnackBar(
+            context: context,
+            message: 'Добавьте хотя бы один вариант с характеристиками!',
+            isSuccess: false,
+          );
+          return;
+        }
+
+        List<File> generalImages = [];
+        for (var path in _imagePaths) {
+          File file = File(path);
+          if (await file.exists()) {
+            generalImages.add(file);
+          } else {
+            print('General image not found, skipping: $path');
+          }
+        }
+
+        if (generalImages.isEmpty) {
+          setState(() => isLoading = false);
+          showCustomSnackBar(
+            context: context,
+            message:
+                'Не удалось найти общие изображения. Пожалуйста, выберите изображения заново.',
+            isSuccess: false,
+          );
+          return;
+        }
+        final response = await _apiService.createGoods(
+          name: goodsNameController.text.trim(),
+          parentId: selectedCategory!.id,
+          description: goodsDescriptionController.text.trim(),
+          quantity: int.tryParse(stockQuantityController.text) ?? 0,
+          attributes: attributes,
+          variants: variants,
+          images: generalImages,
+          isActive: isActive,
+          discountPrice: selectedCategory!.hasPriceCharacteristics
+              ? null
+              : double.tryParse(discountPriceController.text) ?? 0.0,
+        );
+
+        if (response['success'] == true) {
+          showCustomSnackBar(
+            context: context,
+            message: 'Товар успешно создан!',
+            isSuccess: true,
+          );
+          Navigator.pop(context, true);
+          context.read<GoodsBloc>().add(FetchGoods());
+        } else {
+          setState(() => isLoading = false);
+          showCustomSnackBar(
+            context: context,
+            message: response['message'] ?? 'Ошибка при создании товара',
+            isSuccess: false,
+          );
+        }
+      } catch (e, stackTrace) {
         setState(() => isLoading = false);
+        print('Error creating product: $e');
+        print(stackTrace);
         showCustomSnackBar(
           context: context,
-          message: 'Пожалуйста, добавьте хотя бы один вариант с характеристиками!',
+          message: 'Ошибка: ${e.toString()}',
           isSuccess: false,
         );
-        return;
       }
-
-      List<File> generalImages =
-          _imagePaths.map((path) => File(path)).toList();
-
-      final response = await _apiService.createGoods(
-        name: goodsNameController.text,
-        parentId: selectedCategory!.id,
-        description: goodsDescriptionController.text,
-        // unitId: int.tryParse(unitIdController.text) ?? 0,
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
-        attributes: attributes,
-        variants: variants,
-        images: generalImages,
-        isActive: isActive,
-        discountPrice: selectedCategory != null &&
-                selectedCategory!.hasPriceCharacteristics
-            ? null
-            : double.tryParse(discountPriceController.text),
-      );
-
-      if (response['success'] == true) {
-        showCustomSnackBar(
-          context: context,
-          message: 'Товар успешно создан!',
-          isSuccess: true,
-        );
-        Navigator.pop(context, true);
-        context.read<GoodsBloc>().add(FetchGoods());
-      } else {
-        setState(() => isLoading = false);
-        showCustomSnackBar(
-          context: context,
-          message: response['message'] ?? 'Ошибка при создании товара',
-          isSuccess: false,
-        );
-      }
-    } catch (e) {
-      setState(() => isLoading = false);
+    } else {
       showCustomSnackBar(
         context: context,
-        message: 'Ошибка: ${e.toString()}',
+        message: 'Заполните все обязательные поля!',
         isSuccess: false,
       );
     }
   }
-}
 }

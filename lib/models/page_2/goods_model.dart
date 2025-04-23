@@ -157,7 +157,7 @@ class GoodsVariant {
   final int id;
   final int goodId;
   final bool isActive;
-  final List<VariantAttribute> variantAttributes;
+  final List<AttributeValue> attributeValues; // Изменено: теперь напрямую List<AttributeValue>
   final VariantPrice? variantPrice;
   final List<GoodsFile>? files;
 
@@ -165,59 +165,34 @@ class GoodsVariant {
     required this.id,
     required this.goodId,
     required this.isActive,
-    required this.variantAttributes,
+    required this.attributeValues, // Изменено
     this.variantPrice,
     this.files,
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
     print('GoodsModel: Parsing variant attributes for variant ${json['id']}');
+    final attributeValues = (json['attribute_values'] as List<dynamic>?)
+            ?.map((v) {
+              print('GoodsModel: Parsing attribute value - ${v['value']}');
+              return AttributeValue.fromJson(v as Map<String, dynamic>);
+            })
+            .toList() ??
+        [];
+    print('GoodsModel: Parsed ${attributeValues.length} attribute values for variant ${json['id']}');
+
     return GoodsVariant(
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       isActive: json['is_active'] == 1,
-      variantAttributes: (json['attribute_values'] as List<dynamic>?)
-              ?.map((v) {
-                print('GoodsModel: Parsing attribute value - ${v['value']}');
-                return VariantAttribute.fromJson(v as Map<String, dynamic>);
-              })
-              .toList() ??
-          [],
-      variantPrice: json['variant_price'] != null
-          ? VariantPrice.fromJson(json['variant_price'])
+      attributeValues: attributeValues,
+      variantPrice: json['price'] != null // Изменено: используем 'price' вместо 'variant_price'
+          ? VariantPrice.fromJson(json['price'])
           : null,
       files: (json['files'] as List<dynamic>?)
               ?.map((f) {
                 print('GoodsModel: Parsing variant file - ${f['path']}');
                 return GoodsFile.fromJson(f as Map<String, dynamic>);
-              })
-              .toList() ??
-          [],
-    );
-  }
-}
-
-class VariantAttribute {
-  final int id;
-  final int variantId;
-  final List<AttributeValue> attributeValues;
-
-  VariantAttribute({
-    required this.id,
-    required this.variantId,
-    required this.attributeValues,
-  });
-
-  factory VariantAttribute.fromJson(Map<String, dynamic> json) {
-    print('GoodsModel: Parsing VariantAttribute - id: ${json['id']}, variant_id: ${json['variant_id']}');
-    print('GoodsModel: Variant attribute_values: ${json['attribute_values']}');
-    return VariantAttribute(
-      id: json['id'] as int? ?? 0,
-      variantId: json['variant_id'] as int? ?? 0,
-      attributeValues: (json['attribute_values'] as List<dynamic>?)
-              ?.map((v) {
-                print('GoodsModel: Parsing nested attribute value - ${v['value']}');
-                return AttributeValue.fromJson(v as Map<String, dynamic>);
               })
               .toList() ??
           [],

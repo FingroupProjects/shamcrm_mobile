@@ -51,7 +51,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   void _updateDetails() {
     final variant = widget.variant;
     print('VariantDetailsScreen: Updating details for variant ID ${variant.id}');
-    print('VariantDetailsScreen: Variant attributes count: ${variant.variantAttributes.length}');
+    print('VariantDetailsScreen: Variant attributeValues count: ${variant.attributeValues.length}');
 
     details = [
       {
@@ -62,24 +62,19 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         'label': 'Дата начала',
         'value': variant.variantPrice?.startDate ?? 'Не указано',
       },
-      // {
-      //   'label': 'Дата окончания',
-      //   'value': variant.variantPrice?.endDate ?? 'Не указано',
-      // },
       {
         'label': 'Статус',
         'value': variant.isActive ? 'Активно' : 'Неактивно',
       },
-      // Добавляем все атрибуты
-      ...variant.variantAttributes.expand((attr) {
-        return attr.attributeValues.map((val) {
-          final label = val.categoryAttribute?.attribute?.name ?? 'Характеристика';
-          print('VariantDetailsScreen: Adding detail - label: $label, value: ${val.value}');
-          return {
-            'label': label,
-            'value': val.value,
-          };
-        });
+      // Добавляем все атрибуты из attributeValues
+      ...variant.attributeValues.map((val) {
+        final label = val.categoryAttribute?.attribute?.name ?? 'Характеристика';
+        final value = val.value.isNotEmpty ? val.value : 'Не указано';
+        print('VariantDetailsScreen: Adding detail - label: $label, value: $value');
+        return {
+          'label': label,
+          'value': value,
+        };
       }).toList(),
     ];
     print('VariantDetailsScreen: Details populated with ${details.length} items');
