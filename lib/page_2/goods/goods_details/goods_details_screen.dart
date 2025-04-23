@@ -97,40 +97,50 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             );
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
-            print('GoodsDetailsScreen: Loaded goods ID ${goods.id}, name: ${goods.name}');
+            print(
+                'GoodsDetailsScreen: Loaded goods ID ${goods.id}, name: ${goods.name}');
             details = [
               {
-                'label': AppLocalizations.of(context)!.translate('goods_name_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('goods_name_details'),
                 'value': goods.name ?? '',
               },
               {
-                'label': AppLocalizations.of(context)!.translate('goods_description_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('goods_description_details'),
                 'value': goods.description ?? '',
               },
               {
-                'label': AppLocalizations.of(context)!.translate('discount_price_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('discount_price_details'),
                 'value': goods.discountPrice?.toString() ?? '0',
               },
               {
-                'label': AppLocalizations.of(context)!.translate('stock_quantity_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('stock_quantity_details'),
                 'value': goods.quantity?.toString() ?? '0',
               },
               {
-                'label': AppLocalizations.of(context)!.translate('category_details'),
+                'label':
+                    AppLocalizations.of(context)!.translate('category_details'),
                 'value': goods.category.name ?? '',
               },
               ...goods.attributes
-                  .where((attr) => attr.name.isNotEmpty && attr.name != 'Неизвестная характеристика')
+                  .where((attr) =>
+                      attr.name.isNotEmpty &&
+                      attr.name != 'Неизвестная характеристика')
                   .map((attr) => {
                         'label': attr.name,
                         'value': attr.value,
                       }),
               {
-                'label': AppLocalizations.of(context)!.translate('goods_finished'),
+                'label':
+                    AppLocalizations.of(context)!.translate('goods_finished'),
                 'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
               },
             ];
-            print('GoodsDetailsScreen: Details populated with ${details.length} items');
+            print(
+                'GoodsDetailsScreen: Details populated with ${details.length} items');
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -146,7 +156,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             print('GoodsDetailsScreen: Empty state');
             return const Center(child: Text('Товар не найден'));
           } else if (state is GoodsByIdError) {
-            print('GoodsDetailsScreen: Error state in builder - ${state.message}');
+            print(
+                'GoodsDetailsScreen: Error state in builder - ${state.message}');
             return Center(child: Text(state.message));
           }
           print('GoodsDetailsScreen: Default loading state');
@@ -162,7 +173,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    print('GoodsDetailsScreen: Building image slider with ${files.length} files');
+    print(
+        'GoodsDetailsScreen: Building image slider with ${files.length} files');
     return Column(
       children: [
         Container(
@@ -188,7 +200,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+                    print(
+                        'GoodsDetailsScreen: Image load error for $imageUrl: $error');
                     return _buildPlaceholder();
                   },
                 ),
@@ -238,7 +251,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
             onPressed: () {
               print('GoodsDetailsScreen: Back button pressed');
               Navigator.pop(context);
@@ -262,26 +276,33 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ? [
               BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
                 builder: (context, state) {
-                  print('GoodsDetailsScreen: Building AppBar actions, state: $state');
+                  print(
+                      'GoodsDetailsScreen: Building AppBar actions, state: $state');
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
+                        icon: Image.asset('assets/icons/edit.png',
+                            width: 24, height: 24),
                         onPressed: state is GoodsByIdLoaded
                             ? () async {
-                                print('GoodsDetailsScreen: Edit button pressed');
+                                print(
+                                    'GoodsDetailsScreen: Edit button pressed');
                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => GoodsEditScreen(goods: state.goods),
+                                    builder: (context) =>
+                                        GoodsEditScreen(goods: state.goods),
                                   ),
                                 );
                                 if (result == true) {
-                                  print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
-                                  context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+                                  print(
+                                      'GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
+                                  context
+                                      .read<GoodsByIdBloc>()
+                                      .add(FetchGoodsById(widget.id));
                                 }
                               }
                             : null,
@@ -289,15 +310,18 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       IconButton(
                         padding: const EdgeInsets.only(right: 8),
                         constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/delete.png', width: 24, height: 24),
+                        icon: Image.asset('assets/icons/delete.png',
+                            width: 24, height: 24),
                         onPressed: state is GoodsByIdLoaded
                             ? () {
-                                print('GoodsDetailsScreen: Delete button pressed');
+                                print(
+                                    'GoodsDetailsScreen: Delete button pressed');
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     title: Text(
-                                      AppLocalizations.of(context)!.translate('delete_goods'),
+                                      AppLocalizations.of(context)!
+                                          .translate('delete_goods'),
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontFamily: 'Gilroy',
@@ -306,7 +330,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                       ),
                                     ),
                                     content: Text(
-                                      AppLocalizations.of(context)!.translate('confirm_delete_goods'),
+                                      AppLocalizations.of(context)!
+                                          .translate('confirm_delete_goods'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontFamily: 'Gilroy',
@@ -317,11 +342,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                     actions: [
                                       TextButton(
                                         onPressed: () {
-                                          print('GoodsDetailsScreen: Delete dialog cancelled');
+                                          print(
+                                              'GoodsDetailsScreen: Delete dialog cancelled');
                                           Navigator.pop(context);
                                         },
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('cancel'),
+                                          AppLocalizations.of(context)!
+                                              .translate('cancel'),
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Gilroy',
@@ -332,12 +359,15 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                       ),
                                       TextButton(
                                         onPressed: () {
-                                          print('GoodsDetailsScreen: Delete confirmed for ID ${widget.id}');
+                                          print(
+                                              'GoodsDetailsScreen: Delete confirmed for ID ${widget.id}');
                                           Navigator.pop(context);
-                                          context.read<GoodsByIdBloc>().add(DeleteGoods(widget.id, null));
+                                          context.read<GoodsByIdBloc>().add(
+                                              DeleteGoods(widget.id, null));
                                         },
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('delete'),
+                                          AppLocalizations.of(context)!
+                                              .translate('delete'),
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Gilroy',
@@ -362,7 +392,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildDetailsList(Goods goods) {
-    print('GoodsDetailsScreen: Building details list with ${details.length} items');
+    print(
+        'GoodsDetailsScreen: Building details list with ${details.length} items');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -384,7 +415,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantsSection(Goods goods) {
-    print('GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
+    print(
+        'GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -411,151 +443,170 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
-    final price = variant.variantPrice?.price ?? 0.0;
-    print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
-    print('GoodsDetailsScreen: Variant attributes count: ${variant.variantAttributes.length}');
+Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
+  final price = variant.variantPrice?.price ?? 0.0;
+  print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-    // Формируем название варианта
-    String variantName = "Атрибут";
-    List<String> attributeValues = [];
-    for (var attr in variant.variantAttributes) {
-      print('GoodsDetailsScreen: Processing attribute ID ${attr.id}, values count: ${attr.attributeValues.length}');
-      for (var val in attr.attributeValues) {
-        final categoryAttrId = val.categoryAttributeId;
-        final attrId = val.categoryAttribute?.attribute?.id;
-        final attrName = val.categoryAttribute?.attribute?.name;
-        final isIndividual = val.categoryAttribute?.isIndividual ?? false;
-        final value = val.value;
-        print(
-            'GoodsDetailsScreen:   category_attribute_id: $categoryAttrId, attribute_id: $attrId, name: $attrName, is_individual: $isIndividual, value: $value');
-        if (val.categoryAttribute == null) {
-          print('GoodsDetailsScreen:   categoryAttribute is null for value $value');
-        }
-        if (attrId == 3 && isIndividual && attrName != null) {
-          variantName = attrName;
-          print('GoodsDetailsScreen: Found attribute_id: 3, setting variantName to "$variantName"');
-        } else if (categoryAttrId == 328 && value.isNotEmpty) {
-          variantName = value;
-          print('GoodsDetailsScreen: Found category_attribute_id: 328, using value as variantName: "$variantName"');
-        }
-        if (value.isNotEmpty && attributeValues.length < 4) {
-          attributeValues.add(value);
-          print('GoodsDetailsScreen: Added attribute value "$value" to display list');
-        }
-      }
-    }
-    print('GoodsDetailsScreen: Final variantName for variant ${variant.id}: "$variantName"');
-    print('GoodsDetailsScreen: Attribute values to display: $attributeValues');
+  // Собираем до 4 характеристик
+  List<Map<String, String>> attributes = [];
+  if (variant.attributeValues.isNotEmpty) {
+    attributes = variant.attributeValues.take(4).map((attrValue) {
+      final attrName = attrValue.categoryAttribute?.attribute?.name ?? 'Неизвестная характеристика';
+      final value = attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
+      print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
+      return {
+        'name': attrName,
+        'value': value,
+      };
+    }).toList();
+  } else {
+    print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
+    attributes.add({
+      'name': 'Без названия',
+      'value': 'Не указано',
+    });
+  }
 
-    String? imageUrl;
-    if (variant.files != null && variant.files!.isNotEmpty) {
-      imageUrl = '$baseUrl/${variant.files!.first.path}';
-      print('GoodsDetailsScreen: Using variant image: $imageUrl');
-    } else if (goodsFiles.isNotEmpty) {
-      imageUrl = '$baseUrl/${goodsFiles.first.path}';
-      print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
-    } else {
-      print('GoodsDetailsScreen: No images available for variant ${variant.id}');
-    }
+  String? imageUrl;
+  if (variant.files != null && variant.files!.isNotEmpty) {
+    imageUrl = '$baseUrl/${variant.files!.first.path}';
+    print('GoodsDetailsScreen: Using variant image: $imageUrl');
+  } else if (goodsFiles.isNotEmpty) {
+    imageUrl = '$baseUrl/${goodsFiles.first.path}';
+    print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
+  } else {
+    print('GoodsDetailsScreen: No images available for variant ${variant.id}');
+  }
 
-    return GestureDetector(
-      onTap: () {
-        print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VariantDetailsScreen(variant: variant),
+  return GestureDetector(
+    onTap: () {
+      print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VariantDetailsScreen(variant: variant),
+        ),
+      );
+    },
+    child: Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Изображение
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: _buildVariantImage(imageUrl),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Характеристики (до 4)
+                  ...attributes.map((attr) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${attr['name']}: ',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xff1E2E52),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            Expanded(
+                              child: Text(
+                                attr['value']!,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                  // Индикатор дополнительных характеристик
+                  if (variant.attributeValues.length > 4)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        '+ ещё ${variant.attributeValues.length - 4}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  // Цена
+                  Text(
+                    '$price ₽',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildVariantImage(String? imageUrl) {
+  if (imageUrl == null) {
+    print('GoodsDetailsScreen: No image URL, showing placeholder');
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+        return Container(
+          color: Colors.grey[200],
+          child: const Center(
+            child: Icon(Icons.image, size: 50, color: Colors.grey),
           ),
         );
       },
-      child: Card(
-        color: Colors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildVariantImage(imageUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      variantName.isEmpty ? 'Без названия' : variantName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$price ₽',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: attributeValues.map((value) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          value,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      )).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildVariantImage(String? imageUrl) {
-    print('GoodsDetailsScreen: Building variant image, URL: $imageUrl');
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 80,
-        height: 80,
-        child: imageUrl != null && imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  print('GoodsDetailsScreen: Variant image load error: $error');
-                  return _buildPlaceholder();
-                },
-              )
-            : _buildPlaceholder(),
-      ),
-    );
-  }
-
+// Предполагаемый метод _buildVariantImage (для полноты)
+  
   Widget _buildDetailItem(String label, String value) {
     final expandableFields = [
       AppLocalizations.of(context)!.translate('goods_name_details'),
@@ -564,9 +615,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     ];
 
     bool isExpandable = expandableFields.contains(label) ||
-        details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
+        details.any((detail) =>
+            detail['label'] == label &&
+            detail['value'] == value &&
+            !expandableFields.contains(label));
 
-    print('GoodsDetailsScreen: Building detail item - label: $label, value: $value');
+    print(
+        'GoodsDetailsScreen: Building detail item - label: $label, value: $value');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -600,7 +655,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
-    if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
+    if (label ==
+            AppLocalizations.of(context)!
+                .translate('goods_description_details') &&
+        value == 'null') {
       print('GoodsDetailsScreen: Empty description for $label');
       return const Text(
         '',
@@ -626,7 +684,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: const Color(0xFF1E2E52),
-        decoration: label == AppLocalizations.of(context)!.translate('goods_description_details')
+        decoration: label ==
+                AppLocalizations.of(context)!
+                    .translate('goods_description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
       ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/calendar.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
@@ -22,6 +23,7 @@ class CustomAppBar extends StatefulWidget {
   final GlobalKey? FiltrEventIconKey;
   final GlobalKey? NotificationIconKey;
   final GlobalKey? MyTaskIconKey;
+  final GlobalKey? CalendarIconKey;
   String title;
   Function() onClickProfileAvatar;
   FocusNode focusNode;
@@ -41,6 +43,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showSeparateTaskFilter;
   final bool showSeparateMyTasks;
   final bool showNotification;
+  final bool showCalendar;
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
@@ -81,8 +84,8 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasNotices;
   final bool? initialManagerLeadHasContact;
   final bool? initialManagerLeadHasChat;
-  final bool? initialManagerLeadHasNoReplies; // Новый параметр
-  final bool? initialManagerLeadHasUnreadMessages; // Новый параметр
+  final bool? initialManagerLeadHasNoReplies;
+  final bool? initialManagerLeadHasUnreadMessages;
   final bool? initialManagerLeadHasDeal;
   final int? initialManagerLeadDaysWithoutActivity;
 
@@ -126,6 +129,7 @@ class CustomAppBar extends StatefulWidget {
     this.FiltrEventIconKey,
     this.NotificationIconKey,
     this.MyTaskIconKey,
+    this.CalendarIconKey,
     required this.title,
     required this.onClickProfileAvatar,
     required this.onChangedSearchInput,
@@ -149,14 +153,17 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadHasNotices,
     this.initialManagerLeadHasContact,
     this.initialManagerLeadHasChat,
-    this.initialManagerLeadHasNoReplies, // Новый параметр
-    this.initialManagerLeadHasUnreadMessages, // Новый параметр
+    this.initialManagerLeadHasNoReplies,
+    this.initialManagerLeadHasUnreadMessages,
     this.initialManagerLeadHasDeal,
     this.initialManagerLeadDaysWithoutActivity,
     this.initialManagersDeal,
+    this.initialLeadsDeal,
     this.initialManagerDealStatuses,
     this.initialManagerDealFromDate,
     this.initialManagerDealToDate,
+    this.initialManagerDealHasTasks,
+    this.initialManagerDealDaysWithoutActivity,
     this.initialManagersEvent,
     this.initialManagerEventStatuses,
     this.initialManagerEventFromDate,
@@ -199,6 +206,7 @@ class CustomAppBar extends StatefulWidget {
     this.showMenuIcon = true,
     this.showNotification = true,
     this.showSeparateFilter = false,
+    this.showCalendar = true,
     this.initialTaskIsOverdue,
     this.initialTaskHasFile,
     this.initialTaskHasDeal,
@@ -206,11 +214,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
     this.initialAuthors,
-    this.initialLeadsDeal,
-    this.initialManagerDealDaysWithoutActivity,
-    this.initialManagerDealHasTasks,
-    this.onLeadsDealSelected,
-    this.initialDepartment,
+    this.initialDepartment, this.onLeadsDealSelected,
   });
 
   @override
@@ -301,6 +305,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
+    notificationSubscription.cancel();
+    socketClient.disconnect();
 
     super.dispose();
   }
@@ -597,7 +603,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xfff1E2E52),
+                color: Color(0xff1E2E52),
               ),
             ),
           ),
@@ -888,6 +894,47 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
               ),
             ),
           ),
+        if (widget.showCalendar)
+          Transform.translate(
+            offset: const Offset(6, 0),
+            child: Tooltip(
+              message: AppLocalizations.of(context)!.translate('calendar'),
+              preferBelow: false,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              textStyle: TextStyle(
+                fontSize: 12,
+                color: Colors.black,
+              ),
+              child: IconButton(
+                key: widget.CalendarIconKey,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/AppBar/calendar.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CalendarScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
         if (widget.showMenuIcon)
           Transform.translate(
             offset: const Offset(8, 0),
@@ -941,6 +988,14 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                       context,
                       MaterialPageRoute(
                         builder: (context) => MyTaskScreen(),
+                      ),
+                    );
+                    break;
+                  case 'calendar':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CalendarScreen(),
                       ),
                     );
                     break;
@@ -1043,6 +1098,21 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                       ],
                     ),
                   ),
+                if (widget.showCalendar)
+                  PopupMenuItem<String>(
+                    value: 'calendar',
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/icons/AppBar/calendar.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.translate('calendar')),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1068,8 +1138,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           initialHasNotices: widget.initialManagerLeadHasNotices,
           initialHasContact: widget.initialManagerLeadHasContact,
           initialHasChat: widget.initialManagerLeadHasChat,
-          initialHasNoReplies: widget.initialManagerLeadHasNoReplies, // Новый параметр
-          initialHasUnreadMessages: widget.initialManagerLeadHasUnreadMessages, // Новый параметр
+          initialHasNoReplies: widget.initialManagerLeadHasNoReplies,
+          initialHasUnreadMessages: widget.initialManagerLeadHasUnreadMessages,
           initialHasDeal: widget.initialManagerLeadHasDeal,
           initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,
