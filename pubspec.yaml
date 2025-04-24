@@ -10,13 +10,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   cupertino_icons: ^1.0.8
   flutter_bloc: ^8.1.6
   http: ^1.2.2
   equatable: ^2.0.5
   shared_preferences: ^2.3.5
-  intl: ^0.19.0
+  intl: ^0.20.2  # Версия intl 0.20.2, которую вы используете
   open_file: ^3.5.9
   path_provider: ^2.1.5
   dropdown_search: ^5.0.2
@@ -34,8 +33,8 @@ dependencies:
   file_picker: ^8.1.3
   voice_message_package:
     git:
-      url: https://github.com/DiyorjonNasriddinov/voice_message_player.git
-  ffmpeg_kit_flutter: ^6.0.3
+      url: https://github.com/noolfj/voice_message_playerCustom.git
+  # ffmpeg_kit_flutter: ^6.0.3
   http_parser: ^4.0.2
   flutter_unfocuser: ^1.0.0
   infinite_scroll_pagination: ^4.0.0
@@ -76,6 +75,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+
 flutter_native_splash:
   android: true
   #  ios: true
@@ -160,3 +160,6 @@ flutter:
 
 flutter_intl:
   enabled: true
+
+dependency_overrides:
+  intl: ^0.20.2  # Явно указываем зависимость intl для всех пакетов

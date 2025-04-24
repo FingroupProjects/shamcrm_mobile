@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+// import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -43,17 +43,17 @@ Future<void> cleanTempFiles() async {
 }
 
 Future<File?> convertAudioFile(String inputPath, String outputPath) async {
-  await FFmpegKit.execute('-i $inputPath $outputPath').then((session) async {
-    final returnCode = await session.getReturnCode();
-    if (returnCode!.isValueSuccess()) {
-      print('Konvertatsiya muvaffaqiyatli yakunlandi!');
-      return File(outputPath);
-    } else {
-      print('Konvertatsiya muvaffaqiyatsiz yakunlandi: $returnCode');
-      return null;
-    }
-  });
-  return null;
+  // await FFmpegKit.execute('-i $inputPath $outputPath').then((session) async {
+  //   final returnCode = await session.getReturnCode();
+  //   if (returnCode!.isValueSuccess()) {
+  //     print('Konvertatsiya muvaffaqiyatli yakunlandi!');
+  //     return File(outputPath);
+  //   } else {
+  //     print('Konvertatsiya muvaffaqiyatsiz yakunlandi: $returnCode');
+  //     return null;
+  //   }
+  // });
+  // return null;
 }
 
 Future<void> uploadFile(File file, String uploadUrl) async {
