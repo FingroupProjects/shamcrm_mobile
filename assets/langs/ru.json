@@ -916,5 +916,20 @@
   "failed_to_update_subcategory": "Не удалось обновить подкатегорию",
   "error_occurred": "Произошла ошибка: {0}",
   "has_price_characteristics": "Влияет на цену:",
-  "attributes": "Характеристики"
+  "attributes": "Характеристики",
+  "calendar": "Календарь",
+  "task": "Задача",
+  "my_task": "Моя задача",
+  "no_events": "Нет событий",
+  "add_event": "Добавить событие",
+  "event_title": "Название события",
+  "event_description": "Описание события",
+  "start_time": "Время начала",
+  "end_time": "Время окончания",
+  "select_year": "Выбрать год",
+  "select_month": "Выбрать месяц",
+  "day": "День",
+  "week": "Неделя",
+  "month": "Месяц",
+  "year": "Год"
 }
