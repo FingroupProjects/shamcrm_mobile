@@ -228,12 +228,12 @@ class _TasksWidgetState extends State<TasksWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
-                if (_canCreateTask)
+     if (_canCreateTask)
         TextButton(
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
+             MaterialPageRoute(
                 builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
               ),
             ).then((_) {

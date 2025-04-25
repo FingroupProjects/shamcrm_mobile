@@ -204,7 +204,7 @@ Future<void> navigateToScreen(
       await navigateToMyTaskScreen(id, message);
       break;
     case 'eventId':
-      await navigateToMyTaskScreen(id, message);
+      await navigateToEventScreen(id, message);
       break;
 
     case 'dealDeadLineNotification':
