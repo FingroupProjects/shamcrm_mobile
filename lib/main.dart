@@ -98,7 +98,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void maij() async { 
+void main() async { 
   WidgetsFlutterBinding.ensureInitialized(); 
   final apiService = ApiService();
   final authService = AuthService();
