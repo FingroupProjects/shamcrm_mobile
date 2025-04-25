@@ -896,7 +896,25 @@
   "failed_to_update_subcategory": "Failed to update subcategory",
   "error_occurred": "An error occurred: {0}",
   "has_price_characteristics": "Affects price:",
-    "attributes": "Attributes"
+    "attributes": "Attributes",
+    "calendar": "Calendar",
+    "task": "Task",
+    "my_task": "My Task",
+    "notice": "Notification",
+    "no_events": "No events",
+    "add_event": "Add event",
+    "event_title": "Event title",
+    "event_description": "Event description",
+    "start_time": "Start time",
+    "end_time": "End time",
+    "cancel": "Cancel",
+    "save": "Save",
+    "select_year": "Select year",
+    "select_month": "Select month",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year"
 
   
 

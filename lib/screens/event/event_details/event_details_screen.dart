@@ -56,30 +56,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     super.initState();
     _checkPermissions().then((_) {
       context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
-      _setupAudioPlayer(); // Инициализируем аудиоплеер после проверки разрешений
+      _setupAudioPlayer(); 
     });
+   _fetchTutorialProgress();
   }
 
   void _setupAudioPlayer() {
-    // Слушаем изменения длительности аудио
     _audioPlayer.onDurationChanged.listen((Duration d) {
       setState(() {
         _duration = d;
       });
     });
 
-    // Слушаем изменения позиции воспроизведения
     _audioPlayer.onPositionChanged.listen((Duration p) {
       setState(() {
         _position = p;
       });
     });
 
-    // Слушаем завершение воспроизведения
     _audioPlayer.onPlayerComplete.listen((event) {
       setState(() {
         _isPlaying = false;
-        _position = Duration.zero; // Сбрасываем позицию
+        _position = Duration.zero;
       });
     });
   }
@@ -91,9 +89,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     super.dispose();
   }
 
-// Перемещаем инициализацию целей после построения виджета
   void _initTargets() {
-    targets.clear(); // Очищаем список перед добавлением
+    targets.clear(); 
     double screenHeight = MediaQuery.of(context).size.height;
     double boxHeight = screenHeight * 0.1;
 
@@ -307,7 +304,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       _canEditNotice = canEdit;
       _canDeleteNotice = canDelete;
     });
-    await _fetchTutorialProgress();
   }
 
   Future<void> _fetchTutorialProgress() async {

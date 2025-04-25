@@ -10,16 +10,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class MyTaskStatusEditWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(MyTaskStatus) onSelectStatus;
+  final bool isSubmitted; // Новый параметр
 
   MyTaskStatusEditWidget({
     Key? key,
     required this.onSelectStatus,
     this.selectedStatus,
+    required this.isSubmitted, // Добавляем в конструктор
   }) : super(key: key);
 
   @override
-  State<MyTaskStatusEditWidget> createState() =>
-      _MyTaskStatusEditWidgetState();
+  State<MyTaskStatusEditWidget> createState() => _MyTaskStatusEditWidgetState();
 }
 
 class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
@@ -98,7 +99,7 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('task_statuses'),
+                    '${AppLocalizations.of(context)!.translate('task_statuses')} *',
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
@@ -107,27 +108,23 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                       color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
+                        color: widget.isSubmitted && selectedStatusData == null
+                            ? Colors.red
+                            : const Color(0xFFF4F7FD),
+                        width: 1.5,
                       ),
                     ),
                     child: CustomDropdown<MyTaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
+
                         closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
                       listItemBuilder:
@@ -139,7 +136,9 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
+                          selectedItem?.title ??
+                              AppLocalizations.of(context)!
+                                  .translate('select_status'),
                           style: statusTextStyle,
                         );
                       },
@@ -148,7 +147,9 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                         style: statusTextStyle.copyWith(fontSize: 14),
                       ),
                       excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+                      initialItem: statusList.contains(selectedStatusData)
+                          ? selectedStatusData
+                          : null,
                       onChanged: (value) {
                         if (value != null) {
                           widget.onSelectStatus(value);
