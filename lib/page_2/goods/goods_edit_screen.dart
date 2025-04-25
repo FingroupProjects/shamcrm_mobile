@@ -4,7 +4,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart' as subCatAttr;
+import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
+    as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,18 +49,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    print('GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print('GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {'id': attr.id, 'name': attr.name, 'value': attr.value, 'isIndividual': attr.isIndividual}).toList()}');
-    print('GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-      'id': variant.id,
-      'attributeValues': variant.attributeValues?.map((attr) => {
-        'categoryAttributeId': attr.categoryAttribute?.id,
-        'attributeName': attr.categoryAttribute?.attribute?.name,
-        'value': attr.value,
-      }).toList(),
-      'price': variant.variantPrice?.price,
-      'files': variant.files?.map((file) => file.path).toList(),
-    }).toList()}');
+    print(
+        'GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
+    print(
+        'GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
+              'id': attr.id,
+              'name': attr.name,
+              'value': attr.value,
+              'isIndividual': attr.isIndividual
+            }).toList()}');
+    print(
+        'GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
+              'id': variant.id,
+              'attributeValues': variant.attributeValues
+                  ?.map((attr) => {
+                        'categoryAttributeId': attr.categoryAttribute?.id,
+                        'attributeName':
+                            attr.categoryAttribute?.attribute?.name,
+                        'value': attr.value,
+                      })
+                  .toList(),
+              'price': variant.variantPrice?.price,
+              'files': variant.files?.map((file) => file.path).toList(),
+            }).toList()}');
 
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
@@ -68,12 +80,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   void _initializeFieldsWithDefaults() {
     goodsNameController = TextEditingController(text: widget.goods.name ?? '');
     goodsDescriptionController = TextEditingController(
-      text: (widget.goods.description ?? '') == 'null' ? '' : (widget.goods.description ?? ''),
+      text: (widget.goods.description ?? '') == 'null'
+          ? ''
+          : (widget.goods.description ?? ''),
     );
-    discountPriceController = TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
-    stockQuantityController = TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    discountPriceController = TextEditingController(
+        text: widget.goods.discountPrice?.toString() ?? '');
+    stockQuantityController =
+        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     isActive = widget.goods.isActive ?? false;
-    print('GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
+    print(
+        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -96,7 +113,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       await _initializeBaseUrl();
       if (mounted && widget.goods.files.isNotEmpty) {
         setState(() {
-          _imagePaths = widget.goods.files.map((file) => '$baseUrl/${file.path}').toList();
+          _imagePaths = widget.goods.files
+              .map((file) => '$baseUrl/${file.path}')
+              .toList();
           print('GoodsEditScreen: Initialized _imagePaths: $_imagePaths');
         });
       }
@@ -119,9 +138,50 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   void _initializeFieldsWithData() {
     print('GoodsEditScreen: Initializing fields with data...');
-    print('GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
+    print(
+        'GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
 
-    // Устанавливаем выбранную категорию
+    // Собираем уникальные индивидуальные атрибуты из вариантов
+    Set<Map<String, dynamic>> individualAttributes = {};
+    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+      for (var variant in widget.goods.variants!) {
+        if (variant.attributeValues != null) {
+          for (var attrValue in variant.attributeValues!) {
+            if (attrValue.categoryAttribute?.attribute != null &&
+                attrValue.categoryAttribute!.isIndividual == true) {
+              individualAttributes.add({
+                'id': attrValue.categoryAttribute!.id,
+                'attribute_id': attrValue
+                    .categoryAttribute!.attribute!.id, // Сохраняем attribute_id
+                'name': attrValue.categoryAttribute!.attribute!.name,
+                'isIndividual': true,
+                'value': null, // Default value, will be set per variant
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Комбинируем неиндивидуальные и индивидуальные атрибуты, избегая дубликатов
+    final allAttributes = [
+      ...widget.goods.attributes
+          .where((attr) => !attr.isIndividual)
+          .map((attr) => subCatAttr.Attribute(
+                id: attr.id,
+                name: attr.name,
+                value: attr.value,
+                isIndividual: attr.isIndividual,
+              )),
+      ...individualAttributes.map((attr) => subCatAttr.Attribute(
+            id: attr['id'],
+            name: attr['name'],
+            value: attr['value'],
+            isIndividual: attr['isIndividual'],
+          )),
+    ].toSet().toList(); // Используем toSet() для удаления дубликатов
+
+    // Устанавливаем selectedCategory с уникальными атрибутами
     selectedCategory = subCatAttr.SubCategoryAttributesData(
       id: widget.goods.category.id,
       name: widget.goods.category.name,
@@ -129,78 +189,116 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         id: widget.goods.category.id,
         name: widget.goods.category.name,
       ),
-      attributes: widget.goods.attributes.map((attr) {
-        return subCatAttr.Attribute(
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          isIndividual: attr.isIndividual,
-        );
-      }).toList(),
-      hasPriceCharacteristics: widget.goods.attributes.any((attr) => attr.name.toLowerCase() == 'price'),
+      attributes: allAttributes,
+      hasPriceCharacteristics: widget.goods.attributes
+              .any((attr) => attr.name.toLowerCase() == 'price') ||
+          individualAttributes
+              .any((attr) => attr['name'].toLowerCase() == 'price'),
     );
-    print('GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {'id': attr.id, 'name': attr.name, 'value': attr.value, 'isIndividual': attr.isIndividual}).toList()}');
-    print('GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
 
-    // Очищаем контроллеры и таблицу перед заполнением
+    print(
+        'GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
+              'id': attr.id,
+              'name': attr.name,
+              'value': attr.value,
+              'isIndividual': attr.isIndividual
+            }).toList()}');
+    print(
+        'GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
+
+    // Очищаем контроллеры и tableAttributes
     attributeControllers.clear();
     tableAttributes.clear();
     print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
 
-    // Заполняем неиндивидуальные атрибуты
-    for (var attribute in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
-      attributeControllers[attribute.name] = TextEditingController(text: attribute.value);
-      print('GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
+    // Инициализируем контроллеры для неиндивидуальных атрибутов
+    for (var attribute
+        in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
+      attributeControllers[attribute.name] =
+          TextEditingController(text: attribute.value ?? '');
+      print(
+          'GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
     }
 
-    // Заполняем индивидуальные атрибуты из вариантов (variants)
+    // Обрабатываем варианты для заполнения tableAttributes, избегая дубликатов
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
       print('GoodsEditScreen: Processing variants...');
+      Set<String> processedVariants =
+          {}; // Для отслеживания уникальных вариантов
       for (var variant in widget.goods.variants!) {
-        print('GoodsEditScreen: Processing variant ID ${variant.id}');
-        print('GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {'categoryAttributeId': attr.categoryAttribute?.id, 'attributeName': attr.categoryAttribute?.attribute?.name, 'value': attr.value}).toList()}');
+        String variantKey = variant.attributeValues
+                ?.map((attr) => '${attr.categoryAttribute?.id}:${attr.value}')
+                .join('|') ??
+            variant.id.toString(); // Уникальный ключ для варианта
+        if (processedVariants.contains(variantKey)) {
+          print(
+              'GoodsEditScreen: Skipping duplicate variant with key: $variantKey');
+          continue;
+        }
+        processedVariants.add(variantKey);
 
-        Map<String, dynamic> newRow = {};
+        print('GoodsEditScreen: Processing variant ID ${variant.id}');
+        print(
+            'GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
+                  'categoryAttributeId': attr.categoryAttribute?.id,
+                  'attributeName': attr.categoryAttribute?.attribute?.name,
+                  'value': attr.value
+                }).toList()}');
+
+        Map<String, dynamic> newRow = {
+          'id': variant.id, // Сохраняем ID варианта
+        };
 
         // Инициализируем контроллеры для всех индивидуальных атрибутов
-        var individualAttributes = selectedCategory!.attributes.where((a) => a.isIndividual).toList();
-        if (individualAttributes.isEmpty) {
-          print('GoodsEditScreen: No individual attributes found in selected category');
+        var individualAttrs =
+            selectedCategory!.attributes.where((a) => a.isIndividual).toList();
+        if (individualAttrs.isEmpty) {
+          print(
+              'GoodsEditScreen: No individual attributes found in selected category');
         }
-        for (var attr in individualAttributes) {
+        for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
-          print('GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
+          print(
+              'GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
         }
 
         // Заполняем значения индивидуальных атрибутов из variant.attributeValues
-        if (variant.attributeValues != null && variant.attributeValues!.isNotEmpty) {
+        if (variant.attributeValues != null &&
+            variant.attributeValues!.isNotEmpty) {
           for (var attrValue in variant.attributeValues!) {
             if (attrValue.categoryAttribute?.attribute != null) {
               final attrName = attrValue.categoryAttribute!.attribute!.name;
               if (newRow.containsKey(attrName)) {
                 newRow[attrName].text = attrValue.value ?? '';
-                print('GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}');
+                print(
+                    'GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}');
               } else {
-                print('GoodsEditScreen: Attribute $attrName not found in newRow');
+                print(
+                    'GoodsEditScreen: Attribute $attrName not found in newRow');
               }
             } else {
-              print('GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
+              print(
+                  'GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
             }
           }
         } else {
-          print('GoodsEditScreen: No attribute values for variant ID ${variant.id}');
+          print(
+              'GoodsEditScreen: No attribute values for variant ID ${variant.id}');
         }
 
-        // Добавляем цену, если категория имеет характеристику цены
+        // Добавляем цену, если категория имеет характеристики цены
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
             text: variant.variantPrice?.price?.toString() ?? '0.0',
           );
-          print('GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
+          print(
+              'GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
         }
 
         // Добавляем изображения варианта
-        newRow['images'] = variant.files?.map((file) => '$baseUrl/${file.path}').toList() ?? [];
+        newRow['images'] =
+            variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
+                [];
         print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
 
         tableAttributes.add(newRow);
@@ -211,11 +309,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       addTableRow();
     }
 
-    print('GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-      'attributes': row.keys.where((key) => key != 'images' && key != 'price').map((key) => {key: row[key].text}).toList(),
-      'price': row['price']?.text,
-      'images': row['images'],
-    }).toList()}');
+    print(
+        'GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
+              'id': row['id'],
+              'attributes': row.keys
+                  .where(
+                      (key) => key != 'images' && key != 'price' && key != 'id')
+                  .map((key) => {key: row[key].text})
+                  .toList(),
+              'price': row['price']?.text,
+              'images': row['images'],
+            }).toList()}');
   }
 
   Future<void> fetchSubCategories() async {
@@ -224,7 +328,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print('GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {'id': cat.id, 'name': cat.name}).toList()}');
+          print(
+              'GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
+                    'id': cat.id,
+                    'name': cat.name
+                  }).toList()}');
         });
       }
     } catch (e) {
@@ -237,7 +345,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      print('GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid');
+      print(
+          'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid');
     });
   }
 
@@ -248,9 +357,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
     setState(() {
       Map<String, dynamic> newRow = {};
-      for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+      for (var attr
+          in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
-        print('GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
+        print(
+            'GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
       }
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
@@ -330,12 +441,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
-    print('GoodsEditScreen: Picking image for row $rowIndex from source: $source');
+    print(
+        'GoodsEditScreen: Picking image for row $rowIndex from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         tableAttributes[rowIndex]['images'].add(pickedFile.path);
-        print('GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
+        print(
+            'GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -348,8 +461,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        tableAttributes[rowIndex]['images'].addAll(pickedFiles.map((file) => file.path));
-        print('GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
+        tableAttributes[rowIndex]['images']
+            .addAll(pickedFiles.map((file) => file.path));
+        print(
+            'GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -410,7 +525,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     keyboardType: TextInputType.multiline,
                   ),
                   const SizedBox(height: 8),
-                  if (selectedCategory == null || !selectedCategory!.hasPriceCharacteristics)
+                  if (selectedCategory == null ||
+                      !selectedCategory!.hasPriceCharacteristics)
                     CustomTextField(
                       controller: discountPriceController,
                       hintText: 'Введите скидочную цену',
@@ -429,7 +545,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                            child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52)),
                           ),
                         )
                       : Column(
@@ -439,19 +556,25 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               selectedCategory: selectedCategory?.name,
                               onSelectCategory: (category) {
                                 setState(() {
-                                  selectedCategory = category as subCatAttr.SubCategoryAttributesData?;
+                                  selectedCategory = category
+                                      as subCatAttr.SubCategoryAttributesData?;
                                   isCategoryValid = category != null;
                                   attributeControllers.clear();
                                   tableAttributes.clear();
-                                  if (category != null && category.attributes.isNotEmpty) {
-                                    for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
-                                      attributeControllers[attribute.name] = TextEditingController();
+                                  if (category != null &&
+                                      category.attributes.isNotEmpty) {
+                                    for (var attribute in category.attributes
+                                        .where((a) => !a.isIndividual)) {
+                                      attributeControllers[attribute.name] =
+                                          TextEditingController();
                                     }
                                   }
-                                  print('GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
+                                  print(
+                                      'GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
                                 });
                               },
-                              subCategories: subCategories.isEmpty ? [] : subCategories,
+                              subCategories:
+                                  subCategories.isEmpty ? [] : subCategories,
                               isValid: isCategoryValid,
                             ),
                             if (!isCategoryValid)
@@ -469,7 +592,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ],
                         ),
                   const SizedBox(height: 8),
-                  if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                  if (selectedCategory != null &&
+                      selectedCategory!.attributes.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -486,7 +610,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ),
                         ),
                         Divider(color: Color(0xff1E2E52)),
-                        ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
+                        ...selectedCategory!.attributes
+                            .where((attr) => !attr.isIndividual)
+                            .map((attribute) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -502,13 +628,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               ),
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
-                                controller: attributeControllers[attribute.name] ?? TextEditingController(),
-                                hintText: 'Введите ${attribute.name.toLowerCase()}',
+                                controller:
+                                    attributeControllers[attribute.name] ??
+                                        TextEditingController(),
+                                hintText:
+                                    'Введите ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
                         }).toList(),
-                        if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
+                        if (selectedCategory!.attributes
+                            .any((attr) => attr.isIndividual))
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -519,7 +649,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   children: [
                                     DataTable(
                                       columnSpacing: 16,
-                                      dataRowHeight: 60,
+                                      dataRowHeight:
+                                          70, // Increased height to accommodate padding
                                       headingRowHeight: 56,
                                       dividerThickness: 0,
                                       columns: [
@@ -530,14 +661,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     attr.name,
                                                     style: TextStyle(
                                                       fontSize: 16,
-                                                      fontWeight: FontWeight.w500,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff1E2E52),
                                                     ),
                                                   ),
                                                 ))
                                             .toList(),
-                                        if (selectedCategory!.hasPriceCharacteristics)
+                                        if (selectedCategory!
+                                            .hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
                                               'Цена',
@@ -572,36 +705,59 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         ),
                                       ],
-                                      rows: tableAttributes.asMap().entries.map((entry) {
+                                      rows: tableAttributes
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
                                         return DataRow(
                                           cells: [
                                             ...selectedCategory!.attributes
-                                                .where((attr) => attr.isIndividual)
+                                                .where(
+                                                    (attr) => attr.isIndividual)
                                                 .map((attr) => DataCell(
                                                       SizedBox(
                                                         width: 150,
                                                         child: TextField(
-                                                          controller: row[attr.name],
-                                                          decoration: InputDecoration(
-                                                            hintText: 'Введите ${attr.name}',
-                                                            hintStyle: TextStyle(
+                                                          controller:
+                                                              row[attr.name],
+                                                          decoration:
+                                                              InputDecoration(
+                                                            hintText:
+                                                                'Введите ${attr.name}',
+                                                            hintStyle:
+                                                                TextStyle(
                                                               fontSize: 12,
-                                                              fontWeight: FontWeight.w500,
-                                                              fontFamily: 'Gilroy',
-                                                              color: Color(0xff99A4BA),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                              fontFamily:
+                                                                  'Gilroy',
+                                                              color: Color(
+                                                                  0xff99A4BA),
                                                             ),
-                                                            border: OutlineInputBorder(
-                                                              borderRadius: BorderRadius.circular(12),
+                                                            border:
+                                                                OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12),
                                                             ),
-                                                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                            contentPadding:
+                                                                EdgeInsets
+                                                                    .symmetric(
+                                                                        horizontal:
+                                                                            12,
+                                                                        vertical:
+                                                                            16),
                                                           ),
                                                         ),
                                                       ),
                                                     ))
                                                 .toList(),
-                                            if (selectedCategory!.hasPriceCharacteristics)
+                                            if (selectedCategory!
+                                                .hasPriceCharacteristics)
                                               DataCell(
                                                 SizedBox(
                                                   width: 150,
@@ -611,16 +767,25 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                       hintText: 'Введите цену',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color: Color(0xff99A4BA),
+                                                        color:
+                                                            Color(0xff99A4BA),
                                                       ),
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(12),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
-                                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 16),
                                                     ),
-                                                    keyboardType: TextInputType.number,
+                                                    keyboardType:
+                                                        TextInputType.number,
                                                   ),
                                                 ),
                                               ),
@@ -632,11 +797,21 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                       width: 40,
                                                       height: 40,
                                                       decoration: BoxDecoration(
-                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
                                                         image: DecorationImage(
-                                                          image: row['images'].first.startsWith('http')
-                                                              ? NetworkImage(row['images'].first) as ImageProvider
-                                                              : FileImage(File(row['images'].first)),
+                                                          image: row['images']
+                                                                  .first
+                                                                  .startsWith(
+                                                                      'http')
+                                                              ? NetworkImage(
+                                                                      row['images']
+                                                                          .first)
+                                                                  as ImageProvider
+                                                              : FileImage(File(
+                                                                  row['images']
+                                                                      .first)),
                                                           fit: BoxFit.cover,
                                                         ),
                                                       ),
@@ -645,25 +820,38 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   Stack(
                                                     children: [
                                                       IconButton(
-                                                        icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                                                        onPressed: () => _showImagePickerOptionsForRow(index),
+                                                        icon: Icon(
+                                                            Icons.add_circle,
+                                                            color: Colors.blue,
+                                                            size: 20),
+                                                        onPressed: () =>
+                                                            _showImagePickerOptionsForRow(
+                                                                index),
                                                       ),
-                                                      if (row['images'].isNotEmpty)
+                                                      if (row['images']
+                                                          .isNotEmpty)
                                                         Positioned(
                                                           top: 4,
                                                           right: 4,
                                                           child: Container(
-                                                            padding: EdgeInsets.all(4),
-                                                            decoration: BoxDecoration(
+                                                            padding:
+                                                                EdgeInsets.all(
+                                                                    4),
+                                                            decoration:
+                                                                BoxDecoration(
                                                               color: Colors.red,
-                                                              shape: BoxShape.circle,
+                                                              shape: BoxShape
+                                                                  .circle,
                                                             ),
                                                             child: Text(
                                                               '${row['images'].length}',
                                                               style: TextStyle(
-                                                                color: Colors.white,
+                                                                color: Colors
+                                                                    .white,
                                                                 fontSize: 10,
-                                                                fontWeight: FontWeight.bold,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
                                                               ),
                                                             ),
                                                           ),
@@ -671,9 +859,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     ],
                                                   ),
                                                   IconButton(
-                                                    icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                                                    onPressed: row['images'].isNotEmpty
-                                                        ? () => _showImageListPopup(row['images'])
+                                                    icon: Icon(Icons.visibility,
+                                                        color: Colors.grey,
+                                                        size: 20),
+                                                    onPressed: row['images']
+                                                            .isNotEmpty
+                                                        ? () =>
+                                                            _showImageListPopup(
+                                                                row['images'])
                                                         : null,
                                                   ),
                                                 ],
@@ -681,15 +874,21 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                             DataCell(
                                               IconButton(
-                                                icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                                                onPressed: () => removeTableRow(index),
+                                                icon: Icon(Icons.delete,
+                                                    color: Colors.red,
+                                                    size: 20),
+                                                onPressed: () =>
+                                                    removeTableRow(index),
                                               ),
                                             ),
                                           ],
                                         );
                                       }).toList(),
                                     ),
-                                    ...tableAttributes.asMap().entries.map((entry) {
+                                    ...tableAttributes
+                                        .asMap()
+                                        .entries
+                                        .map((entry) {
                                       int index = entry.key;
                                       if (index < tableAttributes.length - 1) {
                                         return Divider(
@@ -728,7 +927,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         color: const Color(0xffF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                          color: isImagesValid
+                              ? const Color(0xffF4F7FD)
+                              : Colors.red,
                           width: 1.5,
                         ),
                       ),
@@ -737,7 +938,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                  Icon(Icons.camera_alt,
+                                      color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Выберите изображение',
@@ -764,10 +966,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         width: 100,
                                         height: 100,
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                           image: DecorationImage(
                                             image: imagePath.startsWith('http')
-                                                ? NetworkImage(imagePath) as ImageProvider
+                                                ? NetworkImage(imagePath)
+                                                    as ImageProvider
                                                 : FileImage(File(imagePath)),
                                             fit: BoxFit.cover,
                                           ),
@@ -778,11 +982,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               top: 4,
                                               right: 4,
                                               child: GestureDetector(
-                                                onTap: () => _removeImage(imagePath),
+                                                onTap: () =>
+                                                    _removeImage(imagePath),
                                                 child: Container(
-                                                  padding: const EdgeInsets.all(4),
+                                                  padding:
+                                                      const EdgeInsets.all(4),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.5),
+                                                    color: Colors.black
+                                                        .withOpacity(0.5),
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: Icon(
@@ -804,13 +1011,18 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         height: 100,
                                         decoration: BoxDecoration(
                                           color: Color(0xffF4F7FD),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Color(0xffF4F7FD)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Color(0xffF4F7FD)),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                            Icon(Icons.add_a_photo,
+                                                color: Color(0xff99A4BA),
+                                                size: 40),
                                             SizedBox(height: 4),
                                             Text(
                                               'Добавить +',
@@ -826,9 +1038,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item = _imagePaths.removeAt(oldIndex);
+                                      final item =
+                                          _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
-                                      print('GoodsEditScreen: Reordered _imagePaths: $_imagePaths');
+                                      print(
+                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths');
                                     });
                                   },
                                 ),
@@ -836,7 +1050,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.5),
                                       borderRadius: BorderRadius.circular(12),
@@ -889,11 +1104,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               onTap: () {
                                 setState(() {
                                   isActive = !isActive;
-                                  print('GoodsEditScreen: Toggled isActive to: $isActive');
+                                  print(
+                                      'GoodsEditScreen: Toggled isActive to: $isActive');
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF4F7FD),
                                   borderRadius: BorderRadius.circular(12),
@@ -905,13 +1122,19 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       onChanged: (value) {
                                         setState(() {
                                           isActive = value;
-                                          print('GoodsEditScreen: Switch changed isActive to: $isActive');
+                                          print(
+                                              'GoodsEditScreen: Switch changed isActive to: $isActive');
                                         });
                                       },
-                                      activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                      activeColor: const Color.fromARGB(
+                                          255, 255, 255, 255),
+                                      inactiveTrackColor: const Color.fromARGB(
+                                              255, 179, 179, 179)
+                                          .withOpacity(0.5),
+                                      activeTrackColor: ChatSmsStyles
+                                          .messageBubbleSenderColor,
+                                      inactiveThumbColor: const Color.fromARGB(
+                                          255, 255, 255, 255),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
@@ -971,12 +1194,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+                        if (formKey.currentState!.validate() &&
+                            isCategoryValid &&
+                            isImagesValid) {
                           _updateProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: 'Пожалуйста, заполните все обязательные поля!',
+                            message:
+                                'Пожалуйста, заполните все обязательные поля!',
                             isSuccess: false,
                           );
                         }
@@ -1047,7 +1273,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.add(pickedFile.path);
         isImagesValid = true;
-        print('GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
+        print(
+            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No image picked');
@@ -1061,7 +1288,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
         isImagesValid = true;
-        print('GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
+        print(
+            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No images picked');
@@ -1072,7 +1300,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       _imagePaths.remove(imagePath);
       isImagesValid = _imagePaths.isNotEmpty;
-      print('GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
+      print(
+          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
     });
   }
 
@@ -1085,21 +1314,38 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
       if (selectedCategory != null) {
         print('GoodsEditScreen: Processing non-individual attributes...');
-        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        for (var attribute
+            in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
             attributes.add({
               'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
-            print('GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
+            print(
+                'GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
           } else {
-            print('GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
+            print(
+                'GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
           }
         }
 
         print('GoodsEditScreen: Processing variants...');
+        Set<String> processedVariantKeys =
+            {}; // Для отслеживания уникальных вариантов
         for (var row in tableAttributes) {
+          // Создаем уникальный ключ для варианта на основе его атрибутов
+          String variantKey = row.entries
+              .where((entry) => entry.key != 'images' && entry.key != 'price')
+              .map((entry) => '${entry.key}:${entry.value.text}')
+              .join('|');
+          if (processedVariantKeys.contains(variantKey)) {
+            print(
+                'GoodsEditScreen: Skipping duplicate variant with key: $variantKey');
+            continue;
+          }
+          processedVariantKeys.add(variantKey);
+
           Map<String, dynamic> variant = {
             'is_active': true,
             'variant_attributes': [],
@@ -1115,13 +1361,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantImages.add(file);
                 print('GoodsEditScreen: Added variant image: $path');
               } else {
-                print('GoodsEditScreen: Variant file not found, skipping: $path');
+                print(
+                    'GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
 
           // Добавляем индивидуальные атрибуты
-          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          for (var attr
+              in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
               variant['variant_attributes'].add({
@@ -1129,18 +1377,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 'value': controller.text.trim(),
                 'is_active': true,
               });
-              print('GoodsEditScreen: Added variant attribute - category_attribute_id: ${attr.id}, value: ${controller.text.trim()}');
+              print(
+                  'GoodsEditScreen: Added variant attribute - category_attribute_id: ${attr.id}, value: ${controller.text.trim()}');
             } else {
-              print('GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
+              print(
+                  'GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
             }
           }
 
           // Добавляем цену
           if (selectedCategory!.hasPriceCharacteristics) {
             final priceController = row['price'] as TextEditingController?;
-            if (priceController != null && priceController.text.trim().isNotEmpty) {
-              variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
-              print('GoodsEditScreen: Added variant price: ${variant['price']}');
+            if (priceController != null &&
+                priceController.text.trim().isNotEmpty) {
+              variant['price'] =
+                  double.tryParse(priceController.text.trim()) ?? 0.0;
+              print(
+                  'GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
               print('GoodsEditScreen: Set default variant price: 0.0');
@@ -1150,7 +1403,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           // Добавляем изображения, если они существуют
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
-            print('GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
+            print(
+                'GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
@@ -1189,7 +1443,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         variants: variants,
         images: generalImages,
         isActive: isActive,
-        discountPrice: selectedCategory != null && selectedCategory!.hasPriceCharacteristics
+        discountPrice: selectedCategory != null &&
+                selectedCategory!.hasPriceCharacteristics
             ? null
             : double.tryParse(discountPriceController.text),
       );

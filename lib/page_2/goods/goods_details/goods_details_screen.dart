@@ -447,25 +447,28 @@ Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
   final price = variant.variantPrice?.price ?? 0.0;
   print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-  // Собираем до 4 характеристик
-  List<Map<String, String>> attributes = [];
+  // Собираем уникальные характеристики с использованием Set
+  Set<Map<String, String>> uniqueAttributes = {};
   if (variant.attributeValues.isNotEmpty) {
-    attributes = variant.attributeValues.take(4).map((attrValue) {
+    for (var attrValue in variant.attributeValues) {
       final attrName = attrValue.categoryAttribute?.attribute?.name ?? 'Неизвестная характеристика';
       final value = attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
-      print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
-      return {
+      uniqueAttributes.add({
         'name': attrName,
         'value': value,
-      };
-    }).toList();
+      });
+      print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
+    }
   } else {
     print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
-    attributes.add({
+    uniqueAttributes.add({
       'name': 'Без названия',
       'value': 'Не указано',
     });
   }
+
+  // Преобразуем Set в List и ограничиваем до 4 характеристик
+  List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
 
   String? imageUrl;
   if (variant.files != null && variant.files!.isNotEmpty) {
@@ -543,11 +546,11 @@ Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
                         ),
                       )),
                   // Индикатор дополнительных характеристик
-                  if (variant.attributeValues.length > 4)
+                  if (uniqueAttributes.length > 4)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
-                        '+ ещё ${variant.attributeValues.length - 4}',
+                        '+ ещё ${uniqueAttributes.length - 4}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
@@ -576,7 +579,6 @@ Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
     ),
   );
 }
-
 Widget _buildVariantImage(String? imageUrl) {
   if (imageUrl == null) {
     print('GoodsDetailsScreen: No image URL, showing placeholder');
