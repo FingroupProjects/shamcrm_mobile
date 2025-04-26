@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/custom_widget/calendar.dart';
+import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';

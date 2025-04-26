@@ -52,39 +52,6 @@ class FetchMoreTasks extends TaskEvent {
   FetchMoreTasks(this.statusId, this.currentPage);
 }
 
-/*
-class CreateTask extends TaskEvent {
-  final String name;
-  final int statusId;
-  final int? taskStatusId;
-  final int? priority;
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final int? projectId;
-  final List<int>?userId; // Новый параметр для списка идентификаторов пользователей
-  final String? description;
-  final String? filePath;
-  final List<Map<String, String>>? customFields;
-  final AppLocalizations localizations;  // Add this to your event
-
- 
-  CreateTask({
-    required this.name,
-    required this.statusId,
-    required this.taskStatusId,
-    this.priority,
-    this.startDate,
-    this.endDate,
-    this.projectId,
-    this.userId, // Передаём новый параметр в конструктор
-    this.description,
-    this.customFields,
-    this.filePath,
-    required this.localizations,  // Add this to constructor
-
-  });
-}
-*/
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;

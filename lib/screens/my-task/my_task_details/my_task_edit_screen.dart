@@ -62,6 +62,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   final ApiService _apiService = ApiService();
     int? _selectedStatuses;
+      bool isSubmitted = false;
+
 
 
   @override
@@ -96,42 +98,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
   }
 
-  InputDecoration _inputDecoration() {
-    return const InputDecoration(
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: InputBorder.none,
-      filled: true,
-      fillColor: Color(0xFFF4F7FD),
-    );
-  }
 
-  Widget _buildPushNotificationCheckbox() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          Checkbox(
-            value: setPush,
-            onChanged: (bool? value) {
-              setState(() {
-                setPush = value ?? true;
-              });
-            },
-            activeColor: const Color(0xff1E2E52),
-          ),
-          Text(
-            AppLocalizations.of(context)!.translate('set_push_notification'),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFileSelection() {
     return Column(
@@ -602,6 +569,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                               _selectedStatuses = selectedStatusData.id;
                             });
                           },
+                          isSubmitted: isSubmitted,
                         ),
                       // const SizedBox(height: 8),
                       // CustomTextFieldDate(
@@ -695,6 +663,10 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
+                                setState(() {
+                                    isSubmitted = true;
+                                  });
+
                                 if (_formKey.currentState!.validate()) {
                                   DateTime? startDate;
                                   DateTime? endDate;

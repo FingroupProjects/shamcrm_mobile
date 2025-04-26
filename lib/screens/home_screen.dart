@@ -106,12 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
     hasAvailableScreens = true;
 
     // Дашборд 2 
-    widgetsGroup2.add(PlaceHolderTest(message: 'Страница 1',));
-    titleKeysGroup2.add('appbar_dashboard');
-    navBarTitleKeysGroup2.add('appbar_dashboard');
-    activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    hasAvailableScreens = true;
+    // widgetsGroup2.add(PlaceHolderTest(message: 'Страница 1',));
+    // titleKeysGroup2.add('appbar_dashboard');
+    // navBarTitleKeysGroup2.add('appbar_dashboard');
+    // activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
+    // inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
+    // hasAvailableScreens = true;
 
     // Категории 
     widgetsGroup2.add(CategoryScreen());
