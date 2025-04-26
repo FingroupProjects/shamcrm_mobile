@@ -39,6 +39,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
           showEvent: false,
           showSeparateMyTasks: true,
           showMenuIcon: false,
+          showCalendarDashboard: true,
           clearButtonClickFiltr: (bool) {},
         ),
       ),

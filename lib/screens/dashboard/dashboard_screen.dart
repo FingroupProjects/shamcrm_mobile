@@ -626,6 +626,7 @@ void _initAdminTutorialTargets() {
           showEvent: false,
           showSeparateMyTasks: true,
           showMenuIcon: false,
+          showCalendarDashboard: true,
           clearButtonClickFiltr: (bool) {},
           NotificationIconKey: keyNotificationIcon,
           MyTaskIconKey: keyMyTaskIcon,
