@@ -16,8 +16,12 @@ class CalendarBloc extends Bloc<CalendarBlocEvent, CalendarBlocState> {
   ) async {
     emit(CalendarLoading());
     try {
-      final events = await apiService.getCalendarEventsByMonth(event.month);
-      emit(CalendarLoaded(events, DateTime(event.year, event.month, 4)));
+      final events = await apiService.getCalendarEventsByMonth(
+        event.month,
+        search: event.search,
+        types: event.types,
+      );
+      emit(CalendarLoaded(events, DateTime(event.year, event.month,)));
     } catch (e) {
       emit(CalendarError(e.toString()));
     }

@@ -1,10 +1,12 @@
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_state.dart';
+import 'package:crm_task_manager/custom_widget/filter/calendar/filter_calendar.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -19,69 +21,39 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  DateTime _focusedDate = DateTime.now();
-  DateTime? _selectedDate;
-  Map<DateTime, List<CalendarEventData>> _events = {};
-  bool _isInitialView = true;
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
+class _CalendarScreenState extends State<CalendarScreen> with TickerProviderStateMixin {
+CalendarFormat _calendarFormat = CalendarFormat.month;
+DateTime _focusedDate = DateTime.now();
+DateTime? _selectedDate;
+Map<DateTime, List<CalendarEventData>> _events = {};
+bool _isInitialView = true;
+bool _isSearching = false;
+final TextEditingController _searchController = TextEditingController();
+Set<DateTime> _filteredDates = {};
+List<String> _selectedTypes = [];
+late AnimationController _blinkController;
+late Animation<Color?> _colorAnimation; 
 
-  void _handleEventTap(int id, String type) {
-    switch (type) {
-      case 'task':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TaskDetailsScreen(
-              taskId: id.toString(),
-              taskName: '',
-              taskStatus: '',
-              statusId: 1,
-              taskNumber: 0,
-              taskCustomFields: [],
-            ),
-          ),
-        );
-        break;
-      case 'my_task':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MyTaskDetailsScreen(
-              taskId: id.toString(),
-              taskName: '',
-              taskStatus: '',
-              statusId: 0,
-              taskNumber: 0,
-            ),
-          ),
-        );
-        break;
-      case 'notice':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailsScreen(
-              noticeId: id,
-            ),
-          ),
-        );
-        break;
-      default:
-    }
-  }
-
-  @override
+@override
   void initState() {
     super.initState();
+    _blinkController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat(reverse: true);
+    _colorAnimation = ColorTween(
+      begin: Colors.blue, 
+      end: Colors.black, 
+    ).animate(
+      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
+    );
     context.read<CalendarBloc>().add(FetchCalendarEvents(_focusedDate.month, _focusedDate.year));
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _blinkController.dispose();
     super.dispose();
   }
 
@@ -114,13 +86,91 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _isSearching = !_isSearching;
       if (!_isSearching) {
         _searchController.clear();
-        // Здесь можно добавить логику сброса поиска
+        _filteredDates.clear();
+        context.read<CalendarBloc>().add(FetchCalendarEvents(
+          _focusedDate.month,
+          _focusedDate.year,
+          search: null,
+          types: _selectedTypes,
+        ));
       }
     });
   }
 
   void _onFilterPressed() {
-    // Ваша логика фильтрации
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CalendarFilterScreen(
+          initialTypes: _selectedTypes,
+          onTypesSelected: (types) {
+            setState(() {
+              _selectedTypes = types;
+            });
+            context.read<CalendarBloc>().add(FetchCalendarEvents(
+              _focusedDate.month,
+              _focusedDate.year,
+              search: _searchController.text.isNotEmpty ? _searchController.text : null,
+              types: _selectedTypes,
+            ));
+          },
+        ),
+      ),
+    );
+  }
+
+  void _handleEventTap(int id, String type) {
+    switch (type) {
+      case 'task':
+        // В методе _handleEventTap, где вы переходите на экран деталей задачи:
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => TaskDetailsScreen(
+      taskId: id.toString(),
+      taskName: '',
+      taskStatus: '',
+      statusId: 1,
+      taskNumber: 0,
+      taskCustomFields: [],
+    ),
+  ),
+).then((shouldRefresh) {
+  // Если вернулся true (задача была удалена), обновляем календарь
+  if (shouldRefresh == true) {
+   print('UPODATE     CALENDARE');
+       context.read<CalendarBloc>().add(FetchCalendarEvents(_focusedDate.month, _focusedDate.year));
+
+
+  }
+});
+        break;
+      case 'my_task':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MyTaskDetailsScreen(
+              taskId: id.toString(),
+              taskName: '',
+              taskStatus: '',
+              statusId: 0,
+              taskNumber: 0,
+            ),
+          ),
+        );
+        break;
+      case 'notice':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailsScreen(
+              noticeId: id,
+            ),
+          ),
+        );
+        break;
+      default:
+    }
   }
 
   @override
@@ -136,11 +186,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.translate('search'),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.only(bottom: 10),
+                    contentPadding: const EdgeInsets.only(bottom: 10),
                   ),
-                  style: TextStyle(fontSize: 18, fontFamily: 'Gilroy',fontWeight: FontWeight.w500, color: Color(0xff1E2E52)),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
                   onChanged: (value) {
-
+                    context.read<CalendarBloc>().add(FetchCalendarEvents(
+                      _focusedDate.month,
+                      _focusedDate.year,
+                      search: value.isNotEmpty ? value : null,
+                      types: _selectedTypes,
+                    ));
                   },
                 ),
               )
@@ -152,16 +212,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     Text(
                       _isInitialView
                           ? AppLocalizations.of(context)!.translate('calendar')
-                          : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode)
-                              .format(_focusedDate)
-                              .capitalize(),
-                      style: TextStyle(
+                          : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode).format(_focusedDate).capitalize(),
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
                       ),
                     ),
-                    Icon(Icons.arrow_drop_down, size: 24),
+                    const Icon(Icons.arrow_drop_down, size: 24),
                   ],
                 ),
               ),
@@ -177,16 +235,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 width: 24,
                 height: 24,
               ),
-              onPressed: () async {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ),
         actions: [
           IconButton(
             icon: _isSearching
-                ? Icon(Icons.close, size: 24)
+                ? const Icon(Icons.close, size: 24)
                 : Image.asset(
                     'assets/icons/AppBar/search.png',
                     width: 24,
@@ -194,14 +250,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
             onPressed: _onSearchPressed,
           ),
-          IconButton(
-            icon: Image.asset(
-              'assets/icons/AppBar/filter.png', 
-              width: 24,
-              height: 24,
-            ),
-            onPressed: _onFilterPressed,
+         AnimatedBuilder(
+            animation: _colorAnimation,
+            builder: (context, child) {
+              return IconButton(
+                icon: ColorFiltered(
+                  colorFilter: ColorFilter.mode(
+                    _selectedTypes.isNotEmpty
+                        ? _colorAnimation.value ?? const Color(0xff1E2E52)
+                        : const Color(0xff1E2E52), 
+                    BlendMode.srcIn,
+                  ),
+                  child: Image.asset(
+                    'assets/icons/AppBar/filter.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
+                onPressed: _onFilterPressed,
+              );
+            },
           ),
+          SizedBox(width: 10),
           if (!_isSearching)
             CalendarViewDropdown(
               currentFormat: _calendarFormat,
@@ -214,6 +284,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (state is CalendarLoaded) {
             setState(() {
               _events.clear();
+              _filteredDates.clear();
+
               for (var event in state.events) {
                 final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
                 _events[eventDate] = _events[eventDate] ?? [];
@@ -223,22 +295,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     title: event.name,
                     date: event.date,
                     startTime: event.date,
-                    endTime: event.date.add(Duration(hours: 1)),
+                    endTime: event.date.add(const Duration(hours: 1)),
                     color: CalendarUtils.getEventColor(event.type),
                     type: event.type,
                   ),
                 );
+                if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty) {
+                  _filteredDates.add(eventDate);
+                }
               }
             });
           } else if (state is CalendarError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+          showCustomSnackBar(
+               context: context,
+               message: AppLocalizations.of(context)!.translate(state.message),
+               isSuccess: false,
+             );
           }
         },
         builder: (context, state) {
           if (state is CalendarLoading) {
-            return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          }
+
+          if (_isSearching && _searchController.text.isNotEmpty && _events.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('Ничего не найдено!'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            );
           }
 
           return SingleChildScrollView(
@@ -260,8 +353,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       _focusedDate = focusedDay;
                       _selectedDate = null;
                     });
-                    context.read<CalendarBloc>().add(FetchCalendarEvents(_focusedDate.month, _focusedDate.year));
+                    context.read<CalendarBloc>().add(FetchCalendarEvents(
+                      _focusedDate.month,
+                      _focusedDate.year,
+                      search: _searchController.text.isNotEmpty ? _searchController.text : null,
+                      types: _selectedTypes,
+                    ));
                   },
+                  filteredDates:
+                      (_isSearching && _searchController.text.isNotEmpty) || _selectedTypes.isNotEmpty
+                          ? _filteredDates
+                          : null,
                 ),
                 if (_selectedDate != null)
                   EventListForDate(
@@ -276,7 +378,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showOptionsBottomSheet(context, _focusedDate, _events, setState),
-        backgroundColor: Color(0xff1E2E52),
+        backgroundColor: const Color(0xff1E2E52),
         child: Image.asset(
           'assets/icons/tabBar/add.png',
           width: 24,
@@ -311,7 +413,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _selectedDate = null;
             _isInitialView = false;
           });
-          context.read<CalendarBloc>().add(FetchCalendarEvents(_focusedDate.month, _focusedDate.year));
+          context.read<CalendarBloc>().add(FetchCalendarEvents(
+            _focusedDate.month,
+            _focusedDate.year,
+            search: _searchController.text.isNotEmpty ? _searchController.text : null,
+            types: _selectedTypes,
+          ));
           Navigator.pop(context);
         },
       ),

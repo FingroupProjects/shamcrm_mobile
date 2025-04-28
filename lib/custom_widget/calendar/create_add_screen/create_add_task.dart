@@ -16,6 +16,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart'
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/status_list.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
@@ -231,7 +232,6 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
     );
   }
 
-// Функция выбора файла остается такой же как у вас
   Future<void> _pickFile() async {
     try {
       FilePickerResult? result =
@@ -247,14 +247,11 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла!');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.translate('file_selection_error')),
-          backgroundColor: Colors.red,
-        ),
-      );
+   showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('file_selection_error'),
+        isSuccess: false,
+      );      
     }
   }
 
@@ -299,13 +296,11 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       if (selectedStatusId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!
-                .translate('please_select_status_task')),
-            backgroundColor: Colors.red,
-          ),
-        );
+          showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate('please_select_status_task'),
+                   isSuccess: false,
+                 );
         return;
       }
 
@@ -343,22 +338,18 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
             );
 
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.translate('error_create_task')),
-            backgroundColor: Colors.red,
-          ),
-        );
+          showCustomSnackBar(
+               context: context,
+               message: AppLocalizations.of(context)!.translate('error_create_task'),
+               isSuccess: false,
+             );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.translate('fill_required_fields')),
-          backgroundColor: Colors.red,
-        ),
-      );
+          showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('fill_required_fields'),
+              isSuccess: false,
+            );
     }
   }
 
@@ -392,51 +383,17 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
           if (state is TaskError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), 
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+               showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
+                 );
           } else if (state is TaskSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.green,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+                showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: true,
+                 );
             Navigator.pop(context);
             context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
           }

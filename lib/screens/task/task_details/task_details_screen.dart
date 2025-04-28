@@ -836,9 +836,7 @@ Widget build(BuildContext context) {
                       );
 
                       if (shouldUpdate == true) {
-                        context
-                            .read<TaskByIdBloc>()
-                            .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                        context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
                         context.read<TaskBloc>().add(FetchTaskStatuses());
                       }
                     }
@@ -857,8 +855,7 @@ Widget build(BuildContext context) {
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (context) =>
-                          DeleteTaskDialog(taskId: currentTask!.id),
+                      builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
                     );
                   },
                 ),
