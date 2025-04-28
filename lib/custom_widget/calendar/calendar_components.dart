@@ -6,7 +6,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-
 import 'calendar_utils.dart';
 
 class CalendarWidget extends StatelessWidget {
@@ -147,7 +146,7 @@ Widget build(BuildContext context) {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      DateFormat('d MMMM yyyy').format(selectedDate).capitalize(),
+                      DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode).format(selectedDate).capitalize(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -231,7 +230,7 @@ class CalendarViewDropdown extends StatelessWidget {
 @override
 Widget build(BuildContext context) {
   return Container(
-    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
     decoration: BoxDecoration(
       color: Color(0xffF4F7FD), 
       borderRadius: BorderRadius.circular(16),
@@ -244,9 +243,9 @@ Widget build(BuildContext context) {
                 ? 'week'
                 : 'day',
         dropdownColor: Colors.white,
-        icon: Icon(Icons.arrow_drop_down, color: Colors.black),
+        icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52),),
         style: TextStyle(
-          fontSize: 16,
+          fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Color(0xff1E2E52),
         ),

@@ -44,6 +44,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showSeparateMyTasks;
   final bool showNotification;
   final bool showCalendar;
+  final bool showCalendarDashboard;
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
@@ -207,6 +208,7 @@ class CustomAppBar extends StatefulWidget {
     this.showNotification = true,
     this.showSeparateFilter = false,
     this.showCalendar = true,
+    this.showCalendarDashboard = false,
     this.initialTaskIsOverdue,
     this.initialTaskHasFile,
     this.initialTaskHasDeal,
@@ -894,7 +896,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
               ),
             ),
           ),
-        if (widget.showCalendar)
+        if (widget.showCalendarDashboard)
           Transform.translate(
             offset: const Offset(6, 0),
             child: Tooltip(
