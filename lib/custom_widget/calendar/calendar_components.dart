@@ -16,6 +16,7 @@ class CalendarWidget extends StatelessWidget {
   final Function(DateTime, DateTime) onDaySelected;
   final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
+   final Set<DateTime>? filteredDates;
 
   const CalendarWidget({
     super.key,
@@ -26,11 +27,15 @@ class CalendarWidget extends StatelessWidget {
     required this.onDaySelected,
     required this.onFormatChanged,
     required this.onPageChanged,
+    this.filteredDates,
   });
 
   @override
+
   Widget build(BuildContext context) {
     return TableCalendar(
+      rowHeight: MediaQuery.of(context).size.height * 0.065,
+      daysOfWeekHeight: MediaQuery.of(context).size.height * 0.028,
       firstDay: DateTime.utc(2020, 1, 1),
       lastDay: DateTime.utc(2030, 12, 31),
       focusedDay: focusedDate,
@@ -38,13 +43,21 @@ class CalendarWidget extends StatelessWidget {
       selectedDayPredicate: (day) => isSameDay(selectedDate, day),
       onDaySelected: onDaySelected,
       onFormatChanged: onFormatChanged,
+      startingDayOfWeek: StartingDayOfWeek.monday,
       onPageChanged: onPageChanged,
+      enabledDayPredicate: (day) {
+        if (filteredDates == null || filteredDates!.isEmpty) return true;
+        final dayDate = DateTime(day.year, day.month, day.day);
+        return filteredDates!.contains(dayDate);
+      },
       eventLoader: (day) {
         final eventDate = DateTime(day.year, day.month, day.day);
         return events[eventDate] ?? [];
       },
       locale: AppLocalizations.of(context)!.locale.languageCode,
       calendarStyle: CalendarStyle(
+      cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025), 
+      defaultTextStyle: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035, color: Color(0xff1E2E52), fontFamily: 'Gilroy',), 
         todayDecoration: BoxDecoration(
           color: Color(0xff1E2E52),
           shape: BoxShape.circle,
@@ -59,12 +72,11 @@ class CalendarWidget extends StatelessWidget {
         ),
       ),
       headerStyle: HeaderStyle(
+        titleTextStyle: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.045, color: Color(0xff1E2E52), fontFamily: 'Gilroy'),
         formatButtonVisible: false,
         titleCentered: true,
       titleTextFormatter: (date, locale) =>
-      DateFormat('MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
-          .format(date)
-          .capitalize(),
+      DateFormat('MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode).format(date).capitalize(),
         leftChevronIcon: Icon(Icons.arrow_left, color: Color(0xff1E2E52)),
         rightChevronIcon: Icon(Icons.arrow_right, color: Color(0xff1E2E52)),
       ),
@@ -77,8 +89,8 @@ class CalendarWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: events.take(3).map((event) {
                   return Container(
-                    width: 6,
-                    height: 6,
+                    width: 8,
+                    height: 8,
                     margin: EdgeInsets.symmetric(horizontal: 2),
                     decoration: BoxDecoration(
                       color: (event as CalendarEventData).color,
@@ -153,13 +165,13 @@ Widget build(BuildContext context) {
                         color: Color(0xff1E2E52),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    // SizedBox(height: 8),
                     ...eventsOnSelectedDate.map((event) {
                       return Card(
                         margin: EdgeInsets.symmetric(vertical: 4),
                         color: Color(0xffF4F7FD),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: InkWell(
                           onTap: () {
@@ -183,7 +195,7 @@ Widget build(BuildContext context) {
                                   Padding(
                                     padding: EdgeInsets.only(left: 8),
                                     child: Icon(Icons.notification_important,
-                                        color: Colors.orange, size: 20),
+                                    color: Colors.orange, size: 20),
                                   ),
                               ],
                             ),
@@ -200,8 +212,8 @@ Widget build(BuildContext context) {
                                   ? AppLocalizations.of(context)!.translate('task')
                                   : event.type == 'my_task'
                                       ? AppLocalizations.of(context)!.translate('my_task')
-                                      : '${AppLocalizations.of(context)!.translate('notice')} • ${DateFormat('HH:mm').format(event.date.add(Duration(hours: 5)))}',
-                              style: TextStyle(color: Colors.grey[600]),
+                                      : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(Duration(hours: 5)))}',
+                              style: TextStyle(color: Colors.grey[600],fontFamily: 'Gilroy',fontSize: 14),
                             ),
                           ),
                         ),
@@ -287,12 +299,15 @@ class YearPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final dialogHeight = screenHeight * 0.4;
+
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(AppLocalizations.of(context)!.translate('select_year')),
       content: Container(
         width: double.maxFinite,
-        height: 275,
+        height: dialogHeight,
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
@@ -360,12 +375,15 @@ class MonthPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final dialogHeight = screenHeight * 0.4;
+
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(AppLocalizations.of(context)!.translate('select_month')),
       content: Container(
         width: double.maxFinite,
-        height: 275,
+        height: dialogHeight,
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,

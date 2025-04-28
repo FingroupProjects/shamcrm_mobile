@@ -6900,25 +6900,35 @@ Future<Map<String, dynamic>> updateGoods({
 
 
 
-    Future<List<CalendarEvent>> getCalendarEventsByMonth(int month) async {
-    final organizationId = await getSelectedOrganization();
+Future<List<CalendarEvent>> getCalendarEventsByMonth(int month, {String? search, List<String>? types}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _getRequest(
-      '/calendar/getByMonth?month=$month${organizationId != null ? '&organization_id=$organizationId' : ''}',
-    );
+  String url = '/calendar/getByMonth?month=$month';
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null && data['result'] is List) {
-        return (data['result'] as List)
-            .map((item) => CalendarEvent.fromJson(item))
-            .toList();
-      }
-      throw Exception('Invalid response format');
-    } else {
-      throw Exception('Failed to fetch calendar events!');
-    }
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search';
   }
+
+  if (organizationId != null) {
+    url += '&organization_id=$organizationId';
+  }
+  
+if (types != null && types.isNotEmpty) {
+  url += types.map((type) => '&type[]=$type').join();
+}
+
+  final response = await _getRequest(url);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null && data['result'] is List) {
+      return (data['result'] as List).map((item) => CalendarEvent.fromJson(item)).toList();
+    }
+    throw ('Ошибка формата загрузки календаря!');
+  } else {
+    throw ('Ошибка загрузки календаря!');
+  }
+}
   
 
   //_________________________________ END_____API_SCREEN__ORDER____________________________________________//

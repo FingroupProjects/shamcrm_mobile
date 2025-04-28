@@ -106,8 +106,8 @@ class DeleteTaskDialog extends StatelessWidget {
                 duration: Duration(seconds: 3),
               ),
             );
-                  Navigator.of(context).pop();
-                  Navigator.pop(context, true); 
+                  Navigator.of(context).pop(true);
+                  // Navigator.pop(context, true); 
                 },
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,

@@ -20,7 +20,7 @@ class TaskByIdBloc extends Bloc<TaskByIdEvent, TaskByIdState> {
         final task = await apiService.getTaskById(event.taskId);
         emit(TaskByIdLoaded(task));
       } catch (e) {
-        print('Ошибка при загрузке задачи!'); // For debugging
+        print('Ошибка при загрузке задачи!');
         emit(TaskByIdError('Не удалось загрузить данные задачи!'));
       }
     } else {
@@ -28,7 +28,6 @@ class TaskByIdBloc extends Bloc<TaskByIdEvent, TaskByIdState> {
     }
   }
 
-  // Method to check internet connection
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');

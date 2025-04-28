@@ -15,7 +15,7 @@ dependencies:
   http: ^1.2.2
   equatable: ^2.0.5
   shared_preferences: ^2.3.5
-  intl: ^0.20.2  # Версия intl 0.20.2, которую вы используете
+  intl: ^0.20.2 
   open_file: ^3.5.9
   path_provider: ^2.1.5
   dropdown_search: ^5.0.2
@@ -55,17 +55,12 @@ dependencies:
   qr_code_scanner: ^1.0.1
   scan: ^1.6.0
   restart_app: ^1.3.2
-  flutter_slidable: ^3.1.2
   scrollable_positioned_list: ^0.3.8
   auto_size_text: ^3.0.0
-  flutter_sound: ^9.23.1
   flutter_contacts: ^1.1.9+2
   tutorial_coach_mark: ^1.2.13
   reorderables: ^0.6.0
-  animate_do: ^4.2.0
   table_calendar: ^3.2.0
-  syncfusion_flutter_calendar: ^26.2.14
-  dropdown_button2: ^2.3.9
   # permission_handler: ^11.4.0
   
   # bottom_navy_bar: ^6.1.0
