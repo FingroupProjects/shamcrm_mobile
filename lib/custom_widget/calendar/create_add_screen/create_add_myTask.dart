@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/mytask_status_list_edit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,28 +69,12 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
         );
 
         if (totalSize + newFilesSize > 50) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_size_too_large'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
+           showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('file_size_too_large'),
+              isSuccess: false,
+            );
+
           return;
         }
 
@@ -102,13 +87,11 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла!');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ошибка при выборе файла!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+          showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('Ошибка при выборе файла!'),
+              isSuccess: false,
+            );
     }
   }
 
@@ -274,51 +257,17 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
       body: BlocListener<MyTaskBloc, MyTaskState>(
         listener: (context, state) {
           if (state is MyTaskError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+              showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
+                 );
           } else if (state is MyTaskSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.green,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+              showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: true,
+                 );
             Navigator.pop(context);
             context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
           }
@@ -436,7 +385,7 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
 
   void _submitForm() {
     setState(() {
-      isSubmitted = true; // Устанавливаем флаг при попытке отправки
+      isSubmitted = true; 
     });
     
   if (_formKey.currentState!.validate() && _selectedStatuses != null) {
@@ -446,28 +395,11 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
         ? AppLocalizations.of(context)!.translate('Выберете статус')
         : AppLocalizations.of(context)!.translate('fill_required_fields');
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          errorMessage,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: Colors.red,
-        elevation: 3,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: 3),
-      ),
-    );
+  showCustomSnackBar(
+       context: context,
+       message: AppLocalizations.of(context)!.translate(errorMessage),
+       isSuccess: false,
+     );
   }
 }
 
@@ -486,13 +418,11 @@ class _CreateMyTaskFromCalendareState extends State<CreateMyTaskFromCalendare> {
       try {
         endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('enter_valid_date'),
-            ),
-          ),
-        );
+          showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('enter_valid_date'),
+              isSuccess: false,
+            );
         return;
       }
     }

@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -92,48 +93,19 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
         child: BlocListener<EventBloc, EventState>(
           listener: (context, state) {
             if (state is EventError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
               );
             } else if (state is EventSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+               showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: true,
               );
               Navigator.pop(context);
               context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
-
             }
           },
           child: Form(
@@ -240,12 +212,11 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
         parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(date);
       }
       if (selectedSubject == null || selectedSubject!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Выберите тематику!'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('Выберите тематику!'),
+          isSuccess: false,
+          );
         return;
       }
 
@@ -261,25 +232,11 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
             ),
           );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('fill_required_fields'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+       showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('fill_required_fields'),
+          isSuccess: false,
+          );
     }
   }
 }
