@@ -144,7 +144,7 @@ class GoodsAttribute {
     print('GoodsModel: Attribute name: $attributeName, value: ${json['value']}');
 
     return GoodsAttribute(
-      id: json['id'] as int? ?? 0,
+      id: json['attribute_id'] as int? ?? 0,
       name: attributeName,
       value: json['value'] as String? ?? '',
       isIndividual: json['category_attribute']?['is_individual'] as bool? ?? false,

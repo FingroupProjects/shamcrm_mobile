@@ -49,29 +49,25 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    print(
-        'GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print(
-        'GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-              'id': variant.id,
-              'attributeValues': variant.attributeValues
-                  ?.map((attr) => {
-                        'categoryAttributeId': attr.categoryAttribute?.id,
-                        'attributeName':
-                            attr.categoryAttribute?.attribute?.name,
-                        'value': attr.value,
-                      })
-                  .toList(),
-              'price': variant.variantPrice?.price,
-              'files': variant.files?.map((file) => file.path).toList(),
-            }).toList()}');
+    print('GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
+    print('GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
+          'id': attr.id,
+          'name': attr.name,
+          'value': attr.value,
+          'isIndividual': attr.isIndividual
+        }).toList()}');
+    print('GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
+          'id': variant.id,
+          'attributeValues': variant.attributeValues
+              ?.map((attr) => {
+                    'categoryAttributeId': attr.categoryAttribute?.id,
+                    'attributeName': attr.categoryAttribute?.attribute?.name,
+                    'value': attr.value,
+                  })
+              .toList(),
+          'price': variant.variantPrice?.price,
+          'files': variant.files?.map((file) => file.path).toList(),
+        }).toList()}');
 
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
@@ -89,8 +85,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     isActive = widget.goods.isActive ?? false;
-    print(
-        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
+    print('GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -137,202 +132,194 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   void _initializeFieldsWithData() {
-    print('GoodsEditScreen: Initializing fields with data...');
-    print(
-        'GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
+  print('GoodsEditScreen: Initializing fields with data...');
+  print('GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
 
-    // Собираем уникальные индивидуальные атрибуты из вариантов
-    Set<Map<String, dynamic>> individualAttributes = {};
-    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-      for (var variant in widget.goods.variants!) {
-        if (variant.attributeValues != null) {
-          for (var attrValue in variant.attributeValues!) {
-            if (attrValue.categoryAttribute?.attribute != null &&
-                attrValue.categoryAttribute!.isIndividual == true) {
-              individualAttributes.add({
+  // Собираем уникальные индивидуальные атрибуты по имени
+  Map<String, Map<String, dynamic>> individualAttributesMap = {};
+  if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+    for (var variant in widget.goods.variants!) {
+      print('GoodsEditScreen: Processing variant ID: ${variant.id}');
+      if (variant.attributeValues != null) {
+        for (var attrValue in variant.attributeValues!) {
+          if (attrValue.categoryAttribute?.attribute != null &&
+              attrValue.categoryAttribute!.isIndividual == true) {
+            final attrName = attrValue.categoryAttribute!.attribute!.name;
+            if (!individualAttributesMap.containsKey(attrName)) {
+              individualAttributesMap[attrName] = {
                 'id': attrValue.categoryAttribute!.id,
-                'attribute_id': attrValue
-                    .categoryAttribute!.attribute!.id, // Сохраняем attribute_id
-                'name': attrValue.categoryAttribute!.attribute!.name,
+                'attribute_id': attrValue.categoryAttribute!.attribute!.id,
+                'name': attrName,
                 'isIndividual': true,
-                'value': null, // Default value, will be set per variant
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // Комбинируем неиндивидуальные и индивидуальные атрибуты, избегая дубликатов
-    final allAttributes = [
-      ...widget.goods.attributes
-          .where((attr) => !attr.isIndividual)
-          .map((attr) => subCatAttr.Attribute(
-                id: attr.id,
-                name: attr.name,
-                value: attr.value,
-                isIndividual: attr.isIndividual,
-              )),
-      ...individualAttributes.map((attr) => subCatAttr.Attribute(
-            id: attr['id'],
-            name: attr['name'],
-            value: attr['value'],
-            isIndividual: attr['isIndividual'],
-          )),
-    ].toSet().toList(); // Используем toSet() для удаления дубликатов
-
-    // Устанавливаем selectedCategory с уникальными атрибутами
-    selectedCategory = subCatAttr.SubCategoryAttributesData(
-      id: widget.goods.category.id,
-      name: widget.goods.category.name,
-      parent: subCatAttr.ParentCategory(
-        id: widget.goods.category.id,
-        name: widget.goods.category.name,
-      ),
-      attributes: allAttributes,
-      hasPriceCharacteristics: widget.goods.attributes
-              .any((attr) => attr.name.toLowerCase() == 'price') ||
-          individualAttributes
-              .any((attr) => attr['name'].toLowerCase() == 'price'),
-    );
-
-    print(
-        'GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
-
-    // Очищаем контроллеры и tableAttributes
-    attributeControllers.clear();
-    tableAttributes.clear();
-    print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
-
-    // Инициализируем контроллеры для неиндивидуальных атрибутов
-    for (var attribute
-        in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
-      attributeControllers[attribute.name] =
-          TextEditingController(text: attribute.value ?? '');
-      print(
-          'GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
-    }
-
-    // Обрабатываем варианты для заполнения tableAttributes, избегая дубликатов
-    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-      print('GoodsEditScreen: Processing variants...');
-      Set<String> processedVariants =
-          {}; // Для отслеживания уникальных вариантов
-      for (var variant in widget.goods.variants!) {
-        String variantKey = variant.attributeValues
-                ?.map((attr) => '${attr.categoryAttribute?.id}:${attr.value}')
-                .join('|') ??
-            variant.id.toString(); // Уникальный ключ для варианта
-        if (processedVariants.contains(variantKey)) {
-          print(
-              'GoodsEditScreen: Skipping duplicate variant with key: $variantKey');
-          continue;
-        }
-        processedVariants.add(variantKey);
-
-        print('GoodsEditScreen: Processing variant ID ${variant.id}');
-        print(
-            'GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
-                  'categoryAttributeId': attr.categoryAttribute?.id,
-                  'attributeName': attr.categoryAttribute?.attribute?.name,
-                  'value': attr.value
-                }).toList()}');
-
-        Map<String, dynamic> newRow = {
-          'id': variant.id, // Сохраняем ID варианта
-        };
-
-        // Инициализируем контроллеры для всех индивидуальных атрибутов
-        var individualAttrs =
-            selectedCategory!.attributes.where((a) => a.isIndividual).toList();
-        if (individualAttrs.isEmpty) {
-          print(
-              'GoodsEditScreen: No individual attributes found in selected category');
-        }
-        for (var attr in individualAttrs) {
-          newRow[attr.name] = TextEditingController();
-          print(
-              'GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
-        }
-
-        // Заполняем значения индивидуальных атрибутов из variant.attributeValues
-        if (variant.attributeValues != null &&
-            variant.attributeValues!.isNotEmpty) {
-          for (var attrValue in variant.attributeValues!) {
-            if (attrValue.categoryAttribute?.attribute != null) {
-              final attrName = attrValue.categoryAttribute!.attribute!.name;
-              if (newRow.containsKey(attrName)) {
-                newRow[attrName].text = attrValue.value ?? '';
-                print(
-                    'GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}');
-              } else {
-                print(
-                    'GoodsEditScreen: Attribute $attrName not found in newRow');
-              }
+                'value': null,
+              };
+              print('GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
             } else {
-              print(
-                  'GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
+              print('GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
             }
+          } else {
+            print('GoodsEditScreen: Skipping attribute value - not individual or missing data: ${attrValue.toString()}');
           }
-        } else {
-          print(
-              'GoodsEditScreen: No attribute values for variant ID ${variant.id}');
         }
-
-        // Добавляем цену, если категория имеет характеристики цены
-        if (selectedCategory!.hasPriceCharacteristics) {
-          newRow['price'] = TextEditingController(
-            text: variant.variantPrice?.price?.toString() ?? '0.0',
-          );
-          print(
-              'GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
-        }
-
-        // Добавляем изображения варианта
-        newRow['images'] =
-            variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
-                [];
-        print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
-
-        tableAttributes.add(newRow);
-        print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
+      } else {
+        print('GoodsEditScreen: Variant ID ${variant.id} has no attribute values');
       }
-    } else {
-      print('GoodsEditScreen: No variants found, adding empty row');
-      addTableRow();
     }
-
-    print(
-        'GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-              'id': row['id'],
-              'attributes': row.keys
-                  .where(
-                      (key) => key != 'images' && key != 'price' && key != 'id')
-                  .map((key) => {key: row[key].text})
-                  .toList(),
-              'price': row['price']?.text,
-              'images': row['images'],
-            }).toList()}');
+  } else {
+    print('GoodsEditScreen: No variants found in goods');
   }
 
+  List<Map<String, dynamic>> individualAttributes = individualAttributesMap.values.toList();
+  print('GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
+        'id': attr['id'],
+        'name': attr['name'],
+        'isIndividual': attr['isIndividual']
+      }).toList()}');
+
+  // Комбинируем неиндивидуальные и индивидуальные атрибуты
+  final allAttributes = [
+    ...widget.goods.attributes
+        .where((attr) => !attr.isIndividual)
+        .map((attr) => subCatAttr.Attribute(
+              id: attr.id,
+              name: attr.name,
+              value: attr.value,
+              isIndividual: attr.isIndividual,
+            )),
+    ...individualAttributes.map((attr) => subCatAttr.Attribute(
+          id: attr['id'],
+          name: attr['name'],
+          value: attr['value'],
+          isIndividual: attr['isIndividual'],
+        )),
+  ].toSet().toList();
+
+  print('GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
+        'id': attr.id,
+        'name': attr.name,
+        'value': attr.value,
+        'isIndividual': attr.isIndividual
+      }).toList()}');
+
+  // Устанавливаем selectedCategory
+  selectedCategory = subCatAttr.SubCategoryAttributesData(
+    id: widget.goods.category.id,
+    name: widget.goods.category.name,
+    parent: subCatAttr.ParentCategory(
+      id: widget.goods.category.id,
+      name: widget.goods.category.name,
+    ),
+    attributes: allAttributes,
+    hasPriceCharacteristics: widget.goods.attributes
+            .any((attr) => attr.name.toLowerCase() == 'price') ||
+        individualAttributes.any((attr) => attr['name'].toLowerCase() == 'price'),
+  );
+
+  print('GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
+        'id': attr.id,
+        'name': attr.name,
+        'value': attr.value,
+        'isIndividual': attr.isIndividual
+      }).toList()}');
+  print('GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
+
+  // Очищаем контроллеры и tableAttributes
+  attributeControllers.clear();
+  tableAttributes.clear();
+  print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
+
+  // Инициализируем контроллеры для неиндивидуальных атрибутов
+  for (var attribute in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
+    attributeControllers[attribute.name] =
+        TextEditingController(text: attribute.value ?? '');
+    print('GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
+  }
+
+  // Формируем tableAttributes
+  if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+    print('GoodsEditScreen: Processing variants to build tableAttributes...');
+    for (var variant in widget.goods.variants!) {
+      print('GoodsEditScreen: Processing variant ID ${variant.id}');
+      print('GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
+            'categoryAttributeId': attr.categoryAttribute?.id,
+            'attributeName': attr.categoryAttribute?.attribute?.name,
+            'value': attr.value
+          }).toList()}');
+
+      Map<String, dynamic> newRow = {
+        'id': variant.id,
+      };
+
+      // Инициализируем контроллеры для всех индивидуальных атрибутов
+      var individualAttrs = selectedCategory!.attributes.where((a) => a.isIndividual).toList();
+      if (individualAttrs.isEmpty) {
+        print('GoodsEditScreen: No individual attributes found in selected category');
+      }
+      for (var attr in individualAttrs) {
+        newRow[attr.name] = TextEditingController();
+        print('GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
+      }
+
+      // Заполняем значения индивидуальных атрибутов
+      if (variant.attributeValues != null && variant.attributeValues!.isNotEmpty) {
+        for (var attrValue in variant.attributeValues!) {
+          if (attrValue.categoryAttribute?.attribute != null) {
+            final attrName = attrValue.categoryAttribute!.attribute!.name;
+            if (newRow.containsKey(attrName)) {
+              newRow[attrName].text = attrValue.value ?? '';
+              print('GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}');
+            } else {
+              print('GoodsEditScreen: Attribute $attrName not found in newRow');
+            }
+          } else {
+            print('GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
+          }
+        }
+      } else {
+        print('GoodsEditScreen: No attribute values for variant ID ${variant.id}');
+      }
+
+      // Добавляем цену
+      if (selectedCategory!.hasPriceCharacteristics) {
+        newRow['price'] = TextEditingController(
+          text: variant.variantPrice?.price?.toString() ?? '0.0',
+        );
+        print('GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
+      }
+
+      // Добавляем изображения
+      newRow['images'] =
+          variant.files?.map((file) => '$baseUrl/${file.path}').toList() ?? [];
+      print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
+
+      tableAttributes.add(newRow);
+      print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
+    }
+  } else {
+    print('GoodsEditScreen: No variants found, adding empty row');
+    addTableRow();
+  }
+
+  print('GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
+        'id': row['id'],
+        'attributes': row.keys
+            .where((key) => key != 'images' && key != 'price' && key != 'id')
+            .map((key) => {key: row[key].text})
+            .toList(),
+        'price': row['price']?.text,
+        'images': row['images'],
+      }).toList()}');
+}
   Future<void> fetchSubCategories() async {
     try {
       final categories = await _apiService.getSubCategoryAttributes();
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print(
-              'GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
-                    'id': cat.id,
-                    'name': cat.name
-                  }).toList()}');
+          print('GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
+                'id': cat.id,
+                'name': cat.name
+              }).toList()}');
         });
       }
     } catch (e) {
@@ -345,8 +332,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      print(
-          'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid');
+      print('GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid');
     });
   }
 
@@ -360,8 +346,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       for (var attr
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
-        print(
-            'GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
+        print('GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
       }
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
@@ -441,14 +426,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
-    print(
-        'GoodsEditScreen: Picking image for row $rowIndex from source: $source');
+    print('GoodsEditScreen: Picking image for row $rowIndex from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         tableAttributes[rowIndex]['images'].add(pickedFile.path);
-        print(
-            'GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
+        print('GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -463,8 +446,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         tableAttributes[rowIndex]['images']
             .addAll(pickedFiles.map((file) => file.path));
-        print(
-            'GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
+        print('GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -473,7 +455,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   @override
-  Widget build(BuildContext Context) {
+  Widget build(BuildContext context) {
+    print('GoodsEditScreen: Building widget tree...');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -525,22 +508,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     keyboardType: TextInputType.multiline,
                   ),
                   const SizedBox(height: 8),
-                  if (selectedCategory == null ||
-                      !selectedCategory!.hasPriceCharacteristics)
-                    CustomTextField(
-                      controller: discountPriceController,
-                      hintText: 'Введите скидочную цену',
-                      label: 'Скидочная цена',
-                      keyboardType: TextInputType.number,
-                    ),
-                  const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: stockQuantityController,
-                    hintText: 'Введите количество на складе',
-                    label: 'Количество на складе',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
                           child: Padding(
@@ -569,8 +536,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           TextEditingController();
                                     }
                                   }
-                                  print(
-                                      'GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
+                                  print('GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
                                 });
                               },
                               subCategories:
@@ -613,6 +579,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
+                          print('GoodsEditScreen: Rendering non-individual attribute: ${attribute.name}');
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -647,28 +614,30 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 scrollDirection: Axis.horizontal,
                                 child: Column(
                                   children: [
-                                    DataTable(
-                                      columnSpacing: 16,
-                                      dataRowHeight:
-                                          70, // Increased height to accommodate padding
-                                      headingRowHeight: 56,
-                                      dividerThickness: 0,
-                                      columns: [
-                                        ...selectedCategory!.attributes
-                                            .where((attr) => attr.isIndividual)
-                                            .map((attr) => DataColumn(
-                                                  label: Text(
-                                                    attr.name,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff1E2E52),
-                                                    ),
-                                                  ),
-                                                ))
-                                            .toList(),
+                                    () {
+                                      // Получаем уникальные индивидуальные атрибуты
+                                      final individualAttrs = selectedCategory!
+                                          .attributes
+                                          .where((attr) => attr.isIndividual)
+                                          .toSet()
+                                          .toList();
+                                      print('GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
+                                      print('GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
+                                      print('GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
+
+                                      // Формируем столбцы
+                                      List<DataColumn> columns = [
+                                        ...individualAttrs.map((attr) => DataColumn(
+                                              label: Text(
+                                                attr.name,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff1E2E52),
+                                                ),
+                                              ),
+                                            )),
                                         if (selectedCategory!
                                             .hasPriceCharacteristics)
                                           DataColumn(
@@ -704,191 +673,186 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                           ),
                                         ),
-                                      ],
-                                      rows: tableAttributes
+                                      ];
+
+                                      print('GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
+
+                                      // Формируем строки
+                                      List<DataRow> rows = tableAttributes
                                           .asMap()
                                           .entries
                                           .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
-                                        return DataRow(
-                                          cells: [
-                                            ...selectedCategory!.attributes
-                                                .where(
-                                                    (attr) => attr.isIndividual)
-                                                .map((attr) => DataCell(
-                                                      SizedBox(
-                                                        width: 150,
-                                                        child: TextField(
-                                                          controller:
-                                                              row[attr.name],
-                                                          decoration:
-                                                              InputDecoration(
-                                                            hintText:
-                                                                'Введите ${attr.name}',
-                                                            hintStyle:
-                                                                TextStyle(
-                                                              fontSize: 12,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
-                                                              fontFamily:
-                                                                  'Gilroy',
-                                                              color: Color(
-                                                                  0xff99A4BA),
-                                                            ),
-                                                            border:
-                                                                OutlineInputBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            contentPadding:
-                                                                EdgeInsets
-                                                                    .symmetric(
-                                                                        horizontal:
-                                                                            12,
-                                                                        vertical:
-                                                                            16),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ))
-                                                .toList(),
-                                            if (selectedCategory!
-                                                .hasPriceCharacteristics)
-                                              DataCell(
+                                        print('GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {key: row[key] is TextEditingController ? row[key].text : row[key]}).toList()}');
+
+                                        List<DataCell> cells = [
+                                          ...individualAttrs.map((attr) => DataCell(
                                                 SizedBox(
                                                   width: 150,
                                                   child: TextField(
-                                                    controller: row['price'],
+                                                    controller: row[attr.name] ??
+                                                        TextEditingController(),
                                                     decoration: InputDecoration(
-                                                      hintText: 'Введите цену',
+                                                      hintText:
+                                                          'Введите ${attr.name}',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff99A4BA),
+                                                        color: Color(0xff99A4BA),
                                                       ),
-                                                      border:
-                                                          OutlineInputBorder(
+                                                      border: OutlineInputBorder(
                                                         borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
+                                                            BorderRadius.circular(
+                                                                12),
                                                       ),
                                                       contentPadding:
                                                           EdgeInsets.symmetric(
                                                               horizontal: 12,
                                                               vertical: 16),
                                                     ),
-                                                    keyboardType:
-                                                        TextInputType.number,
                                                   ),
                                                 ),
-                                              ),
+                                              )),
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
                                             DataCell(
-                                              Row(
-                                                children: [
-                                                  if (row['images'].isNotEmpty)
-                                                    Container(
-                                                      width: 40,
-                                                      height: 40,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        image: DecorationImage(
-                                                          image: row['images']
-                                                                  .first
-                                                                  .startsWith(
-                                                                      'http')
-                                                              ? NetworkImage(
-                                                                      row['images']
-                                                                          .first)
-                                                                  as ImageProvider
-                                                              : FileImage(File(
-                                                                  row['images']
-                                                                      .first)),
-                                                          fit: BoxFit.cover,
-                                                        ),
+                                              SizedBox(
+                                                width: 150,
+                                                child: TextField(
+                                                  controller: row['price'] ??
+                                                      TextEditingController(),
+                                                  decoration: InputDecoration(
+                                                    hintText: 'Введите цену',
+                                                    hintStyle: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff99A4BA),
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 16),
+                                                  ),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                ),
+                                              ),
+                                            ),
+                                          DataCell(
+                                            Row(
+                                              children: [
+                                                if (row['images'].isNotEmpty)
+                                                  Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      image: DecorationImage(
+                                                        image: row['images']
+                                                                .first
+                                                                .startsWith(
+                                                                    'http')
+                                                            ? NetworkImage(
+                                                                    row['images']
+                                                                        .first)
+                                                                as ImageProvider
+                                                            : FileImage(File(
+                                                                row['images']
+                                                                    .first)),
+                                                        fit: BoxFit.cover,
                                                       ),
                                                     ),
-                                                  const SizedBox(width: 8),
-                                                  Stack(
-                                                    children: [
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons.add_circle,
-                                                            color: Colors.blue,
-                                                            size: 20),
-                                                        onPressed: () =>
-                                                            _showImagePickerOptionsForRow(
-                                                                index),
-                                                      ),
-                                                      if (row['images']
-                                                          .isNotEmpty)
-                                                        Positioned(
-                                                          top: 4,
-                                                          right: 4,
-                                                          child: Container(
-                                                            padding:
-                                                                EdgeInsets.all(
-                                                                    4),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors.red,
-                                                              shape: BoxShape
-                                                                  .circle,
-                                                            ),
-                                                            child: Text(
-                                                              '${row['images'].length}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 10,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                              ),
+                                                  ),
+                                                const SizedBox(width: 8),
+                                                Stack(
+                                                  children: [
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.add_circle,
+                                                          color: Colors.blue,
+                                                          size: 20),
+                                                      onPressed: () =>
+                                                          _showImagePickerOptionsForRow(
+                                                              index),
+                                                    ),
+                                                    if (row['images'].isNotEmpty)
+                                                      Positioned(
+                                                        top: 4,
+                                                        right: 4,
+                                                        child: Container(
+                                                          padding:
+                                                              EdgeInsets.all(4),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.red,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                          child: Text(
+                                                            '${row['images'].length}',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 10,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                             ),
                                                           ),
                                                         ),
-                                                    ],
-                                                  ),
-                                                  IconButton(
-                                                    icon: Icon(Icons.visibility,
-                                                        color: Colors.grey,
-                                                        size: 20),
-                                                    onPressed: row['images']
-                                                            .isNotEmpty
-                                                        ? () =>
-                                                            _showImageListPopup(
-                                                                row['images'])
-                                                        : null,
-                                                  ),
-                                                ],
-                                              ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                IconButton(
+                                                  icon: Icon(Icons.visibility,
+                                                      color: Colors.grey,
+                                                      size: 20),
+                                                  onPressed:
+                                                      row['images'].isNotEmpty
+                                                          ? () =>
+                                                              _showImageListPopup(
+                                                                  row['images'])
+                                                          : null,
+                                                ),
+                                              ],
                                             ),
-                                            DataCell(
-                                              IconButton(
-                                                icon: Icon(Icons.delete,
-                                                    color: Colors.red,
-                                                    size: 20),
-                                                onPressed: () =>
-                                                    removeTableRow(index),
-                                              ),
+                                          ),
+                                          DataCell(
+                                            IconButton(
+                                              icon: Icon(Icons.delete,
+                                                  color: Colors.red, size: 20),
+                                              onPressed: () =>
+                                                  removeTableRow(index),
                                             ),
-                                          ],
-                                        );
-                                      }).toList(),
-                                    ),
-                                    ...tableAttributes
-                                        .asMap()
-                                        .entries
-                                        .map((entry) {
+                                          ),
+                                        ];
+
+                                        print('GoodsEditScreen: Row $index cells created');
+                                        return DataRow(cells: cells);
+                                      }).toList();
+
+                                      print('GoodsEditScreen: DataTable rows created: ${rows.length}');
+
+                                      return DataTable(
+                                        columnSpacing: 16,
+                                        dataRowHeight: 70,
+                                        headingRowHeight: 56,
+                                        dividerThickness: 0,
+                                        columns: columns,
+                                        rows: rows,
+                                      );
+                                    }(),
+                                    ...tableAttributes.asMap().entries.map((entry) {
                                       int index = entry.key;
                                       if (index < tableAttributes.length - 1) {
                                         return Divider(
@@ -1273,8 +1237,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.add(pickedFile.path);
         isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
+        print('GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No image picked');
@@ -1288,8 +1251,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
         isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
+        print('GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No images picked');
@@ -1300,8 +1262,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       _imagePaths.remove(imagePath);
       isImagesValid = _imagePaths.isNotEmpty;
-      print(
-          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
+      print('GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
     });
   }
 
@@ -1322,36 +1283,19 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
-            print(
-                'GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
+            print('GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
           } else {
-            print(
-                'GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
+            print('GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
           }
         }
 
         print('GoodsEditScreen: Processing variants...');
-        Set<String> processedVariantKeys =
-            {}; // Для отслеживания уникальных вариантов
         for (var row in tableAttributes) {
-          // Создаем уникальный ключ для варианта на основе его атрибутов
-          String variantKey = row.entries
-              .where((entry) => entry.key != 'images' && entry.key != 'price')
-              .map((entry) => '${entry.key}:${entry.value.text}')
-              .join('|');
-          if (processedVariantKeys.contains(variantKey)) {
-            print(
-                'GoodsEditScreen: Skipping duplicate variant with key: $variantKey');
-            continue;
-          }
-          processedVariantKeys.add(variantKey);
-
           Map<String, dynamic> variant = {
             'is_active': true,
             'variant_attributes': [],
           };
 
-          // Проверяем существование файлов для варианта
           List<String> variantImagePaths = row['images']?.cast<String>() ?? [];
           List<File> variantImages = [];
           for (var path in variantImagePaths) {
@@ -1361,13 +1305,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantImages.add(file);
                 print('GoodsEditScreen: Added variant image: $path');
               } else {
-                print(
-                    'GoodsEditScreen: Variant file not found, skipping: $path');
+                print('GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
 
-          // Добавляем индивидуальные атрибуты
           for (var attr
               in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
@@ -1377,34 +1319,28 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 'value': controller.text.trim(),
                 'is_active': true,
               });
-              print(
-                  'GoodsEditScreen: Added variant attribute - category_attribute_id: ${attr.id}, value: ${controller.text.trim()}');
+              print('GoodsEditScreen: Added variant attribute - category_attribute_id: ${attr.id}, value: ${controller.text.trim()}');
             } else {
-              print(
-                  'GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
+              print('GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
             }
           }
 
-          // Добавляем цену
           if (selectedCategory!.hasPriceCharacteristics) {
             final priceController = row['price'] as TextEditingController?;
             if (priceController != null &&
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print(
-                  'GoodsEditScreen: Added variant price: ${variant['price']}');
+              print('GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
               print('GoodsEditScreen: Set default variant price: 0.0');
             }
           }
 
-          // Добавляем изображения, если они существуют
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
-            print(
-                'GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
+            print('GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
@@ -1419,7 +1355,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Final attributes: $attributes');
       print('GoodsEditScreen: Final variants: $variants');
 
-      // Проверяем существование общих изображений
       List<File> generalImages = [];
       for (var path in _imagePaths) {
         if (!path.startsWith('http')) {

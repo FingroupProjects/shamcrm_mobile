@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
+import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,17 +28,18 @@ class GoodsAddScreen extends StatefulWidget {
 class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController goodsNameController = TextEditingController();
-  final TextEditingController goodsDescriptionController =
-      TextEditingController();
+  final TextEditingController goodsDescriptionController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
 
   SubCategoryAttributesData? selectedCategory;
+  Branch? selectedBranch; // Переменная для хранения выбранного филиала
   bool isActive = true;
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
   bool isImagesValid = true;
+  bool isBranchValid = true; // Валидация для поля филиала
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -47,6 +52,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
+    // Запрашиваем филиалы
+    context.read<BranchBloc>().add(FetchBranches());
   }
 
   Future<void> fetchSubCategories() async {
@@ -67,6 +74,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
+      isBranchValid = selectedBranch != null; // Проверяем, выбран ли филиал
     });
   }
 
@@ -74,8 +82,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (selectedCategory == null) return;
     setState(() {
       Map<String, dynamic> newRow = {};
-      for (var attr
-          in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+      for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
       }
       if (selectedCategory!.hasPriceCharacteristics) {
@@ -128,8 +135,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!
-                      .translate('select_from_gallery'),
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -164,8 +170,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        tableAttributes[rowIndex]['images']
-            .addAll(pickedFiles.map((file) => file.path));
+        tableAttributes[rowIndex]['images'].addAll(pickedFiles.map((file) => file.path));
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     }
@@ -211,56 +216,49 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_name'),
-                    label:
-                        AppLocalizations.of(context)!.translate('goods_name'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                    label: AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!
-                            .translate('field_required')
+                        ? AppLocalizations.of(context)!.translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!
-                        .translate('goods_description'),
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
-                  const SizedBox(height: 8),
-                  if (selectedCategory == null ||
-                      !selectedCategory!.hasPriceCharacteristics)
-                    CustomTextField(
-                      controller: discountPriceController,
-                      hintText: AppLocalizations.of(context)!
-                          .translate('enter_discount_price'),
-                      label: AppLocalizations.of(context)!
-                          .translate('discount_price'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: stockQuantityController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('enter_stock_quantity'),
-                    label: AppLocalizations.of(context)!
-                        .translate('stock_quantity'),
-                    keyboardType: TextInputType.number,
-                  ),
                   // const SizedBox(height: 8),
                   // CustomTextField(
-                  //   controller: unitIdController,
-                  //   hintText: AppLocalizations.of(context)!
-                  //       .translate('enter_unit_id'),
-                  //   label: 'Unit ID',
+                  //   controller: stockQuantityController,
+                  //   hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
+                  //   label: AppLocalizations.of(context)!.translate('stock_quantity'),
                   //   keyboardType: TextInputType.number,
-                  //   // validator: (value) => value == null || value.isEmpty
-                  //   //     ? 'Please enter a Unit ID'
-                  //   //     : null,
                   // ),
+                  const SizedBox(height: 8),
+                  BranchesDropdown(
+                    selectedBranch: selectedBranch,
+                    onSelectBranch: (Branch branch) {
+                      setState(() {
+                        selectedBranch = branch;
+                        isBranchValid = true;
+                      });
+                    },
+                  ),
+                  if (!isBranchValid)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Пожалуйста, выберите филиал',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   CategoryDropdownWidget(
                     selectedCategory: selectedCategory?.name,
@@ -269,12 +267,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         selectedCategory = category;
                         attributeControllers.clear();
                         tableAttributes.clear();
-                        if (category != null &&
-                            category.attributes.isNotEmpty) {
-                          for (var attribute in category.attributes
-                              .where((a) => !a.isIndividual)) {
-                            attributeControllers[attribute.name] =
-                                TextEditingController();
+                        if (category != null && category.attributes.isNotEmpty) {
+                          for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
+                            attributeControllers[attribute.name] = TextEditingController();
                           }
                         }
                       });
@@ -282,9 +277,20 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     subCategories: subCategories,
                     isValid: isCategoryValid,
                   ),
+                  if (!isCategoryValid)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Пожалуйста, выберите подкатегорию',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
-                  if (selectedCategory != null &&
-                      selectedCategory!.attributes.isNotEmpty)
+                  if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -301,9 +307,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           ),
                         ),
                         Divider(color: Color(0xff1E2E52)),
-                        ...selectedCategory!.attributes
-                            .where((attr) => !attr.isIndividual)
-                            .map((attribute) {
+                        ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -319,16 +323,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
-                                controller:
-                                    attributeControllers[attribute.name]!,
-                                hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                controller: attributeControllers[attribute.name]!,
+                                hintText: 'Введите ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
                         }).toList(),
-                        if (selectedCategory!.attributes
-                            .any((attr) => attr.isIndividual))
+                        if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -339,8 +340,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   children: [
                                     DataTable(
                                       columnSpacing: 16,
-                                      dataRowHeight:
-                                          70, // Increased height to accommodate padding
+                                      dataRowHeight: 70,
                                       headingRowHeight: 56,
                                       dividerThickness: 0,
                                       columns: [
@@ -351,16 +351,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     attr.name,
                                                     style: TextStyle(
                                                       fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                                      fontWeight: FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff1E2E52),
                                                     ),
                                                   ),
                                                 ))
                                             .toList(),
-                                        if (selectedCategory!
-                                            .hasPriceCharacteristics)
+                                        if (selectedCategory!.hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
                                               'Цена',
@@ -395,59 +393,37 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           ),
                                         ),
                                       ],
-                                      rows: tableAttributes
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
+                                      rows: tableAttributes.asMap().entries.map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
                                         return DataRow(
                                           cells: [
                                             ...selectedCategory!.attributes
-                                                .where(
-                                                    (attr) => attr.isIndividual)
+                                                .where((attr) => attr.isIndividual)
                                                 .map((attr) => DataCell(
                                                       SizedBox(
                                                         width: 150,
                                                         child: TextField(
-                                                          controller:
-                                                              row[attr.name],
-                                                          decoration:
-                                                              InputDecoration(
-                                                            hintText:
-                                                                'Введите ${attr.name}',
-                                                            hintStyle:
-                                                                TextStyle(
+                                                          controller: row[attr.name],
+                                                          decoration: InputDecoration(
+                                                            hintText: 'Введите ${attr.name}',
+                                                            hintStyle: TextStyle(
                                                               fontSize: 12,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
-                                                              fontFamily:
-                                                                  'Gilroy',
-                                                              color: Color(
-                                                                  0xff99A4BA),
+                                                              fontWeight: FontWeight.w500,
+                                                              fontFamily: 'Gilroy',
+                                                              color: Color(0xff99A4BA),
                                                             ),
-                                                            border:
-                                                                OutlineInputBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
+                                                            border: OutlineInputBorder(
+                                                              borderRadius: BorderRadius.circular(12),
                                                             ),
                                                             contentPadding:
-                                                                EdgeInsets
-                                                                    .symmetric(
-                                                                        horizontal:
-                                                                            12,
-                                                                        vertical:
-                                                                            16),
+                                                                EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                                           ),
                                                         ),
                                                       ),
                                                     ))
                                                 .toList(),
-                                            if (selectedCategory!
-                                                .hasPriceCharacteristics)
+                                            if (selectedCategory!.hasPriceCharacteristics)
                                               DataCell(
                                                 SizedBox(
                                                   width: 150,
@@ -457,25 +433,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       hintText: 'Введите цену',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                                        fontWeight: FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff99A4BA),
+                                                        color: Color(0xff99A4BA),
                                                       ),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
+                                                      border: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(12),
                                                       ),
                                                       contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 16),
+                                                          EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                                     ),
-                                                    keyboardType:
-                                                        TextInputType.number,
+                                                    keyboardType: TextInputType.number,
                                                   ),
                                                 ),
                                               ),
@@ -487,13 +455,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       width: 40,
                                                       height: 40,
                                                       decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
+                                                        borderRadius: BorderRadius.circular(8),
                                                         image: DecorationImage(
-                                                          image: FileImage(File(
-                                                              row['images']
-                                                                  .first)),
+                                                          image: FileImage(File(row['images'].first)),
                                                           fit: BoxFit.cover,
                                                         ),
                                                       ),
@@ -502,38 +466,25 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                   Stack(
                                                     children: [
                                                       IconButton(
-                                                        icon: Icon(
-                                                            Icons.add_circle,
-                                                            color: Colors.blue,
-                                                            size: 20),
-                                                        onPressed: () =>
-                                                            _showImagePickerOptionsForRow(
-                                                                index),
+                                                        icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
+                                                        onPressed: () => _showImagePickerOptionsForRow(index),
                                                       ),
-                                                      if (row['images']
-                                                          .isNotEmpty)
+                                                      if (row['images'].isNotEmpty)
                                                         Positioned(
                                                           top: 4,
                                                           right: 4,
                                                           child: Container(
-                                                            padding:
-                                                                EdgeInsets.all(
-                                                                    4),
-                                                            decoration:
-                                                                BoxDecoration(
+                                                            padding: EdgeInsets.all(4),
+                                                            decoration: BoxDecoration(
                                                               color: Colors.red,
-                                                              shape: BoxShape
-                                                                  .circle,
+                                                              shape: BoxShape.circle,
                                                             ),
                                                             child: Text(
                                                               '${row['images'].length}',
                                                               style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
+                                                                color: Colors.white,
                                                                 fontSize: 10,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
+                                                                fontWeight: FontWeight.bold,
                                                               ),
                                                             ),
                                                           ),
@@ -541,14 +492,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     ],
                                                   ),
                                                   IconButton(
-                                                    icon: Icon(Icons.visibility,
-                                                        color: Colors.grey,
-                                                        size: 20),
-                                                    onPressed: row['images']
-                                                            .isNotEmpty
-                                                        ? () =>
-                                                            _showImageListPopup(
-                                                                row['images'])
+                                                    icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
+                                                    onPressed: row['images'].isNotEmpty
+                                                        ? () => _showImageListPopup(row['images'])
                                                         : null,
                                                   ),
                                                 ],
@@ -556,21 +502,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                             DataCell(
                                               IconButton(
-                                                icon: Icon(Icons.delete,
-                                                    color: Colors.red,
-                                                    size: 20),
-                                                onPressed: () =>
-                                                    removeTableRow(index),
+                                                icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                                                onPressed: () => removeTableRow(index),
                                               ),
                                             ),
                                           ],
                                         );
                                       }).toList(),
                                     ),
-                                    ...tableAttributes
-                                        .asMap()
-                                        .entries
-                                        .map((entry) {
+                                    ...tableAttributes.asMap().entries.map((entry) {
                                       int index = entry.key;
                                       if (index < tableAttributes.length - 1) {
                                         return Divider(
@@ -609,9 +549,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         color: const Color(0xffF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isImagesValid
-                              ? const Color(0xffF4F7FD)
-                              : Colors.red,
+                          color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
                           width: 1.5,
                         ),
                       ),
@@ -620,12 +558,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt,
-                                      color: Color(0xff99A4BA), size: 40),
+                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('pick_image'),
+                                    AppLocalizations.of(context)!.translate('pick_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -649,8 +585,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         width: 100,
                                         height: 100,
                                         decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           image: DecorationImage(
                                             image: FileImage(File(imagePath)),
                                             fit: BoxFit.cover,
@@ -662,14 +597,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                               top: 4,
                                               right: 4,
                                               child: GestureDetector(
-                                                onTap: () =>
-                                                    _removeImage(imagePath),
+                                                onTap: () => _removeImage(imagePath),
                                                 child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
+                                                  padding: const EdgeInsets.all(4),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.5),
+                                                    color: Colors.black.withOpacity(0.5),
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: Icon(
@@ -691,18 +623,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         height: 100,
                                         decoration: BoxDecoration(
                                           color: Color(0xffF4F7FD),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                              color: Color(0xffF4F7FD)),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Color(0xffF4F7FD)),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.add_a_photo,
-                                                color: Color(0xff99A4BA),
-                                                size: 40),
+                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
                                             SizedBox(height: 4),
                                             Text(
                                               "Добавить +",
@@ -718,8 +645,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item =
-                                          _imagePaths.removeAt(oldIndex);
+                                      final item = _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                     });
                                   },
@@ -728,8 +654,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.5),
                                       borderRadius: BorderRadius.circular(12),
@@ -753,8 +678,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('   Выберите хотя-бы одну фотографию!'),
+                        AppLocalizations.of(context)!.translate('Выберите хотя-бы одну фотографию!'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -770,8 +694,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('status_goods'),
+                              AppLocalizations.of(context)!.translate('status_goods'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -787,8 +710,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 4, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF4F7FD),
                                   borderRadius: BorderRadius.circular(12),
@@ -802,23 +724,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           isActive = value;
                                         });
                                       },
-                                      activeColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
-                                      inactiveTrackColor: const Color.fromARGB(
-                                              255, 179, 179, 179)
-                                          .withOpacity(0.5),
-                                      activeTrackColor: ChatSmsStyles
-                                          .messageBubbleSenderColor,
-                                      inactiveThumbColor: const Color.fromARGB(
-                                          255, 255, 255, 255),
+                                      activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
                                       isActive
-                                          ? AppLocalizations.of(context)!
-                                              .translate('active')
-                                          : AppLocalizations.of(context)!
-                                              .translate('inactive'),
+                                          ? AppLocalizations.of(context)!.translate('active')
+                                          : AppLocalizations.of(context)!.translate('inactive'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -871,21 +786,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       ),
                     )
                   : CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('add'),
+                      buttonText: AppLocalizations.of(context)!.translate('add'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() &&
-                            isCategoryValid &&
-                            isImagesValid) {
+                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message:
-                                'Пожалуйста, заполните все обязательные поля!',
+                            message: 'Пожалуйста, заполните все обязательные поля!',
                             isSuccess: false,
                           );
                         }
@@ -927,8 +838,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!
-                      .translate('select_from_gallery'),
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -977,9 +887,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   void _createProduct() async {
-    if (formKey.currentState!.validate() &&
-        selectedCategory != null &&
-        _imagePaths.isNotEmpty) {
+    if (formKey.currentState!.validate() && selectedCategory != null && _imagePaths.isNotEmpty && selectedBranch != null) {
       setState(() => isLoading = true);
 
       try {
@@ -990,8 +898,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         print('Selected category attributes: ${selectedCategory!.attributes}');
 
         // Формируем неиндивидуальные атрибуты
-        for (var attribute
-            in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
             attributes.add({
@@ -1008,8 +915,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             'variant_attributes': [],
           };
 
-          List<String> variantImagePaths =
-              (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
           List<File> variantImages = [];
           for (var path in variantImagePaths) {
             File file = File(path);
@@ -1021,8 +927,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           }
 
           // Добавляем индивидуальные атрибуты
-          for (var attr
-              in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
               variant['variant_attributes'].add({
@@ -1037,11 +942,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
           // Добавляем цену
           final priceController = row['price'] as TextEditingController?;
-          if (selectedCategory!.hasPriceCharacteristics &&
-              priceController != null &&
-              priceController.text.trim().isNotEmpty) {
-            variant['price'] =
-                double.tryParse(priceController.text.trim()) ?? 0.0;
+          if (selectedCategory!.hasPriceCharacteristics && priceController != null && priceController.text.trim().isNotEmpty) {
+            variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
           } else {
             variant['price'] = 0.0;
           }
@@ -1085,12 +987,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           setState(() => isLoading = false);
           showCustomSnackBar(
             context: context,
-            message:
-                'Не удалось найти общие изображения. Пожалуйста, выберите изображения заново.',
+            message: 'Не удалось найти общие изображения. Пожалуйста, выберите изображения заново.',
             isSuccess: false,
           );
           return;
         }
+
         final response = await _apiService.createGoods(
           name: goodsNameController.text.trim(),
           parentId: selectedCategory!.id,
@@ -1103,6 +1005,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           discountPrice: selectedCategory!.hasPriceCharacteristics
               ? null
               : double.tryParse(discountPriceController.text) ?? 0.0,
+          branch: selectedBranch!.id, // Передаем ID филиала
         );
 
         if (response['success'] == true) {
@@ -1138,5 +1041,23 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         isSuccess: false,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    goodsNameController.dispose();
+    goodsDescriptionController.dispose();
+    discountPriceController.dispose();
+    stockQuantityController.dispose();
+    unitIdController.dispose();
+    attributeControllers.values.forEach((controller) => controller.dispose());
+    for (var row in tableAttributes) {
+      for (var attr in row.values) {
+        if (attr is TextEditingController) {
+          attr.dispose();
+        }
+      }
+    }
+    super.dispose();
   }
 }
