@@ -46,8 +46,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             TextFormField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText:
-                    AppLocalizations.of(context)!.translate('enter_name_list'),
+                hintText:AppLocalizations.of(context)!.translate('enter_category_name'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

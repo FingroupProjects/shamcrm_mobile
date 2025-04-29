@@ -5,9 +5,9 @@ import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/tematika_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
-import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -31,11 +31,12 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
   String body = '';
   String date = '';
   bool sendNotification = false;
+  bool _subjectError = false; // Переменная для отслеживания ошибки тематики
 
   @override
   void initState() {
     super.initState();
-      if (widget.initialDate != null) {
+    if (widget.initialDate != null) {
       final now = DateTime.now();
       final combinedDateTime = DateTime(
         widget.initialDate!.year,
@@ -93,19 +94,21 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
         child: BlocListener<EventBloc, EventState>(
           listener: (context, state) {
             if (state is EventError) {
-                showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: false,
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: false,
               );
             } else if (state is EventSuccess) {
-               showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: true,
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: true,
               );
               Navigator.pop(context);
-              context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
+              context.read<CalendarBloc>().add(FetchCalendarEvents(
+                  widget.initialDate?.month ?? DateTime.now().month,
+                  widget.initialDate?.year ?? DateTime.now().year));
             }
           },
           child: Form(
@@ -122,13 +125,15 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SubjectSelectionWidget(
+                          TematikaListWidget(
                             selectedSubject: selectedSubject,
                             onSelectSubject: (String subject) {
                               setState(() {
                                 selectedSubject = subject;
+                                _subjectError = subject.isEmpty;
                               });
                             },
+                            hasError: _subjectError,
                           ),
                           const SizedBox(height: 8),
                           LeadManagerSelector(
@@ -212,11 +217,14 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
         parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(date);
       }
       if (selectedSubject == null || selectedSubject!.isEmpty) {
+        setState(() {
+          _subjectError = true; // Устанавливаем ошибку, если тематика не выбрана
+        });
         showCustomSnackBar(
           context: context,
-          message: AppLocalizations.of(context)!.translate('Выберите тематику!'),
+          message: AppLocalizations.of(context)!.translate('select_subject_required'),
           isSuccess: false,
-          );
+        );
         return;
       }
 
@@ -232,11 +240,14 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
             ),
           );
     } else {
-       showCustomSnackBar(
-          context: context,
-          message: AppLocalizations.of(context)!.translate('fill_required_fields'),
-          isSuccess: false,
-          );
+      setState(() {
+        _subjectError = selectedSubject == null || selectedSubject!.isEmpty;
+      });
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('fill_required_fields'),
+        isSuccess: false,
+      );
     }
   }
 }

@@ -243,6 +243,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
   bool _hasOverdueTasks = false;
 
   bool _canReadNotice = false;
+  bool _canReadCalendar = false;
   Color _iconColor = Colors.red;
   late Timer _timer;
 
@@ -345,7 +346,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {},
+      connectionErrorHandler: (exception, trace, refresh) { },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
@@ -388,9 +389,12 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
 
   Future<void> _checkPermissions() async {
     final canReadNotice = await _apiService.hasPermission('notice.read');
+    // final canReadCalendar = await _apiService.hasPermission('notice.read');
+    final canReadCalendar = await _apiService.hasPermission('calendar');
 
     setState(() {
       _canReadNotice = canReadNotice;
+      _canReadCalendar = canReadCalendar;
     });
   }
 
@@ -896,7 +900,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
               ),
             ),
           ),
-        if (widget.showCalendarDashboard)
+        if (widget.showCalendarDashboard  && _canReadCalendar)
           Transform.translate(
             offset: const Offset(6, 0),
             child: Tooltip(
@@ -1100,7 +1104,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                       ],
                     ),
                   ),
-                if (widget.showCalendar)
+                if (widget.showCalendar && _canReadCalendar)
                   PopupMenuItem<String>(
                     value: 'calendar',
                     child: Row(

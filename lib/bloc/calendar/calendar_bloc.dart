@@ -20,6 +20,7 @@ class CalendarBloc extends Bloc<CalendarBlocEvent, CalendarBlocState> {
         event.month,
         search: event.search,
         types: event.types,
+        userIds: event.usersId
       );
       emit(CalendarLoaded(events, DateTime(event.year, event.month,)));
     } catch (e) {
