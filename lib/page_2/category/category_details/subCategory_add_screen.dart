@@ -284,7 +284,7 @@ class SubCategoryAddBottomSheet {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
