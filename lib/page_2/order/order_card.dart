@@ -12,14 +12,14 @@ class OrderCard extends StatefulWidget {
   final int? organizationId;
   final VoidCallback onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
-  final Function(int) onTabChange; // Новый коллбэк
+  final Function(int) onTabChange;
 
   const OrderCard({
     required this.order,
     this.organizationId,
     required this.onStatusUpdated,
     required this.onStatusId,
-    required this.onTabChange, // Добавляем в конструктор
+    required this.onTabChange,
   });
 
   @override
@@ -112,7 +112,7 @@ class _OrderCardState extends State<OrderCard> {
             ),
             const SizedBox(height: 36),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 GestureDetector(
                   onTap: () {
@@ -133,7 +133,7 @@ class _OrderCardState extends State<OrderCard> {
                         ));
                       },
                       widget.order,
-                      onTabChange: widget.onTabChange, // Передаем коллбэк
+                      onTabChange: widget.onTabChange,
                     );
                   },
                   child: Container(
@@ -170,19 +170,6 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Text(
-                    '${widget.order.goods.length} сом',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 36),
@@ -195,15 +182,33 @@ class _OrderCardState extends State<OrderCard> {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: Text(
-                    widget.order.lead.name,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.order.lead.name,
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        widget.order.phone.isNotEmpty
+                            ? widget.order.phone
+                            : 'Нет телефона',
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

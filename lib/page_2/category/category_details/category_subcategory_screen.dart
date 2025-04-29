@@ -195,7 +195,7 @@ Widget build(BuildContext context) {
                               child: Text(
                                 attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   color: Color(0xff1E2E52),
                                 ),
                               ),
@@ -211,7 +211,7 @@ Widget build(BuildContext context) {
                               child: Text(
                                 '+${category.attributes.length - 3}',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   color: Color(0xff1E2E52),
                                 ),
                               ),
