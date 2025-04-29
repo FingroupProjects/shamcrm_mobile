@@ -1,10 +1,11 @@
 import 'package:crm_task_manager/page_2/category/character_list.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class AddCustomCharacterFieldDialog extends StatefulWidget {
-  final Function(String, bool) onAddField; // Обновляем для передачи isIndividual
+  final Function(String, bool) onAddField; 
 
   AddCustomCharacterFieldDialog({required this.onAddField});
 
@@ -16,8 +17,8 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   String? selectedCharacter;
   bool _isDropdownVisible = false;
   bool _isKeyboardVisible = false;
-  bool isCommonActive = true; // По умолчанию "Общий" активен
-  bool isUniqueActive = false; // "Уникальный" по умолчанию выключен
+  bool isCommonActive = true; 
+  bool isUniqueActive = false; 
 
   @override
   void initState() {
@@ -64,7 +65,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('Добавить характеристику'),
+                AppLocalizations.of(context)!.translate('add_characteristic'),
                 style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
@@ -87,7 +88,6 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                 },
               ),
               SizedBox(height: 8),
-              // Switch for "Общий"
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -97,7 +97,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       setState(() {
                         isCommonActive = value;
                         if (isCommonActive) {
-                          isUniqueActive = false; // Выключаем "Уникальный"
+                          isUniqueActive = false;
                         }
                       });
                     },
@@ -108,7 +108,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   ),
                   SizedBox(width: 8),
                   Text(
-                    AppLocalizations.of(context)!.translate('Общий'),
+                    AppLocalizations.of(context)!.translate('common'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -118,7 +118,6 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   ),
                 ],
               ),
-              // Switch for "Уникальный"
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -128,7 +127,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       setState(() {
                         isUniqueActive = value;
                         if (isUniqueActive) {
-                          isCommonActive = false; // Выключаем "Общий"
+                          isCommonActive = false;
                         }
                       });
                     },
@@ -139,7 +138,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   ),
                   SizedBox(width: 8),
                   Text(
-                    AppLocalizations.of(context)!.translate('Уникальный'),
+                    AppLocalizations.of(context)!.translate('individual'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -169,13 +168,13 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       buttonText: AppLocalizations.of(context)!.translate('add'),
                       onPressed: () {
                         if (selectedCharacter != null && selectedCharacter!.isNotEmpty) {
-                          widget.onAddField(selectedCharacter!, isUniqueActive); // Передаем isUniqueActive
+                          widget.onAddField(selectedCharacter!, isUniqueActive); 
                           Navigator.of(context).pop();
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(AppLocalizations.of(context)!.translate('Выберите характеристику')),
-                            ),
+                         showCustomSnackBar(
+                            context: context,
+                            message: AppLocalizations.of(context)!.translate('select_characteristic'),
+                            isSuccess: false,
                           );
                         }
                       },

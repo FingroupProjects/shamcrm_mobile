@@ -6900,7 +6900,12 @@ Future<Map<String, dynamic>> updateGoods({
 
 
 
-Future<List<CalendarEvent>> getCalendarEventsByMonth(int month, {String? search, List<String>? types}) async {
+Future<List<CalendarEvent>> getCalendarEventsByMonth(
+    int month, {
+    String? search,
+    List<String>? types,
+    List<String>? userIds, // Added parameter for user IDs
+}) async {
   final organizationId = await getSelectedOrganization();
 
   String url = '/calendar/getByMonth?month=$month';
@@ -6912,10 +6917,14 @@ Future<List<CalendarEvent>> getCalendarEventsByMonth(int month, {String? search,
   if (organizationId != null) {
     url += '&organization_id=$organizationId';
   }
-  
-if (types != null && types.isNotEmpty) {
-  url += types.map((type) => '&type[]=$type').join();
-}
+
+  if (types != null && types.isNotEmpty) {
+    url += types.map((type) => '&type[]=$type').join();
+  }
+
+  if (userIds != null && userIds.isNotEmpty) {
+    url += userIds.map((userId) => '&user_id[]=$userId').join(); // Append user IDs
+  }
 
   final response = await _getRequest(url);
 

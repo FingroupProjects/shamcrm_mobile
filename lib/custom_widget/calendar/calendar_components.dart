@@ -1,8 +1,10 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_event.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_myTask.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -16,7 +18,7 @@ class CalendarWidget extends StatelessWidget {
   final Function(DateTime, DateTime) onDaySelected;
   final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
-   final Set<DateTime>? filteredDates;
+  final Set<DateTime>? filteredDates;
 
   const CalendarWidget({
     super.key,
@@ -31,7 +33,6 @@ class CalendarWidget extends StatelessWidget {
   });
 
   @override
-
   Widget build(BuildContext context) {
     return TableCalendar(
       rowHeight: MediaQuery.of(context).size.height * 0.065,
@@ -45,6 +46,11 @@ class CalendarWidget extends StatelessWidget {
       onFormatChanged: onFormatChanged,
       startingDayOfWeek: StartingDayOfWeek.monday,
       onPageChanged: onPageChanged,
+       availableCalendarFormats: const {
+        CalendarFormat.month: 'Month',
+        CalendarFormat.week: 'Week',
+        CalendarFormat.twoWeeks: '2 weeks',
+      },
       enabledDayPredicate: (day) {
         if (filteredDates == null || filteredDates!.isEmpty) return true;
         final dayDate = DateTime(day.year, day.month, day.day);
@@ -56,9 +62,13 @@ class CalendarWidget extends StatelessWidget {
       },
       locale: AppLocalizations.of(context)!.locale.languageCode,
       calendarStyle: CalendarStyle(
-      cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025), 
-      defaultTextStyle: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035, color: Color(0xff1E2E52), fontFamily: 'Gilroy',), 
-        todayDecoration: BoxDecoration(
+        cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
+        defaultTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.035,
+          color: const Color(0xff1E2E52),
+          fontFamily: 'Gilroy',
+        ),
+        todayDecoration: const BoxDecoration(
           color: Color(0xff1E2E52),
           shape: BoxShape.circle,
         ),
@@ -66,19 +76,24 @@ class CalendarWidget extends StatelessWidget {
           color: Colors.blue.withOpacity(0.4),
           shape: BoxShape.circle,
         ),
-        markerDecoration: BoxDecoration(
+        markerDecoration: const BoxDecoration(
           color: Colors.blue,
           shape: BoxShape.circle,
         ),
       ),
       headerStyle: HeaderStyle(
-        titleTextStyle: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.045, color: Color(0xff1E2E52), fontFamily: 'Gilroy'),
+        titleTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.045,
+          color: const Color(0xff1E2E52),
+          fontFamily: 'Gilroy',
+        ),
         formatButtonVisible: false,
         titleCentered: true,
-      titleTextFormatter: (date, locale) =>
-      DateFormat('MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode).format(date).capitalize(),
-        leftChevronIcon: Icon(Icons.arrow_left, color: Color(0xff1E2E52)),
-        rightChevronIcon: Icon(Icons.arrow_right, color: Color(0xff1E2E52)),
+        titleTextFormatter: (date, locale) => DateFormat('MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
+            .format(date)
+            .capitalize(),
+        leftChevronIcon: const Icon(Icons.arrow_left, color: Color(0xff1E2E52)),
+        rightChevronIcon: const Icon(Icons.arrow_right, color: Color(0xff1E2E52)),
       ),
       calendarBuilders: CalendarBuilders(
         markerBuilder: (context, date, events) {
@@ -91,7 +106,7 @@ class CalendarWidget extends StatelessWidget {
                   return Container(
                     width: 8,
                     height: 8,
-                    margin: EdgeInsets.symmetric(horizontal: 2),
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
                     decoration: BoxDecoration(
                       color: (event as CalendarEventData).color,
                       shape: BoxShape.circle,
@@ -111,122 +126,304 @@ class CalendarWidget extends StatelessWidget {
 class EventListForDate extends StatelessWidget {
   final DateTime selectedDate;
   final Map<DateTime, List<CalendarEventData>> events;
-  final Function(int id, String type)? onEventTap; 
+  final Function(int id, String type)? onEventTap;
+  final CalendarFormat calendarFormat; // Add calendarFormat parameter
 
   const EventListForDate({
     super.key,
     required this.selectedDate,
     required this.events,
-    this.onEventTap, 
+    this.onEventTap,
+    required this.calendarFormat, // Require calendarFormat
   });
 
-@override
-Widget build(BuildContext context) {
-  final eventDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-  final eventsOnSelectedDate = events[eventDate] ?? [];
-  return Padding(
-    padding: EdgeInsets.only(top: 8), 
-    child: eventsOnSelectedDate.isEmpty
-        ? Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xffF4F7FD),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('no_events'),
-              style: TextStyle(
-                color: Color(0xff1E2E52),
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
+  @override
+  Widget build(BuildContext context) {
+    final eventDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final eventsOnSelectedDate = events[eventDate] ?? [];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: eventsOnSelectedDate.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xffF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('no_events'),
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            )
+          : ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: calendarFormat == CalendarFormat.month
+                    ? MediaQuery.of(context).size.height * 0.4
+                    : MediaQuery.of(context).size.height * 0.6, 
+              ),
+              child: SingleChildScrollView(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
+                            .format(selectedDate)
+                            .capitalize(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      ...eventsOnSelectedDate.map((event) {
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          color: const Color(0xffF4F7FD),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              if (onEventTap != null) {
+                                onEventTap!(event.id, event.type);
+                              }
+                            },
+                            child: ListTile(
+                              leading: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: event.color,
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Icon(
+                                      event.type == 'notice'
+                                          ? Icons.event
+                                          : event.type == 'task'
+                                              ? Icons.task
+                                              : Icons.assignment,
+                                      color: event.type == 'notice'
+                                          ? Colors.orange
+                                          : event.type == 'task'
+                                              ? Colors.green
+                                              : Colors.blue,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              title: Text(
+                                event.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                event.type == 'task'
+                                    ? AppLocalizations.of(context)!.translate('task')
+                                    : event.type == 'my_task'
+                                        ? AppLocalizations.of(context)!.translate('my_task')
+                                        : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
               ),
             ),
-          )
-        : ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
-            child: SingleChildScrollView(
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+    );
+  }
+}
+
+class DayViewEventList extends StatelessWidget {
+  final DateTime selectedDate;
+  final Map<DateTime, List<CalendarEventData>> events;
+  final Function(int id, String type)? onEventTap;
+
+  const DayViewEventList({
+    super.key,
+    required this.selectedDate,
+    required this.events,
+    this.onEventTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final eventDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final eventsOnSelectedDate = events[eventDate] ?? [];
+    final sortedEvents = eventsOnSelectedDate..sort((a, b) => a.date.compareTo(b.date));
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: sortedEvents.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xffF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('no_events'),
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
                 ),
+              ),
+            )
+          : ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode).format(selectedDate).capitalize(),
-                      style: TextStyle(
+                      DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
+                          .format(selectedDate)
+                          .capitalize(),
+                      style: const TextStyle(
                         fontSize: 18,
+                        fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
                       ),
                     ),
-                    // SizedBox(height: 8),
-                    ...eventsOnSelectedDate.map((event) {
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 4),
-                        color: Color(0xffF4F7FD),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            if (onEventTap != null) {
-                              onEventTap!(event.id, event.type);
-                            }
-                          },
-                          child: ListTile(
-                            leading: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 4,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: event.color,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
+                    const SizedBox(height: 16),
+                    ...sortedEvents.map((event) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              child: Text(
+                                DateFormat('HH:mm').format(event.date),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
                                 ),
-                                if (event.type == 'notice')
-                                  Padding(
-                                    padding: EdgeInsets.only(left: 8),
-                                    child: Icon(Icons.notification_important,
-                                    color: Colors.orange, size: 20),
-                                  ),
-                              ],
-                            ),
-                            title: Text(
-                              event.title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
                               ),
                             ),
-                            subtitle: Text(
-                              event.type == 'task'
-                                  ? AppLocalizations.of(context)!.translate('task')
-                                  : event.type == 'my_task'
-                                      ? AppLocalizations.of(context)!.translate('my_task')
-                                      : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(Duration(hours: 5)))}',
-                              style: TextStyle(color: Colors.grey[600],fontFamily: 'Gilroy',fontSize: 14),
+                            Expanded(
+                              child: Card(
+                                color: const Color(0xffF4F7FD),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    if (onEventTap != null) {
+                                      onEventTap!(event.id, event.type);
+                                    }
+                                  },
+                                  child: ListTile(
+                                    leading: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 4,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: event.color,
+                                            borderRadius: BorderRadius.circular(30),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: Icon(
+                                            event.type == 'notice'
+                                                ? Icons.event
+                                                : event.type == 'task'
+                                                    ? Icons.task
+                                                    : Icons.assignment,
+                                            color: event.type == 'notice'
+                                                ? Colors.orange
+                                                : event.type == 'task'
+                                                    ? Colors.green
+                                                    : Colors.blue,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    title: Text(
+                                      event.title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    subtitle: Text(
+                                      event.type == 'task'
+                                          ? AppLocalizations.of(context)!.translate('task')
+                                          : event.type == 'my_task'
+                                              ? AppLocalizations.of(context)!.translate('my_task')
+                                              : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       );
                     }).toList(),
-                    SizedBox(height: 30),
+                    const SizedBox(height: 30),
                   ],
                 ),
               ),
             ),
-          ),
-  );
-}
+    );
+  }
 }
 
 class CalendarViewDropdown extends StatelessWidget {
@@ -239,52 +436,51 @@ class CalendarViewDropdown extends StatelessWidget {
     required this.onChange,
   });
 
-@override
-Widget build(BuildContext context) {
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-    decoration: BoxDecoration(
-      color: Color(0xffF4F7FD), 
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: currentFormat == CalendarFormat.month
-            ? 'month'
-            : currentFormat == CalendarFormat.week
-                ? 'week'
-                : 'day',
-        dropdownColor: Colors.white,
-        icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52),),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
-        ),
-        items: [
-          DropdownMenuItem(
-            value: 'day',
-            child: Text(AppLocalizations.of(context)!.translate('day')),
-          ),
-          DropdownMenuItem(
-            value: 'week',
-            child: Text(AppLocalizations.of(context)!.translate('week')),
-          ),
-          DropdownMenuItem(
-            value: 'month',
-            child: Text(AppLocalizations.of(context)!.translate('month')),
-          ),
-        ],
-        onChanged: (value) {
-          if (value != null) {
-            onChange(value);
-          }
-        },
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      decoration: BoxDecoration(
+        color: const Color(0xffF4F7FD),
+        borderRadius: BorderRadius.circular(16),
       ),
-    ),
-  );
-}
-
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentFormat == CalendarFormat.month
+              ? 'month'
+              : currentFormat == CalendarFormat.week
+                  ? 'week'
+                  : 'day',
+          dropdownColor: Colors.white,
+          icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+          items: [
+            DropdownMenuItem(
+              value: 'day',
+              child: Text(AppLocalizations.of(context)!.translate('day')),
+            ),
+            DropdownMenuItem(
+              value: 'week',
+              child: Text(AppLocalizations.of(context)!.translate('week')),
+            ),
+            DropdownMenuItem(
+              value: 'month',
+              child: Text(AppLocalizations.of(context)!.translate('month')),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onChange(value);
+            }
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class YearPickerDialog extends StatelessWidget {
@@ -299,17 +495,17 @@ class YearPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  final screenHeight = MediaQuery.of(context).size.height;
-  final dialogHeight = screenHeight * 0.4;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogHeight = screenHeight * 0.4;
 
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(AppLocalizations.of(context)!.translate('select_year')),
-      content: Container(
+      content: SizedBox(
         width: double.maxFinite,
         height: dialogHeight,
         child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
             childAspectRatio: 1.0,
             crossAxisSpacing: 8,
@@ -321,12 +517,10 @@ class YearPickerDialog extends StatelessWidget {
             return GestureDetector(
               onTap: () => onYearSelected(year),
               child: AnimatedContainer(
-                duration: Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: year == focusedDate.year
-                      ? Color(0xff1E2E52)
-                      : Colors.grey.withOpacity(0.2),
+                  color: year == focusedDate.year ? const Color(0xff1E2E52) : Colors.grey.withOpacity(0.2),
                 ),
                 child: Center(
                   child: Text(
@@ -334,9 +528,7 @@ class YearPickerDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: year == focusedDate.year
-                          ? Colors.white
-                          : Colors.black,
+                      color: year == focusedDate.year ? Colors.white : Colors.black,
                     ),
                   ),
                 ),
@@ -347,15 +539,15 @@ class YearPickerDialog extends StatelessWidget {
       ),
       actions: [
         Expanded(
-         child: CustomButton(
-           buttonText: AppLocalizations.of(context)!.translate('close'),
-           onPressed: () {
-             Navigator.of(context).pop();
-           },
-           buttonColor: Color(0xff1E2E52),
-           textColor: Colors.white,
-         ),
-       ),
+          child: CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('close'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            buttonColor: const Color(0xff1E2E52),
+            textColor: Colors.white,
+          ),
+        ),
       ],
     );
   }
@@ -375,17 +567,17 @@ class MonthPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  final screenHeight = MediaQuery.of(context).size.height;
-  final dialogHeight = screenHeight * 0.4;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogHeight = screenHeight * 0.4;
 
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(AppLocalizations.of(context)!.translate('select_month')),
-      content: Container(
+      content: SizedBox(
         width: double.maxFinite,
         height: dialogHeight,
         child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
             childAspectRatio: 1.0,
             crossAxisSpacing: 8,
@@ -398,19 +590,18 @@ class MonthPickerDialog extends StatelessWidget {
             return GestureDetector(
               onTap: () => onMonthSelected(month),
               child: AnimatedContainer(
-                duration: Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: month == focusedDate.month &&
-                          selectedYear == focusedDate.year
-                      ? Color(0xff1E2E52)
+                  color: month == focusedDate.month && selectedYear == focusedDate.year
+                      ? const Color(0xff1E2E52)
                       : Colors.grey.withOpacity(0.2),
                 ),
                 child: Center(
                   child: Text(
-                   DateFormat('MMM', AppLocalizations.of(context)!.locale.languageCode)
-                    .format(monthDate)
-                    .capitalize(),
+                    DateFormat('MMM', AppLocalizations.of(context)!.locale.languageCode)
+                        .format(monthDate)
+                        .capitalize(),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -425,17 +616,17 @@ class MonthPickerDialog extends StatelessWidget {
           },
         ),
       ),
-       actions: [
+      actions: [
         Expanded(
-         child: CustomButton(
-           buttonText: AppLocalizations.of(context)!.translate('close'),
-           onPressed: () {
-             Navigator.of(context).pop();
-           },
-           buttonColor: Color(0xff1E2E52),
-           textColor: Colors.white,
-         ),
-       ),
+          child: CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('close'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            buttonColor: const Color(0xff1E2E52),
+            textColor: Colors.white,
+          ),
+        ),
       ],
     );
   }
@@ -450,12 +641,21 @@ void showOptionsBottomSheet(
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
+    shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (context) =>
-        OptionsBottomSheet(date: date, events: events, setState: setState),
+    builder: (context) => OptionsBottomSheet(date: date, events: events, setState: setState),
   );
+}
+
+Future<bool> _checkTaskStatuses(BuildContext context) async {
+  try {
+    final apiService = ApiService();
+    final statuses = await apiService.getTaskStatuses();
+    return statuses != null && statuses.isNotEmpty;
+  } catch (e) {
+    return false;
+  }
 }
 
 class OptionsBottomSheet extends StatelessWidget {
@@ -473,63 +673,73 @@ class OptionsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: Icon(Icons.task, color: Colors.green),
+            leading: const Icon(Icons.task, color: Colors.green),
             title: Text(
               AppLocalizations.of(context)!.translate('task'),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-               Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateTaskFromCalendare(
-                    initialDate: date, 
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.event, color: Colors.orange),
-            title: Text(
-              AppLocalizations.of(context)!.translate('События'),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-                Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateEventFromCalendare(
-                    initialDate: date, 
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.assignment, color: Colors.blue),
-            title: Text(
-              AppLocalizations.of(context)!.translate('Моя задача'),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateMyTaskFromCalendare(
-                    initialDate: date, 
+                  builder: (context) => CreateTaskFromCalendare(
+                    initialDate: date,
                   ),
                 ),
               );
-              },
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.event, color: Colors.orange),
+            title: Text(
+              AppLocalizations.of(context)!.translate('События'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateEventFromCalendare(
+                    initialDate: date,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.assignment, color: Colors.blue),
+            title: Text(
+              AppLocalizations.of(context)!.translate('Мои задачи'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            onTap: () async {
+              bool hasStatuses = await _checkTaskStatuses(context);
+              if (hasStatuses) {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateMyTaskFromCalendare(
+                      initialDate: date,
+                    ),
+                  ),
+                );
+              } else {
+                Navigator.pop(context);
+                showCustomSnackBar(
+                  context: context,
+                  message: AppLocalizations.of(context)!.translate('Сначала создайте статус!'),
+                  isSuccess: false,
+                );
+              }
+            },
           ),
         ],
       ),
@@ -573,8 +783,7 @@ class AddEventDialog extends StatelessWidget {
           TextField(
             controller: descriptionController,
             decoration: InputDecoration(
-              labelText:
-                  AppLocalizations.of(context)!.translate('event_description'),
+              labelText: AppLocalizations.of(context)!.translate('event_description'),
             ),
           ),
           ListTile(

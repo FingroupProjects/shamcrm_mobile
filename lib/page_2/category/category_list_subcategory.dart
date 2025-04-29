@@ -110,7 +110,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
         } else if (state is CategoryError) {
           return Center(child: Text(state.message));
         } else {
-          return Center(child: Text('No categories found'));
+          return Center(child: Text('category_not_found'));
         }
       },
     );

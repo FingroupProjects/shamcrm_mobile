@@ -22,28 +22,30 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> with TickerProviderStateMixin {
-CalendarFormat _calendarFormat = CalendarFormat.month;
-DateTime _focusedDate = DateTime.now();
-DateTime? _selectedDate;
-Map<DateTime, List<CalendarEventData>> _events = {};
-bool _isInitialView = true;
-bool _isSearching = false;
-final TextEditingController _searchController = TextEditingController();
-Set<DateTime> _filteredDates = {};
-List<String> _selectedTypes = [];
-late AnimationController _blinkController;
-late Animation<Color?> _colorAnimation; 
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _focusedDate = DateTime.now();
+  DateTime? _selectedDate;
+  Map<DateTime, List<CalendarEventData>> _events = {};
+  bool _isInitialView = true;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  Set<DateTime> _filteredDates = {};
+  List<String> _selectedTypes = [];
+  List<String> _selectedUsers = [];
+  late AnimationController _blinkController;
+  late Animation<Color?> _colorAnimation;
 
-@override
+  @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime.now();
     _blinkController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..repeat(reverse: true);
     _colorAnimation = ColorTween(
-      begin: Colors.blue, 
-      end: Colors.black, 
+      begin: Colors.blue,
+      end: Colors.black,
     ).animate(
       CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
     );
@@ -57,22 +59,23 @@ late Animation<Color?> _colorAnimation;
     super.dispose();
   }
 
-  void _changeView(String view) {
-    setState(() {
-      switch (view) {
-        case 'day':
-          _calendarFormat = CalendarFormat.twoWeeks;
-          break;
-        case 'week':
-          _calendarFormat = CalendarFormat.week;
-          break;
-        case 'month':
-          _calendarFormat = CalendarFormat.month;
-          break;
-      }
-      _selectedDate = null;
-    });
-  }
+void _changeView(String view) {
+  setState(() {
+    switch (view) {
+      case 'month':
+        _calendarFormat = CalendarFormat.month;
+        break;
+      case 'week':
+        _calendarFormat = CalendarFormat.week;
+        break;
+      case 'day':
+        _calendarFormat = CalendarFormat.twoWeeks;
+        break;
+    }
+    _selectedDate = _selectedDate ?? DateTime.now();
+  });
+}
+
 
   void _onDateSelected(DateTime selectedDate, DateTime focusedDate) {
     setState(() {
@@ -92,6 +95,7 @@ late Animation<Color?> _colorAnimation;
           _focusedDate.year,
           search: null,
           types: _selectedTypes,
+          usersId: _selectedUsers,
         ));
       }
     });
@@ -103,15 +107,18 @@ late Animation<Color?> _colorAnimation;
       MaterialPageRoute(
         builder: (context) => CalendarFilterScreen(
           initialTypes: _selectedTypes,
-          onTypesSelected: (types) {
+          initialUsers: _selectedUsers,
+          onTypesSelected: (types, users) {
             setState(() {
               _selectedTypes = types;
+              _selectedUsers = users;
             });
             context.read<CalendarBloc>().add(FetchCalendarEvents(
               _focusedDate.month,
               _focusedDate.year,
               search: _searchController.text.isNotEmpty ? _searchController.text : null,
               types: _selectedTypes,
+              usersId: _selectedUsers,
             ));
           },
         ),
@@ -122,28 +129,19 @@ late Animation<Color?> _colorAnimation;
   void _handleEventTap(int id, String type) {
     switch (type) {
       case 'task':
-        // В методе _handleEventTap, где вы переходите на экран деталей задачи:
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => TaskDetailsScreen(
-      taskId: id.toString(),
-      taskName: '',
-      taskStatus: '',
-      statusId: 1,
-      taskNumber: 0,
-      taskCustomFields: [],
-    ),
-  ),
-).then((shouldRefresh) {
-  // Если вернулся true (задача была удалена), обновляем календарь
-  if (shouldRefresh == true) {
-   print('UPODATE     CALENDARE');
-       context.read<CalendarBloc>().add(FetchCalendarEvents(_focusedDate.month, _focusedDate.year));
-
-
-  }
-});
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: id.toString(),
+              taskName: '',
+              taskStatus: '',
+              statusId: 1,
+              taskNumber: 0,
+              taskCustomFields: [],
+            ),
+          ),
+        );
         break;
       case 'my_task':
         Navigator.push(
@@ -170,6 +168,7 @@ Navigator.push(
         );
         break;
       default:
+        break;
     }
   }
 
@@ -200,6 +199,7 @@ Navigator.push(
                       _focusedDate.year,
                       search: value.isNotEmpty ? value : null,
                       types: _selectedTypes,
+                      usersId: _selectedUsers,
                     ));
                   },
                 ),
@@ -212,7 +212,9 @@ Navigator.push(
                     Text(
                       _isInitialView
                           ? AppLocalizations.of(context)!.translate('calendar')
-                          : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode).format(_focusedDate).capitalize(),
+                          : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode)
+                              .format(_focusedDate)
+                              .capitalize(),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -250,15 +252,15 @@ Navigator.push(
                   ),
             onPressed: _onSearchPressed,
           ),
-         AnimatedBuilder(
+          AnimatedBuilder(
             animation: _colorAnimation,
             builder: (context, child) {
               return IconButton(
                 icon: ColorFiltered(
                   colorFilter: ColorFilter.mode(
-                    _selectedTypes.isNotEmpty
+                    (_selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty)
                         ? _colorAnimation.value ?? const Color(0xff1E2E52)
-                        : const Color(0xff1E2E52), 
+                        : const Color(0xff1E2E52),
                     BlendMode.srcIn,
                   ),
                   child: Image.asset(
@@ -271,7 +273,7 @@ Navigator.push(
               );
             },
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           if (!_isSearching)
             CalendarViewDropdown(
               currentFormat: _calendarFormat,
@@ -300,17 +302,17 @@ Navigator.push(
                     type: event.type,
                   ),
                 );
-                if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty) {
+                if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
                   _filteredDates.add(eventDate);
                 }
               }
             });
           } else if (state is CalendarError) {
-          showCustomSnackBar(
-               context: context,
-               message: AppLocalizations.of(context)!.translate(state.message),
-               isSuccess: false,
-             );
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate(state.message),
+              isSuccess: false,
+            );
           }
         },
         builder: (context, state) {
@@ -337,39 +339,49 @@ Navigator.push(
           return SingleChildScrollView(
             child: Column(
               children: [
-                CalendarWidget(
-                  calendarFormat: _calendarFormat,
-                  focusedDate: _focusedDate,
-                  selectedDate: _selectedDate,
-                  events: _events,
-                  onDaySelected: _onDateSelected,
-                  onFormatChanged: (format) {
-                    setState(() {
-                      _calendarFormat = format;
-                    });
-                  },
-                  onPageChanged: (focusedDay) {
-                    setState(() {
-                      _focusedDate = focusedDay;
-                      _selectedDate = null;
-                    });
-                    context.read<CalendarBloc>().add(FetchCalendarEvents(
-                      _focusedDate.month,
-                      _focusedDate.year,
-                      search: _searchController.text.isNotEmpty ? _searchController.text : null,
-                      types: _selectedTypes,
-                    ));
-                  },
-                  filteredDates:
-                      (_isSearching && _searchController.text.isNotEmpty) || _selectedTypes.isNotEmpty
-                          ? _filteredDates
-                          : null,
-                ),
-                if (_selectedDate != null)
+                if (_calendarFormat != CalendarFormat.twoWeeks)
+                  CalendarWidget(
+                    calendarFormat: _calendarFormat,
+                    focusedDate: _focusedDate,
+                    selectedDate: _selectedDate,
+                    events: _events,
+                    onDaySelected: _onDateSelected,
+                    onFormatChanged: (format) {
+                      setState(() {
+                        _calendarFormat = format;
+                      });
+                    },
+                    onPageChanged: (focusedDay) {
+                      setState(() {
+                        _focusedDate = focusedDay;
+                        _selectedDate = null;
+                      });
+                      context.read<CalendarBloc>().add(FetchCalendarEvents(
+                        _focusedDate.month,
+                        _focusedDate.year,
+                        search: _searchController.text.isNotEmpty ? _searchController.text : null,
+                        types: _selectedTypes,
+                        usersId: _selectedUsers,
+                      ));
+                    },
+                    filteredDates: (_isSearching && _searchController.text.isNotEmpty) ||
+                            _selectedTypes.isNotEmpty ||
+                            _selectedUsers.isNotEmpty
+                        ? _filteredDates
+                        : null,
+                  ),
+                if (_calendarFormat == CalendarFormat.twoWeeks && _selectedDate != null)
+                  DayViewEventList(
+                    selectedDate: _selectedDate!,
+                    events: _events,
+                    onEventTap: (id, type) => _handleEventTap(id, type),
+                  ),
+                if (_calendarFormat != CalendarFormat.twoWeeks && _selectedDate != null)
                   EventListForDate(
                     selectedDate: _selectedDate!,
                     events: _events,
                     onEventTap: (id, type) => _handleEventTap(id, type),
+                    calendarFormat: _calendarFormat,
                   ),
               ],
             ),
@@ -418,6 +430,7 @@ Navigator.push(
             _focusedDate.year,
             search: _searchController.text.isNotEmpty ? _searchController.text : null,
             types: _selectedTypes,
+            usersId: _selectedUsers,
           ));
           Navigator.pop(context);
         },
