@@ -899,21 +899,20 @@
    "calendar": "Kalendar",
     "task": "Vazifa",
     "my_task": "Mening vazifam",
-    "notice": "Bildirishnoma",
     "no_events": "Voqealar yo'q",
     "add_event": "Voqea qo‘shish",
     "event_title": "Voqea nomi",
     "event_description": "Voqea tavsifi",
     "start_time": "Boshlanish vaqti",
     "end_time": "Tugash vaqti",
-    "cancel": "Bekor qilish",
-    "save": "Saqlash",
     "select_year": "Yilni tanlang",
     "select_month": "Oyni tanlang",
     "day": "Kun",
     "week": "Hafta",
     "month": "Oy",
-    "year": "Yil"
+    "year": "Yil",
+    "new_subcategory": "Yangi subkategoriya"
+
 
 
 }

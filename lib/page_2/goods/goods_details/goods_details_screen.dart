@@ -110,16 +110,17 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     .translate('goods_description_details'),
                 'value': goods.description ?? '',
               },
-              {
-                'label': AppLocalizations.of(context)!
-                    .translate('discount_price_details'),
-                'value': goods.discountPrice?.toString() ?? '0',
-              },
-              {
-                'label': AppLocalizations.of(context)!
-                    .translate('stock_quantity_details'),
-                'value': goods.quantity?.toString() ?? '0',
-              },
+              if (goods.discountPrice != null && goods.discountPrice != 0)
+                {
+                  'label': AppLocalizations.of(context)!
+                      .translate('discount_price_details'),
+                  'value': goods.discountPrice.toString(),
+                },
+              // {
+              //   'label': AppLocalizations.of(context)!
+              //       .translate('stock_quantity_details'),
+              //   'value': goods.quantity?.toString() ?? '0',
+              // },
               {
                 'label':
                     AppLocalizations.of(context)!.translate('category_details'),
@@ -443,172 +444,183 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
-  final price = variant.variantPrice?.price ?? 0.0;
-  print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
+  Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
+    final price = variant.variantPrice?.price ?? 0.0;
+    print(
+        'GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-  // Собираем уникальные характеристики с использованием Set
-  Set<Map<String, String>> uniqueAttributes = {};
-  if (variant.attributeValues.isNotEmpty) {
-    for (var attrValue in variant.attributeValues) {
-      final attrName = attrValue.categoryAttribute?.attribute?.name ?? 'Неизвестная характеристика';
-      final value = attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
+    // Собираем уникальные характеристики с использованием Set
+    Set<Map<String, String>> uniqueAttributes = {};
+    if (variant.attributeValues.isNotEmpty) {
+      for (var attrValue in variant.attributeValues) {
+        final attrName = attrValue.categoryAttribute?.attribute?.name ??
+            'Неизвестная характеристика';
+        final value =
+            attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
+        uniqueAttributes.add({
+          'name': attrName,
+          'value': value,
+        });
+        print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
+      }
+    } else {
+      print(
+          'GoodsDetailsScreen: No attribute values for variant ${variant.id}');
       uniqueAttributes.add({
-        'name': attrName,
-        'value': value,
+        'name': 'Без названия',
+        'value': 'Не указано',
       });
-      print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
     }
-  } else {
-    print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
-    uniqueAttributes.add({
-      'name': 'Без названия',
-      'value': 'Не указано',
-    });
-  }
 
-  // Преобразуем Set в List и ограничиваем до 4 характеристик
-  List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
+    // Преобразуем Set в List и ограничиваем до 4 характеристик
+    List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
 
-  String? imageUrl;
-  if (variant.files != null && variant.files!.isNotEmpty) {
-    imageUrl = '$baseUrl/${variant.files!.first.path}';
-    print('GoodsDetailsScreen: Using variant image: $imageUrl');
-  } else if (goodsFiles.isNotEmpty) {
-    imageUrl = '$baseUrl/${goodsFiles.first.path}';
-    print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
-  } else {
-    print('GoodsDetailsScreen: No images available for variant ${variant.id}');
-  }
+    String? imageUrl;
+    if (variant.files != null && variant.files!.isNotEmpty) {
+      imageUrl = '$baseUrl/${variant.files!.first.path}';
+      print('GoodsDetailsScreen: Using variant image: $imageUrl');
+    } else if (goodsFiles.isNotEmpty) {
+      imageUrl = '$baseUrl/${goodsFiles.first.path}';
+      print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
+    } else {
+      print(
+          'GoodsDetailsScreen: No images available for variant ${variant.id}');
+    }
 
-  return GestureDetector(
-    onTap: () {
-      print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VariantDetailsScreen(variant: variant),
-        ),
-      );
-    },
-    child: Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Изображение
-            SizedBox(
-              width: 120,
-              height: 120,
-              child: _buildVariantImage(imageUrl),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Характеристики (до 4)
-                  ...attributes.map((attr) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${attr['name']}: ',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xff1E2E52),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                            Expanded(
-                              child: Text(
-                                attr['value']!,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
-                  // Индикатор дополнительных характеристик
-                  if (uniqueAttributes.length > 4)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        '+ ещё ${uniqueAttributes.length - 4}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  // Цена
-                  Text(
-                    '$price ₽',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-Widget _buildVariantImage(String? imageUrl) {
-  if (imageUrl == null) {
-    print('GoodsDetailsScreen: No image URL, showing placeholder');
-    return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(Icons.image, size: 50, color: Colors.grey),
-      ),
-    );
-  }
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(8),
-    child: Image.network(
-      imageUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
-        return Container(
-          color: Colors.grey[200],
-          child: const Center(
-            child: Icon(Icons.image, size: 50, color: Colors.grey),
+    return GestureDetector(
+      onTap: () {
+        print(
+            'GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VariantDetailsScreen(variant: variant),
           ),
         );
       },
-    ),
-  );
-}
+      child: Card(
+        color: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Изображение
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: _buildVariantImage(imageUrl),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Характеристики (до 4)
+                    ...attributes.map((attr) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                flex: 2,
+                                child: Text(
+                                  '${attr['name']}: ',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              Flexible(
+                                flex: 2,
+                                child: Text(
+                                  attr['value']!,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                    // Индикатор дополнительных характеристик
+                    if (uniqueAttributes.length > 4)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          '+ ещё ${uniqueAttributes.length - 4}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    // Цена
+                    Text(
+                      '$price ₽',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVariantImage(String? imageUrl) {
+    if (imageUrl == null) {
+      print('GoodsDetailsScreen: No image URL, showing placeholder');
+      return Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: Icon(Icons.image, size: 50, color: Colors.grey),
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: Icon(Icons.image, size: 50, color: Colors.grey),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
 // Предполагаемый метод _buildVariantImage (для полноты)
-  
+
   Widget _buildDetailItem(String label, String value) {
     final expandableFields = [
       AppLocalizations.of(context)!.translate('goods_name_details'),

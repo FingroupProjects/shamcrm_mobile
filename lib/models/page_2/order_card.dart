@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 
 class Order {
@@ -25,17 +24,27 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    return Order(
-      id: json['id'] ?? 0,
-      phone: (json['phone'] ?? '').toString(),
-      orderNumber: json['order_number'] ?? '',
-      delivery: json['delivery'] ?? false,
-      deliveryAddress: json['delivery_address'],
-      lead: OrderLead.fromJson(json['lead'] ?? {}),
-      orderStatus: OrderStatusName.fromJson(json['orderStatus'] ?? {}),
-      goods: (json['goods'] as List? ?? []).map((g) => Good.fromJson(g)).toList(),
-      organizationId: json['organization_id'] ?? 1,
-    );
+    try {
+      return Order(
+        id: json['id'] ?? 0,
+        phone: (json['phone'] ?? '').toString(),
+        orderNumber: json['order_number'] ?? '',
+        delivery: json['deliveryType'] == 'delivery',
+        deliveryAddress: json['delivery_address'] != null
+            ? json['delivery_address']['address']?.toString()
+            : null,
+        lead: OrderLead.fromJson(json['lead'] ?? {}),
+        orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
+        goods: (json['order_goods'] as List? ?? [])
+            .map((g) => Good.fromJson(g))
+            .toList(),
+        organizationId: json['organization_id'] ?? 1,
+      );
+    } catch (e) {
+      print('Error parsing Order: $e');
+      print('JSON: $json');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -46,8 +55,8 @@ class Order {
       'delivery': delivery,
       'delivery_address': deliveryAddress,
       'lead': lead.toJson(),
-      'orderStatus': orderStatus.toJson(),
-      'goods': goods.map((g) => g.toJson()).toList(),
+      'order_status': orderStatus.toJson(),
+      'order_goods': goods.map((g) => g.toJson()).toList(),
       'organization_id': organizationId,
     };
   }
@@ -123,14 +132,16 @@ class OrderLead {
       tgNick: json['tg_nick'],
       tgId: json['tg_id']?.toString(),
       channels: json['channels'] ?? [],
-      position: json['position'] != null ? json['position'].toString() : null,
+      position: json['position']?.toString(),
       waName: json['wa_name'],
       waPhone: json['wa_phone']?.toString(),
       address: json['address'],
       phone: (json['phone'] ?? '').toString(),
       birthday: json['birthday'],
       description: json['description'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
       lastUpdate: json['last_update'],
     );
   }
@@ -159,8 +170,8 @@ class OrderLead {
 
 class Good {
   final GoodItem good;
-  final int goodId; 
-  final String goodName; 
+  final int goodId;
+  final String goodName;
   final int quantity;
   final double price;
 
@@ -175,16 +186,18 @@ class Good {
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
       good: GoodItem.fromJson(json['good'] ?? {}),
-      goodId: json['good_id'] ?? json['good']?['id'] ?? 0, 
-      goodName: json['good_name'] ?? json['good']?['name'] ?? '',
+      goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
+      goodName: json['good']?['name'] ?? '',
       quantity: json['quantity'] ?? 0,
-      price: (json['price'] ?? 0).toDouble(), 
+      price: double.tryParse(
+              json['good']?['good_price']?['price']?.toString() ?? '0') ?? 0.0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'good_id': good.id, 
+      'good_id': goodId,
+      'good_name': goodName,
       'quantity': quantity,
       'price': price,
     };
@@ -212,7 +225,9 @@ class GoodItem {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       quantity: json['quantity'] ?? 0,
-      files: (json['files'] as List? ?? []).map((f) => GoodFile.fromJson(f as Map<String, dynamic>)).toList(),
+      files: (json['files'] as List? ?? [])
+          .map((f) => GoodFile.fromJson(f as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -290,7 +305,6 @@ class OrderStatusName {
     );
   }
 
-  // Новый метод для преобразования из OrderStatus
   factory OrderStatusName.fromOrderStatus(OrderStatus status) {
     return OrderStatusName(
       id: status.id,
@@ -305,4 +319,3 @@ class OrderStatusName {
     };
   }
 }
-
