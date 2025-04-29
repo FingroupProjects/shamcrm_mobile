@@ -51,7 +51,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
       {'label': AppLocalizations.of(context)!.translate('discount_price_details'),'value': widget.discountGoodsPrice.toString()},
       {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': widget.stockQuantity.toString()},
       {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': widget.selectedCategory.toString()},
-      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? 'Активно' : 'Неактивно'},
+      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': widget.isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich')},
     ];
   }
 

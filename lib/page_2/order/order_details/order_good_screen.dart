@@ -61,7 +61,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('Товары')),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('goods')),
         SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -128,7 +128,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Количество: ',
+                              text: AppLocalizations.of(context)!.translate('counts'),
                               style: TaskCardStyles.priorityStyle.copyWith(
                                 color: Color(0xff1E2E52),
                               ),
@@ -245,17 +245,17 @@ class DeleteGoodsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Удалить сделку?'),
+      title: Text(AppLocalizations.of(context)!.translate('delete_deal_dialog')),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Отмена'),
+          child: Text(AppLocalizations.of(context)!.translate('cancel')),
         ),
         TextButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          child: Text('Удалить'),
+          child: Text(AppLocalizations.of(context)!.translate('delete')),
         ),
       ],
     );
@@ -271,10 +271,10 @@ class CategoryGoodsAddScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Добавить сделку'),
+        title: Text(AppLocalizations.of(context)!.translate('addDeal')),
       ),
       body: Center(
-        child: Text('Экран добавления сделки'),
+          child: Text(AppLocalizations.of(context)!.translate('add_deal_screen')),
       ),
     );
   }

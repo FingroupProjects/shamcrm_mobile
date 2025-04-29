@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -49,26 +50,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    print('GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print('GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
-          'id': attr.id,
-          'name': attr.name,
-          'value': attr.value,
-          'isIndividual': attr.isIndividual
-        }).toList()}');
-    print('GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-          'id': variant.id,
-          'attributeValues': variant.attributeValues
-              ?.map((attr) => {
-                    'categoryAttributeId': attr.categoryAttribute?.id,
-                    'attributeName': attr.categoryAttribute?.attribute?.name,
-                    'value': attr.value,
-                  })
-              .toList(),
-          'price': variant.variantPrice?.price,
-          'files': variant.files?.map((file) => file.path).toList(),
-        }).toList()}');
-
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
   }
@@ -81,11 +62,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           : (widget.goods.description ?? ''),
     );
     discountPriceController = TextEditingController(
-        text: widget.goods.discountPrice?.toString() ?? '');
-    stockQuantityController =
-        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    text: widget.goods.discountPrice?.toString() ?? '');
+    stockQuantityController = TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     isActive = widget.goods.isActive ?? false;
-    print('GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -94,16 +73,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      print('GoodsEditScreen: Base URL initialized: $baseUrl');
     } catch (error) {
       baseUrl = 'https://shamcrm.com/storage/';
-      print('GoodsEditScreen: Fallback Base URL used: $baseUrl');
     }
   }
 
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);
-    print('GoodsEditScreen: Loading all data sequentially...');
     try {
       await _initializeBaseUrl();
       if (mounted && widget.goods.files.isNotEmpty) {
@@ -111,35 +87,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           _imagePaths = widget.goods.files
               .map((file) => '$baseUrl/${file.path}')
               .toList();
-          print('GoodsEditScreen: Initialized _imagePaths: $_imagePaths');
         });
       }
       await fetchSubCategories();
       _initializeFieldsWithData();
     } catch (e) {
-      print('GoodsEditScreen: Error loading all data: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки данных: $e')),
-        );
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)!.translate('data_loading_error'),
+            isSuccess: false,
+          );
       }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
-        print('GoodsEditScreen: Finished loading data, isLoading: $isLoading');
       }
     }
   }
 
   void _initializeFieldsWithData() {
-  print('GoodsEditScreen: Initializing fields with data...');
-  print('GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
-
-  // Собираем уникальные индивидуальные атрибуты по имени
   Map<String, Map<String, dynamic>> individualAttributesMap = {};
   if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
     for (var variant in widget.goods.variants!) {
-      print('GoodsEditScreen: Processing variant ID: ${variant.id}');
       if (variant.attributeValues != null) {
         for (var attrValue in variant.attributeValues!) {
           if (attrValue.categoryAttribute?.attribute != null &&
@@ -153,7 +123,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 'isIndividual': true,
                 'value': null,
               };
-              print('GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
             } else {
               print('GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
             }
@@ -170,13 +139,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   List<Map<String, dynamic>> individualAttributes = individualAttributesMap.values.toList();
-  print('GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
-        'id': attr['id'],
-        'name': attr['name'],
-        'isIndividual': attr['isIndividual']
-      }).toList()}');
 
-  // Комбинируем неиндивидуальные и индивидуальные атрибуты
   final allAttributes = [
     ...widget.goods.attributes
         .where((attr) => !attr.isIndividual)
@@ -194,14 +157,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         )),
   ].toSet().toList();
 
-  print('GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
-        'id': attr.id,
-        'name': attr.name,
-        'value': attr.value,
-        'isIndividual': attr.isIndividual
-      }).toList()}');
 
-  // Устанавливаем selectedCategory
   selectedCategory = subCatAttr.SubCategoryAttributesData(
     id: widget.goods.category.id,
     name: widget.goods.category.name,
@@ -210,54 +166,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       name: widget.goods.category.name,
     ),
     attributes: allAttributes,
-    hasPriceCharacteristics: widget.goods.attributes
-            .any((attr) => attr.name.toLowerCase() == 'price') ||
+    hasPriceCharacteristics: widget.goods.attributes.any((attr) => attr.name.toLowerCase() == 'price') ||
         individualAttributes.any((attr) => attr['name'].toLowerCase() == 'price'),
   );
 
-  print('GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
-        'id': attr.id,
-        'name': attr.name,
-        'value': attr.value,
-        'isIndividual': attr.isIndividual
-      }).toList()}');
-  print('GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
-
-  // Очищаем контроллеры и tableAttributes
   attributeControllers.clear();
   tableAttributes.clear();
-  print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
 
-  // Инициализируем контроллеры для неиндивидуальных атрибутов
   for (var attribute in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
     attributeControllers[attribute.name] =
         TextEditingController(text: attribute.value ?? '');
-    print('GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
   }
 
-  // Формируем tableAttributes
   if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-    print('GoodsEditScreen: Processing variants to build tableAttributes...');
     for (var variant in widget.goods.variants!) {
-      print('GoodsEditScreen: Processing variant ID ${variant.id}');
-      print('GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
-            'categoryAttributeId': attr.categoryAttribute?.id,
-            'attributeName': attr.categoryAttribute?.attribute?.name,
-            'value': attr.value
-          }).toList()}');
-
       Map<String, dynamic> newRow = {
         'id': variant.id,
       };
 
-      // Инициализируем контроллеры для всех индивидуальных атрибутов
       var individualAttrs = selectedCategory!.attributes.where((a) => a.isIndividual).toList();
       if (individualAttrs.isEmpty) {
-        print('GoodsEditScreen: No individual attributes found in selected category');
       }
       for (var attr in individualAttrs) {
         newRow[attr.name] = TextEditingController();
-        print('GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
       }
 
       // Заполняем значения индивидуальных атрибутов
@@ -288,27 +219,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       }
 
       // Добавляем изображения
-      newRow['images'] =
-          variant.files?.map((file) => '$baseUrl/${file.path}').toList() ?? [];
-      print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
+      newRow['images'] = variant.files?.map((file) => '$baseUrl/${file.path}').toList() ?? [];
 
       tableAttributes.add(newRow);
-      print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
     }
   } else {
-    print('GoodsEditScreen: No variants found, adding empty row');
     addTableRow();
   }
 
-  print('GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-        'id': row['id'],
-        'attributes': row.keys
-            .where((key) => key != 'images' && key != 'price' && key != 'id')
-            .map((key) => {key: row[key].text})
-            .toList(),
-        'price': row['price']?.text,
-        'images': row['images'],
-      }).toList()}');
 }
   Future<void> fetchSubCategories() async {
     try {
@@ -316,10 +234,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print('GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
-                'id': cat.id,
-                'name': cat.name
-              }).toList()}');
         });
       }
     } catch (e) {
@@ -387,8 +301,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
             children: [
               ListTile(
                 leading: Icon(Icons.camera_alt),
-                title: Text(
-                  'Сделать фото',
+                title: Text(AppLocalizations.of(context)!.translate('make_photo'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -403,8 +316,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library),
-                title: Text(
-                  'Выбрать из галереи',
+                title: Text(AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -462,8 +374,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         titleSpacing: 0,
-        title: Text(
-          'Редактировать товар',
+        title: Text( AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -493,17 +404,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: 'Введите название товара',
-                    label: 'Название товара',
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                    label: AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? 'Поле обязательно для заполнения'
+                        ? AppLocalizations.of(context)!.translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: 'Введите описание товара',
-                    label: 'Описание',
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
@@ -546,8 +457,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             if (!isCategoryValid)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  'Пожалуйста, выберите подкатегорию',
+                                child: Text(AppLocalizations.of(context)!.translate("please_select_subcategory"),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.red,
@@ -565,8 +475,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       children: [
                         Divider(color: Color(0xff1E2E52)),
                         Center(
-                          child: Text(
-                            'Характеристика товара',
+                          child: Text(AppLocalizations.of(context)!.translate("product_characteristic"),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -595,11 +504,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               ),
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
-                                controller:
-                                    attributeControllers[attribute.name] ??
-                                        TextEditingController(),
-                                hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                controller: attributeControllers[attribute.name] ?? TextEditingController(),
+                                hintText:'${AppLocalizations.of(context)!.translate("please_enter")}${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -615,17 +521,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 child: Column(
                                   children: [
                                     () {
-                                      // Получаем уникальные индивидуальные атрибуты
                                       final individualAttrs = selectedCategory!
                                           .attributes
                                           .where((attr) => attr.isIndividual)
                                           .toSet()
                                           .toList();
-                                      print('GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
-                                      print('GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
-                                      print('GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
 
-                                      // Формируем столбцы
                                       List<DataColumn> columns = [
                                         ...individualAttrs.map((attr) => DataColumn(
                                               label: Text(
@@ -641,8 +542,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         if (selectedCategory!
                                             .hasPriceCharacteristics)
                                           DataColumn(
-                                            label: Text(
-                                              'Цена',
+                                            label: Text(AppLocalizations.of(context)!.translate("goods_price_details"),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -652,8 +552,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                           ),
                                         DataColumn(
-                                          label: Text(
-                                            'Изображение',
+                                            label: Text(AppLocalizations.of(context)!.translate("image_message"),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -675,16 +574,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                       ];
 
-                                      print('GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
-
-                                      // Формируем строки
                                       List<DataRow> rows = tableAttributes
                                           .asMap()
                                           .entries
                                           .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
-                                        print('GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {key: row[key] is TextEditingController ? row[key].text : row[key]}).toList()}');
 
                                         List<DataCell> cells = [
                                           ...individualAttrs.map((attr) => DataCell(
@@ -694,8 +589,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     controller: row[attr.name] ??
                                                         TextEditingController(),
                                                     decoration: InputDecoration(
-                                                      hintText:
-                                                          'Введите ${attr.name}',
+                                                      hintText:'${AppLocalizations.of(context)!.translate("please_enter")}${attr.name}',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
@@ -725,7 +619,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   controller: row['price'] ??
                                                       TextEditingController(),
                                                   decoration: InputDecoration(
-                                                    hintText: 'Введите цену',
+                                                    hintText: AppLocalizations.of(context)!.translate('please_enter_price'),
                                                     hintStyle: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight: FontWeight.w500,
@@ -837,11 +731,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         ];
 
-                                        print('GoodsEditScreen: Row $index cells created');
                                         return DataRow(cells: cells);
                                       }).toList();
-
-                                      print('GoodsEditScreen: DataTable rows created: ${rows.length}');
 
                                       return DataTable(
                                         columnSpacing: 16,
@@ -905,8 +796,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   Icon(Icons.camera_alt,
                                       color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    'Выберите изображение',
+                                  Text(AppLocalizations.of(context)!.translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -989,7 +879,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Добавить +',
+                                              AppLocalizations.of(context)!.translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1005,8 +895,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       final item =
                                           _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
-                                      print(
-                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths');
                                     });
                                   },
                                 ),
@@ -1021,7 +909,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '${_imagePaths.length} Изображений',
+                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('images')}',
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1038,8 +926,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   if (!isImagesValid)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Выберите хотя бы одно изображение!',
+                      child: Text( AppLocalizations.of(context)!.translate('please_select_image'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -1054,8 +941,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Статус товара',
+                            Text( AppLocalizations.of(context)!.translate('status_product'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -1068,8 +954,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               onTap: () {
                                 setState(() {
                                   isActive = !isActive;
-                                  print(
-                                      'GoodsEditScreen: Toggled isActive to: $isActive');
                                 });
                               },
                               child: Container(
@@ -1086,8 +970,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       onChanged: (value) {
                                         setState(() {
                                           isActive = value;
-                                          print(
-                                              'GoodsEditScreen: Switch changed isActive to: $isActive');
                                         });
                                       },
                                       activeColor: const Color.fromARGB(
@@ -1102,7 +984,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? 'Активно' : 'Неактивно',
+                                      isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1134,7 +1016,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 buttonColor: const Color(0xffF4F7FD),
                 textColor: Colors.black,
                 onPressed: () => Navigator.pop(context),
@@ -1153,7 +1035,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                      buttonText: 'Сохранить',
+                      buttonText: AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
@@ -1165,8 +1047,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message:
-                                'Пожалуйста, заполните все обязательные поля!',
+                            message: 'fill_required_fields',
                             isSuccess: false,
                           );
                         }
@@ -1180,7 +1061,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _showImagePickerOptions() async {
-    print('GoodsEditScreen: Showing image picker options');
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -1193,7 +1073,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.camera_alt),
                 title: Text(
-                  'Сделать фото',
+                 AppLocalizations.of(context)!.translate('make_photo'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1209,7 +1089,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  'Выбрать из галереи',
+                 AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1231,13 +1111,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    print('GoodsEditScreen: Picking image from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         _imagePaths.add(pickedFile.path);
         isImagesValid = true;
-        print('GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No image picked');
@@ -1388,7 +1266,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
-          message: 'Товар успешно обновлен!',
+          message: 'product_updated',
           isSuccess: true,
         );
         Navigator.pop(context, true);
@@ -1397,17 +1275,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? 'Ошибка при обновлении товара',
+          message: response['message'] ?? 'error_update_product',
           isSuccess: false,
         );
       }
     } catch (e, stackTrace) {
       setState(() => isLoading = false);
-      print('GoodsEditScreen: Error updating product: $e');
-      print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
-        message: 'Ошибка при обновлении товара: ${e.toString()}',
+        message: 'error_update_product',
         isSuccess: false,
       );
     }
@@ -1427,7 +1303,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
       }
     }
-    print('GoodsEditScreen: Disposed controllers');
     super.dispose();
   }
 }

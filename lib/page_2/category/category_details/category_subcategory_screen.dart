@@ -71,7 +71,7 @@ Widget build(BuildContext context) {
         } else if (state is CategoryByIdLoaded) {
           return _buildSubCategoryList(state.category.categories);
         } else {
-          return Center(child: Text('Нет данных'));
+          return Center(child: Text(AppLocalizations.of(context)!.translate("no_data_to_display")));
         }
       },
     ),
@@ -82,7 +82,7 @@ Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('Подкатегории')),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('subcategories')),
         SizedBox(height: 8),
         if (categories.isEmpty)
           Padding(
@@ -173,8 +173,7 @@ Widget build(BuildContext context) {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Характеристики:',
+                      Text( AppLocalizations.of(context)!.translate('characteristics'),
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xff99A4BA),
@@ -236,7 +235,7 @@ Widget _buildNoPhotoPlaceholder() {
     children: [
       Icon(Icons.photo_camera, size: 30, color: Color(0xff99A4BA)),
       SizedBox(height: 4),
-      Text( 'Нет фото',
+      Text( AppLocalizations.of(context)!.translate("no_photo"),
         style: TextStyle(
           fontSize: 12,
           color: Color(0xff99A4BA),

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class DeleteOrderDialog extends StatelessWidget {
@@ -9,9 +10,9 @@ class DeleteOrderDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.white,
-      title: const Center(
+      title:  Center(
         child: Text(
-          'Удалить заказ',
+          AppLocalizations.of(context)!.translate('delete_order'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -20,8 +21,8 @@ class DeleteOrderDialog extends StatelessWidget {
           ),
         ),
       ),
-      content: const Text(
-        'Вы уверены, что хотите удалить этот заказ?',
+      content:  Text(
+        AppLocalizations.of(context)!.translate('confirm_delete_order'),
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
@@ -40,8 +41,8 @@ class DeleteOrderDialog extends StatelessWidget {
                   backgroundColor: Colors.red,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text(
-                  'Отмена',
+                child: Text(
+                  AppLocalizations.of(context)!.translate('cancel'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     color: Colors.white,
@@ -57,8 +58,8 @@ class DeleteOrderDialog extends StatelessWidget {
                   backgroundColor: const Color(0xff1E2E52),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text(
-                  'Удалить',
+                child: Text(
+                  AppLocalizations.of(context)!.translate('delete'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     color: Colors.white,

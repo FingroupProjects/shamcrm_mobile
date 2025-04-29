@@ -19,13 +19,6 @@ class PaymentMethodDropdown extends StatefulWidget {
 class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
   String? selectedPaymentMethod;
 
-  // Локальный список способов оплаты (пока без API)
-  final List<String> paymentMethods = [
-    'Наличные',
-    'Онлайн',
-    'Карта',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -34,6 +27,13 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
 
   @override
   Widget build(BuildContext context) {
+
+  final List<String> paymentMethods = [
+    AppLocalizations.of(context)!.translate('cash'),
+    AppLocalizations.of(context)!.translate('online'),
+    AppLocalizations.of(context)!.translate('card'),
+  ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

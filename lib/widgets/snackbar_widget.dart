@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void showCustomSnackBar({
@@ -8,7 +9,7 @@ void showCustomSnackBar({
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        message,
+        AppLocalizations.of(context)!.translate('message'),
         style: TextStyle(
           fontFamily: 'Gilroy',
           fontSize: 16,

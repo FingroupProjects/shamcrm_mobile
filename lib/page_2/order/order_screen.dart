@@ -175,7 +175,6 @@ class _OrderScreenState extends State<OrderScreen>
                       );
                     }
 
-                    // В OrderScreen, внутри build, замените Column в BlocBuilder на:
                     return RefreshIndicator(
                       color: const Color(0xff1E2E52),
                       backgroundColor: Colors.white,

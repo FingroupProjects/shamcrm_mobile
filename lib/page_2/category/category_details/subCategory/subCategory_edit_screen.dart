@@ -366,7 +366,6 @@ class SubCategoryEditBottomSheet {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
-      // Формируем список атрибутов с учетом isIndividual
       List<Map<String, dynamic>> attributes = customFields
           .map((field) => {
                 'name': field.name,

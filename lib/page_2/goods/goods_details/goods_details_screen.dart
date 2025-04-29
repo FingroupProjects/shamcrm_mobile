@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/variant_details_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -77,15 +78,18 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            print('GoodsDetailsScreen: Error state - ${state.message}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+              showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
+                 );
           } else if (state is GoodsByIdDeleted) {
-            print('GoodsDetailsScreen: Goods deleted successfully');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Товар успешно удалён')),
-            );
+            showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate('product_deleted'),
+                   isSuccess: true,
+                 );
+
             Navigator.pop(context);
           }
         },
@@ -129,7 +133,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               ...goods.attributes
                   .where((attr) =>
                       attr.name.isNotEmpty &&
-                      attr.name != 'Неизвестная характеристика')
+                      attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
                   .map((attr) => {
                         'label': attr.name,
                         'value': attr.value,
@@ -137,12 +141,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               {
                 'label':
                     AppLocalizations.of(context)!.translate('goods_finished'),
-                'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
+                'value': goods.isActive ?? false ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
               },
             ];
-            print(
-                'GoodsDetailsScreen: Details populated with ${details.length} items');
-
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
@@ -155,14 +156,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             );
           } else if (state is GoodsByIdEmpty) {
             print('GoodsDetailsScreen: Empty state');
-            return const Center(child: Text('Товар не найден'));
+            return  Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
           } else if (state is GoodsByIdError) {
-            print(
-                'GoodsDetailsScreen: Error state in builder - ${state.message}');
             return Center(child: Text(state.message));
           }
-          print('GoodsDetailsScreen: Default loading state');
-          return const Center(child: Text('Загрузка...'));
+            return  Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );
@@ -170,12 +168,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildImageSlider(List<GoodsFile> files) {
     if (baseUrl == null) {
-      print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
       return const Center(child: CircularProgressIndicator());
     }
 
-    print(
-        'GoodsDetailsScreen: Building image slider with ${files.length} files');
     return Column(
       children: [
         Container(
@@ -185,13 +180,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             itemCount: files.length,
             onPageChanged: (index) => setState(() {
               _currentPage = index;
-              print('GoodsDetailsScreen: Image page changed to $index');
             }),
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${files[index].path}';
-              print('GoodsDetailsScreen: Loading image $imageUrl');
               if (files[index].path.isEmpty) {
-                print('GoodsDetailsScreen: Empty image path at index $index');
                 return _buildPlaceholder();
               }
               return ClipRRect(
@@ -201,8 +193,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    print(
-                        'GoodsDetailsScreen: Image load error for $imageUrl: $error');
                     return _buildPlaceholder();
                   },
                 ),
@@ -230,7 +220,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
-    print('GoodsDetailsScreen: Displaying image placeholder');
     return Container(
       color: Colors.grey[200],
       child: const Center(
@@ -240,7 +229,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    print('GoodsDetailsScreen: Building AppBar with title $title');
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -255,7 +243,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
             onPressed: () {
-              print('GoodsDetailsScreen: Back button pressed');
               Navigator.pop(context);
             },
           ),
@@ -277,8 +264,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ? [
               BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
                 builder: (context, state) {
-                  print(
-                      'GoodsDetailsScreen: Building AppBar actions, state: $state');
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -289,8 +274,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                             width: 24, height: 24),
                         onPressed: state is GoodsByIdLoaded
                             ? () async {
-                                print(
-                                    'GoodsDetailsScreen: Edit button pressed');
                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -299,11 +282,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                   ),
                                 );
                                 if (result == true) {
-                                  print(
-                                      'GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
-                                  context
-                                      .read<GoodsByIdBloc>()
-                                      .add(FetchGoodsById(widget.id));
+                                  context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
                                 }
                               }
                             : null,
@@ -315,14 +294,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                             width: 24, height: 24),
                         onPressed: state is GoodsByIdLoaded
                             ? () {
-                                print(
-                                    'GoodsDetailsScreen: Delete button pressed');
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     title: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('delete_goods'),
+                                      AppLocalizations.of(context)!.translate('delete_goods'),
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontFamily: 'Gilroy',
@@ -416,13 +392,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantsSection(Goods goods) {
-    print(
-        'GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Варианты товара',
+         Text( AppLocalizations.of(context)!.translate('variants_products'), 
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -446,29 +420,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
     final price = variant.variantPrice?.price ?? 0.0;
-    print(
-        'GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-    // Собираем уникальные характеристики с использованием Set
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
         final attrName = attrValue.categoryAttribute?.attribute?.name ??
-            'Неизвестная характеристика';
-        final value =
-            attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
+            AppLocalizations.of(context)!.translate('variants_products');
+        final value = attrValue.value.isNotEmpty ? attrValue.value : AppLocalizations.of(context)!.translate('not_specified');
         uniqueAttributes.add({
           'name': attrName,
           'value': value,
         });
-        print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
       }
     } else {
-      print(
-          'GoodsDetailsScreen: No attribute values for variant ${variant.id}');
       uniqueAttributes.add({
-        'name': 'Без названия',
-        'value': 'Не указано',
+        'name': AppLocalizations.of(context)!.translate('no_name_chat'),
+        'value': AppLocalizations.of(context)!.translate('not_specified'),
       });
     }
 
@@ -561,7 +528,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          '+ ещё ${uniqueAttributes.length - 4}',
+                          '${AppLocalizations.of(context)!.translate('more')} ${uniqueAttributes.length - 4}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
@@ -571,7 +538,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         ),
                       ),
                     const SizedBox(height: 8),
-                    // Цена
                     Text(
                       '$price ₽',
                       style: const TextStyle(
@@ -634,8 +600,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             detail['value'] == value &&
             !expandableFields.contains(label));
 
-    print(
-        'GoodsDetailsScreen: Building detail item - label: $label, value: $value');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -645,7 +609,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           child: isExpandable
               ? GestureDetector(
                   onTap: () {
-                    print('GoodsDetailsScreen: Detail item tapped - $label');
                     _showFullTextDialog(label.replaceAll(':', ''), value);
                   },
                   child: _buildValue(value, label, maxLines: 1),

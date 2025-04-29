@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class VariantDetailsScreen extends StatefulWidget {
@@ -55,38 +56,35 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
 
     details = [
       {
-        'label': 'Цена',
+        'label': AppLocalizations.of(context)!.translate('goods_price_details'),
         'value': variant.variantPrice?.price.toString() ?? '0',
       },
       {
-        'label': 'Дата начала',
-        'value': variant.variantPrice?.startDate ?? 'Не указано',
+        'label': AppLocalizations.of(context)!.translate('start_date'),
+        'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate('not_specified'),
       },
       {
-        'label': 'Статус',
-        'value': variant.isActive ? 'Активно' : 'Неактивно',
+        'label': AppLocalizations.of(context)!.translate('status_lead_profile'),
+        'value': variant.isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
       },
       // Добавляем все атрибуты из attributeValues
       ...variant.attributeValues.map((val) {
-        final label = val.categoryAttribute?.attribute?.name ?? 'Характеристика';
-        final value = val.value.isNotEmpty ? val.value : 'Не указано';
-        print('VariantDetailsScreen: Adding detail - label: $label, value: $value');
+        final label = val.categoryAttribute?.attribute?.name ?? AppLocalizations.of(context)!.translate('characteristic') ;
+        final value = val.value.isNotEmpty ? val.value : AppLocalizations.of(context)!.translate('not_specified');
         return {
           'label': label,
           'value': value,
         };
       }).toList(),
     ];
-    print('VariantDetailsScreen: Details populated with ${details.length} items');
   }
 
   @override
   Widget build(BuildContext context) {
     List<String> variantImages = widget.variant.files?.map((file) => file.path).toList() ?? [];
-    print('VariantDetailsScreen: Building UI with ${variantImages.length} images');
 
     return Scaffold(
-      appBar: _buildAppBar(context, 'Просмотр варианта'),
+      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_variant')),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -102,11 +100,9 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
 
   Widget _buildImageSlider(List<String> images) {
     if (baseUrl == null) {
-      print('VariantDetailsScreen: baseUrl is null, showing loading indicator');
       return const Center(child: CircularProgressIndicator());
     }
 
-    print('VariantDetailsScreen: Building image slider with ${images.length} images');
     return Column(
       children: [
         Container(
@@ -116,13 +112,10 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
             itemCount: images.length,
             onPageChanged: (index) => setState(() {
               _currentPage = index;
-              print('VariantDetailsScreen: Image page changed to $index');
             }),
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${images[index]}';
-              print('VariantDetailsScreen: Loading image $imageUrl');
               if (images[index].isEmpty) {
-                print('VariantDetailsScreen: Empty image path at index $index');
                 return _buildPlaceholder();
               }
               return ClipRRect(
@@ -132,7 +125,6 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    print('VariantDetailsScreen: Image load error for $imageUrl: $error');
                     return _buildPlaceholder();
                   },
                 ),
@@ -290,7 +282,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: CustomButton(
-                buttonText: 'Закрыть',
+                buttonText: AppLocalizations.of(context)!.translate('close'),
                 onPressed: () {
                   print('VariantDetailsScreen: Closing full text dialog');
                   Navigator.pop(context);

@@ -20,17 +20,13 @@ class DeliveryMethodDropdown extends StatefulWidget {
 class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
   String? selectedDeliveryMethod;
 
-  // Локальный список способов доставки (пока без API)
-  final List<String> deliveryMethods = [
-    'Самовывоз',
-    'Доставка',
-  ];
+
 
   @override
   void initState() {
     super.initState();
     // Устанавливаем начальное значение, но не вызываем коллбэк здесь
-    selectedDeliveryMethod = widget.selectedDeliveryMethod ?? 'Доставка';
+    selectedDeliveryMethod = widget.selectedDeliveryMethod ?? AppLocalizations.of(context)!.translate('delivery');
     // Переносим вызов коллбэка после завершения сборки
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -41,6 +37,13 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
 
   @override
   Widget build(BuildContext context) {
+
+      // Локальный список способов доставки (пока без API)
+  final List<String> deliveryMethods = [
+    AppLocalizations.of(context)!.translate('self_delivery'),
+    AppLocalizations.of(context)!.translate('delivery'),
+  ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
