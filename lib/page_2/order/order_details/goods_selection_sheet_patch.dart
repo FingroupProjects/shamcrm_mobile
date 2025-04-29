@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -104,7 +105,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Выберите хотя бы один товар',
+            AppLocalizations.of(context)!.translate('please_select_product'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -173,11 +174,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                           .toList();
                   return _buildProductList(filteredProducts, state);
                 } else if (state is GoodsEmpty) {
-                  return const Center(child: Text('Товары не найдены'));
+                  return  Center(child: Text(AppLocalizations.of(context)!.translate('no_products_found')));
                 } else if (state is GoodsError) {
                   return Center(child: Text(state.message));
                 }
-                return const Center(child: Text('Ожидание данных...'));
+                return  Center(child: Text(AppLocalizations.of(context)!.translate('loading_data')));
               },
             ),
           ),
@@ -193,8 +194,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Добавление товара',
+           Text(
+          AppLocalizations.of(context)!.translate('add_producted'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -222,9 +223,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           }
         },
         decoration: InputDecoration(
-          hintText: 'Поиск по названию, артикулу, штри...',
-          hintStyle: TextStyle(
-              fontFamily: 'Gilroy', fontSize: 14, color: Color(0xff99A4BA)),
+          hintText:  AppLocalizations.of(context)!.translate('search_product_placeholder'),
+          hintStyle: TextStyle( fontFamily: 'Gilroy', fontSize: 14, color: Color(0xff99A4BA)),
           prefixIcon: Icon(Icons.search, color: Color(0xff99A4BA)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -370,7 +370,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Количество',
+               Text( AppLocalizations.of(context)!.translate('stock_quantity_details'),
                   style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -440,9 +440,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            'Добавить',
+            AppLocalizations.of(context)!.translate('add'),
             style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',

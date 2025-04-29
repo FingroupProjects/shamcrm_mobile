@@ -95,7 +95,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                 },
                               ),
                               const SizedBox(height: 8),
-                               Text( AppLocalizations.of(context)!.translate('Изображение'),
+                               Text( AppLocalizations.of(context)!.translate('image_message'),
                                  style: const TextStyle(
                                    fontSize: 16,
                                    fontFamily: 'Gilroy',
@@ -191,7 +191,7 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('   Изоброжения обязательно'),
+                                          AppLocalizations.of(context)!.translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,

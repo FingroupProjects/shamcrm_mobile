@@ -7,8 +7,8 @@ class CategoryDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
   final Function(SubCategoryAttributesData?) onSelectCategory;
   final List<SubCategoryAttributesData> subCategories;
-  final bool isValid; // Добавляем флаг для валидации
-  final VoidCallback? onValidationChanged; // Callback для уведомления родителя
+  final bool isValid; 
+  final VoidCallback? onValidationChanged; 
 
   CategoryDropdownWidget({
     Key? key,
@@ -50,7 +50,7 @@ Widget build(BuildContext context) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('Подкатегория'),
+          AppLocalizations.of(context)!.translate('list_subcategories'),
           style: categoryTextStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 4),
@@ -95,7 +95,7 @@ Widget build(BuildContext context) {
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
-              AppLocalizations.of(context)!.translate('Выберите подкатегорию'),
+              AppLocalizations.of(context)!.translate('list_select_subcategories'),
               style: categoryTextStyle.copyWith(fontSize: 14),
             ),
             excludeSelected: false,
@@ -115,7 +115,7 @@ Widget build(BuildContext context) {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              AppLocalizations.of(context)!.translate('   Поле обязательно для заполнения'),
+              AppLocalizations.of(context)!.translate('field_required_project'),
               style: TextStyle(
               fontSize: 14,
               color: Colors.red,

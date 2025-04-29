@@ -59,7 +59,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
-      _deliveryMethod = widget.order!.delivery ? 'Доставка' : 'Самовывоз';
+      _deliveryMethod = widget.order!.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
       selectedDialCode = widget.order!.phone;
       // _selectedBranch будет установлено позже в BlocListener, если есть данные
     } else {
@@ -116,7 +116,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           id: 0,
           phone: selectedDialCode ?? _phoneController.text,
           orderNumber: '',
-          delivery: _deliveryMethod == 'Доставка',
+          delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
           deliveryAddress: _deliveryAddressController.text,
           lead: OrderLead(
             id: int.tryParse(selectedLead ?? '0') ?? 0,
@@ -191,53 +191,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
             if (state is OrderSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Заказ успешно создан',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.green,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+                showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate('order_created_success'),
+                   isSuccess: true,
+                 );
               Navigator.pop(
-                  context, state.statusId ?? 1); // Возвращаем statusId
+                  context, state.statusId ?? 1);
             } else if (state is OrderError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+                showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
+                 );
+            
             } else if (state is OrderLoaded && state.orderDetails != null) {
               setState(() {
                 _items = state.orderDetails!.goods
@@ -257,7 +224,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     state.orderDetails!.deliveryAddress ?? '';
                 selectedLead = state.orderDetails!.lead.id.toString();
                 _deliveryMethod =
-                    state.orderDetails!.delivery ? 'Доставка' : 'Самовывоз';
+                    state.orderDetails!.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
               });
             }
           },
@@ -292,13 +259,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!
-                                    .translate('field_required');
+                                return AppLocalizations.of(context)!.translate('field_required');
                               }
                               return null;
                             },
-                            label: AppLocalizations.of(context)!
-                                .translate('phone'),
+                            label: AppLocalizations.of(context)!.translate('phone'),
                           ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
@@ -315,25 +280,23 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           ),
                           
                           const SizedBox(height: 16),
-                          if (_deliveryMethod == 'Самовывоз')
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
                             BranchesDropdown(
                               selectedBranch: _selectedBranch,
                               onSelectBranch: (branch) {
                                 setState(() => _selectedBranch = branch);
                               },
                             ),
-                          if (_deliveryMethod == 'Доставка')
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
                             CustomTextField(
                               controller: _deliveryAddressController,
-                              hintText: AppLocalizations.of(context)!
-                                  .translate('Введите адрес доставки'),
-                              label: AppLocalizations.of(context)!
-                                  .translate('Адрес доставки'),
+                              hintText: AppLocalizations.of(context)!.translate('enter_delivery_address'),
+                              label: AppLocalizations.of(context)!.translate('delivery_address'),
                               maxLines: 3,
                               keyboardType: TextInputType.streetAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Пожалуйста, введите адрес доставки';
+                                  return 'please_enter_delivery_address';
                                 }
                                 return null;
                               },
@@ -341,10 +304,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _commentController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('Введите комментарий'),
-                            label: AppLocalizations.of(context)!
-                                .translate('Комментарий клиента'),
+                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!.translate('comment_client'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -372,8 +333,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: const Text(
-        'Новый заказ',
+      title:  Text(
+       AppLocalizations.of(context)!.translate('new_order'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -394,8 +355,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Список товаров',
+             Text(
+       AppLocalizations.of(context)!.translate('items_list'),
               style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -404,11 +365,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             ),
             GestureDetector(
               onTap: _navigateToAddProduct,
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
                   SizedBox(width: 4),
-                  Text('Добавить товар',
+                  Text( AppLocalizations.of(context)!.translate('add_product'),
                       style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -446,13 +407,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Итого:',
+                 Text( AppLocalizations.of(context)!.translate('total'),
                     style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52))),
-                Text('${total.toStringAsFixed(3)} сом',
+                Text('${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
                     style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -515,7 +476,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'] ?? 'Без названия',
+                Text(item['name'] ?? AppLocalizations.of(context)!.translate('no_name_chat'),
                     style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -541,7 +502,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Цена',
+                       Text( AppLocalizations.of(context)!.translate('goods_price_details'),
                           style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
@@ -559,7 +520,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Сумма',
+                       Text( AppLocalizations.of(context)!.translate('summ'),
                           style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
@@ -640,8 +601,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child: const Text(
-              'Отмена',
+            child:  Text(
+              AppLocalizations.of(context)!.translate('cancel'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -660,8 +621,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 orderBloc.add(CreateOrder(
                   phone: selectedDialCode ?? _phoneController.text,
                   leadId: int.parse(selectedLead ?? '0'),
-                  delivery: _deliveryMethod == 'Доставка',
-                  deliveryAddress: _deliveryMethod == 'Самовывоз'
+                  delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
+                  deliveryAddress: _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery')
                       ? _selectedBranch?.address ?? ''
                       : _deliveryAddressController.text,
                   goods: _items
@@ -691,8 +652,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 showCustomSnackBar(
                   context: context,
                   message: _items.isEmpty
-                      ? 'Добавьте хотя бы один товар'
-                      : 'Заполните все обязательные поля',
+                      ? AppLocalizations.of(context)!.translate('add_at_least_one_product')
+                      : AppLocalizations.of(context)!.translate('fill_all_required_fields'),
                   isSuccess: false,
                 );
               }
@@ -702,7 +663,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12)),
-            child: const Text('Создать',
+            child: Text( AppLocalizations.of(context)!.translate('create'),
                 style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',

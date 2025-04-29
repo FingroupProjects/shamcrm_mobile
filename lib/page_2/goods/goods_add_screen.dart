@@ -34,12 +34,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController unitIdController = TextEditingController();
 
   SubCategoryAttributesData? selectedCategory;
-  Branch? selectedBranch; // Переменная для хранения выбранного филиала
+  Branch? selectedBranch; 
   bool isActive = true;
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
   bool isImagesValid = true;
-  bool isBranchValid = true; // Валидация для поля филиала
+  bool isBranchValid = true; 
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -52,7 +52,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    // Запрашиваем филиалы
     context.read<BranchBloc>().add(FetchBranches());
   }
 
@@ -64,7 +63,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         subCategories = categories;
       });
     } catch (e) {
-      print('Error fetching subcategories: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -74,7 +72,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      isBranchValid = selectedBranch != null; // Проверяем, выбран ли филиал
+      isBranchValid = selectedBranch != null; 
     });
   }
 
@@ -251,7 +249,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Пожалуйста, выберите филиал',
+                        AppLocalizations.of(context)!.translate('please_select_branch'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -281,7 +279,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Пожалуйста, выберите подкатегорию',
+                        AppLocalizations.of(context)!.translate('please_select_subcategory'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -297,7 +295,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         Divider(color: Color(0xff1E2E52)),
                         Center(
                           child: Text(
-                            'Характеристика товара',
+                        AppLocalizations.of(context)!.translate('product_characteristic'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -324,7 +322,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               const SizedBox(height: 4),
                               CustomCharacteristicField(
                                 controller: attributeControllers[attribute.name]!,
-                                hintText: 'Введите ${attribute.name.toLowerCase()}',
+                                hintText: '${AppLocalizations.of(context)!.translate('please_enter')}${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -361,7 +359,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         if (selectedCategory!.hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
-                                              'Цена',
+                                            AppLocalizations.of(context)!.translate('goods_price_details'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -372,7 +370,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           ),
                                         DataColumn(
                                           label: Text(
-                                            'Изображение',
+                                            AppLocalizations.of(context)!.translate('image_message'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -406,7 +404,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                         child: TextField(
                                                           controller: row[attr.name],
                                                           decoration: InputDecoration(
-                                                            hintText: 'Введите ${attr.name}',
+                                                            hintText: '${AppLocalizations.of(context)!.translate('please_enter')}${attr.name}',
                                                             hintStyle: TextStyle(
                                                               fontSize: 12,
                                                               fontWeight: FontWeight.w500,
@@ -430,7 +428,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                   child: TextField(
                                                     controller: row['price'],
                                                     decoration: InputDecoration(
-                                                      hintText: 'Введите цену',
+                                                      hintText: AppLocalizations.of(context)!.translate('please_enter_price'),
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w500,
@@ -632,7 +630,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              "Добавить +",
+                                              AppLocalizations.of(context)!.translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -678,7 +676,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!.translate('Выберите хотя-бы одну фотографию!'),
+                        AppLocalizations.of(context)!.translate('please_select_image_one'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -796,7 +794,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: 'Пожалуйста, заполните все обязательные поля!',
+                            message: 'fill_required_fields',
                             isSuccess: false,
                           );
                         }
@@ -960,14 +958,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           }
         }
 
-        print('Attributes: $attributes');
-        print('Variants: $variants');
-
         if (variants.isEmpty) {
           setState(() => isLoading = false);
           showCustomSnackBar(
             context: context,
-            message: 'Добавьте хотя бы один вариант с характеристиками!',
+            message: 'please_add_variant',
             isSuccess: false,
           );
           return;
@@ -987,7 +982,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           setState(() => isLoading = false);
           showCustomSnackBar(
             context: context,
-            message: 'Не удалось найти общие изображения. Пожалуйста, выберите изображения заново.',
+            message: 'failed_to_find_common_images',
             isSuccess: false,
           );
           return;
@@ -1005,13 +1000,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           discountPrice: selectedCategory!.hasPriceCharacteristics
               ? null
               : double.tryParse(discountPriceController.text) ?? 0.0,
-          branch: selectedBranch!.id, // Передаем ID филиала
+          branch: selectedBranch!.id,
         );
 
         if (response['success'] == true) {
           showCustomSnackBar(
             context: context,
-            message: 'Товар успешно создан!',
+            message: 'product_created',
             isSuccess: true,
           );
           Navigator.pop(context, true);
@@ -1020,7 +1015,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           setState(() => isLoading = false);
           showCustomSnackBar(
             context: context,
-            message: response['message'] ?? 'Ошибка при создании товара',
+            message: response['message'] ?? 'error_create_product',
             isSuccess: false,
           );
         }
@@ -1037,7 +1032,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     } else {
       showCustomSnackBar(
         context: context,
-        message: 'Заполните все обязательные поля!',
+        message: 'fill_all_required_fields',
         isSuccess: false,
       );
     }

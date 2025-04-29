@@ -139,7 +139,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
       child: Scaffold(
         appBar: _buildAppBar(
           context,
-          AppLocalizations.of(context)!.translate('Просмотр подкатегории'),
+          AppLocalizations.of(context)!.translate('view_subcategory'),
         ),
         backgroundColor: Colors.white,
         body: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(

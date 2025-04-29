@@ -54,7 +54,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             })
         .toList();
     selectedLead = widget.order.lead.id.toString();
-    _deliveryMethod = widget.order.delivery ? 'Доставка' : 'Самовывоз';
+    _deliveryMethod = widget.order.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
 
     // Инициализация номера телефона
     String phoneText = widget.order.phone;
@@ -100,7 +100,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final Order tempOrder = widget.order.copyWith(
       phone:
           selectedDialCode ?? _phoneController.text, // Используем полный номер
-      delivery: _deliveryMethod == 'Доставка',
+      delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
       deliveryAddress: _deliveryAddressController.text,
       lead: OrderLead(
         id: int.tryParse(selectedLead ?? '0') ?? 0,
