@@ -34,8 +34,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
-  String? selectedDialCode; 
+  String? selectedDialCode;
   String? baseUrl;
+  List<Branch> branches = [];
 
   @override
   void initState() {
@@ -202,26 +203,26 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   context, true); // Возвращаем true для обновления списка
             } else if (state is OrderError) {
               ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
                   ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
               );
             }
           },
@@ -286,6 +287,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
                             BranchesDropdown(
+                              branches:
+                                  branches, // Передаём branches, даже если он пуст
+                              label: AppLocalizations.of(context)!
+                                  .translate('branch'),
+
                               selectedBranch: _selectedBranch,
                               onSelectBranch: (branch) {
                                 setState(() => _selectedBranch = branch);

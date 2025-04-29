@@ -911,7 +911,12 @@
     "week": "Hafta",
     "month": "Oy",
     "year": "Yil",
-    "new_subcategory": "Yangi subkategoriya"
+    "new_subcategory": "Yangi subkategoriya",
+    "enter_price": "Narxni kiriting",
+    "branch": "Filial",
+    "branch_details": "Filial",
+    "goods_updated_successfully": "Mahsulot muvaffaqiyatli yangilandi"
+
 
 
 

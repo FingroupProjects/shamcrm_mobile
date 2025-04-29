@@ -3,10 +3,12 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
+import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Goods goods;
@@ -34,6 +37,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController stockQuantityController;
 
   subCatAttr.SubCategoryAttributesData? selectedCategory;
+  Branch? selectedBranch;
+  bool isBranchValid = true;
+  List<Branch> branches = [];
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
@@ -49,25 +55,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    print('GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print('GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
-          'id': attr.id,
-          'name': attr.name,
-          'value': attr.value,
-          'isIndividual': attr.isIndividual
-        }).toList()}');
-    print('GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-          'id': variant.id,
-          'attributeValues': variant.attributeValues
-              ?.map((attr) => {
-                    'categoryAttributeId': attr.categoryAttribute?.id,
-                    'attributeName': attr.categoryAttribute?.attribute?.name,
-                    'value': attr.value,
-                  })
-              .toList(),
-          'price': variant.variantPrice?.price,
-          'files': variant.files?.map((file) => file.path).toList(),
-        }).toList()}');
+    print(
+        'GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
+    print(
+        'GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
+              'id': attr.id,
+              'name': attr.name,
+              'value': attr.value,
+              'isIndividual': attr.isIndividual
+            }).toList()}');
+    print(
+        'GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
+              'id': variant.id,
+              'attributeValues': variant.attributeValues
+                  ?.map((attr) => {
+                        'categoryAttributeId': attr.categoryAttribute?.id,
+                        'attributeName':
+                            attr.categoryAttribute?.attribute?.name,
+                        'value': attr.value,
+                      })
+                  .toList(),
+              'price': variant.variantPrice?.price,
+              'files': variant.files?.map((file) => file.path).toList(),
+            }).toList()}');
 
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
@@ -85,7 +95,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     isActive = widget.goods.isActive ?? false;
-    print('GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive');
+    // Инициализируем selectedBranch как null, выбор будет после загрузки branches
+    selectedBranch = null;
+    print(
+        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -115,6 +128,19 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         });
       }
       await fetchSubCategories();
+      await fetchBranches();
+
+      // Синхронизируем selectedBranch с branches
+      if (widget.goods.branches != null && widget.goods.branches!.isNotEmpty) {
+        final goodsBranchId = widget.goods.branches![0].id;
+        selectedBranch = branches.firstWhere(
+          (branch) => branch.id == goodsBranchId,
+          // orElse: () => null,
+        );
+        print(
+            'GoodsEditScreen: Synchronized selectedBranch: ${selectedBranch?.name}');
+      }
+
       _initializeFieldsWithData();
     } catch (e) {
       print('GoodsEditScreen: Error loading all data: $e');
@@ -131,195 +157,257 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
   }
 
-  void _initializeFieldsWithData() {
-  print('GoodsEditScreen: Initializing fields with data...');
-  print('GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
-
-  // Собираем уникальные индивидуальные атрибуты по имени
-  Map<String, Map<String, dynamic>> individualAttributesMap = {};
-  if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-    for (var variant in widget.goods.variants!) {
-      print('GoodsEditScreen: Processing variant ID: ${variant.id}');
-      if (variant.attributeValues != null) {
-        for (var attrValue in variant.attributeValues!) {
-          if (attrValue.categoryAttribute?.attribute != null &&
-              attrValue.categoryAttribute!.isIndividual == true) {
-            final attrName = attrValue.categoryAttribute!.attribute!.name;
-            if (!individualAttributesMap.containsKey(attrName)) {
-              individualAttributesMap[attrName] = {
-                'id': attrValue.categoryAttribute!.id,
-                'attribute_id': attrValue.categoryAttribute!.attribute!.id,
-                'name': attrName,
-                'isIndividual': true,
-                'value': null,
-              };
-              print('GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
-            } else {
-              print('GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
-            }
-          } else {
-            print('GoodsEditScreen: Skipping attribute value - not individual or missing data: ${attrValue.toString()}');
+  Future<void> fetchBranches() async {
+    try {
+      final fetchedBranches = await _apiService.getBranches();
+      if (mounted) {
+        setState(() {
+          branches = fetchedBranches;
+          print('GoodsEditScreen: Fetched branches: ${branches.map((branch) => {
+                'id': branch.id,
+                'name': branch.name
+              }).toList()}');
+          if (branches.isEmpty) {
+            print('GoodsEditScreen: Warning: No branches fetched from API');
           }
-        }
-      } else {
-        print('GoodsEditScreen: Variant ID ${variant.id} has no attribute values');
+        });
+      }
+    } catch (e) {
+      print('GoodsEditScreen: Error fetching branches: $e');
+      if (mounted) {
+        setState(() {
+          branches = []; // Убедимся, что branches не null
+          print('GoodsEditScreen: Set branches to empty list due to error');
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось загрузить филиалы: $e')),
+        );
       }
     }
-  } else {
-    print('GoodsEditScreen: No variants found in goods');
   }
 
-  List<Map<String, dynamic>> individualAttributes = individualAttributesMap.values.toList();
-  print('GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
-        'id': attr['id'],
-        'name': attr['name'],
-        'isIndividual': attr['isIndividual']
-      }).toList()}');
+  void _initializeFieldsWithData() {
+    print('GoodsEditScreen: Initializing fields with data...');
+    print(
+        'GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
 
-  // Комбинируем неиндивидуальные и индивидуальные атрибуты
-  final allAttributes = [
-    ...widget.goods.attributes
-        .where((attr) => !attr.isIndividual)
-        .map((attr) => subCatAttr.Attribute(
-              id: attr.id,
-              name: attr.name,
-              value: attr.value,
-              isIndividual: attr.isIndividual,
-            )),
-    ...individualAttributes.map((attr) => subCatAttr.Attribute(
-          id: attr['id'],
-          name: attr['name'],
-          value: attr['value'],
-          isIndividual: attr['isIndividual'],
-        )),
-  ].toSet().toList();
+    Map<String, Map<String, dynamic>> individualAttributesMap = {};
+    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+      for (var variant in widget.goods.variants!) {
+        print('GoodsEditScreen: Processing variant ID: ${variant.id}');
+        if (variant.attributeValues != null) {
+          for (var attrValue in variant.attributeValues!) {
+            if (attrValue.categoryAttribute?.attribute != null &&
+                attrValue.categoryAttribute!.isIndividual == true) {
+              final attrName = attrValue.categoryAttribute!.attribute!.name;
+              if (!individualAttributesMap.containsKey(attrName)) {
+                individualAttributesMap[attrName] = {
+                  'id': attrValue.categoryAttribute!.id,
+                  'attribute_id': attrValue.categoryAttribute!.attribute!.id,
+                  'name': attrName,
+                  'isIndividual': true,
+                  'value': null,
+                };
+                print(
+                    'GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
+              } else {
+                print(
+                    'GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
+              }
+            } else {
+              print(
+                  'GoodsEditScreen: Skipping attribute value - not individual or missing data: ${attrValue.toString()}');
+            }
+          }
+        } else {
+          print(
+              'GoodsEditScreen: Variant ID ${variant.id} has no attribute values');
+        }
+      }
+    } else {
+      print('GoodsEditScreen: No variants found in goods');
+    }
 
-  print('GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
-        'id': attr.id,
-        'name': attr.name,
-        'value': attr.value,
-        'isIndividual': attr.isIndividual
-      }).toList()}');
+    List<Map<String, dynamic>> individualAttributes =
+        individualAttributesMap.values.toList();
+    print(
+        'GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
+              'id': attr['id'],
+              'name': attr['name'],
+              'isIndividual': attr['isIndividual']
+            }).toList()}');
 
-  // Устанавливаем selectedCategory
-  selectedCategory = subCatAttr.SubCategoryAttributesData(
-    id: widget.goods.category.id,
-    name: widget.goods.category.name,
-    parent: subCatAttr.ParentCategory(
+    final allAttributes = [
+      ...widget.goods.attributes
+          .where((attr) => !attr.isIndividual)
+          .map((attr) => subCatAttr.Attribute(
+                id: attr.id,
+                name: attr.name,
+                value: attr.value,
+                isIndividual: attr.isIndividual,
+              )),
+      ...individualAttributes.map((attr) => subCatAttr.Attribute(
+            id: attr['id'],
+            name: attr['name'],
+            value: attr['value'],
+            isIndividual: attr['isIndividual'],
+          )),
+    ].toSet().toList();
+
+    print(
+        'GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
+              'id': attr.id,
+              'name': attr.name,
+              'value': attr.value,
+              'isIndividual': attr.isIndividual
+            }).toList()}');
+
+    selectedCategory = subCatAttr.SubCategoryAttributesData(
       id: widget.goods.category.id,
       name: widget.goods.category.name,
-    ),
-    attributes: allAttributes,
-    hasPriceCharacteristics: widget.goods.attributes
-            .any((attr) => attr.name.toLowerCase() == 'price') ||
-        individualAttributes.any((attr) => attr['name'].toLowerCase() == 'price'),
-  );
+      parent: subCatAttr.ParentCategory(
+        id: widget.goods.category.id,
+        name: widget.goods.category.name,
+      ),
+      attributes: allAttributes,
+      hasPriceCharacteristics: widget.goods.attributes
+              .any((attr) => attr.name.toLowerCase() == 'price') ||
+          individualAttributes
+              .any((attr) => attr['name'].toLowerCase() == 'price'),
+    );
 
-  print('GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
-        'id': attr.id,
-        'name': attr.name,
-        'value': attr.value,
-        'isIndividual': attr.isIndividual
-      }).toList()}');
-  print('GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
+    print(
+        'GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
+              'id': attr.id,
+              'name': attr.name,
+              'value': attr.value,
+              'isIndividual': attr.isIndividual
+            }).toList()}');
+    print(
+        'GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
 
-  // Очищаем контроллеры и tableAttributes
-  attributeControllers.clear();
-  tableAttributes.clear();
-  print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
+    attributeControllers.clear();
+    tableAttributes.clear();
+    print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
 
-  // Инициализируем контроллеры для неиндивидуальных атрибутов
-  for (var attribute in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
-    attributeControllers[attribute.name] =
-        TextEditingController(text: attribute.value ?? '');
-    print('GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
-  }
-
-  // Формируем tableAttributes
-  if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-    print('GoodsEditScreen: Processing variants to build tableAttributes...');
-    for (var variant in widget.goods.variants!) {
-      print('GoodsEditScreen: Processing variant ID ${variant.id}');
-      print('GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
-            'categoryAttributeId': attr.categoryAttribute?.id,
-            'attributeName': attr.categoryAttribute?.attribute?.name,
-            'value': attr.value
-          }).toList()}');
-
-      Map<String, dynamic> newRow = {
-        'id': variant.id,
-      };
-
-      // Инициализируем контроллеры для всех индивидуальных атрибутов
-      var individualAttrs = selectedCategory!.attributes.where((a) => a.isIndividual).toList();
-      if (individualAttrs.isEmpty) {
-        print('GoodsEditScreen: No individual attributes found in selected category');
-      }
-      for (var attr in individualAttrs) {
-        newRow[attr.name] = TextEditingController();
-        print('GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
-      }
-
-      // Заполняем значения индивидуальных атрибутов
-      if (variant.attributeValues != null && variant.attributeValues!.isNotEmpty) {
-        for (var attrValue in variant.attributeValues!) {
-          if (attrValue.categoryAttribute?.attribute != null) {
-            final attrName = attrValue.categoryAttribute!.attribute!.name;
-            if (newRow.containsKey(attrName)) {
-              newRow[attrName].text = attrValue.value ?? '';
-              print('GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}');
-            } else {
-              print('GoodsEditScreen: Attribute $attrName not found in newRow');
-            }
-          } else {
-            print('GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
-          }
-        }
-      } else {
-        print('GoodsEditScreen: No attribute values for variant ID ${variant.id}');
-      }
-
-      // Добавляем цену
-      if (selectedCategory!.hasPriceCharacteristics) {
-        newRow['price'] = TextEditingController(
-          text: variant.variantPrice?.price?.toString() ?? '0.0',
-        );
-        print('GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
-      }
-
-      // Добавляем изображения
-      newRow['images'] =
-          variant.files?.map((file) => '$baseUrl/${file.path}').toList() ?? [];
-      print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
-
-      tableAttributes.add(newRow);
-      print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
+    for (var attribute
+        in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
+      attributeControllers[attribute.name] =
+          TextEditingController(text: attribute.value ?? '');
+      print(
+          'GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
     }
-  } else {
-    print('GoodsEditScreen: No variants found, adding empty row');
-    addTableRow();
+
+    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+      print('GoodsEditScreen: Processing variants to build tableAttributes...');
+      for (var variant in widget.goods.variants!) {
+        print('GoodsEditScreen: Processing variant ID ${variant.id}');
+        print(
+            'GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
+                  'categoryAttributeId': attr.categoryAttribute?.id,
+                  'attributeName': attr.categoryAttribute?.attribute?.name,
+                  'value': attr.value,
+                  'id': attr.id,
+                }).toList()}');
+
+        Map<String, dynamic> newRow = {
+          'id': variant.id,
+          'attribute_ids': {},
+          'is_active': variant.isActive ?? true,
+        };
+
+        var individualAttrs =
+            selectedCategory!.attributes.where((a) => a.isIndividual).toList();
+        if (individualAttrs.isEmpty) {
+          print(
+              'GoodsEditScreen: No individual attributes found in selected category');
+        }
+        for (var attr in individualAttrs) {
+          newRow[attr.name] = TextEditingController();
+          print(
+              'GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
+        }
+
+        if (variant.attributeValues != null &&
+            variant.attributeValues!.isNotEmpty) {
+          for (var attrValue in variant.attributeValues!) {
+            if (attrValue.categoryAttribute?.attribute != null) {
+              final attrName = attrValue.categoryAttribute!.attribute!.name;
+              if (newRow.containsKey(attrName)) {
+                newRow[attrName].text = attrValue.value ?? '';
+                if (attrValue.id != 0) {
+                  newRow['attribute_ids'][attrName] = attrValue.id;
+                  print(
+                      'GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}, id: ${attrValue.id}');
+                } else {
+                  print(
+                      'GoodsEditScreen: Attribute $attrName has id 0, skipping id assignment');
+                }
+              } else {
+                print(
+                    'GoodsEditScreen: Attribute $attrName not found in newRow');
+              }
+            } else {
+              print(
+                  'GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
+            }
+          }
+        } else {
+          print(
+              'GoodsEditScreen: No attribute values for variant ID ${variant.id}');
+        }
+
+        if (selectedCategory!.hasPriceCharacteristics) {
+          newRow['price'] = TextEditingController(
+            text: variant.variantPrice?.price?.toString() ?? '0.0',
+          );
+          print(
+              'GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
+        }
+
+        newRow['images'] =
+            variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
+                [];
+        print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
+
+        tableAttributes.add(newRow);
+        print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
+      }
+    } else {
+      print('GoodsEditScreen: No variants found, adding empty row');
+      addTableRow();
+    }
+
+    print(
+        'GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
+              'id': row['id'],
+              'attributes': row.keys
+                  .where((key) =>
+                      key != 'images' &&
+                      key != 'price' &&
+                      key != 'id' &&
+                      key != 'attribute_ids' &&
+                      key != 'is_active')
+                  .map((key) => {key: row[key].text})
+                  .toList(),
+              'attribute_ids': row['attribute_ids'],
+              'price': row['price']?.text,
+              'images': row['images'],
+              'is_active': row['is_active'],
+            }).toList()}');
   }
 
-  print('GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-        'id': row['id'],
-        'attributes': row.keys
-            .where((key) => key != 'images' && key != 'price' && key != 'id')
-            .map((key) => {key: row[key].text})
-            .toList(),
-        'price': row['price']?.text,
-        'images': row['images'],
-      }).toList()}');
-}
   Future<void> fetchSubCategories() async {
     try {
       final categories = await _apiService.getSubCategoryAttributes();
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print('GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
-                'id': cat.id,
-                'name': cat.name
-              }).toList()}');
+          print(
+              'GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
+                    'id': cat.id,
+                    'name': cat.name
+                  }).toList()}');
         });
       }
     } catch (e) {
@@ -332,7 +420,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      print('GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid');
+      isBranchValid = selectedBranch != null;
+      print(
+          'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid, isBranchValid: $isBranchValid');
     });
   }
 
@@ -342,11 +432,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       return;
     }
     setState(() {
-      Map<String, dynamic> newRow = {};
+      Map<String, dynamic> newRow = {
+        'attribute_ids': {},
+        'is_active': true,
+      };
       for (var attr
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
-        print('GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
+        print(
+            'GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
       }
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
@@ -426,12 +520,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
-    print('GoodsEditScreen: Picking image for row $rowIndex from source: $source');
+    print(
+        'GoodsEditScreen: Picking image for row $rowIndex from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         tableAttributes[rowIndex]['images'].add(pickedFile.path);
-        print('GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
+        print(
+            'GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -446,7 +542,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         tableAttributes[rowIndex]['images']
             .addAll(pickedFiles.map((file) => file.path));
-        print('GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
+        print(
+            'GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     } else {
@@ -463,7 +560,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-          'Редактировать товар',
+          AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -493,27 +590,104 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: 'Введите название товара',
-                    label: 'Название товара',
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_goods_name'),
+                    label:
+                        AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? 'Поле обязательно для заполнения'
+                        ? AppLocalizations.of(context)!
+                            .translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: 'Введите описание товара',
-                    label: 'Описание',
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_description'),
+                    label:
+                        AppLocalizations.of(context)!.translate('description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
+                  if (selectedCategory != null &&
+                      !selectedCategory!.hasPriceCharacteristics)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // const SizedBox(height: 8),
+                        // Text(
+                        //   AppLocalizations.of(context)!.translate('price'),
+                        //   style: TextStyle(
+                        //     fontSize: 16,
+                        //     fontWeight: FontWeight.w500,
+                        //     fontFamily: 'Gilroy',
+                        //     color: Color(0xff1E2E52),
+                        //   ),
+                        // ),
+                        const SizedBox(height: 4),
+                        CustomTextField(
+                          controller: discountPriceController,
+                          label: AppLocalizations.of(context)!
+                              .translate('price'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_price'),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            if (double.tryParse(value) == null) {
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_valid_number');
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 8),
+                  // Обновляем отображение филиала
+                  BranchesDropdown(
+                    label: AppLocalizations.of(context)!.translate('branch'),
+                    branches: branches, // Передаём branches, даже если он пуст
+                    selectedBranch: selectedBranch,
+                    onSelectBranch: (Branch branch) {
+                      setState(() {
+                        selectedBranch = branch;
+                        isBranchValid = true;
+                        print(
+                            'GoodsEditScreen: Branch selected - ${selectedBranch?.name}, isBranchValid: $isBranchValid');
+                      });
+                    },
+                  ),
+                  if (!isBranchValid)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        AppLocalizations.of(context)!
+                            .translate('select_branch'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('    '),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                fontFamily: 'Gilroy',
+                              ),
+                            ),
                           ),
                         )
                       : Column(
@@ -536,7 +710,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           TextEditingController();
                                     }
                                   }
-                                  print('GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
+                                  print(
+                                      'GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
                                 });
                               },
                               subCategories:
@@ -547,7 +722,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'Пожалуйста, выберите подкатегорию',
+                                  AppLocalizations.of(context)!
+                                      .translate('select_subcategory'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.red,
@@ -566,7 +742,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         Divider(color: Color(0xff1E2E52)),
                         Center(
                           child: Text(
-                            'Характеристика товара',
+                            AppLocalizations.of(context)!
+                                .translate('attributes'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -579,7 +756,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
-                          print('GoodsEditScreen: Rendering non-individual attribute: ${attribute.name}');
+                          print(
+                              'GoodsEditScreen: Rendering non-individual attribute: ${attribute.name}');
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -599,7 +777,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     attributeControllers[attribute.name] ??
                                         TextEditingController(),
                                 hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                    '${AppLocalizations.of(context)!.translate('enter')} ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -615,34 +793,38 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 child: Column(
                                   children: [
                                     () {
-                                      // Получаем уникальные индивидуальные атрибуты
                                       final individualAttrs = selectedCategory!
                                           .attributes
                                           .where((attr) => attr.isIndividual)
                                           .toSet()
                                           .toList();
-                                      print('GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
-                                      print('GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
-                                      print('GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
+                                      print(
+                                          'GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
+                                      print(
+                                          'GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
+                                      print(
+                                          'GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
 
-                                      // Формируем столбцы
                                       List<DataColumn> columns = [
-                                        ...individualAttrs.map((attr) => DataColumn(
-                                              label: Text(
-                                                attr.name,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff1E2E52),
-                                                ),
-                                              ),
-                                            )),
+                                        ...individualAttrs
+                                            .map((attr) => DataColumn(
+                                                  label: Text(
+                                                    attr.name,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff1E2E52),
+                                                    ),
+                                                  ),
+                                                )),
                                         if (selectedCategory!
                                             .hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
-                                              'Цена',
+                                              AppLocalizations.of(context)!
+                                                  .translate('price'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -653,7 +835,20 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         DataColumn(
                                           label: Text(
-                                            'Изображение',
+                                            AppLocalizations.of(context)!
+                                                .translate('image_message'),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate('status'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -675,38 +870,48 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                       ];
 
-                                      print('GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
+                                      print(
+                                          'GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
 
-                                      // Формируем строки
                                       List<DataRow> rows = tableAttributes
                                           .asMap()
                                           .entries
                                           .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
-                                        print('GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {key: row[key] is TextEditingController ? row[key].text : row[key]}).toList()}');
+                                        print(
+                                            'GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {
+                                                  key: row[key]
+                                                          is TextEditingController
+                                                      ? row[key].text
+                                                      : row[key]
+                                                }).toList()}');
 
                                         List<DataCell> cells = [
-                                          ...individualAttrs.map((attr) => DataCell(
+                                          ...individualAttrs.map((attr) =>
+                                              DataCell(
                                                 SizedBox(
                                                   width: 150,
                                                   child: TextField(
-                                                    controller: row[attr.name] ??
+                                                    controller: row[
+                                                            attr.name] ??
                                                         TextEditingController(),
                                                     decoration: InputDecoration(
                                                       hintText:
-                                                          'Введите ${attr.name}',
+                                                          '${AppLocalizations.of(context)!.translate('enter')} ${attr.name}',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color: Color(0xff99A4BA),
+                                                        color:
+                                                            Color(0xff99A4BA),
                                                       ),
-                                                      border: OutlineInputBorder(
+                                                      border:
+                                                          OutlineInputBorder(
                                                         borderRadius:
-                                                            BorderRadius.circular(
-                                                                12),
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
                                                       contentPadding:
                                                           EdgeInsets.symmetric(
@@ -725,10 +930,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   controller: row['price'] ??
                                                       TextEditingController(),
                                                   decoration: InputDecoration(
-                                                    hintText: 'Введите цену',
+                                                    hintText:
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'enter_price'),
                                                     hintStyle: TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff99A4BA),
                                                     ),
@@ -786,7 +996,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                           _showImagePickerOptionsForRow(
                                                               index),
                                                     ),
-                                                    if (row['images'].isNotEmpty)
+                                                    if (row['images']
+                                                        .isNotEmpty)
                                                       Positioned(
                                                         top: 4,
                                                         right: 4,
@@ -802,7 +1013,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                           child: Text(
                                                             '${row['images'].length}',
                                                             style: TextStyle(
-                                                              color: Colors.white,
+                                                              color:
+                                                                  Colors.white,
                                                               fontSize: 10,
                                                               fontWeight:
                                                                   FontWeight
@@ -817,14 +1029,37 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   icon: Icon(Icons.visibility,
                                                       color: Colors.grey,
                                                       size: 20),
-                                                  onPressed:
-                                                      row['images'].isNotEmpty
-                                                          ? () =>
-                                                              _showImageListPopup(
-                                                                  row['images'])
-                                                          : null,
+                                                  onPressed: row['images']
+                                                          .isNotEmpty
+                                                      ? () =>
+                                                          _showImageListPopup(
+                                                              row['images'])
+                                                      : null,
                                                 ),
                                               ],
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Switch(
+                                              value: row['is_active'],
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  row['is_active'] = value;
+                                                  print(
+                                                      'GoodsEditScreen: Toggled is_active for variant $index to: $value');
+                                                });
+                                              },
+                                              activeColor: const Color.fromARGB(
+                                                  255, 255, 255, 255),
+                                              inactiveTrackColor:
+                                                  const Color.fromARGB(
+                                                          255, 179, 179, 179)
+                                                      .withOpacity(0.5),
+                                              activeTrackColor: ChatSmsStyles
+                                                  .messageBubbleSenderColor,
+                                              inactiveThumbColor:
+                                                  const Color.fromARGB(
+                                                      255, 255, 255, 255),
                                             ),
                                           ),
                                           DataCell(
@@ -837,11 +1072,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         ];
 
-                                        print('GoodsEditScreen: Row $index cells created');
+                                        print(
+                                            'GoodsEditScreen: Row $index cells created');
                                         return DataRow(cells: cells);
                                       }).toList();
 
-                                      print('GoodsEditScreen: DataTable rows created: ${rows.length}');
+                                      print(
+                                          'GoodsEditScreen: DataTable rows created: ${rows.length}');
 
                                       return DataTable(
                                         columnSpacing: 16,
@@ -852,7 +1089,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         rows: rows,
                                       );
                                     }(),
-                                    ...tableAttributes.asMap().entries.map((entry) {
+                                    ...tableAttributes
+                                        .asMap()
+                                        .entries
+                                        .map((entry) {
                                       int index = entry.key;
                                       if (index < tableAttributes.length - 1) {
                                         return Divider(
@@ -906,7 +1146,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Выберите изображение',
+                                    AppLocalizations.of(context)!
+                                        .translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -989,7 +1230,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Добавить +',
+                                              AppLocalizations.of(context)!
+                                                  .translate('add'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1021,7 +1263,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '${_imagePaths.length} Изображений',
+                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('images')}',
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1039,7 +1281,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Выберите хотя бы одно изображение!',
+                        AppLocalizations.of(context)!
+                            .translate('select_at_least_one_image'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -1055,7 +1298,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Статус товара',
+                              AppLocalizations.of(context)!
+                                  .translate('status_lead_profile'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -1102,7 +1346,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? 'Активно' : 'Неактивно',
+                                      isActive
+                                          ? AppLocalizations.of(context)!
+                                              .translate('active')
+                                          : AppLocalizations.of(context)!
+                                              .translate('inactive'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1134,7 +1382,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 buttonColor: const Color(0xffF4F7FD),
                 textColor: Colors.black,
                 onPressed: () => Navigator.pop(context),
@@ -1153,20 +1401,22 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                      buttonText: 'Сохранить',
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
                         if (formKey.currentState!.validate() &&
                             isCategoryValid &&
-                            isImagesValid) {
+                            isImagesValid &&
+                            isBranchValid) {
                           _updateProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message:
-                                'Пожалуйста, заполните все обязательные поля!',
+                            message: AppLocalizations.of(context)!
+                                .translate('fill_all_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -1193,7 +1443,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.camera_alt),
                 title: Text(
-                  'Сделать фото',
+                  AppLocalizations.of(context)!.translate('take_photo'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1209,7 +1459,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  'Выбрать из галереи',
+                  AppLocalizations.of(context)!
+                      .translate('choose_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1237,7 +1488,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.add(pickedFile.path);
         isImagesValid = true;
-        print('GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
+        print(
+            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No image picked');
@@ -1251,7 +1503,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
         isImagesValid = true;
-        print('GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
+        print(
+            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
       });
     } else {
       print('GoodsEditScreen: No images picked');
@@ -1262,7 +1515,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     setState(() {
       _imagePaths.remove(imagePath);
       isImagesValid = _imagePaths.isNotEmpty;
-      print('GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
+      print(
+          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
     });
   }
 
@@ -1283,18 +1537,29 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
-            print('GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
+            print(
+                'GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
           } else {
-            print('GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
+            print(
+                'GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
           }
         }
 
         print('GoodsEditScreen: Processing variants...');
         for (var row in tableAttributes) {
+          print('GoodsEditScreen: Processing row: $row');
           Map<String, dynamic> variant = {
-            'is_active': true,
+            'is_active': row['is_active'],
             'variant_attributes': [],
           };
+
+          if (row['id'] != null && row['id'] != 0) {
+            variant['id'] = row['id'];
+            print('GoodsEditScreen: Added variant id: ${row['id']}');
+          } else {
+            print(
+                'GoodsEditScreen: Variant id is null or 0, treating as new variant');
+          }
 
           List<String> variantImagePaths = row['images']?.cast<String>() ?? [];
           List<File> variantImages = [];
@@ -1305,7 +1570,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantImages.add(file);
                 print('GoodsEditScreen: Added variant image: $path');
               } else {
-                print('GoodsEditScreen: Variant file not found, skipping: $path');
+                print(
+                    'GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
@@ -1314,14 +1580,27 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
-              variant['variant_attributes'].add({
+              Map<String, dynamic> variantAttribute = {
                 'category_attribute_id': attr.id,
                 'value': controller.text.trim(),
-                'is_active': true,
-              });
-              print('GoodsEditScreen: Added variant attribute - category_attribute_id: ${attr.id}, value: ${controller.text.trim()}');
+              };
+
+              if (row['attribute_ids'] != null &&
+                  row['attribute_ids'][attr.name] != null) {
+                variantAttribute['id'] = row['attribute_ids'][attr.name];
+                print(
+                    'GoodsEditScreen: Added variant attribute id: ${variantAttribute['id']} for attribute ${attr.name}');
+              } else {
+                print(
+                    'GoodsEditScreen: No id found for attribute ${attr.name}, treating as new attribute');
+              }
+
+              variant['variant_attributes'].add(variantAttribute);
+              print(
+                  'GoodsEditScreen: Added variant attribute - ${variantAttribute.toString()}');
             } else {
-              print('GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
+              print(
+                  'GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
             }
           }
 
@@ -1331,16 +1610,22 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print('GoodsEditScreen: Added variant price: ${variant['price']}');
+              print(
+                  'GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
               print('GoodsEditScreen: Set default variant price: 0.0');
             }
+          } else {
+            variant['price'] = 0.0;
+            print(
+                'GoodsEditScreen: Set variant price to 0.0 (has_price_characteristics: false)');
           }
 
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
-            print('GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
+            print(
+                'GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
@@ -1382,13 +1667,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 selectedCategory!.hasPriceCharacteristics
             ? null
             : double.tryParse(discountPriceController.text),
+        branch: selectedBranch!.id,
       );
 
       print('GoodsEditScreen: Update response: $response');
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
-          message: 'Товар успешно обновлен!',
+          message: AppLocalizations.of(context)!
+              .translate('goods_updated_successfully'),
           isSuccess: true,
         );
         Navigator.pop(context, true);
@@ -1397,7 +1684,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? 'Ошибка при обновлении товара',
+          message: response['message'] ??
+              AppLocalizations.of(context)!.translate('error_updating_goods'),
           isSuccess: false,
         );
       }
@@ -1407,7 +1695,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
-        message: 'Ошибка при обновлении товара: ${e.toString()}',
+        message:
+            '${AppLocalizations.of(context)!.translate('error_updating_goods')}: ${e.toString()}',
         isSuccess: false,
       );
     }

@@ -109,39 +109,38 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   }
 }
 
-  Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
-    emit(GoodsLoading());
+Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
+  emit(GoodsLoading());
 
-    if (await _checkInternetConnection()) {
-      try {
-        final response = await apiService.updateGoods(
-          goodId: event.goodId,
-          name: event.name,
-          parentId: event.parentId,
-          description: event.description,
-          // unitId: event.unitId,
-          quantity: event.quantity,
-          attributes: event.attributes,
-          variants: event.variants,
-          images: event.images ?? [],
-          isActive: event.isActive,
-          discountPrice: event.discountPrice,
-        );
+  if (await _checkInternetConnection()) {
+    try {
+      final response = await apiService.updateGoods(
+        goodId: event.goodId,
+        name: event.name,
+        parentId: event.parentId,
+        description: event.description,
+        quantity: event.quantity,
+        attributes: event.attributes,
+        variants: event.variants,
+        images: event.images ?? [],
+        isActive: event.isActive,
+        discountPrice: event.discountPrice,
+        branch: event.branch, // Добавляем branch
+      );
 
-        if (response['success'] == true) {
-          emit(GoodsSuccess("Товар успешно обновлен"));
-          add(FetchGoods(page: 1));
-        } else {
-          emit(GoodsError(response['message'] ?? 'Не удалось обновить товар'));
-        }
-      } catch (e) {
-        emit(GoodsError('Ошибка при обновлении товара: ${e.toString()}'));
+      if (response['success'] == true) {
+        emit(GoodsSuccess("Товар успешно обновлен"));
+        add(FetchGoods(page: 1));
+      } else {
+        emit(GoodsError(response['message'] ?? 'Не удалось обновить товар'));
       }
-    } else {
-      emit(GoodsError('Нет подключения к интернету'));
+    } catch (e) {
+      emit(GoodsError('Ошибка при обновлении товара: ${e.toString()}'));
     }
+  } else {
+    emit(GoodsError('Нет подключения к интернету'));
   }
-
+}
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');

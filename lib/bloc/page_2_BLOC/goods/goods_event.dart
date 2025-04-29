@@ -52,6 +52,7 @@ class UpdateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
+  final int branch; // Добавляем поле branch
 
   UpdateGoods({
     required this.goodId,
@@ -65,5 +66,6 @@ class UpdateGoods extends GoodsEvent {
     this.images,
     required this.isActive,
     this.discountPrice,
+    required this.branch, // Добавляем branch в конструктор
   });
 }

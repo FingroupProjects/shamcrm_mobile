@@ -126,6 +126,14 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     AppLocalizations.of(context)!.translate('category_details'),
                 'value': goods.category.name ?? '',
               },
+              // Добавляем филиал
+              {
+                'label':
+                    AppLocalizations.of(context)!.translate('branch_details'),
+                'value': goods.branches != null && goods.branches!.isNotEmpty
+                    ? goods.branches!.map((branch) => branch.name).join(', ')
+                    : 'Не указан',
+              },
               ...goods.attributes
                   .where((attr) =>
                       attr.name.isNotEmpty &&
@@ -618,8 +626,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       ),
     );
   }
-
-// Предполагаемый метод _buildVariantImage (для полноты)
 
   Widget _buildDetailItem(String label, String value) {
     final expandableFields = [

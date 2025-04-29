@@ -932,5 +932,9 @@
   "week": "Неделя",
   "month": "Месяц",
   "year": "Год",
-      "new_subcategory": "Новая подкатегория"
+  "new_subcategory": "Новая подкатегория",
+  "enter_price": "Введите цену",
+  "branch": "Филиал",
+  "branch_details": "Филиал",
+  "goods_updated_successfully": "Товар успешно обновлён"
 }

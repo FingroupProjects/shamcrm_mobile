@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/models/page_2/branch_model.dart'; // Добавляем импорт модели Branch
 
 class Goods {
   final int id;
@@ -12,6 +13,7 @@ class Goods {
   final List<GoodsFile> files;
   final List<GoodsAttribute> attributes;
   final List<GoodsVariant>? variants;
+  final List<Branch>? branches; // Добавляем поле branches
 
   Goods({
     required this.id,
@@ -25,6 +27,7 @@ class Goods {
     required this.files,
     required this.attributes,
     this.variants,
+    this.branches, // Добавляем в конструктор
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -48,11 +51,13 @@ class Goods {
       }
 
       double? discountPrice;
-      if (json['discount_price'] != null) {
-        if (json['discount_price'] is double) {
-          discountPrice = json['discount_price'];
-        } else if (json['discount_price'] is String) {
-          discountPrice = double.tryParse(json['discount_price']);
+      if (json['price'] != null) {
+        if (json['price'] is double) {
+          discountPrice = json['price'];
+        } else if (json['price'] is String) {
+          discountPrice = double.tryParse(json['price']);
+        } else if (json['price'] is String) {
+          discountPrice = double.tryParse(json['price']);
         }
       }
 
@@ -88,6 +93,12 @@ class Goods {
                   return GoodsVariant.fromJson(v as Map<String, dynamic>);
                 })
                 .toList(),
+        branches: (json['branches'] as List<dynamic>?)
+                ?.map((b) {
+                  print('GoodsModel: Parsing branch - id: ${b['id']}, name: ${b['name']}');
+                  return Branch.fromJson(b as Map<String, dynamic>);
+                })
+                .toList(), // Парсим branches
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Error parsing Goods: $e');
@@ -157,7 +168,7 @@ class GoodsVariant {
   final int id;
   final int goodId;
   final bool isActive;
-  final List<AttributeValue> attributeValues; // Изменено: теперь напрямую List<AttributeValue>
+  final List<AttributeValue> attributeValues;
   final VariantPrice? variantPrice;
   final List<GoodsFile>? files;
 
@@ -165,7 +176,7 @@ class GoodsVariant {
     required this.id,
     required this.goodId,
     required this.isActive,
-    required this.attributeValues, // Изменено
+    required this.attributeValues,
     this.variantPrice,
     this.files,
   });
@@ -174,7 +185,7 @@ class GoodsVariant {
     print('GoodsModel: Parsing variant attributes for variant ${json['id']}');
     final attributeValues = (json['attribute_values'] as List<dynamic>?)
             ?.map((v) {
-              print('GoodsModel: Parsing attribute value - ${v['value']}');
+              print('GoodsModel: Parsing attribute value - id: ${v['id']}, value: ${v['value']}');
               return AttributeValue.fromJson(v as Map<String, dynamic>);
             })
             .toList() ??
@@ -186,7 +197,7 @@ class GoodsVariant {
       goodId: json['good_id'] as int? ?? 0,
       isActive: json['is_active'] == 1,
       attributeValues: attributeValues,
-      variantPrice: json['price'] != null // Изменено: используем 'price' вместо 'variant_price'
+      variantPrice: json['price'] != null
           ? VariantPrice.fromJson(json['price'])
           : null,
       files: (json['files'] as List<dynamic>?)

@@ -6305,7 +6305,7 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
- Future<Map<String, dynamic>> createGoods({
+Future<Map<String, dynamic>> createGoods({
   required String name,
   required int parentId,
   required String description,
@@ -6315,7 +6315,7 @@ Future<Map<String, dynamic>> createMyTask({
   required List<File> images,
   required bool isActive,
   double? discountPrice,
-  required int branch, // Новое поле для филиала
+  required int branch,
 }) async {
   try {
     final token = await getToken();
@@ -6342,9 +6342,14 @@ Future<Map<String, dynamic>> createMyTask({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
-    request.fields['branch'] = branch.toString(); // Добавляем поле branch
+    
+    // Исправляем отправку branch в формате branches[0][branch_id]
+    request.fields['branches[0][branch_id]'] = branch.toString();
+    print('ApiService: Added branches[0][branch_id]: $branch');
+
     if (discountPrice != null) {
       request.fields['discount_price'] = discountPrice.toString();
+      print('ApiService: Added discount_price: $discountPrice');
     }
 
     for (int i = 0; i < attributes.length; i++) {
@@ -6352,11 +6357,19 @@ Future<Map<String, dynamic>> createMyTask({
           attributes[i]['category_attribute_id'].toString();
       request.fields['attributes[$i][value]'] =
           attributes[i]['value'].toString();
+      print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
     }
 
     for (int i = 0; i < variants.length; i++) {
+      // Добавляем is_active для каждого варианта
+      request.fields['variants[$i][is_active]'] =
+          variants[i]['is_active'] ? '1' : '0';
+      print('ApiService: Added variant $i is_active: ${variants[i]['is_active']}');
+
       request.fields['variants[$i][price]'] =
           (variants[i]['price'] ?? 0.0).toString();
+      print('ApiService: Added variant price $i: ${variants[i]['price']}');
+
       List<dynamic> variantAttributes =
           variants[i]['variant_attributes'] ?? [];
       for (int j = 0; j < variantAttributes.length; j++) {
@@ -6365,8 +6378,7 @@ Future<Map<String, dynamic>> createMyTask({
             variantAttributes[j]['category_attribute_id'].toString();
         request.fields['variants[$i][variant_attributes][$j][value]'] =
             variantAttributes[j]['value'].toString();
-        request.fields['variants[$i][variant_attributes][$j][is_active]'] =
-            variantAttributes[j]['is_active'] ? '1' : '0';
+        print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
       }
 
       List<File> variantFiles = variants[i]['files'] ?? [];
@@ -6376,8 +6388,9 @@ Future<Map<String, dynamic>> createMyTask({
           final imageFile = await http.MultipartFile.fromPath(
               'variants[$i][files][$j]', file.path);
           request.files.add(imageFile);
+          print('ApiService: Added variant file $i-$j: ${file.path}');
         } else {
-          print('Variant file not found, skipping: ${file.path}');
+          print('ApiService: Variant file not found, skipping: ${file.path}');
         }
       }
     }
@@ -6388,8 +6401,9 @@ Future<Map<String, dynamic>> createMyTask({
         final imageFile =
             await http.MultipartFile.fromPath('files[$i]', file.path);
         request.files.add(imageFile);
+        print('ApiService: Added general image $i: ${file.path}');
       } else {
-        print('General image not found, skipping: ${file.path}');
+        print('ApiService: General image not found, skipping: ${file.path}');
       }
     }
 
@@ -6397,8 +6411,8 @@ Future<Map<String, dynamic>> createMyTask({
     final response = await http.Response.fromStream(streamedResponse);
     final responseBody = json.decode(response.body);
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: $responseBody');
+    print('ApiService: Response status: ${response.statusCode}');
+    print('ApiService: Response body: $responseBody');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {
@@ -6414,15 +6428,15 @@ Future<Map<String, dynamic>> createMyTask({
       };
     }
   } catch (e, stackTrace) {
-    print('Error in createGoods: $e');
-    print(stackTrace);
+    print('ApiService: Error in createGoods: $e');
+    print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
       'message': 'Произошла ошибка: $e',
     };
   }
 }
-
+  // Метод для обновления товара
 Future<Map<String, dynamic>> updateGoods({
   required int goodId,
   required String name,
@@ -6434,6 +6448,7 @@ Future<Map<String, dynamic>> updateGoods({
   required List<File> images,
   required bool isActive,
   double? discountPrice,
+  required int branch,
 }) async {
   try {
     final token = await getToken();
@@ -6450,7 +6465,7 @@ Future<Map<String, dynamic>> updateGoods({
 
     print('ApiService: Sending updateGoods request:');
     print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-    print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice');
+    print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch');
     print('ApiService: attributes: $attributes');
     print('ApiService: variants: $variants');
     print('ApiService: images: ${images.map((file) => file.path).toList()}');
@@ -6460,8 +6475,14 @@ Future<Map<String, dynamic>> updateGoods({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
+    
+    // Исправляем отправку branch в формате branches[0][branch_id]
+    request.fields['branches[0][branch_id]'] = branch.toString();
+    print('ApiService: Added branches[0][branch_id]: $branch');
+
     if (discountPrice != null) {
       request.fields['discount_price'] = discountPrice.toString();
+      print('ApiService: Added discount_price: $discountPrice');
     }
 
     for (int i = 0; i < attributes.length; i++) {
@@ -6476,17 +6497,25 @@ Future<Map<String, dynamic>> updateGoods({
         request.fields['variants[$i][id]'] = variants[i]['id'].toString();
         print('ApiService: Added variant ID $i: ${variants[i]['id']}');
       }
+      // Добавляем is_active для каждого варианта
+      request.fields['variants[$i][is_active]'] =
+          variants[i]['is_active'] ? '1' : '0';
+      print('ApiService: Added variant $i is_active: ${variants[i]['is_active']}');
+
       request.fields['variants[$i][price]'] = (variants[i]['price'] ?? 0.0).toString();
       print('ApiService: Added variant price $i: ${variants[i]['price']}');
 
       List<dynamic> variantAttributes = variants[i]['variant_attributes'] ?? [];
       for (int j = 0; j < variantAttributes.length; j++) {
+        if (variantAttributes[j].containsKey('id')) {
+          request.fields['variants[$i][variant_attributes][$j][id]'] =
+              variantAttributes[j]['id'].toString();
+          print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
+        }
         request.fields['variants[$i][variant_attributes][$j][category_attribute_id]'] =
             variantAttributes[j]['category_attribute_id'].toString();
         request.fields['variants[$i][variant_attributes][$j][value]'] =
             variantAttributes[j]['value'].toString();
-        request.fields['variants[$i][variant_attributes][$j][is_active]'] =
-            variantAttributes[j]['is_active'] ? '1' : '0';
         print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
       }
 
@@ -6544,7 +6573,6 @@ Future<Map<String, dynamic>> updateGoods({
     };
   }
 }
-
   Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
     try {
       final token = await getToken();

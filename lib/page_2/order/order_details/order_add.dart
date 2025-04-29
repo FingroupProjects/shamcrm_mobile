@@ -40,6 +40,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Branch? _selectedBranch;
   String? selectedDialCode;
   String? baseUrl;
+    List<Branch> branches = [];
+
 
   @override
   void initState() {
@@ -313,10 +315,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               });
                             },
                           ),
-                          
                           const SizedBox(height: 16),
                           if (_deliveryMethod == 'Самовывоз')
                             BranchesDropdown(
+                              branches:
+                                  branches, // Передаём branches, даже если он пуст
+
+                              label: AppLocalizations.of(context)!
+                                  .translate('branch'),
+
                               selectedBranch: _selectedBranch,
                               onSelectBranch: (branch) {
                                 setState(() => _selectedBranch = branch);
@@ -618,100 +625,100 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 
- Widget _buildActionButtons(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(color: Colors.white, boxShadow: [
-      BoxShadow(
-          color: Colors.grey.withOpacity(0.1),
-          spreadRadius: 1,
-          blurRadius: 3,
-          offset: const Offset(0, -1))
-    ]),
-    child: Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xffF4F7FD),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: const Text(
-              'Отмена',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                final orderBloc = context.read<OrderBloc>();
-                orderBloc.add(CreateOrder(
-                  phone: selectedDialCode ?? _phoneController.text,
-                  leadId: int.parse(selectedLead ?? '0'),
-                  delivery: _deliveryMethod == 'Доставка',
-                  deliveryAddress: _deliveryMethod == 'Самовывоз'
-                      ? _selectedBranch?.address ?? ''
-                      : _deliveryAddressController.text,
-                  goods: _items
-                      .map((item) => {
-                            'good_id': item['id'],
-                            'quantity': item['quantity'] ?? 1,
-                          })
-                      .toList(),
-                  organizationId: widget.organizationId ?? 1,
-                  statusId: selectedStatusId ?? 1,
-                ));
-                
-                // Ждем завершения создания заказа
-                await Future.delayed(Duration(milliseconds: 500));
-                
-                // Проверяем состояние Bloc
-                if (orderBloc.state is OrderSuccess) {
-                  final successState = orderBloc.state as OrderSuccess;
-                  Navigator.pop(context, {
-                    'statusId': successState.statusId,
-                    'success': true,
-                  });
-                } else if (orderBloc.state is OrderError) {
-                  // Ошибка уже обрабатывается в BlocListener
-                }
-              } else {
-                showCustomSnackBar(
-                  context: context,
-                  message: _items.isEmpty
-                      ? 'Добавьте хотя бы один товар'
-                      : 'Заполните все обязательные поля',
-                  isSuccess: false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
+  Widget _buildActionButtons(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [
+        BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, -1))
+      ]),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12)),
-            child: const Text('Создать',
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                'Отмена',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white)),
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                  final orderBloc = context.read<OrderBloc>();
+                  orderBloc.add(CreateOrder(
+                    phone: selectedDialCode ?? _phoneController.text,
+                    leadId: int.parse(selectedLead ?? '0'),
+                    delivery: _deliveryMethod == 'Доставка',
+                    deliveryAddress: _deliveryMethod == 'Самовывоз'
+                        ? _selectedBranch?.address ?? ''
+                        : _deliveryAddressController.text,
+                    goods: _items
+                        .map((item) => {
+                              'good_id': item['id'],
+                              'quantity': item['quantity'] ?? 1,
+                            })
+                        .toList(),
+                    organizationId: widget.organizationId ?? 1,
+                    statusId: selectedStatusId ?? 1,
+                  ));
+
+                  // Ждем завершения создания заказа
+                  await Future.delayed(Duration(milliseconds: 500));
+
+                  // Проверяем состояние Bloc
+                  if (orderBloc.state is OrderSuccess) {
+                    final successState = orderBloc.state as OrderSuccess;
+                    Navigator.pop(context, {
+                      'statusId': successState.statusId,
+                      'success': true,
+                    });
+                  } else if (orderBloc.state is OrderError) {
+                    // Ошибка уже обрабатывается в BlocListener
+                  }
+                } else {
+                  showCustomSnackBar(
+                    context: context,
+                    message: _items.isEmpty
+                        ? 'Добавьте хотя бы один товар'
+                        : 'Заполните все обязательные поля',
+                    isSuccess: false,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12)),
+              child: const Text('Создать',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

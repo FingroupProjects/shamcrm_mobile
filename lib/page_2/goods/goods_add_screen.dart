@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
@@ -32,14 +33,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
-
   SubCategoryAttributesData? selectedCategory;
-  Branch? selectedBranch; // Переменная для хранения выбранного филиала
+  Branch? selectedBranch;
   bool isActive = true;
+  List<Branch> branches = [];
+
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
   bool isImagesValid = true;
-  bool isBranchValid = true; // Валидация для поля филиала
+  bool isBranchValid = true;
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -52,7 +54,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    // Запрашиваем филиалы
     context.read<BranchBloc>().add(FetchBranches());
   }
 
@@ -74,14 +75,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      isBranchValid = selectedBranch != null; // Проверяем, выбран ли филиал
+      isBranchValid = selectedBranch != null;
     });
   }
 
   void addTableRow({List<String>? images}) {
     if (selectedCategory == null) return;
     setState(() {
-      Map<String, dynamic> newRow = {};
+      Map<String, dynamic> newRow = {
+        'is_active': true,
+      };
       for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
       }
@@ -202,166 +205,212 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
-        child: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          child: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomTextField(
-                    controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
-                    label: AppLocalizations.of(context)!.translate('goods_name'),
-                    validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!.translate('field_required')
-                        : null,
-                  ),
-                  const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!.translate('goods_description'),
-                    maxLines: 5,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                  // const SizedBox(height: 8),
-                  // CustomTextField(
-                  //   controller: stockQuantityController,
-                  //   hintText: AppLocalizations.of(context)!.translate('enter_stock_quantity'),
-                  //   label: AppLocalizations.of(context)!.translate('stock_quantity'),
-                  //   keyboardType: TextInputType.number,
-                  // ),
-                  const SizedBox(height: 8),
-                  BranchesDropdown(
-                    selectedBranch: selectedBranch,
-                    onSelectBranch: (Branch branch) {
-                      setState(() {
-                        selectedBranch = branch;
-                        isBranchValid = true;
-                      });
-                    },
-                  ),
-                  if (!isBranchValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Пожалуйста, выберите филиал',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+      body: BlocListener<BranchBloc, BranchState>(
+        listener: (context, state) {
+          if (state is BranchLoaded) {
+            setState(() {
+              branches = state.branches;
+              print('GoodsAddScreen: Branches loaded: ${branches.map((b) => b.name).toList()}');
+            });
+          } else if (state is BranchError) {
+            print('GoodsAddScreen: Error loading branches: ${state.message}');
+            if (mounted) { // Проверяем, активен ли виджет
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
+                isSuccess: false,
+              );
+            }
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+          child: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomTextField(
+                      controller: goodsNameController,
+                      hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                      label: AppLocalizations.of(context)!.translate('goods_name'),
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context)!.translate('field_required')
+                          : null,
                     ),
-                  const SizedBox(height: 8),
-                  CategoryDropdownWidget(
-                    selectedCategory: selectedCategory?.name,
-                    onSelectCategory: (category) {
-                      setState(() {
-                        selectedCategory = category;
-                        attributeControllers.clear();
-                        tableAttributes.clear();
-                        if (category != null && category.attributes.isNotEmpty) {
-                          for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
-                            attributeControllers[attribute.name] = TextEditingController();
-                          }
-                        }
-                      });
-                    },
-                    subCategories: subCategories,
-                    isValid: isCategoryValid,
-                  ),
-                  if (!isCategoryValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Пожалуйста, выберите подкатегорию',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: goodsDescriptionController,
+                      hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                      label: AppLocalizations.of(context)!.translate('goods_description'),
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
                     ),
-                  const SizedBox(height: 8),
-                  if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(color: Color(0xff1E2E52)),
-                        Center(
-                          child: Text(
-                            'Характеристика товара',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
+                    if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: discountPriceController,
+                            label: AppLocalizations.of(context)!.translate('price'),
+                            hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!.translate('field_required');
+                              }
+                              if (double.tryParse(value) == null) {
+                                return 'Введите корректное число';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 8),
+                    BranchesDropdown(
+                      label: AppLocalizations.of(context)!.translate('branch'),
+                      selectedBranch: selectedBranch,
+                      branches: branches,
+                      onSelectBranch: (Branch branch) {
+                        setState(() {
+                          selectedBranch = branch;
+                          isBranchValid = true;
+                        });
+                      },
+                    ),
+                    if (!isBranchValid)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('select_branch'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        Divider(color: Color(0xff1E2E52)),
-                        ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              Text(
-                                attribute.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                      ),
+                    const SizedBox(height: 8),
+                    CategoryDropdownWidget(
+                      selectedCategory: selectedCategory?.name,
+                      onSelectCategory: (category) {
+                        setState(() {
+                          selectedCategory = category;
+                          attributeControllers.clear();
+                          tableAttributes.clear();
+                          if (category != null && category.attributes.isNotEmpty) {
+                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
+                              attributeControllers[attribute.name] = TextEditingController();
+                            }
+                          }
+                        });
+                      },
+                      subCategories: subCategories,
+                      isValid: isCategoryValid,
+                    ),
+                    if (!isCategoryValid)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('select_subcategory'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Divider(color: Color(0xff1E2E52)),
+                          Center(
+                            child: Text(
+                              AppLocalizations.of(context)!.translate('goods_characteristics'),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                          ),
+                          Divider(color: Color(0xff1E2E52)),
+                          ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(
+                                  attribute.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              CustomCharacteristicField(
-                                controller: attributeControllers[attribute.name]!,
-                                hintText: 'Введите ${attribute.name.toLowerCase()}',
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                        if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Column(
-                                  children: [
-                                    DataTable(
-                                      columnSpacing: 16,
-                                      dataRowHeight: 70,
-                                      headingRowHeight: 56,
-                                      dividerThickness: 0,
-                                      columns: [
-                                        ...selectedCategory!.attributes
-                                            .where((attr) => attr.isIndividual)
-                                            .map((attr) => DataColumn(
-                                                  label: Text(
-                                                    attr.name,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff1E2E52),
+                                const SizedBox(height: 4),
+                                CustomCharacteristicField(
+                                  controller: attributeControllers[attribute.name]!,
+                                  hintText: '${AppLocalizations.of(context)!.translate('enter')} ${attribute.name.toLowerCase()}',
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                          if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Column(
+                                    children: [
+                                      DataTable(
+                                        columnSpacing: 16,
+                                        dataRowHeight: 70,
+                                        headingRowHeight: 56,
+                                        dividerThickness: 0,
+                                        columns: [
+                                          ...selectedCategory!.attributes
+                                              .where((attr) => attr.isIndividual)
+                                              .map((attr) => DataColumn(
+                                                    label: Text(
+                                                      attr.name,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color: Color(0xff1E2E52),
+                                                      ),
                                                     ),
-                                                  ),
-                                                ))
-                                            .toList(),
-                                        if (selectedCategory!.hasPriceCharacteristics)
+                                                  ))
+                                              .toList(),
+                                          if (selectedCategory!.hasPriceCharacteristics)
+                                            DataColumn(
+                                              label: Text(
+                                                AppLocalizations.of(context)!.translate('price'),
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff1E2E52),
+                                                ),
+                                              ),
+                                            ),
                                           DataColumn(
                                             label: Text(
-                                              'Цена',
+                                              AppLocalizations.of(context)!.translate('image'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -370,388 +419,401 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                               ),
                                             ),
                                           ),
-                                        DataColumn(
-                                          label: Text(
-                                            'Изображение',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              fontFamily: 'Gilroy',
-                                              color: Color(0xff1E2E52),
+                                          DataColumn(
+                                            label: Text(
+                                              AppLocalizations.of(context)!.translate('status'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            '',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              fontFamily: 'Gilroy',
-                                              color: Color(0xff1E2E52),
+                                          DataColumn(
+                                            label: Text(
+                                              '',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                      rows: tableAttributes.asMap().entries.map((entry) {
-                                        int index = entry.key;
-                                        Map<String, dynamic> row = entry.value;
-                                        return DataRow(
-                                          cells: [
-                                            ...selectedCategory!.attributes
-                                                .where((attr) => attr.isIndividual)
-                                                .map((attr) => DataCell(
-                                                      SizedBox(
-                                                        width: 150,
-                                                        child: TextField(
-                                                          controller: row[attr.name],
-                                                          decoration: InputDecoration(
-                                                            hintText: 'Введите ${attr.name}',
-                                                            hintStyle: TextStyle(
-                                                              fontSize: 12,
-                                                              fontWeight: FontWeight.w500,
-                                                              fontFamily: 'Gilroy',
-                                                              color: Color(0xff99A4BA),
+                                        ],
+                                        rows: tableAttributes.asMap().entries.map((entry) {
+                                          int index = entry.key;
+                                          Map<String, dynamic> row = entry.value;
+                                          return DataRow(
+                                            cells: [
+                                              ...selectedCategory!.attributes
+                                                  .where((attr) => attr.isIndividual)
+                                                  .map((attr) => DataCell(
+                                                        SizedBox(
+                                                          width: 150,
+                                                          child: TextField(
+                                                            controller: row[attr.name],
+                                                            decoration: InputDecoration(
+                                                              hintText: '${AppLocalizations.of(context)!.translate('enter')} ${attr.name}',
+                                                              hintStyle: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w500,
+                                                                fontFamily: 'Gilroy',
+                                                                color: Color(0xff99A4BA),
+                                                              ),
+                                                              border: OutlineInputBorder(
+                                                                borderRadius: BorderRadius.circular(12),
+                                                              ),
+                                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                                             ),
-                                                            border: OutlineInputBorder(
-                                                              borderRadius: BorderRadius.circular(12),
-                                                            ),
-                                                            contentPadding:
-                                                                EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                          ),
+                                                        ),
+                                                      ))
+                                                  .toList(),
+                                              if (selectedCategory!.hasPriceCharacteristics)
+                                                DataCell(
+                                                  SizedBox(
+                                                    width: 150,
+                                                    child: TextField(
+                                                      controller: row['price'],
+                                                      decoration: InputDecoration(
+                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                                                        hintStyle: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w500,
+                                                          fontFamily: 'Gilroy',
+                                                          color: Color(0xff99A4BA),
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                      ),
+                                                      keyboardType: TextInputType.number,
+                                                    ),
+                                                  ),
+                                                ),
+                                              DataCell(
+                                                Row(
+                                                  children: [
+                                                    if (row['images'].isNotEmpty)
+                                                      Container(
+                                                        width: 40,
+                                                        height: 40,
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          image: DecorationImage(
+                                                            image: FileImage(File(row['images'].first)),
+                                                            fit: BoxFit.cover,
                                                           ),
                                                         ),
                                                       ),
-                                                    ))
-                                                .toList(),
-                                            if (selectedCategory!.hasPriceCharacteristics)
-                                              DataCell(
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: TextField(
-                                                    controller: row['price'],
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Введите цену',
-                                                      hintStyle: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color: Color(0xff99A4BA),
-                                                      ),
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(12),
-                                                      ),
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                                    ),
-                                                    keyboardType: TextInputType.number,
-                                                  ),
-                                                ),
-                                              ),
-                                            DataCell(
-                                              Row(
-                                                children: [
-                                                  if (row['images'].isNotEmpty)
-                                                    Container(
-                                                      width: 40,
-                                                      height: 40,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        image: DecorationImage(
-                                                          image: FileImage(File(row['images'].first)),
-                                                          fit: BoxFit.cover,
+                                                    const SizedBox(width: 8),
+                                                    Stack(
+                                                      children: [
+                                                        IconButton(
+                                                          icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
+                                                          onPressed: () => _showImagePickerOptionsForRow(index),
                                                         ),
-                                                      ),
-                                                    ),
-                                                  const SizedBox(width: 8),
-                                                  Stack(
-                                                    children: [
-                                                      IconButton(
-                                                        icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                                                        onPressed: () => _showImagePickerOptionsForRow(index),
-                                                      ),
-                                                      if (row['images'].isNotEmpty)
-                                                        Positioned(
-                                                          top: 4,
-                                                          right: 4,
-                                                          child: Container(
-                                                            padding: EdgeInsets.all(4),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors.red,
-                                                              shape: BoxShape.circle,
-                                                            ),
-                                                            child: Text(
-                                                              '${row['images'].length}',
-                                                              style: TextStyle(
-                                                                color: Colors.white,
-                                                                fontSize: 10,
-                                                                fontWeight: FontWeight.bold,
+                                                        if (row['images'].isNotEmpty)
+                                                          Positioned(
+                                                            top: 4,
+                                                            right: 4,
+                                                            child: Container(
+                                                              padding: EdgeInsets.all(4),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.red,
+                                                                shape: BoxShape.circle,
+                                                              ),
+                                                              child: Text(
+                                                                '${row['images'].length}',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 10,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  IconButton(
-                                                    icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                                                    onPressed: row['images'].isNotEmpty
-                                                        ? () => _showImageListPopup(row['images'])
-                                                        : null,
-                                                  ),
-                                                ],
+                                                      ],
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
+                                                      onPressed: row['images'].isNotEmpty
+                                                          ? () => _showImageListPopup(row['images'])
+                                                          : null,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            DataCell(
-                                              IconButton(
-                                                icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                                                onPressed: () => removeTableRow(index),
+                                              DataCell(
+                                                Switch(
+                                                  value: row['is_active'],
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      row['is_active'] = value;
+                                                    });
+                                                  },
+                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        );
+                                              DataCell(
+                                                IconButton(
+                                                  icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                                                  onPressed: () => removeTableRow(index),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
+                                      ),
+                                      ...tableAttributes.asMap().entries.map((entry) {
+                                        int index = entry.key;
+                                        if (index < tableAttributes.length - 1) {
+                                          return Divider(
+                                            color: Color(0xffE0E6F5),
+                                            thickness: 1,
+                                            height: 8,
+                                          );
+                                        }
+                                        return SizedBox.shrink();
                                       }).toList(),
-                                    ),
-                                    ...tableAttributes.asMap().entries.map((entry) {
-                                      int index = entry.key;
-                                      if (index < tableAttributes.length - 1) {
-                                        return Divider(
-                                          color: Color(0xffE0E6F5),
-                                          thickness: 1,
-                                          height: 8,
-                                        );
-                                      }
-                                      return SizedBox.shrink();
-                                    }).toList(),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () => addTableRow(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    ],
                                   ),
                                 ),
-                                child: Icon(Icons.add, color: Colors.white),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _showImagePickerOptions,
-                    child: Container(
-                      width: double.infinity,
-                      height: 275,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF4F7FD),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
-                          width: 1.5,
-                        ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () => addTableRow(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Icon(Icons.add, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
-                      child: _imagePaths.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _showImagePickerOptions,
+                      child: Container(
+                        width: double.infinity,
+                        height: 275,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF4F7FD),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: _imagePaths.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      AppLocalizations.of(context)!.translate('pick_image'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff99A4BA),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Stack(
                                 children: [
-                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    AppLocalizations.of(context)!.translate('pick_image'),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff99A4BA),
+                                  ReorderableWrap(
+                                    spacing: 20,
+                                    runSpacing: 10,
+                                    padding: const EdgeInsets.all(8),
+                                    children: [
+                                      ..._imagePaths.map((imagePath) {
+                                        return Container(
+                                          key: ValueKey(imagePath),
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(12),
+                                            image: DecorationImage(
+                                              image: FileImage(File(imagePath)),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          child: Stack(
+                                            children: [
+                                              Positioned(
+                                                top: 4,
+                                                right: 4,
+                                                child: GestureDetector(
+                                                  onTap: () => _removeImage(imagePath),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black.withOpacity(0.5),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.close,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                      GestureDetector(
+                                        onTap: _showImagePickerOptions,
+                                        child: Container(
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            color: Color(0xffF4F7FD),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Color(0xffF4F7FD)),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                AppLocalizations.of(context)!.translate('add'),
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Color(0xff99A4BA),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    onReorder: (int oldIndex, int newIndex) {
+                                      setState(() {
+                                        final item = _imagePaths.removeAt(oldIndex);
+                                        _imagePaths.insert(newIndex, item);
+                                      });
+                                    },
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    left: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                          color: Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            )
-                          : Stack(
-                              children: [
-                                ReorderableWrap(
-                                  spacing: 20,
-                                  runSpacing: 10,
-                                  padding: const EdgeInsets.all(8),
-                                  children: [
-                                    ..._imagePaths.map((imagePath) {
-                                      return Container(
-                                        key: ValueKey(imagePath),
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          image: DecorationImage(
-                                            image: FileImage(File(imagePath)),
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        child: Stack(
-                                          children: [
-                                            Positioned(
-                                              top: 4,
-                                              right: 4,
-                                              child: GestureDetector(
-                                                onTap: () => _removeImage(imagePath),
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.5),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                    size: 16,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                    GestureDetector(
-                                      onTap: _showImagePickerOptions,
-                                      child: Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          color: Color(0xffF4F7FD),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Color(0xffF4F7FD)),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              "Добавить +",
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: Color(0xff99A4BA),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  onReorder: (int oldIndex, int newIndex) {
-                                    setState(() {
-                                      final item = _imagePaths.removeAt(oldIndex);
-                                      _imagePaths.insert(newIndex, item);
-                                    });
-                                  },
+                      ),
+                    ),
+                    if (!isImagesValid)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('select_at_least_one_image'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!.translate('status_goods'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
                                 ),
-                                Positioned(
-                                  top: 8,
-                                  left: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Colors.white,
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    isActive = !isActive;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4F7FD),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Switch(
+                                        value: isActive,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            isActive = value;
+                                          });
+                                        },
+                                        activeColor: const Color.fromARGB(255, 255, 255, 255),
+                                        inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                                        activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                        inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                                       ),
-                                    ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        isActive
+                                            ? AppLocalizations.of(context)!.translate('active')
+                                            : AppLocalizations.of(context)!.translate('inactive'),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                          color: Color(0xFF1E1E1E),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                    ),
-                  ),
-                  if (!isImagesValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('Выберите хотя-бы одну фотографию!'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('status_goods'),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  isActive = !isActive;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7FD),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Switch(
-                                      value: isActive,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          isActive = value;
-                                        });
-                                      },
-                                      activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      isActive
-                                          ? AppLocalizations.of(context)!.translate('active')
-                                          : AppLocalizations.of(context)!.translate('inactive'),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xFF1E1E1E),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
           ),
@@ -759,9 +821,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -780,9 +840,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       height: 48,
                       child: Align(
                         alignment: Alignment.center,
-                        child: CircularProgressIndicator(
-                          color: const Color(0xff4759FF),
-                        ),
+                        child: CircularProgressIndicator(color: const Color(0xff4759FF)),
                       ),
                     )
                   : CustomButton(
@@ -796,7 +854,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: 'Пожалуйста, заполните все обязательные поля!',
+                            message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -894,10 +952,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         List<Map<String, dynamic>> attributes = [];
         List<Map<String, dynamic>> variants = [];
 
-        print('tableAttributes: $tableAttributes');
-        print('Selected category attributes: ${selectedCategory!.attributes}');
-
-        // Формируем неиндивидуальные атрибуты
         for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
@@ -908,10 +962,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           }
         }
 
-        // Формируем варианты
         for (var row in tableAttributes) {
           Map<String, dynamic> variant = {
-            'is_active': true,
+            'is_active': row['is_active'],
             'variant_attributes': [],
           };
 
@@ -926,51 +979,34 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             }
           }
 
-          // Добавляем индивидуальные атрибуты
           for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
               variant['variant_attributes'].add({
                 'category_attribute_id': attr.id,
                 'value': controller.text.trim(),
-                'is_active': true,
               });
-            } else {
-              print('Missing or empty controller for attribute: ${attr.name}');
             }
           }
 
-          // Добавляем цену
-          final priceController = row['price'] as TextEditingController?;
-          if (selectedCategory!.hasPriceCharacteristics && priceController != null && priceController.text.trim().isNotEmpty) {
-            variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
+          if (selectedCategory!.hasPriceCharacteristics) {
+            final priceController = row['price'] as TextEditingController?;
+            if (priceController != null && priceController.text.trim().isNotEmpty) {
+              variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
+            } else {
+              variant['price'] = 0.0;
+            }
           } else {
             variant['price'] = 0.0;
           }
 
-          // Добавляем изображения, если они существуют
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
             variants.add(variant);
-          } else {
-            print('Skipped variant: No valid variant_attributes');
           }
-        }
-
-        print('Attributes: $attributes');
-        print('Variants: $variants');
-
-        if (variants.isEmpty) {
-          setState(() => isLoading = false);
-          showCustomSnackBar(
-            context: context,
-            message: 'Добавьте хотя бы один вариант с характеристиками!',
-            isSuccess: false,
-          );
-          return;
         }
 
         List<File> generalImages = [];
@@ -978,19 +1014,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           File file = File(path);
           if (await file.exists()) {
             generalImages.add(file);
-          } else {
-            print('General image not found, skipping: $path');
           }
-        }
-
-        if (generalImages.isEmpty) {
-          setState(() => isLoading = false);
-          showCustomSnackBar(
-            context: context,
-            message: 'Не удалось найти общие изображения. Пожалуйста, выберите изображения заново.',
-            isSuccess: false,
-          );
-          return;
         }
 
         final response = await _apiService.createGoods(
@@ -1004,42 +1028,50 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           isActive: isActive,
           discountPrice: selectedCategory!.hasPriceCharacteristics
               ? null
-              : double.tryParse(discountPriceController.text) ?? 0.0,
-          branch: selectedBranch!.id, // Передаем ID филиала
+              : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+          branch: selectedBranch!.id,
         );
 
         if (response['success'] == true) {
-          showCustomSnackBar(
-            context: context,
-            message: 'Товар успешно создан!',
-            isSuccess: true,
-          );
-          Navigator.pop(context, true);
-          context.read<GoodsBloc>().add(FetchGoods());
+          if (mounted) {
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('goods_added_successfully'),
+              isSuccess: true,
+            );
+            Navigator.pop(context, true);
+            context.read<GoodsBloc>().add(FetchGoods());
+          }
         } else {
+          if (mounted) {
+            setState(() => isLoading = false);
+            showCustomSnackBar(
+              context: context,
+              message: response['message'] ?? AppLocalizations.of(context)!.translate('error_adding_goods'),
+              isSuccess: false,
+            );
+          }
+        }
+      } catch (e, stackTrace) {
+        if (mounted) {
           setState(() => isLoading = false);
+          print('Error creating product: $e');
+          print(stackTrace);
           showCustomSnackBar(
             context: context,
-            message: response['message'] ?? 'Ошибка при создании товара',
+            message: '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
             isSuccess: false,
           );
         }
-      } catch (e, stackTrace) {
-        setState(() => isLoading = false);
-        print('Error creating product: $e');
-        print(stackTrace);
+      }
+    } else {
+      if (mounted) {
         showCustomSnackBar(
           context: context,
-          message: 'Ошибка: ${e.toString()}',
+          message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
           isSuccess: false,
         );
       }
-    } else {
-      showCustomSnackBar(
-        context: context,
-        message: 'Заполните все обязательные поля!',
-        isSuccess: false,
-      );
     }
   }
 

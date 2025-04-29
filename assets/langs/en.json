@@ -915,7 +915,12 @@
     "week": "Week",
     "month": "Month",
     "year": "Year",
-    "new_subcategory": "New Subcategory"
+    "new_subcategory": "New Subcategory",
+    "enter_price": "Enter the price",
+    "branch": "Branch",
+    "branch_details": "Branch",
+    "goods_updated_successfully": "Product updated successfully"
+
 
 
   
