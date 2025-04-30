@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
@@ -168,12 +169,11 @@ class _ImageListPopupState extends State<ImageListPopup>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header with Delete Icon
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Выбранные фото',
+                          AppLocalizations.of(context)!.translate('selected_images'),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -196,7 +196,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                                     size: 24,
                                   ),
                                   onPressed: _deleteSelected,
-                                  tooltip: 'Удалить выбранные',
+                                  tooltip: AppLocalizations.of(context)!.translate('delete_selected'),
                                 ),
                               );
                             },
@@ -205,7 +205,6 @@ class _ImageListPopupState extends State<ImageListPopup>
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Image List or Empty State
                     Flexible(
                       child: widget.imagePaths.isEmpty
                           ? Column(
@@ -218,7 +217,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  'Фотографии отсутствуют',
+                                  AppLocalizations.of(context)!.translate('no_images'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -420,7 +419,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                               elevation: 3,
                             ),
                             child: Text(
-                              'Добавить',
+                          AppLocalizations.of(context)!.translate('add'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

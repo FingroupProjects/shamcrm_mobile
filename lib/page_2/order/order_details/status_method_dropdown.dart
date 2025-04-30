@@ -19,17 +19,7 @@ class StatusMethodDropdown extends StatefulWidget {
 class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
   String? selectedstatusMethod;
 
-  // Локальный список способов оплаты (пока без API)
-  final List<String> statusMethods = [
-    'Новый',
-    'Ожидает оплаты',
-    'Оплачен',
-    'В обработке',
-    'Ожидает оплаты',
-    'Отправлен',
-    'Завершен',
-    'Отменен',
-  ];
+
 
   @override
   void initState() {
@@ -39,6 +29,19 @@ class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
 
   @override
   Widget build(BuildContext context) {
+
+      // Локальный список способов оплаты (пока без API)
+  final List<String> statusMethods = [
+    AppLocalizations.of(context)!.translate('new'),
+    AppLocalizations.of(context)!.translate('wating_payment'),
+    AppLocalizations.of(context)!.translate('paid'),
+    AppLocalizations.of(context)!.translate('processing'),
+    AppLocalizations.of(context)!.translate('awaiting_payment'),
+    AppLocalizations.of(context)!.translate('shipped'),
+    AppLocalizations.of(context)!.translate('completed'),
+    AppLocalizations.of(context)!.translate('canceled'),
+  ];
+  
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

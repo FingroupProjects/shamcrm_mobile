@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart'; // Добавляем импорт состояний
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
@@ -54,6 +54,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
+    // Запрашиваем филиалы через BLoC
     context.read<BranchBloc>().add(FetchBranches());
   }
 
@@ -214,13 +215,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             });
           } else if (state is BranchError) {
             print('GoodsAddScreen: Error loading branches: ${state.message}');
-            if (mounted) { // Проверяем, активен ли виджет
-              showCustomSnackBar(
-                context: context,
-                message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
-                isSuccess: false,
-              );
-            }
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
+              isSuccess: false,
+            );
           }
         },
         child: Padding(
@@ -335,7 +334,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           Divider(color: Color(0xff1E2E52)),
                           Center(
                             child: Text(
-                              AppLocalizations.of(context)!.translate('goods_characteristics'),
+                              AppLocalizations.of(context)!.translate('characteristic'),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -362,7 +361,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 const SizedBox(height: 4),
                                 CustomCharacteristicField(
                                   controller: attributeControllers[attribute.name]!,
-                                  hintText: '${AppLocalizations.of(context)!.translate('enter')} ${attribute.name.toLowerCase()}',
+                                  hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
                                 ),
                               ],
                             );
@@ -410,7 +409,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('image'),
+                                              AppLocalizations.of(context)!.translate('image_message'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -455,7 +454,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                           child: TextField(
                                                             controller: row[attr.name],
                                                             decoration: InputDecoration(
-                                                              hintText: '${AppLocalizations.of(context)!.translate('enter')} ${attr.name}',
+                                                              hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
                                                               hintStyle: TextStyle(
                                                                 fontSize: 12,
                                                                 fontWeight: FontWeight.w500,
@@ -721,7 +720,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image')}',
+                                        '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image_message')}',
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -739,7 +738,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          AppLocalizations.of(context)!.translate('select_at_least_one_image'),
+                          AppLocalizations.of(context)!.translate('please_select_image'),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.red,
@@ -944,136 +943,161 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     });
   }
 
-  void _createProduct() async {
-    if (formKey.currentState!.validate() && selectedCategory != null && _imagePaths.isNotEmpty && selectedBranch != null) {
-      setState(() => isLoading = true);
+void _createProduct() async {
+  validateForm();
+  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
+    bool isPriceValid = true;
+    if (selectedCategory!.hasPriceCharacteristics) {
+      for (var row in tableAttributes) {
+        final priceController = row['price'] as TextEditingController?;
+        if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
+          isPriceValid = false;
+          print('Validation failed: priceController is $priceController, text is "${priceController?.text}"');
+          break;
+        }
+      }
+    }
+    if (!isPriceValid) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('fill_all_prices'),
+        isSuccess: false,
+      );
+      return;
+    }
 
-      try {
-        List<Map<String, dynamic>> attributes = [];
-        List<Map<String, dynamic>> variants = [];
+    setState(() => isLoading = true);
 
-        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
-          final controller = attributeControllers[attribute.name];
+    try {
+      List<Map<String, dynamic>> attributes = [];
+      List<Map<String, dynamic>> variants = [];
+
+      for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        final controller = attributeControllers[attribute.name];
+        if (controller != null && controller.text.trim().isNotEmpty) {
+          attributes.add({
+            'category_attribute_id': attribute.id,
+            'value': controller.text.trim(),
+          });
+        }
+      }
+
+      for (var row in tableAttributes) {
+        Map<String, dynamic> variant = {
+          'is_active': row['is_active'],
+          'variant_attributes': [],
+        };
+
+        List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+        List<File> variantImages = [];
+        for (var path in variantImagePaths) {
+          File file = File(path);
+          if (await file.exists()) {
+            variantImages.add(file);
+          } else {
+            print('File not found, skipping: $path');
+          }
+        }
+
+        for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          final controller = row[attr.name] as TextEditingController?;
           if (controller != null && controller.text.trim().isNotEmpty) {
-            attributes.add({
-              'category_attribute_id': attribute.id,
+            variant['variant_attributes'].add({
+              'category_attribute_id': attr.id,
               'value': controller.text.trim(),
             });
           }
         }
 
-        for (var row in tableAttributes) {
-          Map<String, dynamic> variant = {
-            'is_active': row['is_active'],
-            'variant_attributes': [],
-          };
-
-          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
-          List<File> variantImages = [];
-          for (var path in variantImagePaths) {
-            File file = File(path);
-            if (await file.exists()) {
-              variantImages.add(file);
-            } else {
-              print('File not found, skipping: $path');
-            }
-          }
-
-          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
-            final controller = row[attr.name] as TextEditingController?;
-            if (controller != null && controller.text.trim().isNotEmpty) {
-              variant['variant_attributes'].add({
-                'category_attribute_id': attr.id,
-                'value': controller.text.trim(),
-              });
-            }
-          }
-
-          if (selectedCategory!.hasPriceCharacteristics) {
-            final priceController = row['price'] as TextEditingController?;
-            if (priceController != null && priceController.text.trim().isNotEmpty) {
-              variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
+        if (selectedCategory!.hasPriceCharacteristics) {
+          final priceController = row['price'] as TextEditingController?;
+          if (priceController != null && priceController.text.trim().isNotEmpty) {
+            final price = double.tryParse(priceController.text.trim());
+            if (price != null) {
+              variant['price'] = price;
+              print('Variant price set to: $price');
             } else {
               variant['price'] = 0.0;
+              print('Invalid price format: "${priceController.text}", set to 0.0');
             }
           } else {
             variant['price'] = 0.0;
-          }
-
-          if (variantImages.isNotEmpty) {
-            variant['files'] = variantImages;
-          }
-
-          if (variant['variant_attributes'].isNotEmpty) {
-            variants.add(variant);
-          }
-        }
-
-        List<File> generalImages = [];
-        for (var path in _imagePaths) {
-          File file = File(path);
-          if (await file.exists()) {
-            generalImages.add(file);
-          }
-        }
-
-        final response = await _apiService.createGoods(
-          name: goodsNameController.text.trim(),
-          parentId: selectedCategory!.id,
-          description: goodsDescriptionController.text.trim(),
-          quantity: int.tryParse(stockQuantityController.text) ?? 0,
-          attributes: attributes,
-          variants: variants,
-          images: generalImages,
-          isActive: isActive,
-          discountPrice: selectedCategory!.hasPriceCharacteristics
-              ? null
-              : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-          branch: selectedBranch!.id,
-        );
-
-        if (response['success'] == true) {
-          if (mounted) {
-            showCustomSnackBar(
-              context: context,
-              message: AppLocalizations.of(context)!.translate('goods_added_successfully'),
-              isSuccess: true,
-            );
-            Navigator.pop(context, true);
-            context.read<GoodsBloc>().add(FetchGoods());
+            print('Price is empty or null, set to 0.0');
           }
         } else {
-          if (mounted) {
-            setState(() => isLoading = false);
-            showCustomSnackBar(
-              context: context,
-              message: response['message'] ?? AppLocalizations.of(context)!.translate('error_adding_goods'),
-              isSuccess: false,
-            );
-          }
+          variant['price'] = 0.0;
+          print('hasPriceCharacteristics is false, price set to 0.0');
         }
-      } catch (e, stackTrace) {
-        if (mounted) {
-          setState(() => isLoading = false);
-          print('Error creating product: $e');
-          print(stackTrace);
-          showCustomSnackBar(
-            context: context,
-            message: '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
-            isSuccess: false,
-          );
+
+        if (variantImages.isNotEmpty) {
+          variant['files'] = variantImages;
+        }
+
+        if (variant['variant_attributes'].isNotEmpty) {
+          variants.add(variant);
         }
       }
-    } else {
-      if (mounted) {
+
+      List<File> generalImages = [];
+      for (var path in _imagePaths) {
+        File file = File(path);
+        if (await file.exists()) {
+          generalImages.add(file);
+        }
+      }
+
+      final response = await _apiService.createGoods(
+        name: goodsNameController.text.trim(),
+        parentId: selectedCategory!.id,
+        description: goodsDescriptionController.text.trim(),
+        quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        attributes: attributes,
+        variants: variants,
+        images: generalImages,
+        isActive: isActive,
+        discountPrice: selectedCategory!.hasPriceCharacteristics
+            ? null
+            : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+        branch: selectedBranch!.id,
+        price: selectedCategory!.hasPriceCharacteristics
+            ? (double.tryParse((tableAttributes.isNotEmpty ? tableAttributes[0]['price']?.text : null) ?? '') ?? 0.0)
+            : null, // Добавляем price для корня объекта
+      );
+
+      if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
-          message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+          message: AppLocalizations.of(context)!.translate('product_updated'),
+          isSuccess: true,
+        );
+        Navigator.pop(context, true);
+        context.read<GoodsBloc>().add(FetchGoods());
+      } else {
+        setState(() => isLoading = false);
+        showCustomSnackBar(
+          context: context,
+          message: response['message'] ?? AppLocalizations.of(context)!.translate('error_adding_goods'),
           isSuccess: false,
         );
       }
+    } catch (e, stackTrace) {
+      setState(() => isLoading = false);
+      print('Error creating product: $e');
+      print(stackTrace);
+      showCustomSnackBar(
+        context: context,
+        message: '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
+        isSuccess: false,
+      );
     }
+  } else {
+    showCustomSnackBar(
+      context: context,
+      message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+      isSuccess: false,
+    );
   }
+}
 
   @override
   void dispose() {

@@ -74,7 +74,7 @@ class DeleteSubCategoryDialog extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                AppLocalizations.of(context)!.translate('Удалить подкатегорию'),
+                AppLocalizations.of(context)!.translate('delete_subcategory'),
                 style: const TextStyle(
                   fontSize: 20,
                   fontFamily: 'Gilroy',
@@ -87,7 +87,7 @@ class DeleteSubCategoryDialog extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                AppLocalizations.of(context)!.translate('Подтвердите удаление подкатегории!'),
+                AppLocalizations.of(context)!.translate('confirm_delete_subcategory'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

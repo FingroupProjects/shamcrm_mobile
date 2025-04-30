@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -12,13 +13,13 @@ class OrderDetailsScreen extends StatefulWidget {
   final int orderId;
   final String categoryName;
   final Order order;
-  final int? organizationId; // Добавляем новое поле
+  final int? organizationId;
 
   const OrderDetailsScreen({
     required this.orderId,
     required this.order,
     required this.categoryName,
-    this.organizationId, // Добавляем в конструктор
+    this.organizationId, 
   });
 
   @override
@@ -37,18 +38,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   void _updateDetails(Order order) {
     String formattedDate = order.lead.createdAt != null
         ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-        : 'Не указана';
+        : AppLocalizations.of(context)!.translate('not_specified');
 
     details = [
-      {'label': 'Номер заказа:', 'value': order.orderNumber},
-      {'label': 'Клиент:', 'value': order.lead.name},
-      {'label': 'Номер телефона:', 'value': order.phone},
-      {'label': 'Дата заказа:', 'value': formattedDate},
-      {'label': 'Статус заказа:', 'value': order.orderStatus.name},
+      {'label': AppLocalizations.of(context)!.translate('order_number'), 'value': order.orderNumber},
+      {'label': AppLocalizations.of(context)!.translate('client'), 'value': order.lead.name},
+      {'label': AppLocalizations.of(context)!.translate('client_phone'), 'value': order.phone},
+      {'label': AppLocalizations.of(context)!.translate('order_date'), 'value': formattedDate},
+      {'label': AppLocalizations.of(context)!.translate('order_status'), 'value': order.orderStatus.name},
       if (order.deliveryAddress != null)
         {
-          'label': 'Адрес доставки:',
-          'value': order.deliveryAddress ?? 'Не указан'
+          'label': AppLocalizations.of(context)!.translate('order_address'),
+          'value': order.deliveryAddress ?? AppLocalizations.of(context)!.translate('not_specified')
         },
     ];
   }
@@ -100,8 +101,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text(
-                    'Закрыть',
+                  child: Text(
+                  AppLocalizations.of(context)!.translate('close'),
                     style: TextStyle(
                       color: Colors.white,
                       fontFamily: 'Gilroy',
@@ -165,7 +166,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'Заказ #${order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('order_title')} #${order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -265,7 +266,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Widget _buildDetailItem(String label, String value) {
     // Обработка для адреса доставки
-    if (label == 'Адрес доставки:') {
+    if (label == AppLocalizations.of(context)!.translate('order_address')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -296,10 +297,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       );
     }
-    if (label == 'Комментарий клиента:') {
+    if (label == AppLocalizations.of(context)!.translate('comment_client')) {
       return GestureDetector(
         onTap: () {
-          if (value.isNotEmpty && value != 'Нет комментария') {
+          if (value.isNotEmpty && value != AppLocalizations.of(context)!.translate('no_comment')) {
             _showFullTextDialog(label.replaceAll(':', ''), value);
           }
         },
@@ -316,7 +317,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty && value != 'Нет комментария'
+                  decoration: value.isNotEmpty && value != AppLocalizations.of(context)!.translate('no_comment')
                       ? TextDecoration.underline
                       : null,
                 ),

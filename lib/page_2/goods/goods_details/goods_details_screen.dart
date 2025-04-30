@@ -116,11 +116,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       .translate('discount_price_details'),
                   'value': goods.discountPrice.toString(),
                 },
-              // {
-              //   'label': AppLocalizations.of(context)!
-              //       .translate('stock_quantity_details'),
-              //   'value': goods.quantity?.toString() ?? '0',
-              // },
+              {
+                'label': AppLocalizations.of(context)!
+                    .translate('stock_quantity_details'),
+                'value': goods.quantity?.toString() ?? '0',
+              },
               {
                 'label':
                     AppLocalizations.of(context)!.translate('category_details'),

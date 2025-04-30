@@ -1,7 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 class DeliveryMethodDropdown extends StatefulWidget {
   final String? selectedDeliveryMethod;
@@ -20,27 +19,36 @@ class DeliveryMethodDropdown extends StatefulWidget {
 class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
   String? selectedDeliveryMethod;
 
-  // Локальный список способов доставки (пока без API)
-  final List<String> deliveryMethods = [
-    'Самовывоз',
-    'Доставка',
-  ];
-
   @override
   void initState() {
     super.initState();
-    // Устанавливаем начальное значение, но не вызываем коллбэк здесь
-    selectedDeliveryMethod = widget.selectedDeliveryMethod ?? 'Доставка';
-    // Переносим вызов коллбэка после завершения сборки
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    // Устанавливаем начальное значение без обращения к AppLocalizations
+    selectedDeliveryMethod = widget.selectedDeliveryMethod;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Устанавливаем значение по умолчанию, если selectedDeliveryMethod не задано
+    if (selectedDeliveryMethod == null) {
+      setState(() {
+        selectedDeliveryMethod = AppLocalizations.of(context)!.translate('delivery');
+      });
+      // Вызываем коллбэк после инициализации
       if (mounted) {
         widget.onSelectDeliveryMethod(selectedDeliveryMethod!);
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Локальный список способов доставки
+    final List<String> deliveryMethods = [
+      AppLocalizations.of(context)!.translate('self_delivery'),
+      AppLocalizations.of(context)!.translate('delivery'),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,8 +97,7 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
             return Text(
               selectedItem.isNotEmpty
                   ? selectedItem
-                  : AppLocalizations.of(context)!
-                      .translate('select_delivery_method'),
+                  : AppLocalizations.of(context)!.translate('select_delivery_method'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

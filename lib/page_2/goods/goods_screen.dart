@@ -122,8 +122,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         Icon(Icons.inventory_2_outlined,
                             size: 64, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text(
-                          'Товаров нет',
+                        Text(AppLocalizations.of(context)!.translate('no_products'),
                           style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
@@ -132,7 +131,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         TextButton(
                           onPressed: () =>
                               context.read<GoodsBloc>().add(FetchGoods()),
-                          child: Text('Обновить'),
+                          child: Text(AppLocalizations.of(context)!.translate('update')),
                         ),
                       ],
                     ),
@@ -140,7 +139,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 } else if (state is GoodsError) {
                   return Center(child: Text(state.message));
                 }
-                return Center(child: Text('Неизвестное состояние'));
+                return Center(child: Text('Error'));
               },
             ),
       floatingActionButton: FloatingActionButton(

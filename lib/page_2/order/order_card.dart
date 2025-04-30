@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_even
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -49,7 +50,7 @@ class _OrderCardState extends State<OrderCard> {
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Нет даты';
+    if (date == null) return AppLocalizations.of(context)!.translate('no_date');
     return DateFormat('dd.MM.yyyy').format(date);
   }
 
@@ -200,7 +201,7 @@ class _OrderCardState extends State<OrderCard> {
                       Text(
                         widget.order.phone.isNotEmpty
                             ? widget.order.phone
-                            : 'Нет телефона',
+                            : AppLocalizations.of(context)!.translate('no_phone'),
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,

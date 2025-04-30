@@ -124,10 +124,28 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
       emit(OrderError('Не удалось загрузить детали заказа: ${e.toString()}'));
     }
   }
-
- Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
+Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
   emit(OrderLoading());
   try {
+    // Формируем тело запроса в зависимости от типа доставки
+    final Map<String, dynamic> body = {
+      'phone': event.phone,
+      'lead_id': event.leadId,
+      'deliveryType': event.delivery ? 'delivery' : 'pickup',
+      'goods': event.goods,
+      'organization_id': event.organizationId.toString(),
+      'status_id': event.statusId,
+    };
+
+    // Добавляем специфичные поля
+    if (event.delivery) {
+      body['delivery_address'] = event.deliveryAddress;
+    } else {
+      body['delivery_address_id'] = null;
+      body['branch_id'] = event.branchId?.toString();
+      body['comment_to_courier'] = event.commentToCourier;
+    }
+
     final result = await apiService.createOrder(
       phone: event.phone,
       leadId: event.leadId,
@@ -137,14 +155,14 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
       organizationId: event.organizationId,
       statusId: event.statusId,
     );
-    
+
     if (result['success']) {
       final statusId = result['statusId'] ?? event.statusId;
       final orderData = result['order'];
 
       // Создаем новый Order из полученных данных
       final newOrder = Order.fromJson(orderData);
-      
+
       // Добавляем новый заказ в соответствующий статус
       if (allOrders[statusId] == null) {
         allOrders[statusId] = [];
@@ -176,29 +194,30 @@ Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) a
     emit(OrderError('Ошибка создания заказа: $e'));
   }
 }
-  Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
-    emit(OrderLoading());
-    try {
-      final response = await apiService.updateOrder(
-        orderId: event.orderId,
-        phone: event.phone,
-        leadId: event.leadId,
-        delivery: event.delivery,
-        deliveryAddress: event.deliveryAddress,
-        goods: event.goods,
-        organizationId: event.organizationId,
-      );
+Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+  emit(OrderLoading());
+  try {
+    final response = await apiService.updateOrder(
+      orderId: event.orderId,
+      phone: event.phone,
+      leadId: event.leadId,
+      delivery: event.delivery,
+      deliveryAddress: event.deliveryAddress,
+      goods: event.goods,
+      organizationId: event.organizationId,
+      branchId: event.branchId,
+      commentToCourier: event.commentToCourier,
+    );
 
-      if (response == true) {
-        emit(OrderSuccess());
-      } else {
-        emit(OrderError('Не удалось обновить заказ'));
-      }
-    } catch (e) {
-      emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
+    if (response['success']) {
+      emit(OrderSuccess());
+    } else {
+      emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
     }
+  } catch (e) {
+    emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
   }
-
+}
   Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
     emit(OrderLoading());
     try {
