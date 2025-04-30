@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/switch.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +19,7 @@ class SubCategoryAddBottomSheet {
     File? _image;
     bool _isImageSelected = true;
     List<CustomField> customFields = [];
-    String selectedType = 'a'; // Обновлено на 'a' для согласованности
+    String selectedType = 'a'; 
     bool isAffectingPrice = false;
 
     Future<void> _pickImage() async {
@@ -46,7 +47,7 @@ class SubCategoryAddBottomSheet {
                 context: context,
                 builder: (BuildContext context) {
                   return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName, isIndividual) { // Обновляем обработчик
+                    onAddField: (fieldName, isIndividual) {
                       setState(() {
                         customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
                       });
@@ -257,8 +258,8 @@ class SubCategoryAddBottomSheet {
                                       ),
                                       subtitle: Text(
                                         field.isIndividual
-                                            ? AppLocalizations.of(context)!.translate('Уникальный')
-                                            : AppLocalizations.of(context)!.translate('Общий'),
+                                            ? AppLocalizations.of(context)!.translate('individual')
+                                            : AppLocalizations.of(context)!.translate('common'),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w400,
@@ -283,7 +284,7 @@ class SubCategoryAddBottomSheet {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
@@ -344,7 +345,6 @@ class SubCategoryAddBottomSheet {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
-      // Формируем список атрибутов с учетом isIndividual
       List<Map<String, dynamic>> attributes = customFields
           .map((field) => {
                 'name': field.name,
@@ -357,24 +357,24 @@ class SubCategoryAddBottomSheet {
       categoryBloc.add(CreateCategory(
         name: name,
         parentId: categoryId,
-        attributes: attributes, // Используем attributes вместо attributeNames
+        attributes: attributes, 
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
       ));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('error_create_category')),
-        ),
-      );
+        showCustomSnackBar(
+             context: context,
+             message: AppLocalizations.of(context)!.translate('error_create_category'),
+             isSuccess: false,
+           );
     }
   }
 }
 
 class CustomField {
   final String name;
-  final bool isIndividual; // Добавляем поле isIndividual
+  final bool isIndividual; 
 
   CustomField({
     required this.name,

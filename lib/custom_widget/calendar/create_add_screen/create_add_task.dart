@@ -297,10 +297,10 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
     if (_formKey.currentState!.validate()) {
       if (selectedStatusId == null) {
           showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate('please_select_status_task'),
-                   isSuccess: false,
-                 );
+             context: context,
+             message: AppLocalizations.of(context)!.translate('please_select_status_task'),
+             isSuccess: false,
+           );
         return;
       }
 
@@ -421,13 +421,10 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
                         },
                       ),
                       const SizedBox(height: 8),
-
                       CustomTextFieldWithPriority(
                         controller: nameController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
+                        hintText: AppLocalizations.of(context)!.translate('enter_title'),
+                        label: AppLocalizations.of(context)!.translate('event_name'),
                         showPriority: true,
                         isPrioritySelected: selectedPriority == 3,
                         onPriorityChanged: (bool? value) {

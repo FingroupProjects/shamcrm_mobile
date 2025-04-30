@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class PriceAffectSwitcher extends StatelessWidget {
@@ -20,13 +21,11 @@ class PriceAffectSwitcher extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Текстовая часть
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Влияет на цену',
+              children: [
+                Text( AppLocalizations.of(context)!.translate('has_price_characteristics'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -35,26 +34,24 @@ class PriceAffectSwitcher extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 4),
-                Text(
-                  'Если включено, характеристики категории будут влиять на формирование цены товара',
+                Text( AppLocalizations.of(context)!.translate('has_price_characteristics_description'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Gilroy',
-                    color: Color(0x991E2E52), // прозрачный серый текст
+                    color: Color(0x991E2E52), 
                   ),
                 ),
               ],
             ),
           ),
 
-          // Переключатель
           Switch(
             value: isActive,
             onChanged: onChanged,
             activeColor: const Color.fromARGB(255, 255, 255, 255),
             inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-            activeTrackColor: const Color(0xFF4759FF), // можно заменить на ChatSmsStyles.messageBubbleSenderColor
+            activeTrackColor: const Color(0xFF4759FF), 
             inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
           ),
         ],
