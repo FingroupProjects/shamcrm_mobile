@@ -63,7 +63,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('Пользователы'),
+              AppLocalizations.of(context)!.translate('users_list'),
               style: authorTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
@@ -162,7 +162,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedAuthorsNames = selectedAuthorsData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('Выбирите пользователей')
+                          ? AppLocalizations.of(context)!.translate('select_users')
                           : selectedAuthorsData.map((e) => '${e.name} ${e.lastname ?? ''}').join(', ');
                       return Text(
                         selectedAuthorsNames,
@@ -172,7 +172,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('Выбирите пользователей'),
+                      AppLocalizations.of(context)!.translate('select_users'),
                       style: authorTextStyle.copyWith(
                         fontSize: 14,
                       ),

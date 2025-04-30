@@ -188,17 +188,17 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('Задача'),
+                            AppLocalizations.of(context)!.translate('view_task'),
                             _hasTask,
                             (value) => setState(() => _hasTask = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('Моя задача'),
+                            AppLocalizations.of(context)!.translate('my_task'),
                             _hasMyTask,
                             (value) => setState(() => _hasMyTask = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('События'),
+                            AppLocalizations.of(context)!.translate('notice'),
                             _hasNotice,
                             (value) => setState(() => _hasNotice = value),
                           ),
