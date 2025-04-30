@@ -1353,7 +1353,7 @@ packages:
       sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.1"
+    version: "1.2.0"
   syncfusion_flutter_core:
     dependency: transitive
     description:
@@ -1401,7 +1401,11 @@ packages:
       sha256: fb31f383e2ee25fbbfe06b40fe21e1e458d14080e3c67e7ba0acfde4df4e0bbd
       url: "https://pub.dev"
     source: hosted
+<<<<<<< HEAD
+    version: "0.7.2"
+=======
     version: "0.7.4"
+>>>>>>> 4c5b06a580107c75f9722a2b3982c7065aaa20b6
   tutorial_coach_mark:
     dependency: "direct main"
     description:

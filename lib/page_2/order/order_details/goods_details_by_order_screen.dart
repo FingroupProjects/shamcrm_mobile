@@ -79,8 +79,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
     return Column(
       children: [
         Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          height: 250,
+          // margin: const EdgeInsets.only(bottom: 8),
+          // height: 250,
           child: PageView.builder(
             itemCount: widget.imagePaths.length,
             onPageChanged: (index) {

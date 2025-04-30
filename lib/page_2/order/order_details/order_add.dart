@@ -1,4 +1,8 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -28,7 +32,7 @@ class OrderAddScreen extends StatefulWidget {
 }
 
 class _OrderAddScreenState extends State<OrderAddScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  static final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _phoneController;
   late TextEditingController _deliveryAddressController;
   final TextEditingController _commentController = TextEditingController();
@@ -38,6 +42,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
+  List<Branch> branches = [];
   String? selectedDialCode;
   String? baseUrl;
 
@@ -47,7 +52,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     _phoneController = TextEditingController(text: widget.order?.phone ?? '');
     _deliveryAddressController =
         TextEditingController(text: widget.order?.deliveryAddress ?? '');
-    _initializeBaseUrl();
+
     if (widget.order != null) {
       _items = widget.order!.goods
           .map((good) => {
@@ -59,21 +64,38 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
-      _deliveryMethod = widget.order!.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
+      _deliveryMethod = widget.order!.delivery
+          ? AppLocalizations.of(context)!.translate('delivery')
+          : AppLocalizations.of(context)!.translate('self_delivery');
       selectedDialCode = widget.order!.phone;
-      // _selectedBranch будет установлено позже в BlocListener, если есть данные
-    } else {
-      _selectedBranch = null; // Явно устанавливаем null для нового заказа
     }
-    _loadStatuses();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeBaseUrl();
+      _loadStatuses();
+      context.read<BranchBloc>().add(FetchBranches());
+    });
   }
 
   Future<void> _loadStatuses() async {
     final apiService = context.read<ApiService>();
-    statuses = await apiService.getOrderStatuses();
-    setState(() {
-      selectedStatusId = statuses.isNotEmpty ? statuses[0].id : null;
-    });
+    try {
+      final loadedStatuses = await apiService.getOrderStatuses();
+      if (mounted) {
+        setState(() {
+          statuses = loadedStatuses;
+          selectedStatusId = statuses.isNotEmpty ? statuses[0].id : null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('failed_to_load_statuses'),
+          isSuccess: false,
+        );
+      }
+    }
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -82,13 +104,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       final enteredDomainMap = await apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
+      if (mounted) {
+        setState(() {
+          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+        });
+      }
     } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
+      if (mounted) {
+        setState(() {
+          baseUrl = 'https://shamcrm.com/storage/';
+        });
+      }
     }
   }
 
@@ -105,8 +131,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       width: 48,
       height: 48,
       color: Colors.grey[200],
-      child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -116,7 +141,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           id: 0,
           phone: selectedDialCode ?? _phoneController.text,
           orderNumber: '',
-          delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
+          delivery: _deliveryMethod ==
+              AppLocalizations.of(context)!.translate('delivery'),
           deliveryAddress: _deliveryAddressController.text,
           lead: OrderLead(
             id: int.tryParse(selectedLead ?? '0') ?? 0,
@@ -157,7 +183,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
     );
 
-    if (result != null && result is List<Map<String, dynamic>>) {
+    if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
               'id': item['id'],
@@ -171,60 +197,68 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   void _updateQuantity(int index, int newQuantity) {
-    setState(() {
-      if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
-    });
+    if (mounted) {
+      setState(() {
+        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
+      });
+    }
   }
 
   void _removeItem(int index) {
-    setState(() => _items.removeAt(index));
+    if (mounted) {
+      setState(() => _items.removeAt(index));
+    }
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OrderBloc(context.read<ApiService>()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(),
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
             if (state is OrderSuccess) {
-                showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate('order_created_success'),
-                   isSuccess: true,
-                 );
-              Navigator.pop(
-                  context, state.statusId ?? 1);
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!
+                    .translate('order_created_success'),
+                isSuccess: true,
+              );
+              Navigator.pop(context, state.statusId ?? 1);
             } else if (state is OrderError) {
-                showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: false,
-                 );
-            
-            } else if (state is OrderLoaded && state.orderDetails != null) {
-              setState(() {
-                _items = state.orderDetails!.goods
-                    .map((good) => {
-                          'id': good.goodId,
-                          'name': good.goodName,
-                          'price': good.price,
-                          'quantity': good.quantity,
-                          'imagePath': good.good.files.isNotEmpty
-                              ? good.good.files[0].path
-                              : null,
-                        })
-                    .toList();
-                _phoneController.text = state.orderDetails!.phone;
-                selectedDialCode = state.orderDetails!.phone;
-                _deliveryAddressController.text =
-                    state.orderDetails!.deliveryAddress ?? '';
-                selectedLead = state.orderDetails!.lead.id.toString();
-                _deliveryMethod =
-                    state.orderDetails!.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: false,
+              );
+            } else if (state is OrderLoaded && state.orderDetails != null && mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                  _items = state.orderDetails!.goods
+                      .map((good) => {
+                            'id': good.goodId,
+                            'name': good.goodName,
+                            'price': good.price,
+                            'quantity': good.quantity,
+                            'imagePath': good.good.files.isNotEmpty
+                                ? good.good.files[0].path
+                                : null,
+                          })
+                      .toList();
+                  _phoneController.text = state.orderDetails!.phone;
+                  selectedDialCode = state.orderDetails!.phone;
+                  _deliveryAddressController.text =
+                      state.orderDetails!.deliveryAddress ?? '';
+                  selectedLead = state.orderDetails!.lead.id.toString();
+                  _deliveryMethod = state.orderDetails!.delivery
+                      ? AppLocalizations.of(context)!.translate('delivery')
+                      : AppLocalizations.of(context)!.translate('self_delivery');
+                });
               });
             }
           },
@@ -238,74 +272,125 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
+                      key: const Key('order_add_scroll_view'),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           LeadRadioGroupWidget(
+                            key: const Key('lead_radio_group'),
                             selectedLead: selectedLead,
                             onSelectLead: (LeadData lead) {
-                              setState(() => selectedLead = lead.id.toString());
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    selectedLead = lead.id.toString();
+                                  });
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 16),
                           CustomPhoneNumberInput(
+                            // key: const Key('phone_input'),
                             controller: _phoneController,
                             onInputChanged: (String number) {
-                              setState(() {
-                                selectedDialCode = number;
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    selectedDialCode = number;
+                                  });
+                                }
                               });
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
-                            label: AppLocalizations.of(context)!.translate('phone'),
+                            label: AppLocalizations.of(context)!
+                                .translate('phone'),
                           ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
+                            key: const Key('delivery_method_dropdown'),
                             selectedDeliveryMethod: _deliveryMethod,
                             onSelectDeliveryMethod: (value) {
-                              setState(() {
-                                _deliveryMethod = value;
-                                _selectedBranch = null;
-                                _deliveryAddressController.clear();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _deliveryMethod = value;
+                                    _selectedBranch = null;
+                                    _deliveryAddressController.clear();
+                                  });
+                                }
                               });
                             },
                           ),
-                          
                           const SizedBox(height: 16),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
-                            BranchesDropdown(
-                              selectedBranch: _selectedBranch,
-                              onSelectBranch: (branch) {
-                                setState(() => _selectedBranch = branch);
-                              },
-                            ),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
+                          BlocBuilder<BranchBloc, BranchState>(
+                            builder: (context, branchState) {
+                              if (_deliveryMethod ==
+                                  AppLocalizations.of(context)!
+                                      .translate('self_delivery')) {
+                                if (branchState is BranchLoaded) {
+                                  return BranchesDropdown(
+                                    key: const Key('branches_dropdown'),
+                                    selectedBranch: _selectedBranch,
+                                    onSelectBranch: (branch) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          setState(() {
+                                            _selectedBranch = branch;
+                                          });
+                                        }
+                                      });
+                                    },
+                                    label: '',
+                                    branches: branchState.branches,
+                                  );
+                                }
+                                return const SizedBox();
+                              }
+                              return const SizedBox();
+                            },
+                          ),
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
                             CustomTextField(
+                              // key: const Key('delivery_address_field'),
                               controller: _deliveryAddressController,
-                              hintText: AppLocalizations.of(context)!.translate('enter_delivery_address'),
-                              label: AppLocalizations.of(context)!.translate('delivery_address'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_delivery_address'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('delivery_address'),
                               maxLines: 3,
                               keyboardType: TextInputType.streetAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'please_enter_delivery_address';
+                                  return AppLocalizations.of(context)!
+                                      .translate('please_enter_delivery_address');
                                 }
                                 return null;
                               },
-                            ),
+                            )
+                          else
+                            const SizedBox(),
                           const SizedBox(height: 16),
                           CustomTextField(
+                            // key: const Key('comment_field'),
                             controller: _commentController,
-                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                            label: AppLocalizations.of(context)!.translate('comment_client'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!
+                                .translate('comment_client'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -333,9 +418,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title:  Text(
-       AppLocalizations.of(context)!.translate('new_order'),
-        style: TextStyle(
+      title: Text(
+        AppLocalizations.of(context)!.translate('new_order'),
+        style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
@@ -355,9 +440,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-             Text(
-       AppLocalizations.of(context)!.translate('items_list'),
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.translate('items_list'),
+              style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -367,10 +452,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onTap: _navigateToAddProduct,
               child: Row(
                 children: [
-                  Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
-                  SizedBox(width: 4),
-                  Text( AppLocalizations.of(context)!.translate('add_product'),
-                      style: TextStyle(
+                  const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
+                  const SizedBox(width: 4),
+                  Text(AppLocalizations.of(context)!.translate('add_product'),
+                      style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
@@ -407,13 +492,14 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 Text( AppLocalizations.of(context)!.translate('total'),
-                    style: TextStyle(
+                Text(AppLocalizations.of(context)!.translate('total'),
+                    style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52))),
-                Text('${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
+                Text(
+                    '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
                     style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -476,7 +562,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'] ?? AppLocalizations.of(context)!.translate('no_name_chat'),
+                Text(
+                    item['name'] ??
+                        AppLocalizations.of(context)!.translate('no_name_chat'),
                     style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -502,8 +590,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                       Text( AppLocalizations.of(context)!.translate('goods_price_details'),
-                          style: TextStyle(
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('goods_price_details'),
+                          style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -520,8 +610,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                       Text( AppLocalizations.of(context)!.translate('summ'),
-                          style: TextStyle(
+                      Text(AppLocalizations.of(context)!.translate('summ'),
+                          style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -601,9 +691,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child:  Text(
+            child: Text(
               AppLocalizations.of(context)!.translate('cancel'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
@@ -617,43 +707,64 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           child: ElevatedButton(
             onPressed: () async {
               if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                // Проверяем, выбран ли филиал для самовывоза
+                if (_deliveryMethod ==
+                        AppLocalizations.of(context)!.translate('self_delivery') &&
+                    _selectedBranch == null) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!
+                        .translate('please_select_branch'),
+                    isSuccess: false,
+                  );
+                  return;
+                }
+
                 final orderBloc = context.read<OrderBloc>();
                 orderBloc.add(CreateOrder(
                   phone: selectedDialCode ?? _phoneController.text,
                   leadId: int.parse(selectedLead ?? '0'),
-                  delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
-                  deliveryAddress: _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery')
+                  delivery: _deliveryMethod ==
+                      AppLocalizations.of(context)!.translate('delivery'),
+                  deliveryAddress: _deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('self_delivery')
                       ? _selectedBranch?.address ?? ''
                       : _deliveryAddressController.text,
                   goods: _items
                       .map((item) => {
-                            'good_id': item['id'],
+                            'variant_id': item['id'].toString(),
                             'quantity': item['quantity'] ?? 1,
+                            'price': item['price'].toString(),
                           })
                       .toList(),
                   organizationId: widget.organizationId ?? 1,
                   statusId: selectedStatusId ?? 1,
+                  branchId: _deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('self_delivery')
+                      ? _selectedBranch?.id
+                      : null,
+                  commentToCourier: _commentController.text.isNotEmpty
+                      ? _commentController.text
+                      : null,
                 ));
-                
-                // Ждем завершения создания заказа
-                await Future.delayed(Duration(milliseconds: 500));
-                
-                // Проверяем состояние Bloc
-                if (orderBloc.state is OrderSuccess) {
+
+                await Future.delayed(const Duration(milliseconds: 500));
+
+                if (orderBloc.state is OrderSuccess && mounted) {
                   final successState = orderBloc.state as OrderSuccess;
                   Navigator.pop(context, {
                     'statusId': successState.statusId,
                     'success': true,
                   });
-                } else if (orderBloc.state is OrderError) {
-                  // Ошибка уже обрабатывается в BlocListener
                 }
-              } else {
+              } else if (mounted) {
                 showCustomSnackBar(
                   context: context,
                   message: _items.isEmpty
-                      ? AppLocalizations.of(context)!.translate('add_at_least_one_product')
-                      : AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+                      ? AppLocalizations.of(context)!
+                          .translate('add_at_least_one_product')
+                      : AppLocalizations.of(context)!
+                          .translate('fill_all_required_fields'),
                   isSuccess: false,
                 );
               }
@@ -663,8 +774,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12)),
-            child: Text( AppLocalizations.of(context)!.translate('create'),
-                style: TextStyle(
+            child: Text(AppLocalizations.of(context)!.translate('create'),
+                style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -672,7 +783,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           ),
         ),
       ],
-    ),
-  );
-}
+    ));
+  }
 }

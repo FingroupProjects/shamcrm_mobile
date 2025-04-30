@@ -11,8 +11,11 @@ class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
 
-  LeadRadioGroupWidget(
-      {super.key, required this.onSelectLead, this.selectedLead});
+  const LeadRadioGroupWidget({
+    super.key,
+    required this.onSelectLead,
+    this.selectedLead,
+  });
 
   @override
   State<LeadRadioGroupWidget> createState() => _LeadRadioGroupWidgetState();
@@ -25,151 +28,149 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    // Инициализация selectedLeadData
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final state = context.read<GetAllLeadBloc>().state;
+        if (state is GetAllLeadSuccess) {
+          leadsList = state.dataLead.result ?? [];
+          if (widget.selectedLead != null && leadsList.isNotEmpty) {
+            try {
+              selectedLeadData = leadsList.firstWhere(
+                (lead) => lead.id.toString() == widget.selectedLead,
+              );
+              if (selectedLeadData?.managerId != null) {
+                widget.onSelectLead(selectedLeadData!);
+              }
+            } catch (e) {
+              selectedLeadData = null;
+            }
+          }
+        }
+        // Загружаем лиды только если они еще не загружены
+        if (state is! GetAllLeadSuccess) {
+          context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+        }
+      }
+    });
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          AppLocalizations.of(context)!.translate('lead'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52), // Исправлен неверный цвет
+          ),
+        ),
+        const SizedBox(height: 4),
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
-              if (widget.selectedLead != null && leadsList.isNotEmpty) {
+              // Обновляем selectedLeadData только если изменился список лидов
+              if (widget.selectedLead != null &&
+                  leadsList.isNotEmpty &&
+                  selectedLeadData == null) {
                 try {
                   selectedLeadData = leadsList.firstWhere(
                     (lead) => lead.id.toString() == widget.selectedLead,
                   );
-                  // Автоматический выбор менеджера при инициализации
-                  if (selectedLeadData?.managerId != null) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      widget.onSelectLead(selectedLeadData!);
-                    });
-                  }
                 } catch (e) {
                   selectedLeadData = null;
                 }
               }
             }
 
-            // Всегда отображаем поле
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('lead'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xfff1E2E52),
+            return Container(
+              child: CustomDropdown<LeadData>.search(
+                closeDropDownOnClearFilterSearch: true,
+                items: leadsList,
+                searchHintText: AppLocalizations.of(context)!.translate('search'),
+                overlayHeight: 400,
+                enabled: true,
+                decoration: CustomDropdownDecoration(
+                  closedFillColor: const Color(0xffF4F7FD),
+                  expandedFillColor: Colors.white,
+                  closedBorder: Border.all(
+                    color: const Color(0xffF4F7FD),
+                    width: 1,
                   ),
+                  closedBorderRadius: BorderRadius.circular(12),
+                  expandedBorder: Border.all(
+                    color: const Color(0xffF4F7FD),
+                    width: 1,
+                  ),
+                  expandedBorderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  child: CustomDropdown<LeadData>.search(
-                    closeDropDownOnClearFilterSearch: true,
-                    items:
-                        leadsList, // Используем пустой список во время загрузки
-                    searchHintText:
-                        AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    enabled: true, // Всегда enabled
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
-                      closedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(12),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    item.name ?? '',
+                    style: const TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
                     ),
-                    listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      return Text(
-                        item.name!,
-                        style: TextStyle(
-                          color: Color(0xff1E2E52),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                        ),
-                      );
-                    },
-                    headerBuilder: (context, selectedItem, enabled) {
-                      if (state is GetAllLeadLoading) {
-                        return Row(
-                          children: [
-                            // SizedBox(
-                            //   width: 16,
-                            //   height: 16,
-                            //   child: CircularProgressIndicator(
-                            //     strokeWidth: 2,
-                            //     valueColor: AlwaysStoppedAnimation<Color>(
-                            //         Color(0xff1E2E52)),
-                            //   ),
-                            // ),
-                            // SizedBox(width: 8),
-                            Text(
-                              AppLocalizations.of(context)!
-                                  .translate('select_leads'),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                      return Text(
-                        selectedItem?.name ??
-                            AppLocalizations.of(context)!
-                                .translate('select_leads'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      );
-                    },
-                    hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_lead'),
-                      style: TextStyle(
+                  );
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  if (state is GetAllLeadLoading) {
+                    return Text(
+                      AppLocalizations.of(context)!.translate('select_leads'),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                    );
+                  }
+                  return Text(
+                    selectedItem?.name ??
+                        AppLocalizations.of(context)!.translate('select_leads'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
-                    excludeSelected: false,
-                    initialItem: selectedLeadData,
-                    validator: (value) {
-                      if (value == null) {
-                        return AppLocalizations.of(context)!
-                            .translate('field_required_project');
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      if (value != null) {
-                        widget.onSelectLead(value);
-                        setState(() {
-                          selectedLeadData = value;
-                        });
-                        FocusScope.of(context).unfocus();
-                      }
-                    },
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                  AppLocalizations.of(context)!.translate('select_lead'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
                   ),
                 ),
-              ],
+                excludeSelected: false,
+                initialItem: selectedLeadData,
+                validator: (value) {
+                  if (value == null) {
+                    return AppLocalizations.of(context)!
+                        .translate('field_required_project');
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value != null) {
+                    widget.onSelectLead(value);
+                    setState(() {
+                      selectedLeadData = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              ),
             );
           },
         ),
