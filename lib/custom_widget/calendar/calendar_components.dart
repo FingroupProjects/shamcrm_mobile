@@ -537,18 +537,19 @@ class YearPickerDialog extends StatelessWidget {
           },
         ),
       ),
-      actions: [
-        Expanded(
-          child: CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('close'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            buttonColor: const Color(0xff1E2E52),
-            textColor: Colors.white,
-          ),
-        ),
-      ],
+     actions: [
+  ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xff1E2E52),
+      minimumSize: const Size(double.infinity, 48),
+    ),
+    onPressed: () => Navigator.pop(context),
+    child: Text(
+      AppLocalizations.of(context)!.translate('close'),
+      style: const TextStyle(color: Colors.white),
+    ),
+  ),
+],
     );
   }
 }
@@ -616,18 +617,19 @@ class MonthPickerDialog extends StatelessWidget {
           },
         ),
       ),
-      actions: [
-        Expanded(
-          child: CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('close'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            buttonColor: const Color(0xff1E2E52),
-            textColor: Colors.white,
-          ),
-        ),
-      ],
+    actions: [
+  ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xff1E2E52),
+      minimumSize: const Size(double.infinity, 48),
+    ),
+    onPressed: () => Navigator.pop(context),
+    child: Text(
+      AppLocalizations.of(context)!.translate('close'),
+      style: const TextStyle(color: Colors.white),
+    ),
+  ),
+],
     );
   }
 }
