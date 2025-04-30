@@ -127,14 +127,14 @@ class EventListForDate extends StatelessWidget {
   final DateTime selectedDate;
   final Map<DateTime, List<CalendarEventData>> events;
   final Function(int id, String type)? onEventTap;
-  final CalendarFormat calendarFormat; // Add calendarFormat parameter
+  final CalendarFormat calendarFormat; 
 
   const EventListForDate({
     super.key,
     required this.selectedDate,
     required this.events,
     this.onEventTap,
-    required this.calendarFormat, // Require calendarFormat
+    required this.calendarFormat, 
   });
 
   @override
