@@ -84,7 +84,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           } else if (state is GoodsByIdDeleted) {
             print('GoodsDetailsScreen: Goods deleted successfully');
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Товар успешно удалён')),
+               SnackBar(content: Text( AppLocalizations.of(context)!.translate('product_deleted'))),
             );
             Navigator.pop(context);
           }
@@ -132,12 +132,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
-                    : 'Не указан',
+                    : AppLocalizations.of(context)!.translate('not_specified'),
               },
               ...goods.attributes
                   .where((attr) =>
                       attr.name.isNotEmpty &&
-                      attr.name != 'Неизвестная характеристика')
+                      attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
                   .map((attr) => {
                         'label': attr.name,
                         'value': attr.value,
@@ -145,7 +145,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               {
                 'label':
                     AppLocalizations.of(context)!.translate('goods_finished'),
-                'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
+                'value': goods.isActive ?? false ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
               },
             ];
             print(
@@ -163,14 +163,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             );
           } else if (state is GoodsByIdEmpty) {
             print('GoodsDetailsScreen: Empty state');
-            return const Center(child: Text('Товар не найден'));
+            return Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
           } else if (state is GoodsByIdError) {
-            print(
-                'GoodsDetailsScreen: Error state in builder - ${state.message}');
             return Center(child: Text(state.message));
           }
           print('GoodsDetailsScreen: Default loading state');
-          return const Center(child: Text('Загрузка...'));
+            return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );
@@ -340,7 +338,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                     ),
                                     content: Text(
                                       AppLocalizations.of(context)!
-                                          .translate('confirm_delete_goods'),
+                                          .translate('confrim_delete_goods'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontFamily: 'Gilroy',
@@ -429,8 +427,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Варианты товара',
+         Text(
+          AppLocalizations.of(context)!.translate('variants_products'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -462,9 +460,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
         final attrName = attrValue.categoryAttribute?.attribute?.name ??
-            'Неизвестная характеристика';
+            AppLocalizations.of(context)!.translate('unknown_characteristic');
         final value =
-            attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
+            attrValue.value.isNotEmpty ? attrValue.value : AppLocalizations.of(context)!.translate('not_specified');
         uniqueAttributes.add({
           'name': attrName,
           'value': value,
@@ -475,8 +473,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       print(
           'GoodsDetailsScreen: No attribute values for variant ${variant.id}');
       uniqueAttributes.add({
-        'name': 'Без названия',
-        'value': 'Не указано',
+        'name': AppLocalizations.of(context)!.translate('no_name_chat'),
+        'value': AppLocalizations.of(context)!.translate('not_specified'),
       });
     }
 
@@ -569,7 +567,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          '+ ещё ${uniqueAttributes.length - 4}',
+                          '${AppLocalizations.of(context)!.translate('more')} ${uniqueAttributes.length - 4}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
@@ -581,7 +579,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     const SizedBox(height: 8),
                     // Цена
                     Text(
-                      '$price ₽',
+                      '$price',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

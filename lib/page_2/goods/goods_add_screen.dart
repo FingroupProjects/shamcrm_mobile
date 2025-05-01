@@ -265,7 +265,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 return AppLocalizations.of(context)!.translate('field_required');
                               }
                               if (double.tryParse(value) == null) {
-                                return 'Введите корректное число';
+                                return AppLocalizations.of(context)!.translate('enter_correct_number');
                               }
                               return null;
                             },
@@ -284,18 +284,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    if (!isBranchValid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('select_branch'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
+                    // if (!isBranchValid)
+                    //   Padding(
+                    //     padding: const EdgeInsets.only(top: 4),
+                    //     child: Text(
+                    //       AppLocalizations.of(context)!.translate('select_branch'),
+                    //       style: TextStyle(
+                    //         fontSize: 14,
+                    //         color: Colors.red,
+                    //         fontWeight: FontWeight.w400,
+                    //       ),
+                    //     ),
+                    //   ),
                     const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
@@ -314,19 +314,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       subCategories: subCategories,
                       isValid: isCategoryValid,
                     ),
-                    if (!isCategoryValid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('select_subcategory'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 8),
+                    // if (!isCategoryValid)
+                    //   Padding(
+                    //     padding: const EdgeInsets.only(top: 4),
+                    //     child: Text(
+                    //       AppLocalizations.of(context)!.translate('select_subcategory'),
+                    //       style: TextStyle(
+                    //         fontSize: 14,
+                    //         color: Colors.red,
+                    //         fontWeight: FontWeight.w400,
+                    //       ),
+                    //     ),
+                    //   ),
                     if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,8 +736,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     if (!isImagesValid)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('please_select_image'),
+                        child: Text('    ${AppLocalizations.of(context)!.translate('please_select_image')}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.red,

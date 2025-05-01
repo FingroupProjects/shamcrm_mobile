@@ -450,7 +450,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                               elevation: 3,
                             ),
                             child: Text(
-                              'Закрыть',
+                              AppLocalizations.of(context)!.translate('close'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

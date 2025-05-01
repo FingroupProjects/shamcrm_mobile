@@ -262,17 +262,17 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  if (attr.isIndividual)
-                    Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: Text(
-                        '(${AppLocalizations.of(context)!.translate('individual')})',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
+                  // if (attr.isIndividual)
+                  //   Padding(
+                  //     padding: EdgeInsets.only(left: 8),
+                  //     child: Text(
+                  //       '(${AppLocalizations.of(context)!.translate('individual')})',
+                  //       style: TextStyle(
+                  //         fontSize: 12,
+                  //         color: Colors.grey,
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
             );
