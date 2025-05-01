@@ -198,7 +198,6 @@ class CategoryAddBottomSheet {
                                     setState(() {
                                       isAffectingPrice = value;
                                       if (isAffectingPrice) {
-                                        subSelectedCategory = null;
                                         customFields = [];
                                       }
                                     });
@@ -348,8 +347,8 @@ class CategoryAddBottomSheet {
                                       ),
                                       subtitle: Text(
                                         field.isIndividual
-                                            ? AppLocalizations.of(context)!.translate('Уникальный')
-                                            : AppLocalizations.of(context)!.translate('Общий'),
+                                            ? AppLocalizations.of(context)!.translate('individual')
+                                            : AppLocalizations.of(context)!.translate('common'),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w400,
@@ -447,10 +446,11 @@ class CategoryAddBottomSheet {
 
       Navigator.pop(context);
 
+
       categoryBloc.add(CreateCategory(
         name: name,
         parentId: isActive ? 0 : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
-        attributes: attributes, // Используем attributes вместо attributeNames
+        attributes: attributes, 
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,

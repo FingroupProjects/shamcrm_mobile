@@ -700,7 +700,7 @@ class OptionsBottomSheet extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.event, color: Colors.orange),
             title: Text(
-              AppLocalizations.of(context)!.translate('События'),
+              AppLocalizations.of(context)!.translate('events'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             onTap: () {
@@ -718,7 +718,7 @@ class OptionsBottomSheet extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.assignment, color: Colors.blue),
             title: Text(
-              AppLocalizations.of(context)!.translate('Мои задачи'),
+              AppLocalizations.of(context)!.translate('appbar_my_tasks'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             onTap: () async {

@@ -91,7 +91,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       if (mounted) {
         showCustomSnackBar(
           context: context,
-          message: AppLocalizations.of(context)!.translate('failed_to_load_statuses'),
+          message: AppLocalizations.of(context)!
+              .translate('failed_to_load_statuses'),
           isSuccess: false,
         );
       }
@@ -131,7 +132,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       width: 48,
       height: 48,
       color: Colors.grey[200],
-      child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      child:
+          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -214,8 +216,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => BranchBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -236,7 +240,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 message: AppLocalizations.of(context)!.translate(state.message),
                 isSuccess: false,
               );
-            } else if (state is OrderLoaded && state.orderDetails != null && mounted) {
+            } else if (state is OrderLoaded &&
+                state.orderDetails != null &&
+                mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setState(() {
                   _items = state.orderDetails!.goods
@@ -257,7 +263,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   selectedLead = state.orderDetails!.lead.id.toString();
                   _deliveryMethod = state.orderDetails!.delivery
                       ? AppLocalizations.of(context)!.translate('delivery')
-                      : AppLocalizations.of(context)!.translate('self_delivery');
+                      : AppLocalizations.of(context)!
+                          .translate('self_delivery');
                 });
               });
             }
@@ -376,7 +383,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return AppLocalizations.of(context)!
-                                      .translate('please_enter_delivery_address');
+                                      .translate(
+                                          'please_enter_delivery_address');
                                 }
                                 return null;
                               },
@@ -669,120 +677,123 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 
- Widget _buildActionButtons(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(color: Colors.white, boxShadow: [
-      BoxShadow(
-          color: Colors.grey.withOpacity(0.1),
-          spreadRadius: 1,
-          blurRadius: 3,
-          offset: const Offset(0, -1))
-    ]),
-    child: Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xffF4F7FD),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('cancel'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                // Проверяем, выбран ли филиал для самовывоза
-                if (_deliveryMethod ==
-                        AppLocalizations.of(context)!.translate('self_delivery') &&
-                    _selectedBranch == null) {
-                  showCustomSnackBar(
-                    context: context,
-                    message: AppLocalizations.of(context)!
-                        .translate('please_select_branch'),
-                    isSuccess: false,
-                  );
-                  return;
-                }
-
-                final orderBloc = context.read<OrderBloc>();
-                orderBloc.add(CreateOrder(
-                  phone: selectedDialCode ?? _phoneController.text,
-                  leadId: int.parse(selectedLead ?? '0'),
-                  delivery: _deliveryMethod ==
-                      AppLocalizations.of(context)!.translate('delivery'),
-                  deliveryAddress: _deliveryMethod ==
-                          AppLocalizations.of(context)!.translate('self_delivery')
-                      ? _selectedBranch?.address ?? ''
-                      : _deliveryAddressController.text,
-                  goods: _items
-                      .map((item) => {
-                            'variant_id': item['id'].toString(),
-                            'quantity': item['quantity'] ?? 1,
-                            'price': item['price'].toString(),
-                          })
-                      .toList(),
-                  organizationId: widget.organizationId ?? 1,
-                  statusId: selectedStatusId ?? 1,
-                  branchId: _deliveryMethod ==
-                          AppLocalizations.of(context)!.translate('self_delivery')
-                      ? _selectedBranch?.id
-                      : null,
-                  commentToCourier: _commentController.text.isNotEmpty
-                      ? _commentController.text
-                      : null,
-                ));
-
-                await Future.delayed(const Duration(milliseconds: 500));
-
-                if (orderBloc.state is OrderSuccess && mounted) {
-                  final successState = orderBloc.state as OrderSuccess;
-                  Navigator.pop(context, {
-                    'statusId': successState.statusId,
-                    'success': true,
-                  });
-                }
-              } else if (mounted) {
-                showCustomSnackBar(
-                  context: context,
-                  message: _items.isEmpty
-                      ? AppLocalizations.of(context)!
-                          .translate('add_at_least_one_product')
-                      : AppLocalizations.of(context)!
-                          .translate('fill_all_required_fields'),
-                  isSuccess: false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12)),
-            child: Text(AppLocalizations.of(context)!.translate('create'),
-                style: const TextStyle(
+  Widget _buildActionButtons(BuildContext context) {
+    return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, -1))
+        ]),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffF4F7FD),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('cancel'),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.white)),
-          ),
-        ),
-      ],
-    ));
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                    // Проверяем, выбран ли филиал для самовывоза
+                    if (_deliveryMethod ==
+                            AppLocalizations.of(context)!
+                                .translate('self_delivery') &&
+                        _selectedBranch == null) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: AppLocalizations.of(context)!
+                            .translate('please_select_branch'),
+                        isSuccess: false,
+                      );
+                      return;
+                    }
+
+                    final orderBloc = context.read<OrderBloc>();
+                    orderBloc.add(CreateOrder(
+                      phone: selectedDialCode ?? _phoneController.text,
+                      leadId: int.parse(selectedLead ?? '0'),
+                      delivery: _deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('delivery'),
+                      deliveryAddress: _deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('self_delivery')
+                          ? _selectedBranch?.address ?? ''
+                          : _deliveryAddressController.text,
+                      goods: _items
+                          .map((item) => {
+                                'variant_id': item['id'].toString(),
+                                'quantity': item['quantity'] ?? 1,
+                                'price': item['price'].toString(),
+                              })
+                          .toList(),
+                      organizationId: widget.organizationId ?? 1,
+                      statusId: selectedStatusId ?? 1,
+                      branchId: _deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('self_delivery')
+                          ? _selectedBranch?.id
+                          : null,
+                      commentToCourier: _commentController.text.isNotEmpty
+                          ? _commentController.text
+                          : null,
+                    ));
+
+                    await Future.delayed(const Duration(milliseconds: 500));
+
+                    if (orderBloc.state is OrderSuccess && mounted) {
+                      final successState = orderBloc.state as OrderSuccess;
+                      Navigator.pop(context, {
+                        'statusId': successState.statusId,
+                        'success': true,
+                      });
+                    }
+                  } else if (mounted) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: _items.isEmpty
+                          ? AppLocalizations.of(context)!
+                              .translate('add_at_least_one_product')
+                          : AppLocalizations.of(context)!
+                              .translate('fill_all_required_fields'),
+                      isSuccess: false,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff4759FF),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12)),
+                child: Text(AppLocalizations.of(context)!.translate('create'),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white)),
+              ),
+            ),
+          ],
+        ));
   }
 }

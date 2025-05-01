@@ -454,10 +454,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     children: [
                       CustomTextFieldWithPriority(
                         controller: nameController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
+                        hintText: AppLocalizations.of(context)!.translate('enter_title'),
+                        label: AppLocalizations.of(context)!.translate('event_name'),
                         showPriority: true,
                         isPrioritySelected: selectedPriority == 3,
                         onPriorityChanged: (bool? value) {

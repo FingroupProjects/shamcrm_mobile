@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
-
 class Order {
   final int id;
   final String phone;
@@ -10,6 +9,8 @@ class Order {
   final OrderStatusName orderStatus;
   final List<Good> goods;
   final int? organizationId;
+  final String? commentToCourier;
+  final double? sum; // Новое поле для суммы заказа
 
   Order({
     required this.id,
@@ -21,6 +22,8 @@ class Order {
     required this.orderStatus,
     required this.goods,
     this.organizationId,
+    this.commentToCourier,
+    this.sum, // Добавляем в конструктор
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -39,6 +42,8 @@ class Order {
             .map((g) => Good.fromJson(g))
             .toList(),
         organizationId: json['organization_id'] ?? 1,
+        commentToCourier: json['comment_to_courier']?.toString(),
+        sum: double.tryParse(json['sum']?.toString() ?? '0'), // Парсим новое поле
       );
     } catch (e) {
       print('Error parsing Order: $e');
@@ -58,6 +63,8 @@ class Order {
       'order_status': orderStatus.toJson(),
       'order_goods': goods.map((g) => g.toJson()).toList(),
       'organization_id': organizationId,
+      'comment_to_courier': commentToCourier,
+      'sum': sum, // Добавляем в JSON
     };
   }
 
@@ -71,6 +78,8 @@ class Order {
     OrderStatusName? orderStatus,
     List<Good>? goods,
     int? organizationId,
+    String? commentToCourier,
+    double? sum, // Добавляем в copyWith
   }) {
     return Order(
       id: id ?? this.id,
@@ -82,10 +91,11 @@ class Order {
       orderStatus: orderStatus ?? this.orderStatus,
       goods: goods ?? this.goods,
       organizationId: organizationId ?? this.organizationId,
+      commentToCourier: commentToCourier ?? this.commentToCourier,
+      sum: sum ?? this.sum, // Обновляем
     );
   }
 }
-
 class OrderLead {
   final int id;
   final String name;

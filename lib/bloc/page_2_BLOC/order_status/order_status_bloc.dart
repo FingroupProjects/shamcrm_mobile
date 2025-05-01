@@ -25,11 +25,13 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<DeleteOrderStatus>(_deleteOrderStatus);
   }
 
-  Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> emit) async {
+  Future<void> _fetchOrderStatuses(
+      FetchOrderStatuses event, Emitter<OrderState> emit) async {
     print('OrderBloc: Начало _fetchOrderStatuses');
     try {
       final statuses = await apiService.getOrderStatuses();
-      print('OrderBloc: Получены статусы: ${statuses.map((s) => s.toJson()).toList()}');
+      print(
+          'OrderBloc: Получены статусы: ${statuses.map((s) => s.toJson()).toList()}');
       if (statuses.isEmpty) {
         print('OrderBloc: Статусы пусты, выдаем ошибку');
         emit(OrderError('Нет статусов заказов!'));
@@ -45,19 +47,22 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           orderDetails: currentState.orderDetails,
         ));
       } else {
-        print('OrderBloc: Текущее состояние не OrderLoaded, создаем новое OrderLoaded');
+        print(
+            'OrderBloc: Текущее состояние не OrderLoaded, создаем новое OrderLoaded');
         emit(OrderLoaded(statuses));
       }
     } catch (e) {
       if (state is! OrderStatusCreated) {
         print('OrderBloc: Ошибка при загрузке статусов: $e');
-        emit(OrderError('Не удалось загрузить статусы заказов: ${e.toString()}'));
+        emit(OrderError(
+            'Не удалось загрузить статусы заказов: ${e.toString()}'));
       }
     }
   }
 
   Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _fetchOrders для statusId=${event.statusId}, page=${event.page}, forceRefresh=${event.forceRefresh}');
+    print(
+        'OrderBloc: Начало _fetchOrders для statusId=${event.statusId}, page=${event.page}, forceRefresh=${event.forceRefresh}');
     if (event.page == 1 && !event.forceRefresh) {
       print('OrderBloc: Загружаем первую страницу, устанавливаем OrderLoading');
       emit(OrderLoading());
@@ -65,35 +70,46 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
     try {
       final statuses = await apiService.getOrderStatuses();
-      print('OrderBloc: Получены статусы для заказов: ${statuses.map((s) => s.toJson()).toList()}');
+      print(
+          'OrderBloc: Получены статусы для заказов: ${statuses.map((s) => s.toJson()).toList()}');
       final orderResponse = await apiService.getOrders(
         statusId: event.statusId,
         page: event.page,
         perPage: event.perPage,
       );
-      print('OrderBloc: Получены заказы: ${orderResponse.data.map((o) => o.toJson()).toList()}');
+      print(
+          'OrderBloc: Получены заказы: ${orderResponse.data.map((o) => o.toJson()).toList()}');
 
       if (event.page == 1) {
-        print('OrderBloc: Это первая страница, очищаем allOrders для statusId=${event.statusId}');
+        print(
+            'OrderBloc: Это первая страница, очищаем allOrders для statusId=${event.statusId}');
         allOrders[event.statusId] = [];
         allOrdersFetched[event.statusId] = false;
       }
 
-      final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
-      final newOrders = orderResponse.data.where((order) => !existingOrderIds.contains(order.id)).toList();
-      print('OrderBloc: Новые заказы: ${newOrders.map((o) => o.toJson()).toList()}');
+      final existingOrderIds =
+          (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+      final newOrders = orderResponse.data
+          .where((order) => !existingOrderIds.contains(order.id))
+          .toList();
+      print(
+          'OrderBloc: Новые заказы: ${newOrders.map((o) => o.toJson()).toList()}');
 
       allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
-      print('OrderBloc: Обновлены allOrders для statusId=${event.statusId}: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
-      print('OrderBloc: allOrdersFetched[${event.statusId}] = ${allOrdersFetched[event.statusId]}');
+      allOrdersFetched[event.statusId] =
+          newOrders.length < event.perPage || newOrders.isEmpty;
+      print(
+          'OrderBloc: Обновлены allOrders для statusId=${event.statusId}: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
+      print(
+          'OrderBloc: allOrdersFetched[${event.statusId}] = ${allOrdersFetched[event.statusId]}');
 
       emit(OrderLoaded(
         statuses,
         orders: allOrders[event.statusId] ?? [],
         pagination: orderResponse.pagination,
       ));
-      print('OrderBloc: Выдано состояние OrderLoaded с заказами: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
+      print(
+          'OrderBloc: Выдано состояние OrderLoaded с заказами: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
     } catch (e) {
       if (state is! OrderStatusCreated) {
         print('OrderBloc: Ошибка при загрузке заказов: $e');
@@ -102,10 +118,13 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _fetchMoreOrders для statusId=${event.statusId}, page=${event.page}');
+  Future<void> _fetchMoreOrders(
+      FetchMoreOrders event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _fetchMoreOrders для statusId=${event.statusId}, page=${event.page}');
     if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) {
-      print('OrderBloc: Все заказы уже загружены или состояние не OrderLoaded, пропускаем');
+      print(
+          'OrderBloc: Все заказы уже загружены или состояние не OrderLoaded, пропускаем');
       return;
     }
 
@@ -115,16 +134,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         page: event.page,
         perPage: event.perPage,
       );
-      print('OrderBloc: Получены дополнительные заказы: ${orderResponse.data.map((o) => o.toJson()).toList()}');
+      print(
+          'OrderBloc: Получены дополнительные заказы: ${orderResponse.data.map((o) => o.toJson()).toList()}');
 
-      final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
-      final newOrders = orderResponse.data.where((order) => !existingOrderIds.contains(order.id)).toList();
-      print('OrderBloc: Новые дополнительные заказы: ${newOrders.map((o) => o.toJson()).toList()}');
+      final existingOrderIds =
+          (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+      final newOrders = orderResponse.data
+          .where((order) => !existingOrderIds.contains(order.id))
+          .toList();
+      print(
+          'OrderBloc: Новые дополнительные заказы: ${newOrders.map((o) => o.toJson()).toList()}');
 
       allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
-      print('OrderBloc: Обновлены allOrders для statusId=${event.statusId}: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
-      print('OrderBloc: allOrdersFetched[${event.statusId}] = ${allOrdersFetched[event.statusId]}');
+      allOrdersFetched[event.statusId] =
+          newOrders.length < event.perPage || newOrders.isEmpty;
+      print(
+          'OrderBloc: Обновлены allOrders для statusId=${event.statusId}: ${allOrders[event.statusId]!.map((o) => o.toJson()).toList()}');
+      print(
+          'OrderBloc: allOrdersFetched[${event.statusId}] = ${allOrdersFetched[event.statusId]}');
 
       final currentState = state as OrderLoaded;
       emit(OrderLoaded(
@@ -132,21 +159,25 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orders: allOrders[event.statusId] ?? [],
         pagination: orderResponse.pagination,
       ));
-      print('OrderBloc: Выдано состояние OrderLoaded с дополнительными заказами');
+      print(
+          'OrderBloc: Выдано состояние OrderLoaded с дополнительными заказами');
     } catch (e) {
       if (state is! OrderStatusCreated) {
         print('OrderBloc: Ошибка при загрузке дополнительных заказов: $e');
-        emit(OrderError('Не удалось загрузить дополнительные заказы: ${e.toString()}'));
+        emit(OrderError(
+            'Не удалось загрузить дополнительные заказы: ${e.toString()}'));
       }
     }
   }
 
-  Future<void> _fetchOrderDetails(FetchOrderDetails event, Emitter<OrderState> emit) async {
+  Future<void> _fetchOrderDetails(
+      FetchOrderDetails event, Emitter<OrderState> emit) async {
     print('OrderBloc: Начало _fetchOrderDetails для orderId=${event.orderId}');
     emit(OrderLoading());
     try {
       final statuses = await apiService.getOrderStatuses();
-      print('OrderBloc: Получены статусы для деталей заказа: ${statuses.map((s) => s.toJson()).toList()}');
+      print(
+          'OrderBloc: Получены статусы для деталей заказа: ${statuses.map((s) => s.toJson()).toList()}');
       final orderDetails = await apiService.getOrderDetails(event.orderId);
       print('OrderBloc: Получены детали заказа: ${orderDetails.toJson()}');
       emit(OrderLoaded(statuses, orderDetails: orderDetails));
@@ -170,6 +201,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         'goods': event.goods,
         'organization_id': event.organizationId.toString(),
         'status_id': event.statusId,
+        'comment_to_courier': event.commentToCourier, // Добавляем комментарий
       };
 
       if (event.delivery) {
@@ -188,6 +220,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         goods: event.goods,
         organizationId: event.organizationId,
         statusId: event.statusId,
+        commentToCourier:
+            event.commentToCourier, // Передаем комментарий в метод
       );
       print('OrderBloc: Результат создания заказа: $result');
 
@@ -203,10 +237,12 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           allOrders[statusId] = [];
         }
         allOrders[statusId]!.insert(0, newOrder);
-        print('OrderBloc: Добавлен новый заказ в allOrders[$statusId]: ${allOrders[statusId]!.map((o) => o.toJson()).toList()}');
+        print(
+            'OrderBloc: Добавлен новый заказ в allOrders[$statusId]: ${allOrders[statusId]!.map((o) => o.toJson()).toList()}');
 
         final statuses = await apiService.getOrderStatuses();
-        print('OrderBloc: Получены статусы после создания заказа: ${statuses.map((s) => s.toJson()).toList()}');
+        print(
+            'OrderBloc: Получены статусы после создания заказа: ${statuses.map((s) => s.toJson()).toList()}');
 
         emit(OrderLoaded(
           statuses,
@@ -224,7 +260,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         emit(OrderSuccess(statusId: statusId));
         print('OrderBloc: Выдано состояние OrderSuccess');
       } else {
-        print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
+        print(
+            'OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
         emit(OrderError('Не удалось создать заказ: ${result['error']}'));
       }
     } catch (e) {
@@ -237,6 +274,22 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
     emit(OrderLoading());
     try {
+      final Map<String, dynamic> body = {
+        'phone': event.phone,
+        'lead_id': event.leadId,
+        'deliveryType': event.delivery ? 'delivery' : 'pickup',
+        'goods': event.goods,
+        'organization_id': event.organizationId.toString(),
+        'comment_to_courier': event.commentToCourier, // Добавляем комментарий
+      };
+
+      if (event.delivery) {
+        body['delivery_address'] = event.deliveryAddress;
+      } else {
+        body['delivery_address_id'] = null;
+        body['branch_id'] = event.branchId?.toString();
+      }
+
       final response = await apiService.updateOrder(
         orderId: event.orderId,
         phone: event.phone,
@@ -246,7 +299,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         goods: event.goods,
         organizationId: event.organizationId,
         branchId: event.branchId,
-        commentToCourier: event.commentToCourier,
+        commentToCourier: event.commentToCourier, // Передаем комментарий
       );
       print('OrderBloc: Ответ сервера на обновление заказа: $response');
 
@@ -254,7 +307,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         print('OrderBloc: Заказ успешно обновлен');
         emit(OrderSuccess());
       } else {
-        print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
+        print(
+            'OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
         emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
       }
     } catch (e) {
@@ -285,8 +339,10 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
+  Future<void> _changeOrderStatus(
+      ChangeOrderStatus event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
     try {
       final success = await apiService.changeOrderStatus(
         orderId: event.orderId,
@@ -296,7 +352,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       print('OrderBloc: Результат смены статуса заказа: $success');
       if (success) {
         final statuses = await apiService.getOrderStatuses();
-        print('OrderBloc: Получены статусы после смены статуса: ${statuses.map((s) => s.toJson()).toList()}');
+        print(
+            'OrderBloc: Получены статусы после смены статуса: ${statuses.map((s) => s.toJson()).toList()}');
         if (state is OrderLoaded) {
           final currentState = state as OrderLoaded;
           final updatedOrders = currentState.orders.map((order) {
@@ -309,7 +366,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             }
             return order;
           }).toList();
-          print('OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
+          print(
+              'OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
           emit(OrderLoaded(
             statuses,
             orders: updatedOrders,
@@ -322,7 +380,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         }
       } else {
         print('OrderBloc: Ошибка сервера при смене статуса заказа');
-        emit(OrderError('Не удалось сменить статус заказа: сервер вернул ошибку'));
+        emit(OrderError(
+            'Не удалось сменить статус заказа: сервер вернул ошибку'));
       }
     } catch (e) {
       print('OrderBloc: Ошибка при смене статуса заказа: $e');
@@ -330,8 +389,10 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _createOrderStatus(CreateOrderStatus event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _createOrderStatus с параметрами: title=${event.title}, notificationMessage=${event.notificationMessage}, isSuccess=${event.isSuccess}, isFailed=${event.isFailed}');
+  Future<void> _createOrderStatus(
+      CreateOrderStatus event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _createOrderStatus с параметрами: title=${event.title}, notificationMessage=${event.notificationMessage}, isSuccess=${event.isSuccess}, isFailed=${event.isFailed}');
     emit(OrderLoading());
     print('OrderBloc: Установлено состояние OrderLoading');
 
@@ -342,7 +403,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         isSuccess: event.isSuccess,
         isFailed: event.isFailed,
       );
-      print('OrderBloc: Ответ сервера на создание статуса: statusCode=${response.statusCode}, body=${response.body}');
+      print(
+          'OrderBloc: Ответ сервера на создание статуса: statusCode=${response.statusCode}, body=${response.body}');
 
       final statusCode = response.statusCode;
       print('Статус ответа! $statusCode');
@@ -362,12 +424,15 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         }
 
         if (newStatusId == null) {
-          print('OrderBloc: newStatusId не получен из ответа, запрашиваем FetchOrderStatuses');
+          print(
+              'OrderBloc: newStatusId не получен из ответа, запрашиваем FetchOrderStatuses');
           final statuses = await apiService.getOrderStatuses();
-          print('OrderBloc: Получены статусы после FetchOrderStatuses: ${statuses.map((s) => s.toJson()).toList()}');
+          print(
+              'OrderBloc: Получены статусы после FetchOrderStatuses: ${statuses.map((s) => s.toJson()).toList()}');
           if (statuses.isNotEmpty) {
             newStatusId = statuses.last.id;
-            print('OrderBloc: Выбран последний статус как newStatusId: $newStatusId');
+            print(
+                'OrderBloc: Выбран последний статус как newStatusId: $newStatusId');
           } else {
             print('OrderBloc: Статусы пусты после FetchOrderStatuses');
             emit(OrderError('Не удалось определить ID нового статуса'));
@@ -379,10 +444,12 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           'Статус заказа успешно создан',
           newStatusId: newStatusId,
         ));
-        print('OrderBloc: Выдано состояние OrderStatusCreated с newStatusId=$newStatusId');
+        print(
+            'OrderBloc: Выдано состояние OrderStatusCreated с newStatusId=$newStatusId');
 
         await Future.delayed(Duration(milliseconds: 500));
-        print('OrderBloc: Задержка завершена, добавляем событие FetchOrderStatuses');
+        print(
+            'OrderBloc: Задержка завершена, добавляем событие FetchOrderStatuses');
 
         add(FetchOrderStatuses());
         print('OrderBloc: Добавлено событие FetchOrderStatuses');
@@ -402,8 +469,10 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _updateOrderStatus(UpdateOrderStatus event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _updateOrderStatus для statusId=${event.statusId}');
+  Future<void> _updateOrderStatus(
+      UpdateOrderStatus event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _updateOrderStatus для statusId=${event.statusId}');
     emit(OrderLoading());
 
     try {
@@ -423,15 +492,18 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       } else if (response.statusCode == 500) {
         emit(OrderError('Ошибка сервера: попробуйте позже'));
       } else {
-        emit(OrderError('Ошибка обновления статуса: код ${response.statusCode}'));
+        emit(OrderError(
+            'Ошибка обновления статуса: код ${response.statusCode}'));
       }
     } catch (e) {
       emit(OrderError('Ошибка обновления статуса: $e'));
     }
   }
 
-  Future<void> _deleteOrderStatus(DeleteOrderStatus event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _deleteOrderStatus для statusId=${event.statusId}');
+  Future<void> _deleteOrderStatus(
+      DeleteOrderStatus event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _deleteOrderStatus для statusId=${event.statusId}');
     emit(OrderLoading());
 
     try {

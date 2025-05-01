@@ -5,7 +5,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 class BranchesDropdown extends StatefulWidget {
   final String label;
-  final List<Branch> branches; // Добавляем параметр для списка branches
+  final List<Branch> branches;
   final Branch? selectedBranch;
   final Function(Branch) onSelectBranch;
 
@@ -40,7 +40,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
         Container(
           child: CustomDropdown<Branch>.search(
             closeDropDownOnClearFilterSearch: true,
-            items: widget.branches, // Используем переданный список branches
+            items: widget.branches,
             searchHintText: AppLocalizations.of(context)!.translate('search'),
             overlayHeight: 400,
             enabled: true,
@@ -57,6 +57,12 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                 width: 1,
               ),
               expandedBorderRadius: BorderRadius.circular(12),
+              errorStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Colors.red,
+                height: 1.0, // Увеличивает высоту строки, создавая визуальный отступ сверху
+              ),
             ),
             listItemBuilder: (context, item, isSelected, onItemSelect) {
               return Text(
@@ -71,8 +77,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
             },
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
-                selectedItem?.name ??
-                    AppLocalizations.of(context)!.translate('select_branch'),
+                selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_branch'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -94,7 +99,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
             initialItem: widget.selectedBranch,
             validator: (value) {
               if (value == null) {
-                return AppLocalizations.of(context)!.translate('field_required');
+                return '    ${AppLocalizations.of(context)!.translate('field_required')}';
               }
               return null;
             },

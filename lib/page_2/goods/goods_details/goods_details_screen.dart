@@ -60,7 +60,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     super.didChangeDependencies();
     _updateDetails();
   }
-
+//тут тоже нужны вывести комментарию клиента в списке и передать в редактирование 
   void _updateDetails() {
     details = [];
     print('GoodsDetailsScreen: Details reset');
@@ -84,7 +84,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           } else if (state is GoodsByIdDeleted) {
             print('GoodsDetailsScreen: Goods deleted successfully');
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Товар успешно удалён')),
+               SnackBar(content: Text( AppLocalizations.of(context)!.translate('product_deleted'))),
             );
             Navigator.pop(context);
           }
@@ -132,12 +132,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
-                    : 'Не указан',
+                    : AppLocalizations.of(context)!.translate('not_specified'),
               },
               ...goods.attributes
                   .where((attr) =>
                       attr.name.isNotEmpty &&
-                      attr.name != 'Неизвестная характеристика')
+                      attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
                   .map((attr) => {
                         'label': attr.name,
                         'value': attr.value,
@@ -145,7 +145,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               {
                 'label':
                     AppLocalizations.of(context)!.translate('goods_finished'),
-                'value': goods.isActive ?? false ? 'Активно' : 'Неактивно',
+                'value': goods.isActive ?? false ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
               },
             ];
             print(
@@ -163,14 +163,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             );
           } else if (state is GoodsByIdEmpty) {
             print('GoodsDetailsScreen: Empty state');
-            return const Center(child: Text('Товар не найден'));
+            return Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
           } else if (state is GoodsByIdError) {
-            print(
-                'GoodsDetailsScreen: Error state in builder - ${state.message}');
             return Center(child: Text(state.message));
           }
           print('GoodsDetailsScreen: Default loading state');
-          return const Center(child: Text('Загрузка...'));
+            return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );
@@ -340,7 +338,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                     ),
                                     content: Text(
                                       AppLocalizations.of(context)!
-                                          .translate('confirm_delete_goods'),
+                                          .translate('confrim_delete_goods'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontFamily: 'Gilroy',
@@ -399,38 +397,146 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           : null,
     );
   }
+Widget _buildDetailsList(Goods goods) {
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('goods_name_details'),
+      'value': goods.name ?? '',
+    },
+    {
+      'label': AppLocalizations.of(context)!
+          .translate('goods_description_details'),
+      'value': goods.description ?? '',
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('stock_quantity_details'),
+      'value': goods.quantity?.toString() ?? '0',
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('category_details'),
+      'value': goods.category.name ?? '',
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('branch_details'),
+      'value': goods.branches != null && goods.branches!.isNotEmpty
+          ? goods.branches!.map((branch) => branch.name).join(', ')
+          : AppLocalizations.of(context)!.translate('not_specified'),
+    },
+    ...goods.attributes
+        .where((attr) =>
+            attr.name.isNotEmpty &&
+            attr.name !=
+                AppLocalizations.of(context)!.translate('unknown_characteristic'))
+        .map((attr) => {
+              'label': attr.name,
+              'value': attr.value,
+            }),
+    {
+      'label': AppLocalizations.of(context)!.translate('goods_finished'),
+      'value': goods.isActive ?? false
+          ? AppLocalizations.of(context)!.translate('active_swtich')
+          : AppLocalizations.of(context)!.translate('inactive_swtich'),
+    },
+    // Добавляем комментарии клиента
+    if (goods.comments != null && goods.comments!.isNotEmpty)
+      {
+        'label': AppLocalizations.of(context)!.translate('client_comments'),
+        'value': goods.comments!,
+      },
+  ];
 
-  Widget _buildDetailsList(Goods goods) {
-    print(
-        'GoodsDetailsScreen: Building details list with ${details.length} items');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: details
-              .map((detail) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: _buildDetailItem(detail['label']!, detail['value']!),
-                  ))
-              .toList(),
+  print(
+      'GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: details
+            .map((detail) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: _buildDetailItem(detail['label']!, detail['value']!),
+                ))
+            .toList(),
+      ),
+      const SizedBox(height: 16),
+      // Добавляем отображение цены, цены со скидкой и процента скидки
+      if (goods.discountPrice != null && goods.discountPrice != 0)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(AppLocalizations.of(context)!
+                  .translate('price_details')),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Исходная цена (с зачеркиванием, если есть скидка)
+                    Text(
+                      goods.discountedPrice != null
+                          ? goods.discountPrice.toString()
+                          : goods.discountPrice.toString(),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: goods.discountedPrice != null
+                            ? Colors.grey
+                            : const Color(0xFF1E2E52),
+                        decoration: goods.discountedPrice != null
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                      ),
+                    ),
+                    // Цена со скидкой и процент скидки (если есть)
+                    if (goods.discountedPrice != null &&
+                        goods.discountPercent != null)
+                      Row(
+                        children: [
+                          Text(
+                            goods.discountedPrice!.toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1E2E52),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Скидка: ${goods.discountPercent}%',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        if (goods.variants != null && goods.variants!.isNotEmpty)
-          _buildVariantsSection(goods),
-      ],
-    );
-  }
-
+      if (goods.variants != null && goods.variants!.isNotEmpty)
+        _buildVariantsSection(goods),
+    ],
+  );
+}
   Widget _buildVariantsSection(Goods goods) {
     print(
         'GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Варианты товара',
+         Text(
+          AppLocalizations.of(context)!.translate('variants_products'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -452,153 +558,152 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
-    final price = variant.variantPrice?.price ?? 0.0;
-    print(
-        'GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
+Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
+  final price = variant.variantPrice?.price ?? 0.0;
+  print(
+      'GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-    // Собираем уникальные характеристики с использованием Set
-    Set<Map<String, String>> uniqueAttributes = {};
-    if (variant.attributeValues.isNotEmpty) {
-      for (var attrValue in variant.attributeValues) {
-        final attrName = attrValue.categoryAttribute?.attribute?.name ??
-            'Неизвестная характеристика';
-        final value =
-            attrValue.value.isNotEmpty ? attrValue.value : 'Не указано';
-        uniqueAttributes.add({
-          'name': attrName,
-          'value': value,
-        });
-        print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
-      }
-    } else {
-      print(
-          'GoodsDetailsScreen: No attribute values for variant ${variant.id}');
+  // Собираем уникальные характеристики с использованием Set
+  Set<Map<String, String>> uniqueAttributes = {};
+  if (variant.attributeValues.isNotEmpty) {
+    for (var attrValue in variant.attributeValues) {
+      final attrName = attrValue.categoryAttribute?.attribute?.name ??
+          AppLocalizations.of(context)!.translate('unknown_characteristic');
+      final value =
+          attrValue.value.isNotEmpty ? attrValue.value : AppLocalizations.of(context)!.translate('not_specified');
       uniqueAttributes.add({
-        'name': 'Без названия',
-        'value': 'Не указано',
+        'name': attrName,
+        'value': value,
       });
+      print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
     }
-
-    // Преобразуем Set в List и ограничиваем до 4 характеристик
-    List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
-
-    String? imageUrl;
-    if (variant.files != null && variant.files!.isNotEmpty) {
-      imageUrl = '$baseUrl/${variant.files!.first.path}';
-      print('GoodsDetailsScreen: Using variant image: $imageUrl');
-    } else if (goodsFiles.isNotEmpty) {
-      imageUrl = '$baseUrl/${goodsFiles.first.path}';
-      print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
-    } else {
-      print(
-          'GoodsDetailsScreen: No images available for variant ${variant.id}');
-    }
-
-    return GestureDetector(
-      onTap: () {
-        print(
-            'GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VariantDetailsScreen(variant: variant),
-          ),
-        );
-      },
-      child: Card(
-        color: Colors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Изображение
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: _buildVariantImage(imageUrl),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Характеристики (до 4)
-                    ...attributes.map((attr) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                flex: 2,
-                                child: Text(
-                                  '${attr['name']}: ',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Flexible(
-                                flex: 2,
-                                child: Text(
-                                  attr['value']!,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
-                    // Индикатор дополнительных характеристик
-                    if (uniqueAttributes.length > 4)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          '+ ещё ${uniqueAttributes.length - 4}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    // Цена
-                    Text(
-                      '$price ₽',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  } else {
+    print(
+        'GoodsDetailsScreen: No attribute values for variant ${variant.id}');
+    uniqueAttributes.add({
+      'name': AppLocalizations.of(context)!.translate('no_name_chat'),
+      'value': AppLocalizations.of(context)!.translate('not_specified'),
+    });
   }
 
+  // Преобразуем Set в List и ограничиваем до 4 характеристик
+  List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
+
+  String? imageUrl;
+  if (variant.files != null && variant.files!.isNotEmpty) {
+    imageUrl = '$baseUrl/${variant.files!.first.path}';
+    print('GoodsDetailsScreen: Using variant image: $imageUrl');
+  } else if (goodsFiles.isNotEmpty) {
+    imageUrl = '$baseUrl/${goodsFiles.first.path}';
+    print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
+  } else {
+    print(
+        'GoodsDetailsScreen: No images available for variant ${variant.id}');
+  }
+
+  return GestureDetector(
+    onTap: () {
+      print(
+          'GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VariantDetailsScreen(variant: variant),
+        ),
+      );
+    },
+    child: Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Изображение
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: _buildVariantImage(imageUrl),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Характеристики (до 4)
+                  ...attributes.map((attr) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                '${attr['name']}: ',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                attr['value']!,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                  // Индикатор дополнительных характеристик
+                  if (uniqueAttributes.length > 4)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        '${AppLocalizations.of(context)!.translate('more')} ${uniqueAttributes.length - 4}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  // Цена
+                  Text(
+                    '$price',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
   Widget _buildVariantImage(String? imageUrl) {
     if (imageUrl == null) {
       print('GoodsDetailsScreen: No image URL, showing placeholder');

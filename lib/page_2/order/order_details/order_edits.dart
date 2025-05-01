@@ -19,6 +19,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class OrderEditScreen extends StatefulWidget {
   final Order order;
@@ -49,18 +50,22 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _deliveryAddressController =
         TextEditingController(text: widget.order.deliveryAddress);
     _commentController = TextEditingController();
-    _items = widget.order.goods
-        .map((good) => {
-              'id': good.goodId,
-              'name': good.goodName,
-              'price': good.price,
-              'quantity': good.quantity,
-              'imagePath':
-                  good.good.files.isNotEmpty ? good.good.files[0].path : null,
-            })
-        .toList();
+    _items = widget.order.goods.map((good) {
+      // Используем variantGood для получения imagePath
+      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
+          ? good.variantGood!.files[0].path
+          : null;
+      print('Good ID: ${good.goodId}, Image Path: $imagePath'); // Отладка
+      return {
+        'id': good.goodId,
+        'name': good.goodName,
+        'price': good.price,
+        'quantity': good.quantity,
+        'imagePath': imagePath,
+      };
+    }).toList();
     selectedLead = widget.order.lead.id.toString();
-    _deliveryMethod = widget.order.delivery ? 'delivery' : 'self_delivery'; // Инициализация без AppLocalizations
+    _deliveryMethod = widget.order.delivery ? 'delivery' : 'self_delivery';
 
     // Инициализация номера телефона
     String phoneText = widget.order.phone;
@@ -76,12 +81,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _phoneController.text = phoneText;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<BranchBloc>().add(FetchBranches());
-        _initializeBaseUrl();
-      }
-    });
+    // Инициализация baseUrl
+    _initializeBaseUrl();
+    context.read<BranchBloc>().add(FetchBranches());
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -90,17 +92,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       final enteredDomainMap = await apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        });
-      }
+      setState(() {
+        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+        print('Base URL initialized: $baseUrl'); // Отладка
+      });
     } catch (error) {
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://shamcrm.com/storage/';
-        });
-      }
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage/';
+        print('Fallback Base URL: $baseUrl'); // Отладка
+      });
     }
   }
 
@@ -117,7 +117,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       phone: selectedDialCode != null
           ? '$selectedDialCode${_phoneController.text}'
           : _phoneController.text,
-      delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
+      delivery: _deliveryMethod == 'delivery',
       deliveryAddress: _deliveryAddressController.text,
       lead: OrderLead(
         id: int.tryParse(selectedLead ?? '0') ?? 0,
@@ -134,17 +134,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           description: '',
           quantity: item['quantity'],
           files: item['imagePath'] != null
-              ? [
-                  GoodFile(
-                    id: 0,
-                    name: '',
-                    path: item['imagePath'],
-                  )
-                ]
+              ? [GoodFile(id: 0, name: '', path: item['imagePath'])]
               : [],
         );
         return Good(
           good: goodItem,
+          variantGood: goodItem, // Устанавливаем variantGood
           goodId: item['id'],
           goodName: item['name'],
           price: item['price'],
@@ -165,7 +160,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               'id': item['id'],
               'name': item['name'],
               'price': item['price'],
-              'quantity': item['quantity'],
+              'quantity': item['quantity'] ?? 1,
               'imagePath': item['imagePath'],
             }));
       });
@@ -186,8 +181,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => BranchBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -201,17 +198,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     AppLocalizations.of(context)!
                         .translate('order_updated_successfully'),
                     style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white),
                   ),
                   behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                   backgroundColor: Colors.green,
                   elevation: 3,
                   padding:
@@ -226,17 +222,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   content: Text(
                     state.message,
                     style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white),
                   ),
                   behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                   backgroundColor: Colors.red,
                   elevation: 3,
                   padding:
@@ -256,7 +251,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      key: UniqueKey(),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       child: Column(
@@ -289,12 +283,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
-                            selectedDeliveryMethod: _deliveryMethod == 'delivery'
-                                ? AppLocalizations.of(context)!.translate('delivery')
-                                : AppLocalizations.of(context)!.translate('self_delivery'),
+                            selectedDeliveryMethod:
+                                _deliveryMethod == 'delivery'
+                                    ? AppLocalizations.of(context)!
+                                        .translate('delivery')
+                                    : AppLocalizations.of(context)!
+                                        .translate('self_delivery'),
                             onSelectDeliveryMethod: (value) {
                               setState(() {
-                                _deliveryMethod = value == AppLocalizations.of(context)!.translate('delivery')
+                                _deliveryMethod = value ==
+                                        AppLocalizations.of(context)!
+                                            .translate('delivery')
                                     ? 'delivery'
                                     : 'self_delivery';
                                 _selectedBranch = null;
@@ -310,8 +309,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                   branches = branchState.branches;
                                   return BranchesDropdown(
                                     selectedBranch: _selectedBranch,
-                                    onSelectBranch: (branch) =>
-                                        setState(() => _selectedBranch = branch),
+                                    onSelectBranch: (branch) => setState(
+                                        () => _selectedBranch = branch),
                                     label: AppLocalizations.of(context)!
                                         .translate('branch'),
                                     branches: branches,
@@ -334,7 +333,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return AppLocalizations.of(context)!
-                                      .translate('please_enter_delivery_address');
+                                      .translate(
+                                          'please_enter_delivery_address');
                                 }
                                 return null;
                               },
@@ -376,11 +376,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       title: Text(
         '${AppLocalizations.of(context)!.translate('edit_order')} #${widget.order.orderNumber}',
         style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52)),
       ),
       centerTitle: false,
     );
@@ -409,12 +408,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 children: [
                   const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
                   const SizedBox(width: 4),
-                  Text(AppLocalizations.of(context)!.translate('add_product'),
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52))),
+                  Text(
+                    AppLocalizations.of(context)!.translate('add_product'),
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                  ),
                 ],
               ),
             ),
@@ -447,19 +448,22 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(AppLocalizations.of(context)!.translate('total'),
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52))),
                 Text(
-                    '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
-                    style: const TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52))),
+                  AppLocalizations.of(context)!.translate('total'),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52)),
+                ),
+                Text(
+                  '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52)),
+                ),
               ],
             ),
           ),
@@ -477,6 +481,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: Icon(Icons.image, color: Colors.grey, size: 24)),
       );
     }
+
+    print(
+        'Rendering item: ${item['name']}, Image Path: ${item['imagePath']}, Base URL: $baseUrl'); // Отладка
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -498,25 +505,27 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           SizedBox(
             width: 48,
             height: 48,
-            child: item['imagePath'] != null && baseUrl != null
+            child: item['imagePath'] != null &&
+                    item['imagePath'].isNotEmpty &&
+                    baseUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      '$baseUrl/${item['imagePath']}',
+                    child: CachedNetworkImage(
+                      imageUrl: item['imagePath'].startsWith('http')
+                          ? item['imagePath']
+                          : '$baseUrl/${item['imagePath']}',
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildPlaceholderImage(),
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff4759FF)),
-                          ),
-                        );
+                                Color(0xff4759FF))),
+                      ),
+                      errorWidget: (context, url, error) {
+                        print('Image load error for ${item['name']}: $error');
+                        return _buildPlaceholderImage();
                       },
                     ),
                   )
@@ -528,22 +537,25 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    item['name'] ??
-                        AppLocalizations.of(context)!.translate('no_name'),
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                  item['name'] ??
+                      AppLocalizations.of(context)!.translate('no_name'),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
-                Text(item['id'].toString(),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA))),
+                Text(
+                  item['id'].toString(),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA)),
+                ),
               ],
             ),
           ),
@@ -555,18 +567,22 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(AppLocalizations.of(context)!.translate('price'),
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text('${item['price'].toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
+                      Text(
+                        AppLocalizations.of(context)!.translate('price'),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA)),
+                      ),
+                      Text(
+                        '${item['price'].toStringAsFixed(3)}',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52)),
+                      ),
                     ],
                   ),
                   const SizedBox(width: 16),
@@ -574,20 +590,21 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                          AppLocalizations.of(context)!
-                              .translate('total_amount'),
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
+                        AppLocalizations.of(context)!.translate('total_amount'),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA)),
+                      ),
                       Text(
-                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
+                        '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52)),
+                      ),
                     ],
                   ),
                 ],
@@ -602,29 +619,34 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}',
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
+                          icon: const Icon(Icons.remove, size: 20),
+                          color: const Color(0xff1E2E52),
+                          onPressed: () => _updateQuantity(
+                              index, (item['quantity'] ?? 1) - 1),
+                        ),
+                        Text(
+                          '${item['quantity'] ?? 1}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52)),
+                        ),
                         IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) + 1)),
+                          icon: const Icon(Icons.add, size: 20),
+                          color: const Color(0xff1E2E52),
+                          onPressed: () => _updateQuantity(
+                              index, (item['quantity'] ?? 1) + 1),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Color(0xff99A4BA), size: 20),
-                      onPressed: () => _removeItem(index)),
+                    icon: const Icon(Icons.delete,
+                        color: Color(0xff99A4BA), size: 20),
+                    onPressed: () => _removeItem(index),
+                  ),
                 ],
               ),
             ],
@@ -637,29 +659,35 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [
-        BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1))
-      ]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, -1))
+        ],
+      ),
       child: Row(
         children: [
           Expanded(
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffF4F7FD),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: Text(AppLocalizations.of(context)!.translate('cancel'),
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black)),
+                backgroundColor: const Color(0xffF4F7FD),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('cancel'),
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -675,18 +703,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           AppLocalizations.of(context)!
                               .translate('please_select_branch'),
                           style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                         backgroundColor: Colors.red,
                         elevation: 3,
                         padding: const EdgeInsets.symmetric(
@@ -732,18 +758,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             : AppLocalizations.of(context)!
                                 .translate('fill_all_required_fields'),
                         style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white),
                       ),
                       behavior: SnackBarBehavior.floating,
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.all(Radius.circular(12))),
                       backgroundColor: Colors.red,
                       elevation: 3,
                       padding: const EdgeInsets.symmetric(
@@ -754,16 +778,19 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4759FF),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: Text(AppLocalizations.of(context)!.translate('save'),
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white)),
+                backgroundColor: const Color(0xff4759FF),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('save'),
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white),
+              ),
             ),
           ),
         ],
