@@ -1006,7 +1006,9 @@
 "show_as": "Mahsulot yoki xususiyat sifatida ko‘rsatish",
 "show_as_description": "Agar yoqilgan bo‘lsa, kategoriya mahsulot sifatida ko‘rsatiladi, aks holda xususiyat sifatida",
 "display_type": "Xususiyat turi:",
-"enter_correct_number": "To‘g‘ri raqam kiriting"
+"enter_correct_number": "To‘g‘ri raqam kiriting",
+"select_subject_required": "Mavzu maydoni majburiy!"
+
 
 
 

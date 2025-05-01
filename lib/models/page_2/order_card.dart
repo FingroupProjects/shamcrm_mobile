@@ -170,6 +170,7 @@ class OrderLead {
 
 class Good {
   final GoodItem good;
+  final GoodItem? variantGood;
   final int goodId;
   final String goodName;
   final int quantity;
@@ -177,6 +178,7 @@ class Good {
 
   Good({
     required this.good,
+    this.variantGood,
     required this.goodId,
     required this.goodName,
     required this.quantity,
@@ -184,13 +186,25 @@ class Good {
   });
 
   factory Good.fromJson(Map<String, dynamic> json) {
+    // Парсим good
+    final goodItem = GoodItem.fromJson(json['good'] ?? {});
+    
+    // Парсим variant.good, если variant существует
+    final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
+        ? GoodItem.fromJson(json['variant']['good'])
+        : null;
+
     return Good(
-      good: GoodItem.fromJson(json['good'] ?? {}),
+      good: goodItem,
+      variantGood: variantGoodItem,
       goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
-      goodName: json['good']?['name'] ?? '',
+      goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
       quantity: json['quantity'] ?? 0,
       price: double.tryParse(
-              json['good']?['good_price']?['price']?.toString() ?? '0') ?? 0.0,
+              json['variant']?['price']?['price']?.toString() ??
+                  json['good']?['good_price']?['price']?.toString() ??
+                  '0') ??
+          0.0,
     );
   }
 
