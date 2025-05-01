@@ -1,9 +1,13 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +23,7 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.orderId,
     required this.order,
     required this.categoryName,
-    this.organizationId, 
+    this.organizationId,
   });
 
   @override
@@ -41,16 +45,43 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         : AppLocalizations.of(context)!.translate('not_specified');
 
     details = [
-      {'label': AppLocalizations.of(context)!.translate('order_number'), 'value': order.orderNumber},
-      {'label': AppLocalizations.of(context)!.translate('client'), 'value': order.lead.name},
-      {'label': AppLocalizations.of(context)!.translate('client_phone'), 'value': order.phone},
-      {'label': AppLocalizations.of(context)!.translate('order_date'), 'value': formattedDate},
-      {'label': AppLocalizations.of(context)!.translate('order_status'), 'value': order.orderStatus.name},
+      {
+        'label': AppLocalizations.of(context)!.translate('order_number'),
+        'value': order.orderNumber
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client'),
+        'value': order.lead.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client_phone'),
+        'value': order.phone
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_date'),
+        'value': formattedDate
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_status'),
+        'value': order.orderStatus.name
+      },
       if (order.deliveryAddress != null)
         {
           'label': AppLocalizations.of(context)!.translate('order_address'),
-          'value': order.deliveryAddress ?? AppLocalizations.of(context)!.translate('not_specified')
+          'value': order.deliveryAddress ??
+              AppLocalizations.of(context)!.translate('not_specified')
         },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment_client'),
+        'value': order.commentToCourier ??
+            AppLocalizations.of(context)!.translate('no_comment')
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('price'),
+        'value': order.sum != null && order.sum! > 0
+            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
+            : AppLocalizations.of(context)!.translate('0')
+      },
     ];
   }
 
@@ -60,8 +91,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -102,8 +132,66 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text(
-                  AppLocalizations.of(context)!.translate('close'),
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.translate('close'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('order_history'),
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 400),
+                width: double.maxFinite,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: BlocProvider(
+                  create: (context) => OrderHistoryBloc(context.read<ApiService>())
+                    ..add(FetchOrderHistory(widget.orderId)),
+                  child: OrderHistoryWidget(orderId: widget.orderId),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff1E2E52),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('close'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -120,39 +208,46 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OrderBloc, OrderState>(
-      builder: (context, state) {
-        if (state is OrderLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (state is OrderLoaded && state.orderDetails != null) {
-          _updateDetails(state.orderDetails!);
-          return Scaffold(
-            appBar: _buildAppBar(context, state.orderDetails!),
-            backgroundColor: Colors.white,
-            body: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListView(
-                children: [
-                  _buildDetailsList(),
-                  OrderGoodsScreen(
-                    goods: state.orderDetails!.goods,
-                    order: widget.order,
-                  ), // Передаем товары
-                ],
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<OrderHistoryBloc>(
+          create: (context) => OrderHistoryBloc(context.read<ApiService>()),
+        ),
+      ],
+      child: BlocBuilder<OrderBloc, OrderState>(
+        builder: (context, state) {
+          if (state is OrderLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          } else if (state is OrderLoaded && state.orderDetails != null) {
+            _updateDetails(state.orderDetails!);
+            return Scaffold(
+              appBar: _buildAppBar(context, state.orderDetails!),
+              backgroundColor: Colors.white,
+              body: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListView(
+                  children: [
+                    _buildDetailsList(),
+                    OrderGoodsScreen(
+                      goods: state.orderDetails!.goods,
+                      order: widget.order,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            );
+          } else if (state is OrderError) {
+            return Scaffold(
+              body: Center(child: Text(state.message)),
+            );
+          }
+          return const Scaffold(
+            body: Center(child: Text('')),
           );
-        } else if (state is OrderError) {
-          return Scaffold(
-            body: Center(child: Text(state.message)),
-          );
-        }
-        return const Scaffold(
-          body: Center(child: Text('')),
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -183,7 +278,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             size: 30,
             color: Color.fromARGB(224, 0, 0, 0),
           ),
-          onPressed: () {},
+          onPressed: _showHistoryDialog,
         ),
         IconButton(
           padding: EdgeInsets.zero,
@@ -197,8 +292,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             final updatedOrder = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    OrderEditScreen(order: order), // Передаем объект Order
+                builder: (context) => OrderEditScreen(order: order),
               ),
             );
             if (updatedOrder != null) {
@@ -206,43 +300,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             }
           },
         ),
-        // IconButton(
-        //   padding: EdgeInsets.only(right: 8),
-        //   constraints: const BoxConstraints(),
-        //   icon: Image.asset(
-        //     'assets/icons/delete.png',
-        //     width: 24,
-        //     height: 24,
-        //   ),
-        //   onPressed: () {
-        //     showDialog(
-        //       context: context,
-        //       builder: (context) => DeleteOrderDialog(orderId: widget.orderId),
-        //     ).then((shouldDelete) {
-        //       if (shouldDelete == true) {
-        //         // Предполагаем, что у вас есть доступ к organizationId
-        //         // Если его нет, нужно будет добавить в виджет
-        //         context.read<OrderBloc>().add(DeleteOrder(
-        //               orderId: widget.orderId,
-        //               organizationId: order.organizationId, // Добавьте это поле в Order модель если его нет
-        //             ));
-        //         // Подписываемся на изменение состояния после удаления
-        //         context.read<OrderBloc>().stream.listen((state) {
-        //           if (state is OrderSuccess) {
-        //             Navigator.pop(context, true);
-        //           } else if (state is OrderError) {
-        //             ScaffoldMessenger.of(context).showSnackBar(
-        //               SnackBar(
-        //                 content: Text(state.message),
-        //                 backgroundColor: Colors.red,
-        //               ),
-        //             );
-        //           }
-        //         });
-        //       }
-        //     });
-        //   },
-        // ),
       ],
     );
   }
@@ -265,11 +322,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    // Обработка для адреса доставки
-    if (label == AppLocalizations.of(context)!.translate('order_address')) {
+    if (label == AppLocalizations.of(context)!.translate('order_address') ||
+        label == AppLocalizations.of(context)!.translate('comment_client')) {
       return GestureDetector(
         onTap: () {
-          if (value.isNotEmpty) {
+          if (value.isNotEmpty &&
+              value != AppLocalizations.of(context)!.translate('no_comment')) {
             _showFullTextDialog(label.replaceAll(':', ''), value);
           }
         },
@@ -277,7 +335,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 value,
@@ -285,39 +343,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                  decoration:
-                      value.isNotEmpty ? TextDecoration.underline : null,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    if (label == AppLocalizations.of(context)!.translate('comment_client')) {
-      return GestureDetector(
-        onTap: () {
-          if (value.isNotEmpty && value != AppLocalizations.of(context)!.translate('no_comment')) {
-            _showFullTextDialog(label.replaceAll(':', ''), value);
-          }
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty && value != AppLocalizations.of(context)!.translate('no_comment')
+                  color: const Color(0xff1E2E52),
+                  decoration: value.isNotEmpty &&
+                          value !=
+                              AppLocalizations.of(context)!
+                                  .translate('no_comment')
                       ? TextDecoration.underline
                       : null,
                 ),
@@ -333,7 +363,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(child: _buildValue(value)),
       ],
     );

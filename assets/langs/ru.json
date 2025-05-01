@@ -983,7 +983,8 @@
   "search_product_placeholder": "Поиск по названию, артикулу, штри...",
   "order_created_success": "Заказ успешно создан",
   "please_enter_comment": "Введите комментарий",
-  "comment_client": "Комментарий клиента",
+  "comment_client": "Комментарий клиента:",
+  
   "new_order": "Новый заказ",
   "delete_order": "Удалить заказ",
   "confirm_delete_order": "Вы уверены, что хотите удалить этот заказ?",
@@ -1013,7 +1014,27 @@
   "display_type": "Тип характеристики:",
   "enter_correct_number": "Введите корректное число",
   "select_subject_required": "Поле тематика обезятельно!",
+  "notification_message": "Текст уведомления",
+  "enter_notification_message": "Введите текст уведомления клиента при переходе его заказа в этот статус",
+  "is_success": "Успешно",
+  "is_failed": "Не успешно",
+  "error_create_status_order": "Ошибка при создании статуса заказа",
+  "status_order_created": "Статус заказа успешно создан",
+  "status_order_updated": "Статус заказа успешно обновлён",
+  "error_update_status_order": "Ошибка при обновлении статуса заказа",
+  "status_order_deleted": "Статус заказа успешно удалён",
+  "error_delete_status_order": "Ошибка при удалении статуса заказа",
+  "status_order_not_found": "Статус заказа не найден",
+  "status_order": "Статус заказа",
+  "status_order_details": "Статус заказа:",
+  "delete_status": "Удалить статус заказа",
+  "delete_status_order": "Удалить статус заказа?",
+  "confirm_delete_status": "Вы уверены, что хотите удалить этот статус?",
+  "order_history": "История действия",
+  "delivery_type": "Тип доставки",
+    "enter_correct_number": "Введите корректное число",
+  "select_subject_required": "Поле тематика обезятельно!",
   "please_create_status": "Сначала создайте статус!"
-  
-  
 }
+  
+  

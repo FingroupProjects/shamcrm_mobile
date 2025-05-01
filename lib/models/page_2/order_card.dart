@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
-
 class Order {
   final int id;
   final String phone;
@@ -10,6 +9,8 @@ class Order {
   final OrderStatusName orderStatus;
   final List<Good> goods;
   final int? organizationId;
+  final String? commentToCourier;
+  final double? sum; // Новое поле для суммы заказа
 
   Order({
     required this.id,
@@ -21,6 +22,8 @@ class Order {
     required this.orderStatus,
     required this.goods,
     this.organizationId,
+    this.commentToCourier,
+    this.sum, // Добавляем в конструктор
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -39,6 +42,8 @@ class Order {
             .map((g) => Good.fromJson(g))
             .toList(),
         organizationId: json['organization_id'] ?? 1,
+        commentToCourier: json['comment_to_courier']?.toString(),
+        sum: double.tryParse(json['sum']?.toString() ?? '0'), // Парсим новое поле
       );
     } catch (e) {
       print('Error parsing Order: $e');
@@ -58,6 +63,8 @@ class Order {
       'order_status': orderStatus.toJson(),
       'order_goods': goods.map((g) => g.toJson()).toList(),
       'organization_id': organizationId,
+      'comment_to_courier': commentToCourier,
+      'sum': sum, // Добавляем в JSON
     };
   }
 
@@ -71,6 +78,8 @@ class Order {
     OrderStatusName? orderStatus,
     List<Good>? goods,
     int? organizationId,
+    String? commentToCourier,
+    double? sum, // Добавляем в copyWith
   }) {
     return Order(
       id: id ?? this.id,
@@ -82,10 +91,11 @@ class Order {
       orderStatus: orderStatus ?? this.orderStatus,
       goods: goods ?? this.goods,
       organizationId: organizationId ?? this.organizationId,
+      commentToCourier: commentToCourier ?? this.commentToCourier,
+      sum: sum ?? this.sum, // Обновляем
     );
   }
 }
-
 class OrderLead {
   final int id;
   final String name;
@@ -170,6 +180,7 @@ class OrderLead {
 
 class Good {
   final GoodItem good;
+  final GoodItem? variantGood;
   final int goodId;
   final String goodName;
   final int quantity;
@@ -177,6 +188,7 @@ class Good {
 
   Good({
     required this.good,
+    this.variantGood,
     required this.goodId,
     required this.goodName,
     required this.quantity,
@@ -184,13 +196,25 @@ class Good {
   });
 
   factory Good.fromJson(Map<String, dynamic> json) {
+    // Парсим good
+    final goodItem = GoodItem.fromJson(json['good'] ?? {});
+    
+    // Парсим variant.good, если variant существует
+    final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
+        ? GoodItem.fromJson(json['variant']['good'])
+        : null;
+
     return Good(
-      good: GoodItem.fromJson(json['good'] ?? {}),
+      good: goodItem,
+      variantGood: variantGoodItem,
       goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
-      goodName: json['good']?['name'] ?? '',
+      goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
       quantity: json['quantity'] ?? 0,
       price: double.tryParse(
-              json['good']?['good_price']?['price']?.toString() ?? '0') ?? 0.0,
+              json['variant']?['price']?['price']?.toString() ??
+                  json['good']?['good_price']?['price']?.toString() ??
+                  '0') ??
+          0.0,
     );
   }
 
