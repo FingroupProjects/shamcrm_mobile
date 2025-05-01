@@ -1,4 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -30,12 +33,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _phoneController;
   late TextEditingController _deliveryAddressController;
+  late TextEditingController _commentController;
   late List<Map<String, dynamic>> _items;
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
-  String? selectedDialCode; 
+  String? selectedDialCode;
   String? baseUrl;
+  List<Branch> branches = [];
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _phoneController = TextEditingController();
     _deliveryAddressController =
         TextEditingController(text: widget.order.deliveryAddress);
+    _commentController = TextEditingController();
     _items = widget.order.goods
         .map((good) => {
               'id': good.goodId,
@@ -54,7 +60,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             })
         .toList();
     selectedLead = widget.order.lead.id.toString();
-    _deliveryMethod = widget.order.delivery ? AppLocalizations.of(context)!.translate('delivery') : AppLocalizations.of(context)!.translate('self_delivery');
+    _deliveryMethod = widget.order.delivery ? 'delivery' : 'self_delivery'; // Инициализация без AppLocalizations
 
     // Инициализация номера телефона
     String phoneText = widget.order.phone;
@@ -66,11 +72,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       }
     }
     if (selectedDialCode == null) {
-      selectedDialCode = '+992'; // Код по умолчанию, если не удалось определить
+      selectedDialCode = '+992';
       _phoneController.text = phoneText;
     }
 
-    _initializeBaseUrl();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<BranchBloc>().add(FetchBranches());
+        _initializeBaseUrl();
+      }
+    });
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -79,13 +90,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       final enteredDomainMap = await apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
+      if (mounted) {
+        setState(() {
+          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+        });
+      }
     } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
+      if (mounted) {
+        setState(() {
+          baseUrl = 'https://shamcrm.com/storage/';
+        });
+      }
     }
   }
 
@@ -93,20 +108,24 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   void dispose() {
     _phoneController.dispose();
     _deliveryAddressController.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 
   void _navigateToAddProduct() async {
     final Order tempOrder = widget.order.copyWith(
-      phone:
-          selectedDialCode ?? _phoneController.text, // Используем полный номер
+      phone: selectedDialCode != null
+          ? '$selectedDialCode${_phoneController.text}'
+          : _phoneController.text,
       delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
       deliveryAddress: _deliveryAddressController.text,
       lead: OrderLead(
         id: int.tryParse(selectedLead ?? '0') ?? 0,
         name: widget.order.lead.name,
         channels: widget.order.lead.channels,
-        phone: selectedDialCode ?? _phoneController.text, // Полный номер
+        phone: selectedDialCode != null
+            ? '$selectedDialCode${_phoneController.text}'
+            : _phoneController.text,
       ),
       goods: _items.map((item) {
         final goodItem = GoodItem(
@@ -125,7 +144,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               : [],
         );
         return Good(
-          good: goodItem, // Исправлено
+          good: goodItem,
           goodId: item['id'],
           goodName: item['name'],
           price: item['price'],
@@ -149,7 +168,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               'quantity': item['quantity'],
               'imagePath': item['imagePath'],
             }));
-        print('Добавленные товары: $_items');
       });
     }
   }
@@ -166,21 +184,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OrderBloc(context.read<ApiService>()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(),
         body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
-            print('OrderBloc state: $state'); // Отладочный вывод
             if (state is OrderSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     AppLocalizations.of(context)!
                         .translate('order_updated_successfully'),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -188,40 +208,41 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     ),
                   ),
                   behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   backgroundColor: Colors.green,
                   elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 3),
                 ),
               );
-              Navigator.pop(
-                  context, true); // Возвращаем true для обновления списка
+              Navigator.pop(context, true);
             } else if (state is OrderError) {
               ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
                   ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 3),
+                ),
               );
             }
           },
@@ -235,6 +256,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
+                      key: UniqueKey(),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       child: Column(
@@ -250,8 +272,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
-                              setState(() => selectedDialCode =
-                                  number); // Сохраняем полный номер
+                              setState(() => selectedDialCode = number);
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -262,36 +283,46 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                             label: AppLocalizations.of(context)!
                                 .translate('phone'),
-                            selectedDialCode:
-                                selectedDialCode, // Передаем начальный код страны
-                            // phoneNumberLengths: const {
-                            //   '+992': 9, // Таджикистан
-                            //   '+7': 10,  // Россия
-                            //   // Добавьте другие коды стран и длины номеров
-                            // },
+                            selectedDialCode: selectedDialCode,
                           ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
-                            selectedDeliveryMethod: _deliveryMethod,
+                            selectedDeliveryMethod: _deliveryMethod == 'delivery'
+                                ? AppLocalizations.of(context)!.translate('delivery')
+                                : AppLocalizations.of(context)!.translate('self_delivery'),
                             onSelectDeliveryMethod: (value) {
                               setState(() {
-                                _deliveryMethod = value;
+                                _deliveryMethod = value == AppLocalizations.of(context)!.translate('delivery')
+                                    ? 'delivery'
+                                    : 'self_delivery';
                                 _selectedBranch = null;
                                 _deliveryAddressController.clear();
                               });
                             },
                           ),
                           const SizedBox(height: 16),
-                          if (_deliveryMethod == 'Самовывоз')
-                            BranchesDropdown(
-                              selectedBranch: _selectedBranch,
-                              onSelectBranch: (branch) {
-                                setState(() => _selectedBranch = branch);
-                              },
-                            ),
-                          if (_deliveryMethod == 'Доставка')
+                          BlocBuilder<BranchBloc, BranchState>(
+                            builder: (context, branchState) {
+                              if (_deliveryMethod == 'self_delivery') {
+                                if (branchState is BranchLoaded) {
+                                  branches = branchState.branches;
+                                  return BranchesDropdown(
+                                    selectedBranch: _selectedBranch,
+                                    onSelectBranch: (branch) =>
+                                        setState(() => _selectedBranch = branch),
+                                    label: AppLocalizations.of(context)!
+                                        .translate('branch'),
+                                    branches: branches,
+                                  );
+                                }
+                                return const SizedBox();
+                              }
+                              return const SizedBox();
+                            },
+                          ),
+                          if (_deliveryMethod == 'delivery')
                             CustomTextField(
                               controller: _deliveryAddressController,
                               hintText: AppLocalizations.of(context)!
@@ -303,12 +334,21 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return AppLocalizations.of(context)!
-                                      .translate(
-                                          'please_enter_delivery_address');
+                                      .translate('please_enter_delivery_address');
                                 }
                                 return null;
                               },
                             ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            controller: _commentController,
+                            hintText: AppLocalizations.of(context)!
+                                .translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!
+                                .translate('comment_client'),
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                          ),
                         ],
                       ),
                     ),
@@ -627,31 +667,89 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                  if (_deliveryMethod == 'self_delivery' &&
+                      _selectedBranch == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('please_select_branch'),
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.red,
+                        elevation: 3,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                    return;
+                  }
+
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
-                        phone: selectedDialCode ??
-                            _phoneController.text, // Используем полный номер
+                        phone: selectedDialCode != null
+                            ? '$selectedDialCode${_phoneController.text}'
+                            : _phoneController.text,
                         leadId: int.parse(selectedLead ?? '0'),
-                        delivery: _deliveryMethod == 'Доставка',
-                        deliveryAddress: _deliveryMethod == 'Самовывоз'
+                        delivery: _deliveryMethod == 'delivery',
+                        deliveryAddress: _deliveryMethod == 'self_delivery'
                             ? _selectedBranch?.address ?? ''
                             : _deliveryAddressController.text,
                         goods: _items
                             .map((item) => {
-                                  'good_id': item['id'],
+                                  'variant_id': item['id'].toString(),
                                   'quantity': item['quantity'] ?? 1,
+                                  'price': item['price'].toString(),
                                 })
                             .toList(),
                         organizationId: widget.order.organizationId ?? 1,
+                        branchId: _deliveryMethod == 'self_delivery'
+                            ? _selectedBranch?.id
+                            : null,
+                        commentToCourier: _commentController.text.isNotEmpty
+                            ? _commentController.text
+                            : null,
                       ));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(_items.isEmpty
+                      content: Text(
+                        _items.isEmpty
                             ? AppLocalizations.of(context)!
                                 .translate('add_at_least_one_product')
                             : AppLocalizations.of(context)!
-                                .translate('fill_all_required_fields'))),
+                                .translate('fill_all_required_fields'),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      duration: const Duration(seconds: 3),
+                    ),
                   );
                 }
               },

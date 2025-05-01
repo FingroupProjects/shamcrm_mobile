@@ -932,7 +932,11 @@
   "week": "Неделя",
   "month": "Месяц",
   "year": "Год",
-  
+  "enter_price": "Введите цену",
+  "branch": "Филиал",
+  "branch_details": "Филиал",
+  "goods_updated_successfully": "Товар успешно обновлён"  ,
+
   "has_price_characteristics_description": "Если включено, характеристики категории будут влиять на формирование цены товара",
   "new_subcategory": "Новая подкатегория",
   "subcategories": "Подкатегории",

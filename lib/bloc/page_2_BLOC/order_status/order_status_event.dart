@@ -45,7 +45,9 @@ class CreateOrder extends OrderEvent {
   final String deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
-  final int statusId; // Новый параметр
+  final int statusId;
+  final int? branchId; // Для самовывоза
+  final String? commentToCourier; // Комментарий курьеру
 
   CreateOrder({
     required this.phone,
@@ -55,9 +57,10 @@ class CreateOrder extends OrderEvent {
     required this.goods,
     required this.organizationId,
     required this.statusId,
+    this.branchId,
+    this.commentToCourier,
   });
 }
-
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
@@ -66,6 +69,8 @@ class UpdateOrder extends OrderEvent {
   final String deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
+  final int? branchId; // Для самовывоза
+  final String? commentToCourier; // Комментарий курьеру
 
   UpdateOrder({
     required this.orderId,
@@ -75,6 +80,8 @@ class UpdateOrder extends OrderEvent {
     required this.deliveryAddress,
     required this.goods,
     required this.organizationId,
+    this.branchId,
+    this.commentToCourier,
   });
 }
 
