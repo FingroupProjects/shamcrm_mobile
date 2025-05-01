@@ -42,7 +42,7 @@ dependencies:
   radio_group_v2: ^3.2.1
   animated_custom_dropdown: ^3.1.1
   flutter_svg: ^2.0.16
-  image_gallery_saver_plus: ^4.0.1
+  image_gallery_saver_plus: ^3.0.5
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.3
   local_auth: ^2.3.0
