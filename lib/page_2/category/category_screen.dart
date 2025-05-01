@@ -85,9 +85,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         child: CategoryCard(
                           categoryId: category.id ?? 0,
                           categoryName: category.name,
-                          subCategoryName: category.subcategories.isNotEmpty
-                              ? category.subcategories[0].name
-                              : '',
+                          subcategories: category.subcategories,
                           attributes: [],
                           image: category.image,
                         ),

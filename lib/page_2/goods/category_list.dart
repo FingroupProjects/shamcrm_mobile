@@ -113,9 +113,9 @@ Widget build(BuildContext context) {
         ),
         if (!widget.isValid) 
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 2),
             child: Text(
-              AppLocalizations.of(context)!.translate('field_required_project'),
+            '    ${AppLocalizations.of(context)!.translate('field_required')}',
               style: TextStyle(
               fontSize: 14,
               color: Colors.red,

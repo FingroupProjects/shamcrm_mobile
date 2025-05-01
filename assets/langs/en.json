@@ -999,6 +999,11 @@
 "awaiting_payment": "Awaiting payment",
 "shipped": "Shipped",
 "completed": "Completed",
-"canceled": "Canceled"
+"canceled": "Canceled",
+"show_as": "Display as product or characteristic",
+"show_as_description": "If enabled, the category will be displayed as a product; otherwise, as a characteristic",
+"display_type": "Characteristic type:",
+"enter_correct_number": "Enter a valid number"
+
 
 }

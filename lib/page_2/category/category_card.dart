@@ -8,16 +8,16 @@ import 'package:intl/intl.dart';
 class CategoryCard extends StatefulWidget {
   final int categoryId;
   final String categoryName;
-  final String subCategoryName;
-  final List<Attribute> attributes; 
+  final List<SubCategoryResponse> subcategories;
+  final List<Attribute> attributes;
   final String? image;
 
   CategoryCard({
     Key? key,
     required this.categoryId,
     required this.categoryName,
-    required this.subCategoryName,
-    required this.attributes, 
+    required this.subcategories,
+    required this.attributes,
     required this.image,
   }) : super(key: key);
 
@@ -37,6 +37,11 @@ class _CategoryCardState extends State<CategoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Объединяем имена подкатегорий в одну строку, разделяя запятыми
+    final subcategoriesText = widget.subcategories.isNotEmpty
+        ? widget.subcategories.map((subcategory) => subcategory.name).join(', ')
+        : '';
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -70,59 +75,34 @@ class _CategoryCardState extends State<CategoryCard> {
                 ],
               ),
             ),
-            Column(
-              children: [
-                Row(
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
                   children: [
-                    Expanded(
-                      child: RichText(
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: AppLocalizations.of(context)!.translate('subcategory_card'), 
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
-                              ),
-                            ),
-                            TextSpan(
-                              text: widget.subCategoryName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff1E2E52), 
-                              ),
-                            ),
-                          ],
-                        ),
+                    TextSpan(
+                      text: AppLocalizations.of(context)!.translate('subcategory_card'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
                       ),
                     ),
-                    // const SizedBox(width: 8),
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    //   decoration: BoxDecoration(
-                    //     color: Color(0xFFE9EDF5),
-                    //     borderRadius: BorderRadius.circular(4),
-                    //   ),
-                    //   child: Text("${AppLocalizations.of(context)!.translate('goods_count')}${widget.categoryId.toString()}",
-                    //     style: const TextStyle(
-                    //       fontSize: 14,
-                    //       fontFamily: 'Gilroy',
-                    //       fontWeight: FontWeight.w500,
-                    //       color: Color(0xff99A4BA),
-                    //     ),
-                    //     maxLines: 1,
-                    //     overflow: TextOverflow.ellipsis,
-                    //   ),
-                    // ),
+                    TextSpan(
+                      text: subcategoriesText.isNotEmpty ? ' $subcategoriesText' : '',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ],
         ),
