@@ -163,6 +163,7 @@ void _changeView(String view) {
           MaterialPageRoute(
             builder: (context) => EventDetailsScreen(
               noticeId: id,
+              initialDate: _selectedDate,
             ),
           ),
         );
@@ -300,6 +301,7 @@ void _changeView(String view) {
                     endTime: event.date.add(const Duration(hours: 1)),
                     color: CalendarUtils.getEventColor(event.type),
                     type: event.type,
+                    isFinished: event.isFinished,
                   ),
                 );
                 if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
@@ -325,7 +327,7 @@ void _changeView(String view) {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  AppLocalizations.of(context)!.translate('Ничего не найдено!'),
+                  AppLocalizations.of(context)!.translate('nothing_found'),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w400,

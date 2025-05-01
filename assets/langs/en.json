@@ -1003,7 +1003,11 @@
 "show_as": "Display as product or characteristic",
 "show_as_description": "If enabled, the category will be displayed as a product; otherwise, as a characteristic",
 "display_type": "Characteristic type:",
-"enter_correct_number": "Enter a valid number"
+"enter_correct_number": "Enter a valid number",
+"select_subject_required": "Subject field is required!",
+"please_create_status": "Please create a status first!"
+
+
 
 
 }

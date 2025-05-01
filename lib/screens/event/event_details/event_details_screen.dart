@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
@@ -27,7 +29,9 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
   final String? source; // Новый параметр для источника входа
-  EventDetailsScreen({required this.noticeId, this.source});
+  final DateTime? initialDate;
+
+  EventDetailsScreen({required this.noticeId, this.source, this.initialDate});
   @override
   _EventDetailsScreenState createState() => _EventDetailsScreenState();
 }
@@ -500,6 +504,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 Future.delayed(const Duration(milliseconds: 1),
                                     () {
                                   if (mounted) {
+                                 context.read<CalendarBloc>().add(FetchCalendarEvents(
+                                  widget.initialDate?.month ?? DateTime.now().month,
+                                  widget.initialDate?.year ?? DateTime.now().year));
                                     context
                                         .read<EventBloc>()
                                         .add(FetchEvents());
