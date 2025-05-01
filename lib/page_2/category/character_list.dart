@@ -179,7 +179,7 @@ Widget _buildTextField() {
         if (_isDropdownVisible)
           Container(
             margin: EdgeInsets.only(top: 2),
-            constraints: BoxConstraints(maxHeight: 280,maxWidth: 330),
+            constraints: BoxConstraints(maxHeight: 230,maxWidth: 330),
             decoration: BoxDecoration(
               color: Color(0xffF4F7FD),
               borderRadius: BorderRadius.circular(12),

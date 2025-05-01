@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -145,7 +146,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Error loading all data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки данных: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.translate('error_loading_data'))),
         );
       }
     } finally {
@@ -470,7 +471,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.camera_alt),
                 title: Text(
-                  'Сделать фото',
+                  AppLocalizations.of(context)!.translate('make_photo'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -486,7 +487,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  'Выбрать из галереи',
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -548,7 +549,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-          'Редактировать товар',
+        AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -578,17 +579,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: 'Введите название товара',
-                    label: 'Название товара',
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                    label: AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? 'Поле обязательно для заполнения'
+                        ? AppLocalizations.of(context)!.translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: 'Введите описание товара',
-                    label: 'Описание',
+                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!.translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
@@ -610,15 +611,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         const SizedBox(height: 4),
                         CustomTextField(
                           controller: discountPriceController,
-                          hintText: 'Введите цену',
-                          label: 'Цена',
+                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                    label: AppLocalizations.of(context)!.translate('goods_price_details'),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Поле обязательно для заполнения';
+                              return AppLocalizations.of(context)!.translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return 'Введите корректное число';
+                              return AppLocalizations.of(context)!.translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -635,7 +636,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ),
                         )
                       : BranchesDropdown(
-                          label: 'Филиал',
+                          label: AppLocalizations.of(context)!.translate('branch'),
                           selectedBranch: selectedBranch,
                           branches: branches, // Передаём branches, даже если он пуст
                           onSelectBranch: (Branch branch) {
@@ -651,7 +652,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Пожалуйста, выберите филиал',
+                        AppLocalizations.of(context)!.translate('please_select_branch'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -700,7 +701,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'Пожалуйста, выберите подкатегорию',
+                                  AppLocalizations.of(context)!.translate('please_select_subcategory'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.red,
@@ -719,7 +720,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         Divider(color: Color(0xff1E2E52)),
                         Center(
                           child: Text(
-                            'Характеристика товара',
+                             AppLocalizations.of(context)!.translate('product_characteristic'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -753,7 +754,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     attributeControllers[attribute.name] ??
                                         TextEditingController(),
                                 hintText:
-                                    'Введите ${attribute.name.toLowerCase()}',
+                                    '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
                               ),
                             ],
                           );
@@ -799,7 +800,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             .hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
-                                              'Цена',
+                                              AppLocalizations.of(context)!.translate('goods_price_details'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -810,7 +811,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         DataColumn(
                                           label: Text(
-                                            'Изображение',
+                                              AppLocalizations.of(context)!.translate('image_message'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -821,7 +822,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                         DataColumn(
                                           label: Text(
-                                            'Статус',
+                                              AppLocalizations.of(context)!.translate('status_lead_profile'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -871,7 +872,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                         TextEditingController(),
                                                     decoration: InputDecoration(
                                                       hintText:
-                                                          'Введите ${attr.name}',
+                                                          '${AppLocalizations.of(context)!.translate('please_enter')}${attr.name}',
                                                       hintStyle: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
@@ -903,7 +904,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   controller: row['price'] ??
                                                       TextEditingController(),
                                                   decoration: InputDecoration(
-                                                    hintText: 'Введите цену',
+                                                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
                                                     hintStyle: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -1115,7 +1116,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Выберите изображение',
+                                    AppLocalizations.of(context)!.translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -1198,7 +1199,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Добавить +',
+                                               AppLocalizations.of(context)!.translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1230,7 +1231,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '${_imagePaths.length} Изображений',
+                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('images')}',
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1248,7 +1249,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Выберите хотя бы одно изображение!',
+                        AppLocalizations.of(context)!.translate('please_select_image'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -1264,7 +1265,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Статус товара',
+                              AppLocalizations.of(context)!.translate('status_product'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -1311,7 +1312,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? 'Активно' : 'Неактивно',
+                                      isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1343,7 +1344,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 buttonColor: const Color(0xffF4F7FD),
                 textColor: Colors.black,
                 onPressed: () => Navigator.pop(context),
@@ -1362,7 +1363,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                      buttonText: 'Сохранить',
+                buttonText: AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
@@ -1375,8 +1376,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message:
-                                'Пожалуйста, заполните все обязательные поля!',
+                            message: AppLocalizations.of(context)!.translate('fill_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -1403,7 +1403,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.camera_alt),
                 title: Text(
-                  'Сделать фото',
+                  AppLocalizations.of(context)!.translate('make_photo'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1419,7 +1419,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  'Выбрать из галереи',
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1633,7 +1633,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
-          message: 'Товар успешно обновлен!',
+          message: AppLocalizations.of(context)!.translate('product_updated'),
           isSuccess: true,
         );
         Navigator.pop(context, true);
@@ -1642,7 +1642,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? 'Ошибка при обновлении товара',
+          message: response['message'] ??  AppLocalizations.of(context)!.translate('error_update_product'),
           isSuccess: false,
         );
       }
@@ -1652,7 +1652,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
-        message: 'Ошибка при обновлении товара: ${e.toString()}',
+        message: AppLocalizations.of(context)!.translate('error_update_product'),
         isSuccess: false,
       );
     }

@@ -84,7 +84,6 @@
   "confirm_identity": "Подтвердите личность",
   "COMMENT_TITLE_SCREEN_Forgot_Pin": "----------------------------Тексты для экрана FORGOT-PIN----------------------------",
   "forgot_pin_title": "Забыли PIN - код?",
-  "enter_login": "Введите логин",
   "login_label": "Логин",
   "request_confirmation": "Запросить подтверждение",
   "enter_login_error": "Введите логин",
@@ -109,7 +108,6 @@
   "february": "Февраль",
   "march": "Март",
   "april": "Апрель",
-  "may": "Май",
   "june": "Июнь",
   "july": "Июль",
   "august": "Август",
@@ -904,8 +902,6 @@
   "required_image": "    Изоброжения обязательно",
   "add_characteristic": "Добавить характеристику",
   "error_create_category": "Ошибка при создании категории!",
-  "show_as": "Показать как товар либо как характеристика",
-  "show_as_description": "Если включено, категория будет отображаться как товар, иначе как характеристика",
   "product": "Товар",
   "characteristic": "Характеристика",
   "support_chat_name": "Техподдержка",
@@ -936,7 +932,6 @@
   "branch": "Филиал",
   "branch_details": "Филиал",
   "goods_updated_successfully": "Товар успешно обновлён"  ,
-
   "has_price_characteristics_description": "Если включено, характеристики категории будут влиять на формирование цены товара",
   "new_subcategory": "Новая подкатегория",
   "subcategories": "Подкатегории",
@@ -1013,9 +1008,11 @@
   "shipped": "Отправлен",
   "completed": "Завершен",
   "canceled": "Отменен",
-  "notification_message": "Текст уведомления",
-  "enter_notification_message": "Введите текст уведомления клиента при переходе его заказа в этот статус",
-  "is_success": "Успешно",
-  "is_failed": "Не успешно",
-  "error_create_status_order": "Ошибка при создании статуса заказа"
+  "show_as": "Показать как товар либо как характеристика",
+  "show_as_description": "Если включено, категория будет отображаться как товар, иначе как характеристика",
+  "display_type": "Тип характеристики:",
+  "enter_correct_number": "Введите корректное число",
+  "select_subject_required": "Поле тематика обезятельно!"
+  
+  
 }
