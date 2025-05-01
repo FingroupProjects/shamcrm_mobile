@@ -46,8 +46,8 @@ class CreateOrder extends OrderEvent {
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int statusId;
-  final int? branchId; // Для самовывоза
-  final String? commentToCourier; // Комментарий курьеру
+  final int? branchId;
+  final String? commentToCourier;
 
   CreateOrder({
     required this.phone,
@@ -61,6 +61,7 @@ class CreateOrder extends OrderEvent {
     this.commentToCourier,
   });
 }
+
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
@@ -69,8 +70,8 @@ class UpdateOrder extends OrderEvent {
   final String deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
-  final int? branchId; // Для самовывоза
-  final String? commentToCourier; // Комментарий курьеру
+  final int? branchId;
+  final String? commentToCourier;
 
   UpdateOrder({
     required this.orderId,
@@ -105,4 +106,40 @@ class ChangeOrderStatus extends OrderEvent {
     required this.statusId,
     this.organizationId,
   });
+}
+
+class CreateOrderStatus extends OrderEvent {
+  final String title;
+  final String notificationMessage;
+  final bool isSuccess;
+  final bool isFailed;
+
+  CreateOrderStatus({
+    required this.title,
+    required this.notificationMessage,
+    required this.isSuccess,
+    required this.isFailed,
+  });
+}
+
+class UpdateOrderStatus extends OrderEvent {
+  final int statusId;
+  final String title;
+  final String notificationMessage;
+  final bool isSuccess;
+  final bool isFailed;
+
+  UpdateOrderStatus({
+    required this.statusId,
+    required this.title,
+    required this.notificationMessage,
+    required this.isSuccess,
+    required this.isFailed,
+  });
+}
+
+class DeleteOrderStatus extends OrderEvent {
+  final int statusId;
+
+  DeleteOrderStatus({required this.statusId});
 }

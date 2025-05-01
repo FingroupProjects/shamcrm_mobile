@@ -1012,5 +1012,10 @@
   "awaiting_payment": "Ожидает оплаты",
   "shipped": "Отправлен",
   "completed": "Завершен",
-  "canceled": "Отменен"
+  "canceled": "Отменен",
+  "notification_message": "Текст уведомления",
+  "enter_notification_message": "Введите текст уведомления клиента при переходе его заказа в этот статус",
+  "is_success": "Успешно",
+  "is_failed": "Не успешно",
+  "error_create_status_order": "Ошибка при создании статуса заказа"
 }

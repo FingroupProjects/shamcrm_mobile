@@ -987,7 +987,13 @@
 "awaiting_payment": "To‘lov kutilmoqda",
 "shipped": "Yuborilgan",
 "completed": "Tugallangan",
-"canceled": "Bekor qilingan"
+"canceled": "Bekor qilingan",
+"notification_message": "Bildirishnoma matni",
+"enter_notification_message": "Buyurtma ushbu holatga o‘tganda mijozga yuboriladigan matnni kiriting",
+"is_success": "Muvaffaqiyatli",
+"is_failed": "Muvaffaqiyatsiz",
+"error_create_status_order": "Buyurtma statusini yaratishda xatolik"
+
 
 
 

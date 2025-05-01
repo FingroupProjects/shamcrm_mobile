@@ -6849,7 +6849,66 @@ Future<Map<String, dynamic>> updateOrder({
     return {'success': false, 'error': e.toString()};
   }
 }
+// In api_service.dart (you should implement this based on your API client)
+Future<http.Response> createOrderStatus({
+    required String title,
+    required String notificationMessage,
+    required bool isSuccess,
+    required bool isFailed,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+      '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'title': title,
+        'notification_message': notificationMessage,
+        'is_success': isSuccess,
+        'is_failed': isFailed,
+      },
+    );
+    return response;
+  }
 
+  Future<http.Response> updateOrderStatus({
+    required int statusId,
+    required String title,
+    required String notificationMessage,
+    required bool isSuccess,
+    required bool isFailed,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _patchRequest(
+      '/order-status/$statusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'title': title,
+        'notification_message': notificationMessage,
+        'is_success': isSuccess,
+        'is_failed': isFailed,
+      },
+    );
+    return response;
+  }
+
+  Future<bool> deleteOrderStatus(int statusId) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _deleteRequest(
+      '/order-status/$statusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+    return response.statusCode == 200 || response.statusCode == 204;
+  }
+
+  Future<bool> checkIfStatusHasOrders(int statusId) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _getRequest(
+      '/orders?status_id=$statusId${organizationId != null ? '&organization_id=$organizationId' : ''}',
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'] != null && data['data'].isNotEmpty;
+    }
+    return false;
+  }
+  
   Future<bool> deleteOrder({
     required int orderId,
     required int? organizationId,
