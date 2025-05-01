@@ -26,7 +26,8 @@ class OrderScreen extends StatefulWidget {
   _OrderScreenState createState() => _OrderScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin {
+class _OrderScreenState extends State<OrderScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -47,7 +48,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     super.initState();
     print('OrderScreen: Инициализация состояния');
     _orderBloc = OrderBloc(ApiService())..add(FetchOrderStatuses());
-    print('OrderScreen: Создан OrderBloc и добавлено событие FetchOrderStatuses');
+    print(
+        'OrderScreen: Создан OrderBloc и добавлено событие FetchOrderStatuses');
     _tabController = TabController(length: 0, vsync: this);
     print('OrderScreen: Создан TabController с length=0');
   }
@@ -65,9 +67,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
   }
 
   void _scrollToActiveTab() {
-    print('OrderScreen: Начало _scrollToActiveTab, _currentTabIndex=$_currentTabIndex');
+    print(
+        'OrderScreen: Начало _scrollToActiveTab, _currentTabIndex=$_currentTabIndex');
     if (_tabKeys.isEmpty || _currentTabIndex >= _tabKeys.length) {
-      print('OrderScreen: _tabKeys пуст или _currentTabIndex вне диапазона, пропускаем');
+      print(
+          'OrderScreen: _tabKeys пуст или _currentTabIndex вне диапазона, пропускаем');
       return;
     }
 
@@ -75,7 +79,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
       final keyContext = _tabKeys[_currentTabIndex].currentContext;
       if (keyContext != null) {
         final box = keyContext.findRenderObject() as RenderBox;
-        final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+        final position = box.localToGlobal(Offset.zero,
+            ancestor: context.findRenderObject());
         final tabWidth = box.size.width;
         double targetOffset = _scrollController.offset +
             position.dx -
@@ -88,9 +93,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
           curve: Curves.ease,
         );
       } else {
-        print('OrderScreen: keyContext для _currentTabIndex=$_currentTabIndex равен null');
+        print(
+            'OrderScreen: keyContext для _currentTabIndex=$_currentTabIndex равен null');
         Future.delayed(Duration(milliseconds: 100), () {
-          print('OrderScreen: Повторная попытка _scrollToActiveTab после задержки');
+          print(
+              'OrderScreen: Повторная попытка _scrollToActiveTab после задержки');
           _scrollToActiveTab();
         });
       }
@@ -107,7 +114,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
 
   void _onStatusUpdated(int newStatusId) {
     print('OrderScreen: Вызов _onStatusUpdated с newStatusId=$newStatusId');
-    final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
+    final newTabIndex =
+        _statuses.indexWhere((status) => status.id == newStatusId);
     print('OrderScreen: Найден newTabIndex=$newTabIndex');
     if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
       setState(() {
@@ -120,9 +128,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
         _scrollToActiveTab();
       });
       _orderBloc.add(FetchOrders(statusId: newStatusId));
-      print('OrderScreen: Добавлено событие FetchOrders для statusId=$newStatusId');
+      print(
+          'OrderScreen: Добавлено событие FetchOrders для statusId=$newStatusId');
     } else {
-      print('OrderScreen: newTabIndex=$newTabIndex, _currentTabIndex=$_currentTabIndex, переход не требуется');
+      print(
+          'OrderScreen: newTabIndex=$newTabIndex, _currentTabIndex=$_currentTabIndex, переход не требуется');
     }
   }
 
@@ -136,7 +146,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
       _navigateToNewStatus = false;
       _isSearching = false;
       _searchController.clear();
-      print('OrderScreen: Сброшены _statuses, _tabKeys, _currentTabIndex, _isInitialLoad, _navigateToNewStatus, _isSearching');
+      print(
+          'OrderScreen: Сброшены _statuses, _tabKeys, _currentTabIndex, _isInitialLoad, _navigateToNewStatus, _isSearching');
     });
     _tabController.dispose();
     _tabController = TabController(length: 0, vsync: this);
@@ -144,7 +155,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
   }
 
   void _showStatusOptions(BuildContext context, int index) {
-    final RenderBox renderBox = _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
     final Offset position = renderBox.localToGlobal(Offset.zero);
 
     showMenu(
@@ -204,7 +216,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
         ).then((result) {
           if (result == true) {
             _orderBloc.add(FetchOrderStatuses());
-            print('OrderScreen: Добавлено событие FetchOrderStatuses после редактирования');
+            print(
+                'OrderScreen: Добавлено событие FetchOrderStatuses после редактирования');
           }
         });
       } else if (value == 'delete') {
@@ -219,7 +232,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
         ).then((result) {
           if (result == true) {
             _orderBloc.add(FetchOrderStatuses());
-            print('OrderScreen: Добавлено событие FetchOrderStatuses после удаления');
+            print(
+                'OrderScreen: Добавлено событие FetchOrderStatuses после удаления');
           }
         });
       }
@@ -246,7 +260,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
-                print('OrderScreen: isClickAvatarIcon изменен на $isClickAvatarIcon');
+                print(
+                    'OrderScreen: isClickAvatarIcon изменен на $isClickAvatarIcon');
               });
             },
             textEditingController: _searchController,
@@ -256,7 +271,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 setState(() {
                   _isSearching = false;
                   _searchController.clear();
-                  print('OrderScreen: Очищен поиск, _isSearching=$_isSearching');
+                  print(
+                      'OrderScreen: Очищен поиск, _isSearching=$_isSearching');
                 });
               }
             },
@@ -267,87 +283,113 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
             ? const ProfileScreen()
             : BlocListener<OrderBloc, OrderState>(
                 listener: (context, state) {
-                  print('OrderScreen: BlocListener, текущее состояние: ${state.runtimeType}');
+                  print(
+                      'OrderScreen: BlocListener, текущее состояние: ${state.runtimeType}');
                   if (state is OrderLoaded) {
                     print('OrderScreen: Получено состояние OrderLoaded');
-                    print('OrderScreen: Новые статусы: ${state.statuses.map((s) => s.toJson()).toList()}');
-                    print('OrderScreen: Текущие _statuses: ${_statuses.map((s) => s.toJson()).toList()}');
+                    print(
+                        'OrderScreen: Новые статусы: ${state.statuses.map((s) => s.toJson()).toList()}');
+                    print(
+                        'OrderScreen: Текущие _statuses: ${_statuses.map((s) => s.toJson()).toList()}');
                     if (_statuses.length != state.statuses.length ||
-                        !_statuses.every((s) => state.statuses.any((st) => st.id == s.id))) {
-                      print('OrderScreen: Список статусов изменился, обновляем UI');
+                        !_statuses.every(
+                            (s) => state.statuses.any((st) => st.id == s.id))) {
+                      print(
+                          'OrderScreen: Список статусов изменился, обновляем UI');
                       setState(() {
                         _statuses = state.statuses;
-                        print('OrderScreen: _statuses обновлен: ${_statuses.map((s) => s.toJson()).toList()}');
-                        _tabKeys = List.generate(_statuses.length, (_) => GlobalKey());
-                        print('OrderScreen: _tabKeys обновлен, длина: ${_tabKeys.length}');
+                        print(
+                            'OrderScreen: _statuses обновлен: ${_statuses.map((s) => s.toJson()).toList()}');
+                        _tabKeys =
+                            List.generate(_statuses.length, (_) => GlobalKey());
+                        print(
+                            'OrderScreen: _tabKeys обновлен, длина: ${_tabKeys.length}');
                         _tabController.dispose();
-                        _tabController = TabController(length: _statuses.length, vsync: this);
-                        print('OrderScreen: TabController пересоздан с length=${_statuses.length}');
+                        _tabController = TabController(
+                            length: _statuses.length, vsync: this);
+                        print(
+                            'OrderScreen: TabController пересоздан с length=${_statuses.length}');
                         _tabController.addListener(() {
                           if (_currentTabIndex != _tabController.index) {
                             setState(() {
                               _currentTabIndex = _tabController.index;
-                              print('OrderScreen: _currentTabIndex обновлен на $_currentTabIndex');
+                              print(
+                                  'OrderScreen: _currentTabIndex обновлен на $_currentTabIndex');
                             });
                             _scrollToActiveTab();
                             if (_statuses.isNotEmpty) {
                               _orderBloc.add(FetchOrders(
-                                    statusId: _statuses[_currentTabIndex].id,
-                                    page: 1,
-                                    perPage: 20,
-                                  ));
-                              print('OrderScreen: Добавлено событие FetchOrders для statusId=${_statuses[_currentTabIndex].id}');
+                                statusId: _statuses[_currentTabIndex].id,
+                                page: 1,
+                                perPage: 20,
+                              ));
+                              print(
+                                  'OrderScreen: Добавлено событие FetchOrders для statusId=${_statuses[_currentTabIndex].id}');
                             }
                           }
                         });
 
-                        if (_navigateToNewStatus && _statuses.isNotEmpty && _newStatusId != null) {
-                          print('OrderScreen: Выполняется переход на новый статус, _newStatusId=$_newStatusId');
-                          final newTabIndex = _statuses.indexWhere((status) => status.id == _newStatusId);
-                          print('OrderScreen: Найден newTabIndex=$newTabIndex для _newStatusId=$_newStatusId');
+                        if (_navigateToNewStatus &&
+                            _statuses.isNotEmpty &&
+                            _newStatusId != null) {
+                          print(
+                              'OrderScreen: Выполняется переход на новый статус, _newStatusId=$_newStatusId');
+                          final newTabIndex = _statuses.indexWhere(
+                              (status) => status.id == _newStatusId);
+                          print(
+                              'OrderScreen: Найден newTabIndex=$newTabIndex для _newStatusId=$_newStatusId');
                           if (newTabIndex != -1) {
                             setState(() {
                               _currentTabIndex = newTabIndex;
                               _navigateToNewStatus = false;
-                              print('OrderScreen: _currentTabIndex установлен в $newTabIndex, _navigateToNewStatus сброшен');
+                              print(
+                                  'OrderScreen: _currentTabIndex установлен в $newTabIndex, _navigateToNewStatus сброшен');
                             });
                             _tabController.animateTo(newTabIndex);
-                            print('OrderScreen: TabController переключен на индекс $newTabIndex');
+                            print(
+                                'OrderScreen: TabController переключен на индекс $newTabIndex');
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              print('OrderScreen: Вызов _scrollToActiveTab после перестроения');
+                              print(
+                                  'OrderScreen: Вызов _scrollToActiveTab после перестроения');
                               _scrollToActiveTab();
                             });
                             _orderBloc.add(FetchOrders(
-                                  statusId: _statuses[newTabIndex].id,
-                                  page: 1,
-                                  perPage: 20,
-                                  forceRefresh: true,
-                                ));
-                            print('OrderScreen: Добавлено событие FetchOrders для нового статуса statusId=${_statuses[newTabIndex].id}');
+                              statusId: _statuses[newTabIndex].id,
+                              page: 1,
+                              perPage: 20,
+                              forceRefresh: true,
+                            ));
+                            print(
+                                'OrderScreen: Добавлено событие FetchOrders для нового статуса statusId=${_statuses[newTabIndex].id}');
                           } else {
-                            print('OrderScreen: Новый статус с id=$_newStatusId не найден в списке статусов');
+                            print(
+                                'OrderScreen: Новый статус с id=$_newStatusId не найден в списке статусов');
                           }
                         }
                       });
                       if (_isInitialLoad && _statuses.isNotEmpty) {
-                        print('OrderScreen: Первая загрузка, запрашиваем заказы для первого статуса');
+                        print(
+                            'OrderScreen: Первая загрузка, запрашиваем заказы для первого статуса');
                         _orderBloc.add(FetchOrders(
-                              statusId: _statuses[0].id,
-                              page: 1,
-                              perPage: 20,
-                            ));
+                          statusId: _statuses[0].id,
+                          page: 1,
+                          perPage: 20,
+                        ));
                         _isInitialLoad = false;
                         print('OrderScreen: _isInitialLoad установлен в false');
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          print('OrderScreen: Вызов _scrollToActiveTab после начальной загрузки');
+                          print(
+                              'OrderScreen: Вызов _scrollToActiveTab после начальной загрузки');
                           _scrollToActiveTab();
                         });
                       }
                     } else {
-                      print('OrderScreen: Список статусов не изменился, пропускаем обновление UI');
+                      print(
+                          'OrderScreen: Список статусов не изменился, пропускаем обновление UI');
                     }
                   } else if (state is OrderStatusCreated) {
-                    print('OrderScreen: Получено состояние OrderStatusCreated, message=${state.message}, newStatusId=${state.newStatusId}');
+                    print(
+                        'OrderScreen: Получено состояние OrderStatusCreated, message=${state.message}, newStatusId=${state.newStatusId}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -360,13 +402,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.green,
                         elevation: 3,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -377,13 +421,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                     setState(() {
                       _navigateToNewStatus = true;
                       _newStatusId = state.newStatusId;
-                      print('OrderScreen: Установлены _navigateToNewStatus=$_navigateToNewStatus, _newStatusId=$_newStatusId');
+                      print(
+                          'OrderScreen: Установлены _navigateToNewStatus=$_navigateToNewStatus, _newStatusId=$_newStatusId');
                     });
 
                     _orderBloc.add(FetchOrderStatuses());
                     print('OrderScreen: Добавлено событие FetchOrderStatuses');
                   } else if (state is OrderStatusDeleted) {
-                    print('OrderScreen: Получено состояние OrderStatusDeleted, message=${state.message}');
+                    print(
+                        'OrderScreen: Получено состояние OrderStatusDeleted, message=${state.message}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -396,13 +442,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.green,
                         elevation: 3,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -410,9 +458,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
 
                     _resetScreenState();
                     _orderBloc.add(FetchOrderStatuses());
-                    print('OrderScreen: Добавлено событие FetchOrderStatuses после удаления');
+                    print(
+                        'OrderScreen: Добавлено событие FetchOrderStatuses после удаления');
                   } else if (state is OrderStatusUpdated) {
-                    print('OrderScreen: Получено состояние OrderStatusUpdated, message=${state.message}');
+                    print(
+                        'OrderScreen: Получено состояние OrderStatusUpdated, message=${state.message}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -425,13 +475,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.green,
                         elevation: 3,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -439,9 +491,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
 
                     _resetScreenState();
                     _orderBloc.add(FetchOrderStatuses());
-                    print('OrderScreen: Добавлено событие FetchOrderStatuses после редактирования');
+                    print(
+                        'OrderScreen: Добавлено событие FetchOrderStatuses после редактирования');
                   } else if (state is OrderError) {
-                    print('OrderScreen: Получено состояние OrderError, message=${state.message}');
+                    print(
+                        'OrderScreen: Получено состояние OrderError, message=${state.message}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -454,13 +508,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.red,
                         elevation: 3,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -469,9 +525,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 },
                 child: BlocBuilder<OrderBloc, OrderState>(
                   builder: (context, state) {
-                    print('OrderScreen: BlocBuilder, текущее состояние: ${state.runtimeType}');
+                    print(
+                        'OrderScreen: BlocBuilder, текущее состояние: ${state.runtimeType}');
                     if (_statuses.isEmpty || state is OrderLoading) {
-                      print('OrderScreen: _statuses пуст или состояние OrderLoading, показываем загрузку');
+                      print(
+                          'OrderScreen: _statuses пуст или состояние OrderLoading, показываем загрузку');
                       return const Center(
                         child: PlayStoreImageLoading(
                           size: 80.0,
@@ -480,20 +538,23 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                       );
                     }
 
-                    print('OrderScreen: _statuses не пуст, отображаем контент, _statuses=${_statuses.map((s) => s.toJson()).toList()}');
+                    print(
+                        'OrderScreen: _statuses не пуст, отображаем контент, _statuses=${_statuses.map((s) => s.toJson()).toList()}');
                     return RefreshIndicator(
                       color: const Color(0xff1E2E52),
                       backgroundColor: Colors.white,
                       onRefresh: () async {
-                        print('OrderScreen: Выполняется обновление через RefreshIndicator');
+                        print(
+                            'OrderScreen: Выполняется обновление через RefreshIndicator');
                         _orderBloc.add(FetchOrderStatuses());
                         if (_statuses.isNotEmpty) {
                           _orderBloc.add(FetchOrders(
-                                statusId: _statuses[_currentTabIndex].id,
-                                page: 1,
-                                perPage: 20,
-                              ));
-                          print('OrderScreen: Добавлено событие FetchOrders для statusId=${_statuses[_currentTabIndex].id}');
+                            statusId: _statuses[_currentTabIndex].id,
+                            page: 1,
+                            perPage: 20,
+                          ));
+                          print(
+                              'OrderScreen: Добавлено событие FetchOrders для statusId=${_statuses[_currentTabIndex].id}');
                         }
                         return Future.delayed(const Duration(milliseconds: 1));
                       },
@@ -506,23 +567,31 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                               controller: _tabController,
                               physics: const AlwaysScrollableScrollPhysics(),
                               children: _statuses.map((status) {
-                                final List<Order> statusOrders = state is OrderLoaded
+                                final List<Order> statusOrders = state
+                                        is OrderLoaded
                                     ? state.orders
-                                        .where((order) => order.orderStatus.id == status.id)
+                                        .where((order) =>
+                                            order.orderStatus.id == status.id)
                                         .toList()
                                     : <Order>[];
-                                print('OrderScreen: Отображаем вкладку для статуса ${status.toJson()}, заказы: ${statusOrders.map((o) => o.toJson()).toList()}');
+                                print(
+                                    'OrderScreen: Отображаем вкладку для статуса ${status.toJson()}, заказы: ${statusOrders.map((o) => o.toJson()).toList()}');
                                 return OrderColumn(
                                   statusId: status.id,
                                   name: status.name,
-                                  searchQuery: _isSearching ? _searchController.text : null,
+                                  searchQuery: _isSearching
+                                      ? _searchController.text
+                                      : null,
                                   organizationId: widget.organizationId,
-                                  onStatusUpdated: () => _onStatusUpdated(status.id),
-                                  onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
+                                  onStatusUpdated: () =>
+                                      _onStatusUpdated(status.id),
+                                  onStatusId: (newStatusId) =>
+                                      _onStatusUpdated(newStatusId),
                                   onTabChange: (newTabIndex) {
                                     setState(() {
                                       _currentTabIndex = newTabIndex;
-                                      print('OrderScreen: _currentTabIndex обновлен на $newTabIndex через onTabChange');
+                                      print(
+                                          'OrderScreen: _currentTabIndex обновлен на $newTabIndex через onTabChange');
                                     });
                                     _tabController.animateTo(newTabIndex);
                                     _scrollToActiveTab();
@@ -539,7 +608,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
               ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            print('OrderScreen: Нажата кнопка FloatingActionButton для создания заказа');
+            print(
+                'OrderScreen: Нажата кнопка FloatingActionButton для создания заказа');
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
@@ -549,21 +619,28 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
               ),
             );
 
-            if (result != null && result is Map<String, dynamic> && result['success'] == true) {
+            if (result != null &&
+                result is Map<String, dynamic> &&
+                result['success'] == true) {
               final newStatusId = result['statusId'];
-              print('OrderScreen: Получен результат создания заказа, newStatusId=$newStatusId');
+              print(
+                  'OrderScreen: Получен результат создания заказа, newStatusId=$newStatusId');
               final orderBloc = context.read<OrderBloc>();
 
-              final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
-              print('OrderScreen: Найден newTabIndex=$newTabIndex для newStatusId=$newStatusId');
+              final newTabIndex =
+                  _statuses.indexWhere((status) => status.id == newStatusId);
+              print(
+                  'OrderScreen: Найден newTabIndex=$newTabIndex для newStatusId=$newStatusId');
               if (newTabIndex != -1) {
                 setState(() {
                   _currentTabIndex = newTabIndex;
-                  print('OrderScreen: _currentTabIndex установлен в $newTabIndex');
+                  print(
+                      'OrderScreen: _currentTabIndex установлен в $newTabIndex');
                 });
                 _tabController.animateTo(newTabIndex);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  print('OrderScreen: Вызов _scrollToActiveTab после создания заказа');
+                  print(
+                      'OrderScreen: Вызов _scrollToActiveTab после создания заказа');
                   _scrollToActiveTab();
                 });
               }
@@ -574,7 +651,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 perPage: 20,
                 forceRefresh: true,
               ));
-              print('OrderScreen: Добавлено событие FetchOrders для statusId=$newStatusId');
+              print(
+                  'OrderScreen: Добавлено событие FetchOrders для statusId=$newStatusId');
 
               if (newTabIndex != _currentTabIndex) {
                 orderBloc.add(FetchOrders(
@@ -583,21 +661,28 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                   perPage: 20,
                   forceRefresh: true,
                 ));
-                print('OrderScreen: Добавлено событие FetchOrders для текущего статуса statusId=${_statuses[_currentTabIndex].id}');
+                print(
+                    'OrderScreen: Добавлено событие FetchOrders для текущего статуса statusId=${_statuses[_currentTabIndex].id}');
               }
             } else {
-              print('OrderScreen: Результат создания заказа неуспешен или отсутствует');
+              print(
+                  'OrderScreen: Результат создания заказа неуспешен или отсутствует');
             }
           },
           backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
+          child: const Icon(
+            Icons.add_outlined,
+            color: Colors.white,
+            size: 22,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCustomTabBar(BuildContext context) {
-    print('OrderScreen: Начало _buildCustomTabBar, _statuses=${_statuses.map((s) => s.toJson()).toList()}');
+    print(
+        'OrderScreen: Начало _buildCustomTabBar, _statuses=${_statuses.map((s) => s.toJson()).toList()}');
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       controller: _scrollController,
@@ -605,7 +690,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
         children: [
           ...List.generate(_statuses.length, (index) {
             bool isActive = _tabController.index == index;
-            print('OrderScreen: Создаем вкладку для индекса $index, isActive=$isActive');
+            print(
+                'OrderScreen: Создаем вкладку для индекса $index, isActive=$isActive');
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: GestureDetector(
@@ -615,7 +701,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                   _tabController.animateTo(index);
                 },
                 onLongPress: () {
-                  print('OrderScreen: Долгое нажатие на вкладку с индексом $index');
+                  print(
+                      'OrderScreen: Долгое нажатие на вкладку с индексом $index');
                   _showStatusOptions(context, index);
                 },
                 child: Container(
@@ -626,11 +713,14 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                       color: isActive ? Colors.black : const Color(0xff99A4BA),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   child: Text(
                     _statuses[index].name,
                     style: TaskStyles.tabTextStyle.copyWith(
-                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                      color: isActive
+                          ? TaskStyles.activeColor
+                          : TaskStyles.inactiveColor,
                     ),
                   ),
                 ),
@@ -644,7 +734,8 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 print('OrderScreen: Нажата кнопка добавления нового статуса');
                 await showDialog(
                   context: context,
-                  builder: (context) => CreateOrderStatusDialog(orderBloc: _orderBloc),
+                  builder: (context) =>
+                      CreateOrderStatusDialog(orderBloc: _orderBloc),
                 );
                 print('OrderScreen: Диалог создания статуса закрыт');
               },

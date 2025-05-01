@@ -174,7 +174,7 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        localizations!.translate('edit_status'),
+                        localizations!.translate('edit'),
                         style: TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
