@@ -11,6 +11,7 @@ import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
@@ -65,7 +66,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       };
     }).toList();
     selectedLead = widget.order.lead.id.toString();
-    _deliveryMethod = widget.order.delivery ? 'delivery' : 'self_delivery';
+    _deliveryMethod = widget.order.delivery.toString(); // Инициализация без AppLocalizations
 
     // Инициализация номера телефона
     String phoneText = widget.order.phone;
@@ -301,26 +302,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 16),
-                          BlocBuilder<BranchBloc, BranchState>(
-                            builder: (context, branchState) {
-                              if (_deliveryMethod == 'self_delivery') {
-                                if (branchState is BranchLoaded) {
-                                  branches = branchState.branches;
-                                  return BranchesDropdown(
-                                    selectedBranch: _selectedBranch,
-                                    onSelectBranch: (branch) => setState(
-                                        () => _selectedBranch = branch),
-                                    label: AppLocalizations.of(context)!
-                                        .translate('branch'),
-                                    branches: branches,
-                                  );
-                                }
-                                return const SizedBox();
-                              }
-                              return const SizedBox();
-                            },
-                          ),
+                          const SizedBox(height: 8),
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('true'))
+                           BranchRadioGroupWidget(
+                             selectedStatus: _selectedBranch?.toString(),
+                             onSelectStatus: (Branch selectedStatusData) {
+                               setState(() {
+                                 _selectedBranch = selectedStatusData;
+                               });
+                             },
+                           ),
+
                           if (_deliveryMethod == 'delivery')
                             CustomTextField(
                               controller: _deliveryAddressController,

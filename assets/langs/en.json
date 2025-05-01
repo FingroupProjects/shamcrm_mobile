@@ -1024,6 +1024,9 @@
     "delete_status_order": "Delete order status?",
     "confirm_delete_status": "Are you sure you want to delete this status?",
     "order_history": "Order history",
-    "delivery_type": "Delivery type"
+    "delivery_type": "Delivery type",
+  "enter_correct_number": "Enter a valid number",
+"select_subject_required": "Subject field is required!",
+"please_create_status": "Please create a status first!"
 
 }

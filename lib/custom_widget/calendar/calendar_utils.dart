@@ -9,6 +9,7 @@ class CalendarEventData {
   final DateTime endTime;
   final Color color;
   final String type;
+  final bool isFinished;
 
   CalendarEventData({
     required this.id,
@@ -19,6 +20,7 @@ class CalendarEventData {
     required this.endTime,
     required this.color,
     this.type = '',
+    required this.isFinished ,
   });
 }
 

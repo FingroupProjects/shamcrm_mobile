@@ -1038,5 +1038,8 @@
   "delete_status_order": "Buyurtma holatini o‘chirishni xohlaysizmi?",
   "confirm_delete_status": "Ushbu holatni o‘chirishga ishonchingiz komilmi?",
   "order_history": "Buyurtma tarixi",
-  "delivery_type": "Yetkazib berish turi"
+  "delivery_type": "Yetkazib berish turi",
+  "enter_correct_number": "To‘g‘ri raqam kiriting",
+"select_subject_required": "Mavzu maydoni majburiy!",
+"please_create_status": "Avval holat yarating!"
 }

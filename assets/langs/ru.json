@@ -1031,7 +1031,10 @@
   "delete_status_order": "Удалить статус заказа?",
   "confirm_delete_status": "Вы уверены, что хотите удалить этот статус?",
   "order_history": "История действия",
-  "delivery_type": "Тип доставки"
+  "delivery_type": "Тип доставки",
+    "enter_correct_number": "Введите корректное число",
+  "select_subject_required": "Поле тематика обезятельно!",
+  "please_create_status": "Сначала создайте статус!"
 }
   
   

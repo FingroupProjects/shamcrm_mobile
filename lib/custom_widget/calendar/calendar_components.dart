@@ -2,7 +2,6 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_event.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_myTask.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -127,14 +126,14 @@ class EventListForDate extends StatelessWidget {
   final DateTime selectedDate;
   final Map<DateTime, List<CalendarEventData>> events;
   final Function(int id, String type)? onEventTap;
-  final CalendarFormat calendarFormat; 
+  final CalendarFormat calendarFormat;
 
   const EventListForDate({
     super.key,
     required this.selectedDate,
     required this.events,
     this.onEventTap,
-    required this.calendarFormat, 
+    required this.calendarFormat,
   });
 
   @override
@@ -164,7 +163,7 @@ class EventListForDate extends StatelessWidget {
               constraints: BoxConstraints(
                 maxHeight: calendarFormat == CalendarFormat.month
                     ? MediaQuery.of(context).size.height * 0.4
-                    : MediaQuery.of(context).size.height * 0.6, 
+                    : MediaQuery.of(context).size.height * 0.6,
               ),
               child: SingleChildScrollView(
                 child: AnimatedContainer(
@@ -202,59 +201,79 @@ class EventListForDate extends StatelessWidget {
                                 onEventTap!(event.id, event.type);
                               }
                             },
-                            child: ListTile(
-                              leading: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: event.color,
-                                      borderRadius: BorderRadius.circular(30),
+                            child: Stack(
+                              children: [
+                                ListTile(
+                                  leading: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 4,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: event.color,
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: Icon(
+                                          event.type == 'notice'
+                                              ? Icons.event
+                                              : event.type == 'task'
+                                                  ? Icons.task
+                                                  : Icons.assignment,
+                                          color: event.type == 'notice'
+                                              ? Colors.orange
+                                              : event.type == 'task'
+                                                  ? Colors.green
+                                                  : Colors.blue,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  title: Text(
+                                    event.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    event.type == 'task'
+                                        ? AppLocalizations.of(context)!.translate('task')
+                                        : event.type == 'my_task'
+                                            ? AppLocalizations.of(context)!.translate('my_task')
+                                            : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 14,
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: Icon(
-                                      event.type == 'notice'
-                                          ? Icons.event
-                                          : event.type == 'task'
-                                              ? Icons.task
-                                              : Icons.assignment,
-                                      color: event.type == 'notice'
-                                          ? Colors.orange
-                                          : event.type == 'task'
-                                              ? Colors.green
-                                              : Colors.blue,
-                                      size: 20,
+                                ),
+                                if (event.isFinished)
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 0,
+                                  bottom: MediaQuery.of(context).size.height * 0.020,
+                                  child: Center(
+                                    child: FractionallySizedBox(
+                                      widthFactor: 0.7, 
+                                      child: Container(
+                                        height: 1.5,
+                                        color: Color(0xff1E2E52).withOpacity(0.9),
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              title: Text(
-                                event.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                event.type == 'task'
-                                    ? AppLocalizations.of(context)!.translate('task')
-                                    : event.type == 'my_task'
-                                        ? AppLocalizations.of(context)!.translate('my_task')
-                                        : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 14,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
                         );
@@ -334,15 +353,17 @@ class DayViewEventList extends StatelessWidget {
                           children: [
                             SizedBox(
                               width: 60,
-                              child: Text(
-                                DateFormat('HH:mm').format(event.date),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
+                              child: event.type == 'notice'
+                                  ? Text(
+                                      DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5))),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(), 
                             ),
                             Expanded(
                               child: Card(
@@ -357,58 +378,79 @@ class DayViewEventList extends StatelessWidget {
                                       onEventTap!(event.id, event.type);
                                     }
                                   },
-                                  child: ListTile(
-                                    leading: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 4,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: event.color,
-                                            borderRadius: BorderRadius.circular(30),
+                                  child: Stack(
+                                    children: [
+                                      ListTile(
+                                        leading: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 4,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color: event.color,
+                                                borderRadius: BorderRadius.circular(30),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 8),
+                                              child: Icon(
+                                                event.type == 'notice'
+                                                    ? Icons.event
+                                                    : event.type == 'task'
+                                                        ? Icons.task
+                                                        : Icons.assignment,
+                                                color: event.type == 'notice'
+                                                    ? Colors.orange
+                                                    : event.type == 'task'
+                                                        ? Colors.green
+                                                        : Colors.blue,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        title: Text(
+                                          event.title,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          event.type == 'task'
+                                              ? AppLocalizations.of(context)!.translate('task')
+                                              : event.type == 'my_task'
+                                                  ? AppLocalizations.of(context)!.translate('my_task')
+                                                  : '${AppLocalizations.of(context)!.translate('notice')}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 14,
                                           ),
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: Icon(
-                                            event.type == 'notice'
-                                                ? Icons.event
-                                                : event.type == 'task'
-                                                    ? Icons.task
-                                                    : Icons.assignment,
-                                            color: event.type == 'notice'
-                                                ? Colors.orange
-                                                : event.type == 'task'
-                                                    ? Colors.green
-                                                    : Colors.blue,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    title: Text(
-                                      event.title,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xff1E2E52),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    subtitle: Text(
-                                      event.type == 'task'
-                                          ? AppLocalizations.of(context)!.translate('task')
-                                          : event.type == 'my_task'
-                                              ? AppLocalizations.of(context)!.translate('my_task')
-                                              : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 14,
-                                      ),
-                                    ),
+                                   if (event.isFinished)
+                                     Positioned(
+                                       left: 0,
+                                       right: 0,
+                                       top: 0,
+                                       bottom: MediaQuery.of(context).size.height * 0.020,
+                                       child: Center(
+                                         child: FractionallySizedBox(
+                                           widthFactor: 0.65, 
+                                           child: Container(
+                                             height: 1.5,
+                                             color: Color(0xff1E2E52).withOpacity(0.9),
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -737,7 +779,7 @@ class OptionsBottomSheet extends StatelessWidget {
                 Navigator.pop(context);
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate('Сначала создайте статус!'),
+                  message: AppLocalizations.of(context)!.translate('please_create_status'),
                   isSuccess: false,
                 );
               }
