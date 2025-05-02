@@ -28,9 +28,9 @@ class CalendarUtils {
   static Color getEventColor(String type) {
     switch (type) {
       case 'task':
-        return Colors.green;
-      case 'my_task':
         return Colors.blue;
+      case 'my_task':
+        return Colors.purpleAccent;
       case 'notice':
         return Colors.orange;
       default:

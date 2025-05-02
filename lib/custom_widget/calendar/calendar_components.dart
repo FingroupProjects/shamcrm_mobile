@@ -226,8 +226,8 @@ class EventListForDate extends StatelessWidget {
                                           color: event.type == 'notice'
                                               ? Colors.orange
                                               : event.type == 'task'
-                                                  ? Colors.green
-                                                  : Colors.blue,
+                                                  ? Colors.blue
+                                                  : Colors.purpleAccent,
                                           size: 20,
                                         ),
                                       ),
@@ -403,8 +403,8 @@ class DayViewEventList extends StatelessWidget {
                                                 color: event.type == 'notice'
                                                     ? Colors.orange
                                                     : event.type == 'task'
-                                                        ? Colors.green
-                                                        : Colors.blue,
+                                                        ? Colors.blue
+                                                        : Colors.purpleAccent,
                                                 size: 20,
                                               ),
                                             ),
@@ -722,7 +722,7 @@ class OptionsBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.task, color: Colors.green),
+            leading: const Icon(Icons.task, color: Colors.blue),
             title: Text(
               AppLocalizations.of(context)!.translate('task'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
@@ -758,7 +758,7 @@ class OptionsBottomSheet extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.assignment, color: Colors.blue),
+            leading: const Icon(Icons.assignment, color: Colors.purpleAccent),
             title: Text(
               AppLocalizations.of(context)!.translate('appbar_my_tasks'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),

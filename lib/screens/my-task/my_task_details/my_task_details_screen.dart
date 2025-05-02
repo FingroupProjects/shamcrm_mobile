@@ -529,6 +529,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
@@ -560,6 +562,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
   final String? endDate;
   final String? taskFile; // Добавлено поле для файла
   final List<MyTaskFiles>? files; // вместо String? taskFile
+  final DateTime? initialDate;
 
   MyTaskDetailsScreen(
       {required this.taskId,
@@ -572,6 +575,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
       this.endDate,
       // this.projectName,
       this.taskFile, // Инициализация опционального параметра
+      this.initialDate, 
       this.files});
 
   @override
@@ -855,6 +859,9 @@ AppBar _buildAppBar(BuildContext context, String title) {
             height: 24,
           ),
           onPressed: () {
+            context.read<CalendarBloc>().add(FetchCalendarEvents(
+             widget.initialDate?.month ?? DateTime.now().month,
+             widget.initialDate?.year ?? DateTime.now().year));
             Navigator.pop(context, widget.statusId);
           },
         ),
@@ -892,10 +899,10 @@ AppBar _buildAppBar(BuildContext context, String title) {
                       builder: (context) => MyTaskEditScreen(
                         taskId: currentMyTask!.id,
                         taskName: currentMyTask!.name,
-                        taskStatus:
-                            currentMyTask!.taskStatus?.taskStatus.toString() ??
+                        taskStatus: currentMyTask!.taskStatus?.taskStatus.toString() ??
                                 '',
-                        statusId: widget.statusId,
+                        statusId: currentMyTask!.taskStatus?.id ?? 0,
+                        // statusId: widget.statusId,
                         description: currentMyTask!.description,
                         startDate: currentMyTask!.startDate,
                         endDate: currentMyTask!.endDate,
