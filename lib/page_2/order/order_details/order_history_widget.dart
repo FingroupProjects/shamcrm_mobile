@@ -102,9 +102,9 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
               return _buildHistoryItem(item);
             }).toList()
           : [
-              const Text(
-                'No history available',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.translate('no_history_available'),
+                style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
@@ -128,7 +128,8 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         children: [
           _buildStatusRow(status, userName),
           const SizedBox(height: 10),
-          if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
+          if (additionalDetails.isNotEmpty)
+            _buildAdditionalDetails(additionalDetails),
         ],
       ),
     );
@@ -198,17 +199,14 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
     return history.map((entry) {
       final changes = entry.changes;
       final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+      String actionDetail = '${entry.status}\n${entry.user?.name ?? AppLocalizations.of(context)!.translate('unknown_user')} $formattedDate';
 
-      if (changes != null) {
-        if (changes.leadNewValue != null || changes.leadPreviousValue != null) {
-          actionDetail +=
-              '\n${AppLocalizations.of(context)!.translate('lead')}: ${changes.leadPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.leadNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
-        }
-        if (changes.deliveryTypeNewValue != null || changes.deliveryTypePreviousValue != null) {
-          actionDetail +=
-              '\n${AppLocalizations.of(context)!.translate('delivery_type')}: ${changes.deliveryTypePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.deliveryTypeNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
-        }
+      if (changes != null && changes.body != null) {
+        changes.body!.forEach((key, value) {
+          final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
+          final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
+          actionDetail += '\n${AppLocalizations.of(context)!.translate(key)}: $previousValue > $newValue';
+        });
       }
 
       return actionDetail;

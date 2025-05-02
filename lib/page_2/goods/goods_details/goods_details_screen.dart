@@ -409,10 +409,6 @@ Widget _buildDetailsList(Goods goods) {
       'value': goods.description ?? '',
     },
     {
-      'label': AppLocalizations.of(context)!.translate('stock_quantity_details'),
-      'value': goods.quantity?.toString() ?? '0',
-    },
-    {
       'label': AppLocalizations.of(context)!.translate('category_details'),
       'value': goods.category.name ?? '',
     },

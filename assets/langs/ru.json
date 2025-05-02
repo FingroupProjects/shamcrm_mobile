@@ -974,7 +974,7 @@
   "view_variant": "Просмотр варианта",
   "no_date": "Нет даты",
   "no_phone": "Нет телефона",
-  "self_delivery": "Самовывоз",
+  "self_delivery": "Курьер",
   "delivery": "Доставка",
   "please_select_product": "Выберите хотя бы один товар",
   "no_products_found": "Товары не найдены",
@@ -1034,7 +1034,9 @@
   "delivery_type": "Тип доставки",
     "enter_correct_number": "Введите корректное число",
   "select_subject_required": "Поле тематика обезятельно!",
-  "please_create_status": "Сначала создайте статус!"
+  "please_create_status": "Сначала создайте статус!",
+  "comment_to_courier": "Комментарий клиента"
+
 }
   
   
