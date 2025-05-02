@@ -190,7 +190,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
- Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
+Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
   print('OrderBloc: Начало _createOrder');
   emit(OrderLoading());
   try {
@@ -205,11 +205,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     };
 
     if (event.delivery) {
-      body['delivery_address'] = event.deliveryAddress;
+      body['delivery_address_id'] = event.deliveryAddressId?.toString();
     } else {
-      body['delivery_address'] = null; // null для самовывоза
+      body['delivery_address_id'] = null;
       if (event.branchId != null) {
-        body['branch_id'] = event.branchId.toString(); // Отправляем branch_id напрямую
+        body['branch_id'] = event.branchId.toString();
       }
     }
 
@@ -220,6 +220,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       leadId: event.leadId,
       delivery: event.delivery,
       deliveryAddress: event.deliveryAddress,
+      deliveryAddressId: event.deliveryAddressId,
       goods: event.goods,
       organizationId: event.organizationId,
       statusId: event.statusId,
@@ -271,7 +272,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     emit(OrderError('Ошибка создания заказа: $e'));
   }
 }
- Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
   print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
   emit(OrderLoading());
   try {
@@ -286,10 +287,12 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
     if (event.delivery) {
       body['delivery_address'] = event.deliveryAddress;
+      body['delivery_address_id'] = event.deliveryAddressId?.toString();
     } else {
       body['delivery_address'] = null;
+      body['delivery_address_id'] = null;
       if (event.branchId != null) {
-        body['branch_id'] = event.branchId.toString(); // Отправляем branch_id напрямую
+        body['branch_id'] = event.branchId.toString();
       }
     }
 
@@ -301,6 +304,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       leadId: event.leadId,
       delivery: event.delivery,
       deliveryAddress: event.deliveryAddress,
+      deliveryAddressId: event.deliveryAddressId,
       goods: event.goods,
       organizationId: event.organizationId,
       branchId: event.branchId,

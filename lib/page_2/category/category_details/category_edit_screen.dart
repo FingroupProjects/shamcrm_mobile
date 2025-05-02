@@ -10,31 +10,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CategoryEditBottomSheet {
-static Future<Map<String, dynamic>?> show(BuildContext context, {
-  required int initialCategoryId,
-  required String initialName,
-  File? initialImage,
-}) async {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController categoryNameController = TextEditingController(text: initialName);
-  bool isActive = false;
-  File? _image = initialImage;
-  bool _isImageSelected = true;
-  bool _isImageChanged = false;
-  int categoryId = initialCategoryId;
+  static Future<Map<String, dynamic>?> show(
+    BuildContext context, {
+    required int initialCategoryId,
+    required String initialName,
+    File? initialImage,
+  }) async {
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController categoryNameController =
+        TextEditingController(text: initialName);
+    bool isActive = false;
+    File? _image = initialImage;
+    bool _isImageSelected = true;
+    bool _isImageChanged = false;
+    int categoryId = initialCategoryId;
 
     Future<void> _pickImage() async {
-      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
-        _isImageSelected = true; 
-         _isImageChanged = true;
+        _isImageSelected = true;
+        _isImageChanged = true;
       } else {
-        _isImageSelected = false; 
+        _isImageSelected = false;
       }
     }
 
-  return await showModalBottomSheet<Map<String, dynamic>>(
+    return await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -85,24 +88,29 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                             children: [
                               CustomTextField(
                                 controller: categoryNameController,
-                                hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
-                                label: AppLocalizations.of(context)!.translate('category_name'),
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_category_name'),
+                                label: AppLocalizations.of(context)!
+                                    .translate('category_name'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!.translate('field_required');
+                                    return AppLocalizations.of(context)!
+                                        .translate('field_required');
                                   }
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 8),
-                               Text( AppLocalizations.of(context)!.translate('image_message'),
-                                 style: const TextStyle(
-                                   fontSize: 16,
-                                   fontFamily: 'Gilroy',
-                                   fontWeight: FontWeight.w500,
-                                   color: Color(0xff1E2E52),
-                                 ),
-                               ),
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .translate('image_message'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               GestureDetector(
                                 onTap: () async {
@@ -114,19 +122,23 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                   children: [
                                     Container(
                                       width: double.infinity,
-                                      height: 60,
+                                      height:
+                                          200, // Increased height for larger image display
                                       decoration: BoxDecoration(
                                         color: const Color(0xffF4F7FD),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
+                                          color: !_isImageSelected
+                                              ? Colors.red
+                                              : const Color(0xffF4F7FD),
                                           width: 1,
                                         ),
                                       ),
                                       child: _image == null
                                           ? Center(
                                               child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: [
                                                   Icon(
                                                     Icons.camera_alt,
@@ -135,10 +147,14 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    AppLocalizations.of(context)!.translate('pick_image'),
+                                                    AppLocalizations.of(
+                                                            context)!
+                                                        .translate(
+                                                            'pick_image'),
                                                     style: TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff99A4BA),
                                                     ),
@@ -146,36 +162,33 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                                 ],
                                               ),
                                             )
-                                          : Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                                              child: Row(
-                                                children: [
-                                                  Container(
-                                                    width: 54,
-                                                    height: 54,
+                                          : Stack(
+                                              children: [
+                                                Center(
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    height:
+                                                        180, // Slightly smaller to fit within container
                                                     decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
                                                       image: DecorationImage(
-                                                        image: FileImage(_image!),
-                                                        fit: BoxFit.cover,
+                                                        image:
+                                                            FileImage(_image!),
+                                                        fit: BoxFit
+                                                            .contain, // Ensures full image is visible
                                                       ),
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      _image!.path.split('/').last,
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis, 
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    icon: Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                ),
+                                                Positioned(
+                                                  top: 8,
+                                                  right: 8,
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.close,
+                                                        color:
+                                                            Color(0xff1E2E52)),
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
@@ -183,15 +196,30 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                                                       });
                                                     },
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
                                     ),
+                                    if (_image != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          _image!.path.split('/').last,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Gilroy',
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     if (!_isImageSelected)
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('required_image'),
+                                          AppLocalizations.of(context)!
+                                              .translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -212,7 +240,8 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () => Navigator.pop(context),
@@ -221,12 +250,13 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('save'),
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() ) {
-                              // if (formKey.currentState!.validate() && _image != null) {
+                              if (formKey.currentState!.validate()) {
+                                // if (formKey.currentState!.validate() && _image != null) {
                                 _updateCategory(
                                   categoryId,
                                   categoryNameController.text,
@@ -256,24 +286,18 @@ static Future<Map<String, dynamic>?> show(BuildContext context, {
     );
   }
 
-static void _updateCategory(
-  int categoryId, 
-  String name, 
-  bool isActive, 
-  File? image, 
-  bool isImageChanged,
-  BuildContext context
-) {
-  final bloc = BlocProvider.of<CategoryBloc>(context);
-  bloc.add(UpdateCategory(
-    categoryId: categoryId,
-    name: name,
-    image: isImageChanged ? image : null,
-  ));
-  
-  Navigator.pop(context, {
-    'updatedName': name,
-    'updatedImage': isImageChanged ? image : null,
-  });
+  static void _updateCategory(int categoryId, String name, bool isActive,
+      File? image, bool isImageChanged, BuildContext context) {
+    final bloc = BlocProvider.of<CategoryBloc>(context);
+    bloc.add(UpdateCategory(
+      categoryId: categoryId,
+      name: name,
+      image: isImageChanged ? image : null,
+    ));
+
+    Navigator.pop(context, {
+      'updatedName': name,
+      'updatedImage': isImageChanged ? image : null,
+    });
   }
 }

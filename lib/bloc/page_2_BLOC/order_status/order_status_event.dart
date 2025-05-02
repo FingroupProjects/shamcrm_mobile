@@ -43,6 +43,7 @@ class CreateOrder extends OrderEvent {
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
+  final int? deliveryAddressId; // Новое поле
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int statusId;
@@ -54,6 +55,7 @@ class CreateOrder extends OrderEvent {
     required this.leadId,
     required this.delivery,
     this.deliveryAddress,
+    this.deliveryAddressId,
     required this.goods,
     required this.organizationId,
     required this.statusId,
@@ -61,13 +63,13 @@ class CreateOrder extends OrderEvent {
     this.commentToCourier,
   });
 }
-
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
+  final int? deliveryAddressId; // Новое поле
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int? branchId;
@@ -79,13 +81,13 @@ class UpdateOrder extends OrderEvent {
     required this.leadId,
     required this.delivery,
     this.deliveryAddress,
+    this.deliveryAddressId,
     required this.goods,
     required this.organizationId,
     this.branchId,
     this.commentToCourier,
   });
 }
-
 class DeleteOrder extends OrderEvent {
   final int orderId;
   final int? organizationId;

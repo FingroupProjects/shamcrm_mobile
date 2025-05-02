@@ -107,10 +107,82 @@ Future<void> _loadCharacteristics() async {
   }
 
 Widget _buildTextField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        decoration: BoxDecoration(
+          color: Color(0xffF4F7FD),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xffF4F7FD),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                focusNode: _focusNode,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.translate('select_characteristic'),
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52).withOpacity(0.6),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  widget.onSelectCharacteristic(value);
+                },
+                onTap: () {
+                  _focusNode.requestFocus();
+                  setState(() {
+                    _isDropdownVisible = false;
+                  });
+                  if (widget.onDropdownVisibilityChanged != null) {
+                    widget.onDropdownVisibilityChanged!(false);
+                  }
+                },
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.arrow_drop_down),
+              onPressed: () {
+                setState(() {
+                  _isDropdownVisible = !_isDropdownVisible;
+                  if (_isDropdownVisible) {
+                    _focusNode.unfocus();
+                  }
+                  if (!_isDropdownVisible) {
+                    _searchController.clear();
+                  }
+                });
+                if (widget.onDropdownVisibilityChanged != null) {
+                  widget.onDropdownVisibilityChanged!(_isDropdownVisible);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      if (_isDropdownVisible)
         Container(
+          margin: EdgeInsets.only(top: 2),
+          constraints: BoxConstraints(
+            maxHeight: 200, // Reduced height to show ~2 items
+            maxWidth: 330,
+          ),
           decoration: BoxDecoration(
             color: Color(0xffF4F7FD),
             borderRadius: BorderRadius.circular(12),
@@ -119,150 +191,84 @@ Widget _buildTextField() {
               width: 1,
             ),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: TextField(
-                  controller: _textController,
-                  focusNode: _focusNode,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52), 
-                  ),
+                  controller: _searchController,
+                  autofocus: true,
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('select_characteristic'),
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52).withOpacity(0.6),
+                    hintText: AppLocalizations.of(context)!.translate('search'),
+                    prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.black),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.black),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                   onChanged: (value) {
-                    widget.onSelectCharacteristic(value);
-                  },
-                onTap: () {
-                    _focusNode.requestFocus();
-                    setState(() {
-                      _isDropdownVisible = false;
-                    });
-                    if (widget.onDropdownVisibilityChanged != null) {
-                      widget.onDropdownVisibilityChanged!(false);
-                    }
+                    filterSearchResults(value);
                   },
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.arrow_drop_down),
-                onPressed: () {
-                  setState(() {
-                    _isDropdownVisible = !_isDropdownVisible;
-                    if (_isDropdownVisible) {
-                      _focusNode.unfocus(); 
-                    }
-                    if (!_isDropdownVisible) {
-                      _searchController.clear();
-                    }
-                  });
-                  if (widget.onDropdownVisibilityChanged != null) {
-                    widget.onDropdownVisibilityChanged!(_isDropdownVisible);
-                  }
-                },
+              Expanded(
+                child: filteredList.isEmpty && _searchController.text.isNotEmpty
+                    ? Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('no_data_to_display'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: AlwaysScrollableScrollPhysics(),
+                        itemCount: filteredList.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            title: Text(
+                              filteredList[index].title,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _textController.text = filteredList[index].title;
+                                selectedCharacteristicData = filteredList[index];
+                                _isDropdownVisible = false;
+                                _searchController.clear();
+                              });
+                              widget.onSelectCharacteristic(filteredList[index].title);
+                              if (widget.onDropdownVisibilityChanged != null) {
+                                widget.onDropdownVisibilityChanged!(false);
+                              }
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
         ),
-        if (_isDropdownVisible)
-          Container(
-            margin: EdgeInsets.only(top: 2),
-            constraints: BoxConstraints(maxHeight: 230,maxWidth: 330),
-            decoration: BoxDecoration(
-              color: Color(0xffF4F7FD),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Color(0xffF4F7FD),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.translate('search'),
-                      prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.black),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.black),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onChanged: (value) {
-                      filterSearchResults(value);
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: filteredList.isEmpty && _searchController.text.isNotEmpty
-                      ? Center(
-                          child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: filteredList.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              title: Text(
-                                filteredList[index].title,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52), 
-                                ),
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  _textController.text = filteredList[index].title;
-                                  selectedCharacteristicData = filteredList[index];
-                                  _isDropdownVisible = false;
-                                  _searchController.clear();
-                                });
-                                widget.onSelectCharacteristic(filteredList[index].title);
-                                 if (widget.onDropdownVisibilityChanged != null) {
-                                  widget.onDropdownVisibilityChanged!(false);
-                                }
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
+    ],
+  );
+}
 }

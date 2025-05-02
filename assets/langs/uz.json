@@ -1042,6 +1042,10 @@
   "enter_correct_number": "To‘g‘ri raqam kiriting",
 "select_subject_required": "Mavzu maydoni majburiy!",
 "please_create_status": "Avval holat yarating!",
-"comment_to_courier": "Mijoz izohi"
+"comment_to_courier": "Mijoz izohi",
+"branch_order": "Filial:",
+"select_delivery_address": "Yetkazib berish manzilini tanlang",
+"discount_percent": "Chegirma foizi"
+
 
 }

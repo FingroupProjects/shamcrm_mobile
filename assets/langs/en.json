@@ -1028,7 +1028,10 @@
   "enter_correct_number": "Enter a valid number",
 "select_subject_required": "Subject field is required!",
 "please_create_status": "Please create a status first!",
-"comment_to_courier": "Customer comment"
+"comment_to_courier": "Customer comment",
+"branch_order": "Branch:",
+"select_delivery_address": "Select delivery address",
+"discount_percent": "Discount"
 
 
 }

@@ -1,33 +1,21 @@
-// import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
+import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
+import 'package:flutter/material.dart';
 
-// abstract class DeliveryAddressState {
-//   const DeliveryAddressState();
-// }
+@immutable
+abstract class DeliveryAddressState {}
 
-// class DeliveryAddressInitial extends DeliveryAddressState {
-//   DeliveryAddressInitial() {
-//     print('DeliveryAddressState: Initial state');
-//   }
-// }
+class DeliveryAddressInitial extends DeliveryAddressState {}
 
-// class DeliveryAddressLoading extends DeliveryAddressState {
-//   DeliveryAddressLoading() {
-//     print('DeliveryAddressState: Loading state');
-//   }
-// }
+class DeliveryAddressLoading extends DeliveryAddressState {}
 
-// class DeliveryAddressSuccess extends DeliveryAddressState {
-//   final List<DeliveryAddress> addresses;
+class DeliveryAddressLoaded extends DeliveryAddressState {
+  final List<DeliveryAddress> addresses;
 
-//   DeliveryAddressSuccess({required this.addresses}) {
-//     print('DeliveryAddressState: Success state with ${addresses.length} addresses');
-//   }
-// }
+  DeliveryAddressLoaded(this.addresses);
+}
 
-// class DeliveryAddressError extends DeliveryAddressState {
-//   final String message;
+class DeliveryAddressError extends DeliveryAddressState {
+  final String message;
 
-//   DeliveryAddressError({required this.message}) {
-//     print('DeliveryAddressState: Error state: $message');
-//   }
-// }
+  DeliveryAddressError(this.message);
+}
