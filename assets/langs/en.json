@@ -1027,6 +1027,8 @@
     "delivery_type": "Delivery type",
   "enter_correct_number": "Enter a valid number",
 "select_subject_required": "Subject field is required!",
-"please_create_status": "Please create a status first!"
+"please_create_status": "Please create a status first!",
+"comment_to_courier": "Customer comment"
+
 
 }

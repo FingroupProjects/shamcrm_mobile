@@ -1,6 +1,8 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -11,6 +13,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -71,6 +74,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeBaseUrl();
       _loadStatuses();
+      context.read<BranchBloc>().add(FetchBranches());
     });
   }
 
@@ -346,7 +350,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                });
                              },
                            ),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
                             CustomTextField(
                               // key: const Key('delivery_address_field'),
                               controller: _deliveryAddressController,
@@ -686,106 +692,89 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                // Проверяем, выбран ли филиал для самовывоза
-                if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery')) {
-                  if (_selectedBranch == null) {
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                    // Проверяем, выбран ли филиал для самовывоза
+                    if (_deliveryMethod ==
+                            AppLocalizations.of(context)!
+                                .translate('self_delivery') &&
+                        _selectedBranch == null) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: AppLocalizations.of(context)!
+                            .translate('please_select_branch'),
+                        isSuccess: false,
+                      );
+                      return;
+                    }
+
+                    final orderBloc = context.read<OrderBloc>();
+                    orderBloc.add(CreateOrder(
+                      phone: selectedDialCode ?? _phoneController.text,
+                      leadId: int.parse(selectedLead ?? '0'),
+                      delivery: true,
+                      deliveryAddress: _deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('self_delivery')
+                          ? _selectedBranch?.address ?? ''
+                          : _deliveryAddressController.text,
+                      goods: _items
+                          .map((item) => {
+                                'variant_id': item['id'].toString(),
+                                'quantity': item['quantity'] ?? 1,
+                                'price': item['price'].toString(),
+                              })
+                          .toList(),
+                      organizationId: widget.organizationId ?? 1,
+                      statusId: selectedStatusId ?? 1,
+                      branchId: _deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('self_delivery')
+                          ? _selectedBranch?.id
+                          : null,
+                      commentToCourier: _commentController.text.isNotEmpty
+                          ? _commentController.text
+                          : null,
+                    ));
+
+                    await Future.delayed(const Duration(milliseconds: 500));
+
+                    if (orderBloc.state is OrderSuccess && mounted) {
+                      final successState = orderBloc.state as OrderSuccess;
+                      Navigator.pop(context, {
+                        'statusId': successState.statusId,
+                        'success': true,
+                      });
+                    }
+                  } else if (mounted) {
                     showCustomSnackBar(
                       context: context,
-                      message: AppLocalizations.of(context)!.translate('please_select_branch'),
+                      message: _items.isEmpty
+                          ? AppLocalizations.of(context)!
+                              .translate('add_at_least_one_product')
+                          : AppLocalizations.of(context)!
+                              .translate('fill_all_required_fields'),
                       isSuccess: false,
                     );
-                    return;
                   }
-                }
-
-                final orderBloc = context.read<OrderBloc>();
-                
-                // Формируем данные для отправки
-                final orderData = {
-                  'phone': selectedDialCode ?? _phoneController.text,
-                  'leadId': int.parse(selectedLead ?? '0'),
-                  'delivery': _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
-                  'deliveryAddress': _deliveryMethod == AppLocalizations.of(context)!.translate('delivery')
-                      ? _deliveryAddressController.text
-                      : _selectedBranch?.address ?? '',
-                  'goods': _items
-                      .map((item) => {
-                            'variant_id': item['id'],
-                            'quantity': item['quantity'] ?? 1,
-                            'price': item['price'],
-                          })
-                      .toList(),
-                  'organizationId': widget.organizationId ?? 1,
-                  'statusId': selectedStatusId ?? 1,
-                  'branchId': _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery')
-                      ? _selectedBranch?.id
-                      : null,
-                  'commentToCourier': _commentController.text.isNotEmpty ? _commentController.text : null,
-                };
-
-                // Логируем отправленные данные
-                debugPrint('Отправленные данные в CreateOrder:');
-                debugPrint('phone: ${orderData['phone']}');
-                debugPrint('leadId: ${orderData['leadId']}');
-                debugPrint('delivery: ${orderData['delivery']}');
-                debugPrint('deliveryAddress: ${orderData['deliveryAddress']}');
-                debugPrint('goods: ${orderData['goods']}');
-                debugPrint('organizationId: ${orderData['organizationId']}');
-                debugPrint('statusId: ${orderData['statusId']}');
-                debugPrint('branchId: ${orderData['branchId']}');
-                debugPrint('commentToCourier: ${orderData['commentToCourier']}');
-
-                // Отправляем событие
-                orderBloc.add(CreateOrder(
-                  phone: orderData['phone'] as String,
-                  leadId: orderData['leadId'] as int,
-                  delivery: true,
-                  deliveryAddress: orderData['deliveryAddress'] as String,
-                  goods: (orderData['goods'] as List).map((item) => {
-                    'variant_id': item['variant_id'],
-                    'quantity': item['quantity'],
-                    'price': item['price'],
-                  }).toList(),
-                  organizationId: orderData['organizationId'] as int,
-                  statusId: orderData['statusId'] as int,
-                  branchId: _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery')
-                      ? orderData['branchId'] as int?
-                      : null,
-                  commentToCourier: orderData['commentToCourier'] as String?,
-                ));
-              } else {
-                showCustomSnackBar(
-                  context: context,
-                  message: _items.isEmpty
-                      ? AppLocalizations.of(context)!.translate('add_at_least_one_product')
-                      : AppLocalizations.of(context)!.translate('fill_all_required_fields'),
-                  isSuccess: false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12)),
-            child: Text(AppLocalizations.of(context)!.translate('create'),
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white)),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff4759FF),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12)),
+                child: Text(AppLocalizations.of(context)!.translate('create'),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white)),
+              ),
+            ),
+          ],
+        ));
+  }
 }

@@ -85,11 +85,11 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('name_deal_details'),
         'value': _currentCategory.name
       },
-      if (_currentCategory.displayType != null)
-        {
-          'label': AppLocalizations.of(context)!.translate('display_type'),
-          'value': _currentCategory.displayType!
-        },
+      // if (_currentCategory.displayType != null)
+      //   {
+      //     'label': AppLocalizations.of(context)!.translate('display_type'),
+      //     'value': _currentCategory.displayType!
+      //   },
       {
         'label': AppLocalizations.of(context)!.translate('has_price_characteristics'),
         'value': _currentCategory.hasPriceCharacteristics

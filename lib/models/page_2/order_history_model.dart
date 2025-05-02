@@ -74,24 +74,22 @@ class User {
 }
 
 class Changes {
-  final String? leadNewValue;
-  final String? leadPreviousValue;
-  final String? deliveryTypeNewValue;
-  final String? deliveryTypePreviousValue;
+  final Map<String, Map<String, String?>> body;
 
   Changes({
-    this.leadNewValue,
-    this.leadPreviousValue,
-    this.deliveryTypeNewValue,
-    this.deliveryTypePreviousValue,
+    required this.body,
   });
 
   factory Changes.fromJson(Map<String, dynamic> json) {
-    return Changes(
-      leadNewValue: json['lead']?['new_value'] as String?,
-      leadPreviousValue: json['lead']?['previous_value'] as String?,
-      deliveryTypeNewValue: json['deliveryType']?['new_value'] as String?,
-      deliveryTypePreviousValue: json['deliveryType']?['previous_value'] as String?,
-    );
+    final Map<String, Map<String, String?>> body = {};
+    json.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        body[key] = {
+          'new_value': value['new_value']?.toString(),
+          'previous_value': value['previous_value']?.toString(),
+        };
+      }
+    });
+    return Changes(body: body);
   }
 }
