@@ -16,7 +16,7 @@ class BranchesDropdown extends StatefulWidget {
     this.selectedBranch,
     required this.onSelectBranch,
   }) : super(key: key);
-
+  
   @override
   _BranchesDropdownState createState() => _BranchesDropdownState();
 }

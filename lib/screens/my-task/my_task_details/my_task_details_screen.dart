@@ -916,6 +916,10 @@ AppBar _buildAppBar(BuildContext context, String title) {
                         .read<MyTaskByIdBloc>()
                         .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
                     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+
+                   context.read<CalendarBloc>().add(FetchCalendarEvents(
+                    widget.initialDate?.month ?? DateTime.now().month,
+                    widget.initialDate?.year ?? DateTime.now().year));
                   }
                 }
               },

@@ -3293,8 +3293,7 @@ class ApiService {
       throw Exception('Ошибка при получении данных!');
     }
 
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
 
     return dataProject;
   }
@@ -3459,36 +3458,36 @@ class ApiService {
 
   // Метод для завершения задачи
 
+  Future<Map<String, dynamic>> finishTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
 
-Future<Map<String, dynamic>> finishTask(int taskId) async {
-  final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'task_id': taskId,
+        });
 
-  final response = await _postRequest(
-      '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'task_id': taskId,
-      });
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Задача успешно завершена'};
-  } else if (response.statusCode == 422) {
-    try {
-      final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'] ?? 'Неизвестная ошибка при завершении задачи';
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка обработки ответа сервера',
-      };
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      try {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = responseData['message'] ??
+            'Неизвестная ошибка при завершении задачи';
+        return {
+          'success': false,
+          'message': errorMessage,
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'message': 'Ошибка обработки ответа сервера',
+        };
+      }
+    } else {
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
     }
-  } else {
-    return {'success': false, 'message': 'Ошибка завершения задачи!'};
   }
-}
 
   //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getCustomFields() async {
@@ -5636,26 +5635,27 @@ Future<Map<String, dynamic>> createMyTask({
           'task_id': taskId,
         });
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Задача успешно завершена'};
-  } else if (response.statusCode == 422) {
-    try {
-      final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'] ?? 'Неизвестная ошибка при завершении задачи';
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка обработки ответа сервера',
-      };
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      try {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = responseData['message'] ??
+            'Неизвестная ошибка при завершении задачи';
+        return {
+          'success': false,
+          'message': errorMessage,
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'message': 'Ошибка обработки ответа сервера',
+        };
+      }
+    } else {
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
     }
-  } else {
-    return {'success': false, 'message': 'Ошибка завершения задачи!'};
   }
-}
 
   //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getMyCustomFields() async {
@@ -6788,160 +6788,169 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-Future<Map<String, dynamic>> createOrder({
-  required String phone,
-  required int leadId,
-  required bool delivery,
-  String? deliveryAddress, // Nullable
-  int? deliveryAddressId, // Новое поле
-  required List<Map<String, dynamic>> goods,
-  required int organizationId,
-  required int statusId,
-  int? branchId,
-  String? commentToCourier,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+  Future<Map<String, dynamic>> createOrder({
+    required String phone,
+    required int leadId,
+    required bool delivery,
+    String? deliveryAddress, // Nullable
+    int? deliveryAddressId, // Новое поле
+    required List<Map<String, dynamic>> goods,
+    required int organizationId,
+    required int statusId,
+    int? branchId,
+    String? commentToCourier,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-    final uri = Uri.parse('$baseUrl/order?organization_id=$organizationId');
-    final body = {
-      'phone': phone,
-      'lead_id': leadId,
-      'deliveryType': delivery ? 'delivery' : 'pickup',
-      'goods': goods,
-      'organization_id': organizationId.toString(),
-      'status_id': statusId,
-      'comment_to_courier': commentToCourier,
-    };
-
-    if (delivery) {
-      body['delivery_address_id'] = deliveryAddressId?.toString();
-    } else {
-      body['delivery_address_id'] = null;
-      if (branchId != null) {
-        body['branch_id'] = branchId.toString();
-      }
-    }
-
-    print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final jsonResponse = jsonDecode(response.body);
-      final returnedStatusId = jsonResponse['result']['status_id'] ?? statusId;
-      return {
-        'success': true,
-        'statusId': returnedStatusId,
-        'order': jsonResponse['result'],
+      final uri = Uri.parse('$baseUrl/order?organization_id=$organizationId');
+      final body = {
+        'phone': phone,
+        'lead_id': leadId,
+        'deliveryType': delivery ? 'delivery' : 'pickup',
+        'goods': goods,
+        'organization_id': organizationId.toString(),
+        'status_id': statusId,
+        'comment_to_courier': commentToCourier,
       };
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при создании заказа');
+
+      if (delivery) {
+        body['delivery_address_id'] = deliveryAddressId?.toString();
+      } else {
+        body['delivery_address_id'] = null;
+        if (branchId != null) {
+          body['branch_id'] = branchId.toString();
+        }
+      }
+
+      print(
+          'ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonResponse = jsonDecode(response.body);
+        final returnedStatusId =
+            jsonResponse['result']['status_id'] ?? statusId;
+        return {
+          'success': true,
+          'statusId': returnedStatusId,
+          'order': jsonResponse['result'],
+        };
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при создании заказа');
+      }
+    } catch (e) {
+      print('ApiService: Ошибка создания заказа: $e');
+      return {'success': false, 'error': e.toString()};
     }
-  } catch (e) {
-    print('ApiService: Ошибка создания заказа: $e');
-    return {'success': false, 'error': e.toString()};
   }
-}
 
   Future<Map<String, dynamic>> updateOrder({
-  required int orderId,
-  required String phone,
-  required int leadId,
-  required bool delivery,
-  String? deliveryAddress,
-  int? deliveryAddressId, // Новое поле
-  required List<Map<String, dynamic>> goods,
-  required int organizationId,
-  int? branchId,
-  String? commentToCourier,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    required int orderId,
+    required String phone,
+    required int leadId,
+    required bool delivery,
+    String? deliveryAddress,
+    int? deliveryAddressId, // Новое поле
+    required List<Map<String, dynamic>> goods,
+    required int organizationId,
+    int? branchId,
+    String? commentToCourier,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-    final uri = Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-    final body = {
-      'phone': phone,
-      'lead_id': leadId,
-      'deliveryType': delivery ? 'delivery' : 'pickup',
-      'goods': goods,
-      'organization_id': organizationId.toString(),
-      'comment_to_courier': commentToCourier,
-    };
-
-    if (delivery) {
-      body['delivery_address'] = deliveryAddress;
-      body['delivery_address_id'] = deliveryAddressId?.toString();
-    } else {
-      body['delivery_address'] = null;
-      body['delivery_address_id'] = null;
-      if (branchId != null) {
-        body['branch_id'] = branchId.toString();
-      }
-    }
-
-    print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
-
-    final response = await http.patch(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final jsonResponse = jsonDecode(response.body);
-      return {
-        'success': true,
-        'order': jsonResponse['result'],
+      final uri =
+          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+      final body = {
+        'phone': phone,
+        'lead_id': leadId,
+        'deliveryType': delivery ? 'delivery' : 'pickup',
+        'goods': goods,
+        'organization_id': organizationId.toString(),
+        'comment_to_courier': commentToCourier,
       };
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
-    }
-  } catch (e) {
-    print('ApiService: Ошибка обновления заказа: $e');
-    return {'success': false, 'error': e.toString()};
-  }
-}
-Future<DeliveryAddressResponse> getDeliveryAddresses({
-  required int leadId,
-  required int organizationId,
-}) async {
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
 
-    final response = await _getRequest(
-      '/delivery-address?lead_id=$leadId&organization_id=$organizationId',
-    );
+      if (delivery) {
+        body['delivery_address'] = deliveryAddress;
+        body['delivery_address_id'] = deliveryAddressId?.toString();
+      } else {
+        body['delivery_address'] = null;
+        body['delivery_address_id'] = null;
+        if (branchId != null) {
+          body['branch_id'] = branchId.toString();
+        }
+      }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return DeliveryAddressResponse.fromJson(data);
-    } else {
-      throw Exception('Ошибка при получении адресов доставки: ${response.statusCode}');
+      print(
+          'ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+      final response = await http.patch(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonResponse = jsonDecode(response.body);
+        return {
+          'success': true,
+          'order': jsonResponse['result'],
+        };
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+      }
+    } catch (e) {
+      print('ApiService: Ошибка обновления заказа: $e');
+      return {'success': false, 'error': e.toString()};
     }
-  } catch (e) {
-    throw Exception('Ошибка при получении адресов доставки: $e');
   }
-}
+
+  Future<DeliveryAddressResponse> getDeliveryAddresses({
+    required int leadId,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      if (token == null) throw Exception('Токен не найден');
+
+      final response = await _getRequest(
+        '/delivery-address?lead_id=$leadId&organization_id=$organizationId',
+      );
+  
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DeliveryAddressResponse.fromJson(data);
+      } else {
+        throw Exception(
+            'Ошибка при получении адресов доставки: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при получении адресов доставки: $e');
+    }
+  }
+
 // In api_service.dart (you should implement this based on your API client)
   Future<http.Response> createOrderStatus({
     required String title,
@@ -7034,8 +7043,6 @@ Future<DeliveryAddressResponse> getDeliveryAddresses({
       return false;
     }
   }
-
-
 
 // api_service.dart
   Future<bool> changeOrderStatus({

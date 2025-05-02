@@ -882,6 +882,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             context
                                 .read<HistoryLeadsBloc>()
                                 .add(FetchNoticeHistory(notice.lead!.id));
+
+                          context.read<CalendarBloc>().add(FetchCalendarEvents(
+                         widget.initialDate?.month ?? DateTime.now().month,
+                         widget.initialDate?.year ?? DateTime.now().year));
                           }
                         },
                       );

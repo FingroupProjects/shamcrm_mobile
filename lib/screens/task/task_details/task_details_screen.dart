@@ -846,6 +846,9 @@ Widget build(BuildContext context) {
                       if (shouldUpdate == true) {
                         context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
                         context.read<TaskBloc>().add(FetchTaskStatuses());
+                          context.read<CalendarBloc>().add(FetchCalendarEvents(
+                         widget.initialDate?.month ?? DateTime.now().month,
+                         widget.initialDate?.year ?? DateTime.now().year));
                       }
                     }
                   },

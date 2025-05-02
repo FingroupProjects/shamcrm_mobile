@@ -5,10 +5,10 @@ abstract class DeliveryAddressEvent {}
 
 class FetchDeliveryAddresses extends DeliveryAddressEvent {
   final int leadId;
-  final int organizationId;
+  // final int organizationId;
 
   FetchDeliveryAddresses({
     required this.leadId,
-    required this.organizationId,
+    // required this.organizationId,
   });
 }
