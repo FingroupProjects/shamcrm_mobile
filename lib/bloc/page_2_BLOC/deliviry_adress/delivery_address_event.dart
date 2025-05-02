@@ -1,12 +1,14 @@
-// abstract class DeliveryAddressEvent {
-//   const DeliveryAddressEvent();
-// }
+import 'package:flutter/material.dart';
 
-// class FetchDeliveryAddresses extends DeliveryAddressEvent {
-//   final int leadId;
+@immutable
+abstract class DeliveryAddressEvent {}
 
-//   const FetchDeliveryAddresses({required this.leadId});
+class FetchDeliveryAddresses extends DeliveryAddressEvent {
+  final int leadId;
+  final int organizationId;
 
-//   @override
-//   String toString() => 'FetchDeliveryAddresses(leadId: $leadId)';
-// }
+  FetchDeliveryAddresses({
+    required this.leadId,
+    required this.organizationId,
+  });
+}

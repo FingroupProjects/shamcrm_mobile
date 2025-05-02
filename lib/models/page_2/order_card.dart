@@ -5,12 +5,15 @@ class Order {
   final String orderNumber;
   final bool delivery;
   final String? deliveryAddress;
+  final int? deliveryAddressId;
+  final String? branchName;
+  final int? branchId; // Новое поле для branch_id
   final OrderLead lead;
   final OrderStatusName orderStatus;
   final List<Good> goods;
   final int? organizationId;
   final String? commentToCourier;
-  final double? sum; // Новое поле для суммы заказа
+  final double? sum;
 
   Order({
     required this.id,
@@ -18,12 +21,15 @@ class Order {
     required this.orderNumber,
     required this.delivery,
     this.deliveryAddress,
+    this.deliveryAddressId,
+    this.branchName,
+    this.branchId,
     required this.lead,
     required this.orderStatus,
     required this.goods,
     this.organizationId,
     this.commentToCourier,
-    this.sum, // Добавляем в конструктор
+    this.sum,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -36,6 +42,15 @@ class Order {
         deliveryAddress: json['delivery_address'] != null
             ? json['delivery_address']['address']?.toString()
             : null,
+        deliveryAddressId: json['delivery_address_id'] != null
+            ? int.tryParse(json['delivery_address_id'].toString())
+            : null,
+        branchName: json['branch'] != null
+            ? json['branch']['name']?.toString()
+            : null,
+        branchId: json['branch_id'] != null
+            ? int.tryParse(json['branch_id'].toString())
+            : null, // Парсим branch_id
         lead: OrderLead.fromJson(json['lead'] ?? {}),
         orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
         goods: (json['order_goods'] as List? ?? [])
@@ -43,7 +58,7 @@ class Order {
             .toList(),
         organizationId: json['organization_id'] ?? 1,
         commentToCourier: json['comment_to_courier']?.toString(),
-        sum: double.tryParse(json['sum']?.toString() ?? '0'), // Парсим новое поле
+        sum: double.tryParse(json['sum']?.toString() ?? '0'),
       );
     } catch (e) {
       print('Error parsing Order: $e');
@@ -59,12 +74,15 @@ class Order {
       'order_number': orderNumber,
       'delivery': delivery,
       'delivery_address': deliveryAddress,
+      'delivery_address_id': deliveryAddressId,
+      'branch_name': branchName,
+      'branch_id': branchId, // Добавляем в JSON
       'lead': lead.toJson(),
       'order_status': orderStatus.toJson(),
       'order_goods': goods.map((g) => g.toJson()).toList(),
       'organization_id': organizationId,
       'comment_to_courier': commentToCourier,
-      'sum': sum, // Добавляем в JSON
+      'sum': sum,
     };
   }
 
@@ -74,12 +92,15 @@ class Order {
     String? orderNumber,
     bool? delivery,
     String? deliveryAddress,
+    int? deliveryAddressId,
+    String? branchName,
+    int? branchId,
     OrderLead? lead,
     OrderStatusName? orderStatus,
     List<Good>? goods,
     int? organizationId,
     String? commentToCourier,
-    double? sum, // Добавляем в copyWith
+    double? sum,
   }) {
     return Order(
       id: id ?? this.id,
@@ -87,12 +108,15 @@ class Order {
       orderNumber: orderNumber ?? this.orderNumber,
       delivery: delivery ?? this.delivery,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      deliveryAddressId: deliveryAddressId ?? this.deliveryAddressId,
+      branchName: branchName ?? this.branchName,
+      branchId: branchId ?? this.branchId, // Добавляем
       lead: lead ?? this.lead,
       orderStatus: orderStatus ?? this.orderStatus,
       goods: goods ?? this.goods,
       organizationId: organizationId ?? this.organizationId,
       commentToCourier: commentToCourier ?? this.commentToCourier,
-      sum: sum ?? this.sum, // Обновляем
+      sum: sum ?? this.sum,
     );
   }
 }

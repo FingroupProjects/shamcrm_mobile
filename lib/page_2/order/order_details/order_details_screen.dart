@@ -39,51 +39,55 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
 
-  void _updateDetails(Order order) {
-    String formattedDate = order.lead.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-        : AppLocalizations.of(context)!.translate('not_specified');
+ void _updateDetails(Order order) {
+  String formattedDate = order.lead.createdAt != null
+      ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+      : AppLocalizations.of(context)!.translate('not_specified');
 
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('order_number'),
-        'value': order.orderNumber
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('client'),
-        'value': order.lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('client_phone'),
-        'value': order.phone
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_date'),
-        'value': formattedDate
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_status'),
-        'value': order.orderStatus.name
-      },
-      if (order.deliveryAddress != null)
-        {
-          'label': AppLocalizations.of(context)!.translate('order_address'),
-          'value': order.deliveryAddress ??
-              AppLocalizations.of(context)!.translate('not_specified')
-        },
-      {
-        'label': AppLocalizations.of(context)!.translate('comment_client'),
-        'value': order.commentToCourier ??
-            AppLocalizations.of(context)!.translate('no_comment')
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('price'),
-        'value': order.sum != null && order.sum! > 0
-            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-            : AppLocalizations.of(context)!.translate('0')
-      },
-    ];
-  }
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('order_number'),
+      'value': order.orderNumber
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('client'),
+      'value': order.lead.name
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('client_phone'),
+      'value': order.phone
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('order_date'),
+      'value': formattedDate
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('order_status'),
+      'value': order.orderStatus.name
+    },
+    {
+      'label': order.delivery
+          ? AppLocalizations.of(context)!.translate('order_address')
+          : AppLocalizations.of(context)!.translate('branch_order'),
+      'value': order.delivery
+          ? (order.deliveryAddress ??
+              AppLocalizations.of(context)!.translate('not_specified'))
+          : (order.branchName ??
+              AppLocalizations.of(context)!.translate('not_specified')),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('comment_client'),
+      'value': order.commentToCourier ??
+          AppLocalizations.of(context)!.translate('no_comment')
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('price'),
+      'value': order.sum != null && order.sum! > 0
+          ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
+          : AppLocalizations.of(context)!.translate('0')
+    },
+  ];
+}
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -91,7 +95,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -154,7 +159,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -175,8 +181,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 width: double.maxFinite,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: BlocProvider(
-                  create: (context) => OrderHistoryBloc(context.read<ApiService>())
-                    ..add(FetchOrderHistory(widget.orderId)),
+                  create: (context) =>
+                      OrderHistoryBloc(context.read<ApiService>())
+                        ..add(FetchOrderHistory(widget.orderId)),
                   child: OrderHistoryWidget(orderId: widget.orderId),
                 ),
               ),
@@ -226,7 +233,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               appBar: _buildAppBar(context, state.orderDetails!),
               backgroundColor: Colors.white,
               body: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   children: [
                     _buildDetailsList(),

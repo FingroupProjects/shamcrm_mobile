@@ -342,72 +342,74 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildProductDetails(Goods product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          product.name,
-          style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52)),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          product.id.toString(),
-          style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff99A4BA)),
-        ),
-        if (product.isSelected) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-               Text( AppLocalizations.of(context)!.translate('stock_quantity_details'),
-                  style: TextStyle(
-                      fontSize: 14,
+ Widget _buildProductDetails(Goods product) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        product.name,
+        style: const TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52)),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      // Убрали отображение ID
+      // const SizedBox(height: 4),
+      // Text(
+      //   product.id.toString(),
+      //   style: const TextStyle(
+      //       fontSize: 12,
+      //       fontFamily: 'Gilroy',
+      //       fontWeight: FontWeight.w500,
+      //       color: Color(0xff99A4BA)),
+      // ),
+      if (product.isSelected) ...[
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('stock_quantity_details'),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA)),
+            ),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove, size: 20),
+                  color: const Color(0xff1E2E52),
+                  onPressed: () {
+                    if (product.quantitySelected > 1)
+                      setState(() => product.quantitySelected--);
+                  },
+                ),
+                Text(
+                  '${product.quantitySelected}',
+                  style: const TextStyle(
+                      fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA))),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove, size: 20),
-                    color: const Color(0xff1E2E52),
-                    onPressed: () {
-                      if (product.quantitySelected > 1)
-                        setState(() => product.quantitySelected--);
-                    },
-                  ),
-                  Text(
-                    '${product.quantitySelected}',
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, size: 20),
-                    color: const Color(0xff1E2E52),
-                    onPressed: () => setState(() => product.quantitySelected++),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                      color: Color(0xff1E2E52)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 20),
+                  color: const Color(0xff1E2E52),
+                  onPressed: () => setState(() => product.quantitySelected++),
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
-    );
-  }
-
+    ],
+  );
+}
   Widget _buildSelectionIndicator(Goods product) {
     return Container(
       width: 24,

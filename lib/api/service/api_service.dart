@@ -43,6 +43,7 @@ import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
+import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -6791,7 +6792,8 @@ Future<Map<String, dynamic>> createOrder({
   required String phone,
   required int leadId,
   required bool delivery,
-  required String? deliveryAddress, // Nullable
+  String? deliveryAddress, // Nullable
+  int? deliveryAddressId, // Новое поле
   required List<Map<String, dynamic>> goods,
   required int organizationId,
   required int statusId,
@@ -6814,11 +6816,11 @@ Future<Map<String, dynamic>> createOrder({
     };
 
     if (delivery) {
-      body['delivery_address'] = deliveryAddress;
+      body['delivery_address_id'] = deliveryAddressId?.toString();
     } else {
-      body['delivery_address'] = null; // null для самовывоза
+      body['delivery_address_id'] = null;
       if (branchId != null) {
-        body['branch_id'] = branchId.toString(); // Отправляем branch_id напрямую
+        body['branch_id'] = branchId.toString();
       }
     }
 
@@ -6852,12 +6854,14 @@ Future<Map<String, dynamic>> createOrder({
     return {'success': false, 'error': e.toString()};
   }
 }
-Future<Map<String, dynamic>> updateOrder({
+
+  Future<Map<String, dynamic>> updateOrder({
   required int orderId,
   required String phone,
   required int leadId,
   required bool delivery,
-  required String? deliveryAddress, // Nullable
+  String? deliveryAddress,
+  int? deliveryAddressId, // Новое поле
   required List<Map<String, dynamic>> goods,
   required int organizationId,
   int? branchId,
@@ -6879,10 +6883,12 @@ Future<Map<String, dynamic>> updateOrder({
 
     if (delivery) {
       body['delivery_address'] = deliveryAddress;
+      body['delivery_address_id'] = deliveryAddressId?.toString();
     } else {
-      body['delivery_address'] = null; // null для самовывоза
+      body['delivery_address'] = null;
+      body['delivery_address_id'] = null;
       if (branchId != null) {
-        body['branch_id'] = branchId.toString(); // Отправляем branch_id напрямую
+        body['branch_id'] = branchId.toString();
       }
     }
 
@@ -6914,7 +6920,28 @@ Future<Map<String, dynamic>> updateOrder({
     return {'success': false, 'error': e.toString()};
   }
 }
+Future<DeliveryAddressResponse> getDeliveryAddresses({
+  required int leadId,
+  required int organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
 
+    final response = await _getRequest(
+      '/delivery-address?lead_id=$leadId&organization_id=$organizationId',
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return DeliveryAddressResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка при получении адресов доставки: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Ошибка при получении адресов доставки: $e');
+  }
+}
 // In api_service.dart (you should implement this based on your API client)
   Future<http.Response> createOrderStatus({
     required String title,

@@ -418,6 +418,17 @@ Widget _buildDetailsList(Goods goods) {
           ? goods.branches!.map((branch) => branch.name).join(', ')
           : AppLocalizations.of(context)!.translate('not_specified'),
     },
+    if (goods.discountPrice != null && goods.discountPrice != 0)
+      {
+        'label': AppLocalizations.of(context)!
+            .translate('discount_price_details'),
+        'value': goods.discountPrice.toString(),
+      },
+    if (goods.discountPercent != null && goods.discountPercent != 0)
+      {
+        'label': AppLocalizations.of(context)!.translate('discount_percent'),
+        'value': '${goods.discountPercent}%',
+      },
     ...goods.attributes
         .where((attr) =>
             attr.name.isNotEmpty &&
@@ -433,7 +444,7 @@ Widget _buildDetailsList(Goods goods) {
           ? AppLocalizations.of(context)!.translate('active_swtich')
           : AppLocalizations.of(context)!.translate('inactive_swtich'),
     },
-    // Добавляем комментарии клиента
+    // Комментарии клиента (уже добавлены)
     if (goods.comments != null && goods.comments!.isNotEmpty)
       {
         'label': AppLocalizations.of(context)!.translate('client_comments'),
@@ -457,7 +468,7 @@ Widget _buildDetailsList(Goods goods) {
             .toList(),
       ),
       const SizedBox(height: 16),
-      // Добавляем отображение цены, цены со скидкой и процента скидки
+      // Цены и процент скидки
       if (goods.discountPrice != null && goods.discountPrice != 0)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -488,31 +499,16 @@ Widget _buildDetailsList(Goods goods) {
                             : TextDecoration.none,
                       ),
                     ),
-                    // Цена со скидкой и процент скидки (если есть)
-                    if (goods.discountedPrice != null &&
-                        goods.discountPercent != null)
-                      Row(
-                        children: [
-                          Text(
-                            goods.discountedPrice!.toStringAsFixed(2),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E2E52),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Скидка: ${goods.discountPercent}%',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
+                    // Цена со скидкой
+                    if (goods.discountedPrice != null)
+                      Text(
+                        goods.discountedPrice!.toStringAsFixed(2),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1E2E52),
+                        ),
                       ),
                   ],
                 ),

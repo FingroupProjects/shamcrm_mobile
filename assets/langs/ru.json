@@ -1035,7 +1035,10 @@
     "enter_correct_number": "Введите корректное число",
   "select_subject_required": "Поле тематика обезятельно!",
   "please_create_status": "Сначала создайте статус!",
-  "comment_to_courier": "Комментарий клиента"
+  "comment_to_courier": "Комментарий клиента",
+  "branch_order": "Филиал:",
+  "select_delivery_address": "Выберите адрес доставки",
+  "discount_percent": "Скидка"
 
 }
   

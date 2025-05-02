@@ -278,7 +278,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GoodsBloc(widget.apiService)),
         BlocProvider(create: (context) => GoodsByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => BranchBloc(widget.apiService)),      
-        // BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
+        BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),

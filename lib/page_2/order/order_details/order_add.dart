@@ -3,6 +3,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -10,10 +12,12 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
+import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -43,6 +47,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? selectedLead;
   String? _deliveryMethod;
   Branch? _selectedBranch;
+  DeliveryAddress? _selectedDeliveryAddress;
   List<Branch> branches = [];
   String? selectedDialCode;
   String? baseUrl;
@@ -69,6 +74,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           ? AppLocalizations.of(context)!.translate('delivery')
           : AppLocalizations.of(context)!.translate('self_delivery');
       selectedDialCode = widget.order!.phone;
+      _selectedDeliveryAddress = widget.order!.deliveryAddress != null
+          ? DeliveryAddress(
+              id: widget.order!.deliveryAddressId ?? 0,
+              address: widget.order!.deliveryAddress ?? '',
+              leadId: widget.order!.lead.id,
+              isActive: 0,
+              createdAt: '',
+              updatedAt: '',
+            )
+          : null;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,7 +161,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           orderNumber: '',
           delivery: _deliveryMethod ==
               AppLocalizations.of(context)!.translate('delivery'),
-          deliveryAddress: _deliveryAddressController.text,
+          deliveryAddress: _selectedDeliveryAddress?.address,
+          deliveryAddressId: _selectedDeliveryAddress?.id,
           lead: OrderLead(
             id: int.tryParse(selectedLead ?? '0') ?? 0,
             name: '',
@@ -221,6 +237,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             create: (context) => OrderBloc(context.read<ApiService>())),
         BlocProvider(
             create: (context) => BranchBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -266,6 +284,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       ? AppLocalizations.of(context)!.translate('delivery')
                       : AppLocalizations.of(context)!
                           .translate('self_delivery');
+                  _selectedDeliveryAddress = state.orderDetails!.deliveryAddress !=
+                          null
+                      ? DeliveryAddress(
+                          id: state.orderDetails!.deliveryAddressId ?? 0,
+                          address: state.orderDetails!.deliveryAddress ?? '',
+                          leadId: state.orderDetails!.lead.id,
+                          isActive: 0,
+                          createdAt: '',
+                          updatedAt: '',
+                        )
+                      : null;
                 });
               });
             }
@@ -294,14 +323,21 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                 if (mounted) {
                                   setState(() {
                                     selectedLead = lead.id.toString();
+                                    _selectedDeliveryAddress = null;
                                   });
+                                  context
+                                      .read<DeliveryAddressBloc>()
+                                      .add(FetchDeliveryAddresses(
+                                        leadId: lead.id,
+                                        organizationId:
+                                            widget.organizationId ?? 1,
+                                      ));
                                 }
                               });
                             },
                           ),
                           const SizedBox(height: 16),
                           CustomPhoneNumberInput(
-                            // key: const Key('phone_input'),
                             controller: _phoneController,
                             onInputChanged: (String number) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -334,6 +370,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                   setState(() {
                                     _deliveryMethod = value;
                                     _selectedBranch = null;
+                                    _selectedDeliveryAddress = null;
                                     _deliveryAddressController.clear();
                                   });
                                 }
@@ -355,29 +392,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           if (_deliveryMethod ==
                               AppLocalizations.of(context)!
                                   .translate('delivery'))
-                            CustomTextField(
-                              // key: const Key('delivery_address_field'),
-                              controller: _deliveryAddressController,
-                              hintText: AppLocalizations.of(context)!
-                                  .translate('enter_delivery_address'),
-                              label: AppLocalizations.of(context)!
-                                  .translate('delivery_address'),
-                              maxLines: 3,
-                              keyboardType: TextInputType.streetAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)!
-                                      .translate(
-                                          'please_enter_delivery_address');
-                                }
-                                return null;
+                            DeliveryAddressDropdown(
+                              leadId: int.parse(selectedLead ?? '0'),
+                              organizationId: widget.organizationId ?? 1,
+                              selectedAddress: _selectedDeliveryAddress,
+                              onSelectAddress: (DeliveryAddress address) {
+                                setState(() {
+                                  _selectedDeliveryAddress = address;
+                                });
                               },
                             )
                           else
                             const SizedBox(),
                           const SizedBox(height: 16),
                           CustomTextField(
-                            // key: const Key('comment_field'),
                             controller: _commentController,
                             hintText: AppLocalizations.of(context)!
                                 .translate('please_enter_comment'),
@@ -564,13 +592,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         color: Color(0xff1E2E52)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text(item['id'].toString(),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA))),
+                // const SizedBox(height: 4),
+                // Text(item['id'].toString(),
+                //     style: const TextStyle(
+                //         fontSize: 12,
+                //         fontFamily: 'Gilroy',
+                //         fontWeight: FontWeight.w500,
+                //         color: Color(0xff99A4BA))),
               ],
             ),
           ),
@@ -699,7 +727,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               child: ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                    // Проверяем, выбран ли филиал для самовывоза
                     if (_deliveryMethod ==
                             AppLocalizations.of(context)!
                                 .translate('self_delivery') &&
@@ -712,18 +739,32 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       );
                       return;
                     }
+                    if (_deliveryMethod ==
+                            AppLocalizations.of(context)!
+                                .translate('delivery') &&
+                        _selectedDeliveryAddress == null) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: AppLocalizations.of(context)!
+                            .translate('please_select_delivery_address'),
+                        isSuccess: false,
+                      );
+                      return;
+                    }
 
                     final orderBloc = context.read<OrderBloc>();
-                    // Определяем, является ли это самовывозом
                     final isPickup = _deliveryMethod ==
                         AppLocalizations.of(context)!.translate('self_delivery');
+
                     orderBloc.add(CreateOrder(
                       phone: selectedDialCode ?? _phoneController.text,
                       leadId: int.parse(selectedLead ?? '0'),
-                      delivery: !isPickup, // true для доставки, false для самовывоза
+                      delivery: !isPickup,
                       deliveryAddress: isPickup
-                          ? null // null для самовывоза
-                          : _deliveryAddressController.text,
+                          ? null
+                          : _selectedDeliveryAddress?.address,
+                      deliveryAddressId:
+                          isPickup ? null : _selectedDeliveryAddress?.id,
                       goods: _items
                           .map((item) => {
                                 'variant_id': item['id'].toString(),
