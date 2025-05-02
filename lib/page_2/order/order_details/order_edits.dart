@@ -16,6 +16,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
+import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
@@ -48,56 +49,64 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   List<Branch> branches = [];
 
 @override
-void initState() {
-  super.initState();
-  _phoneController = TextEditingController();
-  _commentController = TextEditingController(text: widget.order.commentToCourier);
-  _items = widget.order.goods.map((good) {
-    final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
-        ? good.variantGood!.files[0].path
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController();
+    _commentController = TextEditingController(text: widget.order.commentToCourier);
+    _items = widget.order.goods.map((good) {
+      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
+          ? good.variantGood!.files[0].path
+          : null;
+      return {
+        'id': good.goodId,
+        'name': good.goodName,
+        'price': good.price,
+        'quantity': good.quantity,
+        'imagePath': imagePath,
+      };
+    }).toList();
+    selectedLead = widget.order.lead.id.toString();
+    _selectedDeliveryAddress = widget.order.deliveryAddress != null
+        ? DeliveryAddress(
+            id: widget.order.deliveryAddressId ?? 0,
+            address: widget.order.deliveryAddress ?? '',
+            leadId: widget.order.lead.id,
+            isActive: 0,
+            createdAt: '',
+            updatedAt: '',
+          )
         : null;
-    return {
-      'id': good.goodId,
-      'name': good.goodName,
-      'price': good.price,
-      'quantity': good.quantity,
-      'imagePath': imagePath,
-    };
-  }).toList();
-  selectedLead = widget.order.lead.id.toString();
-  _selectedDeliveryAddress = widget.order.deliveryAddress != null
-      ? DeliveryAddress(
-          id: widget.order.deliveryAddressId ?? 0,
-          address: widget.order.deliveryAddress ?? '',
-          leadId: widget.order.lead.id,
-          isActive: 0,
-          createdAt: '',
-          updatedAt: '',
-        )
-      : null;
 
-  String phoneText = widget.order.phone;
-  for (var country in countries) {
-    if (phoneText.startsWith(country.dialCode)) {
-      selectedDialCode = country.dialCode;
-      _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
-      break;
+    // Инициализация _selectedBranch на основе branchId и branchName
+    if (widget.order.branchId != null && widget.order.branchName != null) {
+      _selectedBranch = Branch(
+        id: widget.order.branchId!,
+        name: widget.order.branchName!,
+        address: '', // Адрес может быть пустым, так как он не используется в UI
+      );
     }
-  }
-  if (selectedDialCode == null) {
-    selectedDialCode = '+992';
-    _phoneController.text = phoneText;
-  }
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initializeBaseUrl();
-    context.read<BranchBloc>().add(FetchBranches());
-    context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-          leadId: widget.order.lead.id,
-          organizationId: widget.order.organizationId ?? 1,
-        ));
-  });
-}
+    String phoneText = widget.order.phone;
+    for (var country in countries) {
+      if (phoneText.startsWith(country.dialCode)) {
+        selectedDialCode = country.dialCode;
+        _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
+        break;
+      }
+    }
+    if (selectedDialCode == null) {
+      selectedDialCode = '+992';
+      _phoneController.text = phoneText;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeBaseUrl();
+      context.read<BranchBloc>().add(FetchBranches());
+      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
+            leadId: widget.order.lead.id,
+          ));
+    });
+  }
 
 @override
 void didChangeDependencies() {
@@ -204,7 +213,7 @@ void didChangeDependencies() {
     }
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
@@ -215,127 +224,159 @@ void didChangeDependencies() {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(),
-        body: BlocConsumer<OrderBloc, OrderState>(
+        body: BlocListener<BranchBloc, BranchState>(
           listener: (context, state) {
-            if (state is OrderSuccess) {
-              showCustomSnackBar(
-                context: context,
-                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
-                isSuccess: true,
+            if (state is BranchLoaded && widget.order.branchId != null) {
+              final matchingBranch = state.branches.firstWhere(
+                (branch) => branch.id == widget.order.branchId,
+                orElse: () => Branch(
+                  id: widget.order.branchId!,
+                  name: widget.order.branchName ?? '',
+                  address: '',
+                ),
               );
-              Navigator.pop(context, true);
-            } else if (state is OrderError) {
-              showCustomSnackBar(
-                context: context,
-                message: state.message,
-                isSuccess: false,
-              );
+              setState(() {
+                _selectedBranch = matchingBranch;
+                branches = state.branches; // Обновляем список филиалов
+              });
             }
           },
-          builder: (context, state) {
-            if (state is OrderLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LeadRadioGroupWidget(
-                            selectedLead: selectedLead,
-                            onSelectLead: (LeadData lead) {
-                              if (mounted) {
-                                setState(() {
-                                  selectedLead = lead.id.toString();
-                                  _selectedDeliveryAddress = null;
-                                });
-                                context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-                                      leadId: lead.id,
-                                      organizationId: widget.order.organizationId ?? 1,
-                                    ));
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomPhoneNumberInput(
-                            controller: _phoneController,
-                            onInputChanged: (String number) {
-                              if (mounted) {
-                                setState(() => selectedDialCode = number);
-                              }
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              return null;
-                            },
-                            label: AppLocalizations.of(context)!.translate('phone'),
-                            selectedDialCode: selectedDialCode,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildItemsSection(),
-                          const SizedBox(height: 16),
-                          DeliveryMethodDropdown(
-                            selectedDeliveryMethod: _deliveryMethod,
-                            onSelectDeliveryMethod: (value) {
-                              if (mounted) {
-                                setState(() {
-                                  _deliveryMethod = value;
-                                  _selectedBranch = null;
-                                  _selectedDeliveryAddress = null;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
-                            BranchRadioGroupWidget(
-                              selectedStatus: _selectedBranch?.toString(),
-                              onSelectStatus: (Branch selectedStatusData) {
-                                setState(() {
-                                  _selectedBranch = selectedStatusData;
-                                });
+          child: BlocConsumer<OrderBloc, OrderState>(
+            listener: (context, state) {
+              if (state is OrderSuccess) {
+                showCustomSnackBar(
+                  context: context,
+                  message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
+                  isSuccess: true,
+                );
+                Navigator.pop(context, true);
+              } else if (state is OrderError) {
+                showCustomSnackBar(
+                  context: context,
+                  message: state.message,
+                  isSuccess: false,
+                );
+              }
+            },
+            builder: (context, state) {
+              if (state is OrderLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LeadRadioGroupWidget(
+                              selectedLead: selectedLead,
+                              onSelectLead: (LeadData lead) {
+                                if (mounted) {
+                                  setState(() {
+                                    selectedLead = lead.id.toString();
+                                    _selectedDeliveryAddress = null;
+                                  });
+                                  context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
+                                        leadId: lead.id,
+                                      ));
+                                }
                               },
                             ),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
-                            DeliveryAddressDropdown(
-                              leadId: int.parse(selectedLead ?? '0'),
-                              organizationId: widget.order.organizationId ?? 1,
-                              selectedAddress: _selectedDeliveryAddress,
-                              onSelectAddress: (DeliveryAddress address) {
-                                setState(() {
-                                  _selectedDeliveryAddress = address;
-                                });
+                            const SizedBox(height: 16),
+                            CustomPhoneNumberInput(
+                              controller: _phoneController,
+                              onInputChanged: (String number) {
+                                if (mounted) {
+                                  setState(() => selectedDialCode = number);
+                                }
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!.translate('field_required');
+                                }
+                                return null;
+                              },
+                              label: AppLocalizations.of(context)!.translate('phone'),
+                              selectedDialCode: selectedDialCode,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildItemsSection(),
+                            const SizedBox(height: 16),
+                            DeliveryMethodDropdown(
+                              selectedDeliveryMethod: _deliveryMethod,
+                              onSelectDeliveryMethod: (value) {
+                                if (mounted) {
+                                  setState(() {
+                                    _deliveryMethod = value;
+                                    _selectedBranch = null;
+                                    _selectedDeliveryAddress = null;
+                                  });
+                                }
                               },
                             ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _commentController,
-                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                            label: AppLocalizations.of(context)!.translate('comment_client'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
+                              BlocBuilder<BranchBloc, BranchState>(
+                                builder: (context, branchState) {
+                                  if (branchState is BranchLoading) {
+                                    return const Center(child: CircularProgressIndicator());
+                                  } else if (branchState is BranchLoaded) {
+                                    return BranchesDropdown(
+                                      label: AppLocalizations.of(context)!.translate('branch_order'),
+                                      branches: branchState.branches,
+                                      selectedBranch: _selectedBranch,
+                                      onSelectBranch: (Branch branch) {
+                                        setState(() {
+                                          _selectedBranch = branch;
+                                        });
+                                      },
+                                    );
+                                  } else if (branchState is BranchError) {
+                                    return Text(
+                                      AppLocalizations.of(context)!.translate('error_loading_branches'),
+                                      style: const TextStyle(color: Colors.red),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                              DeliveryAddressDropdown(
+                                leadId: int.parse(selectedLead ?? '0'),
+                                organizationId: widget.order.organizationId ?? 1,
+                                selectedAddress: _selectedDeliveryAddress,
+                                onSelectAddress: (DeliveryAddress address) {
+                                  setState(() {
+                                    _selectedDeliveryAddress = address;
+                                  });
+                                },
+                              ),
+                            const SizedBox(height: 16),
+                            CustomTextField(
+                              controller: _commentController,
+                              hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
+                              label: AppLocalizations.of(context)!.translate('comment_client'),
+                              maxLines: 5,
+                              keyboardType: TextInputType.multiline,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  _buildActionButtons(context),
-                ],
-              ),
-            );
-          },
+                    _buildActionButtons(context),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
   }
-
   AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
