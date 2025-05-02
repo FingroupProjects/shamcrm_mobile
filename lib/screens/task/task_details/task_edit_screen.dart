@@ -141,7 +141,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _initializeControllers() {
     nameController.text = widget.taskName;
     _selectedStatuses = widget.statusId;
-
+print(_selectedStatuses);
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
       startDateController.text =
@@ -165,7 +165,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _loadInitialData() {
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
-    context.read<TaskBloc>().add(FetchTaskStatuses());
+    // context.read<TaskBloc>().add(FetchTaskStatuses());
   }
 
   void _addCustomField(String fieldName) {

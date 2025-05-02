@@ -3271,7 +3271,6 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('getAll project!');
     }
 
     return dataProject;
@@ -3303,7 +3302,7 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('getAll project!');
+      // print('getAll project!');
     }
 
     return dataProject;
@@ -3317,8 +3316,8 @@ class ApiService {
       print('Отправка запроса на /user');
       final response = await _getRequest(
           '/user${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      print('Статус ответа!');
-      print('Тело ответа!');
+      // print('Статус ответа!');
+      // print('Тело ответа!');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3436,26 +3435,37 @@ class ApiService {
   }
 
   // Метод для завершения задачи
-  Future<Map<String, dynamic>> finishTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'task_id': taskId,
-        });
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача успешно завершена'};
-    } else if (response.statusCode == 422) {
+Future<Map<String, dynamic>> finishTask(int taskId) async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _postRequest(
+      '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'task_id': taskId,
+      });
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача успешно завершена'};
+  } else if (response.statusCode == 422) {
+    try {
+      final responseData = jsonDecode(response.body);
+      final errorMessage = responseData['message'] ?? 'Неизвестная ошибка при завершении задачи';
       return {
         'success': false,
-        'message': 'Этот проект не имеет завершающий этап!'
+        'message': errorMessage,
       };
-    } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка обработки ответа сервера',
+      };
     }
+  } else {
+    return {'success': false, 'message': 'Ошибка завершения задачи!'};
   }
+}
 
   //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getCustomFields() async {
@@ -4255,10 +4265,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа!');
+      // print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user!');
+      // print('getAll user!');
     }
 
     return dataUser;
@@ -4289,10 +4299,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа!');
+      // print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user!');
+      // print('getAll user!');
     }
 
     return dataUser;
@@ -4325,10 +4335,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа!');
+      // print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getUsersNotInChat!');
+      // print('getUsersNotInChat!');
     }
 
     return dataUser;
@@ -4366,10 +4376,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа!');
+      // print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user!');
+      // print('getAll user!');
     }
 
     return dataUser;
@@ -4390,8 +4400,8 @@ class ApiService {
     );
 
     if (kDebugMode) {
-      print('Статус ответа!');
-      print('data!');
+      // print('Статус ответа!');
+      // print('data!');
     }
 
     if (response.statusCode == 200) {
@@ -5603,17 +5613,26 @@ Future<Map<String, dynamic>> createMyTask({
           'task_id': taskId,
         });
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача успешно завершена'};
-    } else if (response.statusCode == 422) {
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача успешно завершена'};
+  } else if (response.statusCode == 422) {
+    try {
+      final responseData = jsonDecode(response.body);
+      final errorMessage = responseData['message'] ?? 'Неизвестная ошибка при завершении задачи';
       return {
         'success': false,
-        'message': 'Этот проект не имеет завершающий этап!'
+        'message': errorMessage,
       };
-    } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка обработки ответа сервера',
+      };
     }
+  } else {
+    return {'success': false, 'message': 'Ошибка завершения задачи!'};
   }
+}
 
   //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getMyCustomFields() async {
@@ -5905,10 +5924,10 @@ Future<Map<String, dynamic>> createMyTask({
     }
 
     if (kDebugMode) {
-      print('Статус ответа!');
+      // print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll author!');
+      // print('getAll author!');
     }
 
     return dataAuthor;

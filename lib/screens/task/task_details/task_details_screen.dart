@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
@@ -46,6 +48,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final List<TaskCustomField> taskCustomFields;
   final String? taskFile; // Добавлено поле для файла
   final List<TaskFiles>? files; // вместо String? taskFile
+  final DateTime? initialDate;
 
   TaskDetailsScreen({
     required this.taskId,
@@ -66,6 +69,7 @@ class TaskDetailsScreen extends StatefulWidget {
     this.priority,
     required this.taskCustomFields,
     this.taskFile, // Инициализация опционального параметра
+    this.initialDate
   });
 
   @override
@@ -373,6 +377,7 @@ Future<void> _fetchTutorialProgress() async {
       details.clear();
       return;
     }
+    print(task.taskStatus!.taskStatus.name);
 
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
@@ -511,7 +516,7 @@ Widget build(BuildContext context) {
                           height: 60,
                         ),
                         Expanded(
-                                    key: keyTaskForReview,
+                         key: keyTaskForReview,
                           flex: 45,
                           child: ElevatedButton(
                             onPressed: () {
@@ -540,7 +545,7 @@ Widget build(BuildContext context) {
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontFamily: 'Gilroy',
-                                                fontSize: 14,
+                                                fontSize: 13,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -602,8 +607,10 @@ Widget build(BuildContext context) {
                                                                 duration: Duration(seconds: 2),
                                                               ),
                                                             );
-                                                            context.read<TaskBloc>().add(
-                                                                FetchTaskStatuses());
+                                                            context.read<CalendarBloc>().add(FetchCalendarEvents(
+                                                            widget.initialDate?.month ?? DateTime.now().month,
+                                                            widget.initialDate?.year ?? DateTime.now().year));
+                                                            context.read<TaskBloc>().add(FetchTaskStatuses());
                                                           } else {
                                                             Navigator.pop(dialogContext);
                                                             ScaffoldMessenger.of(context) .showSnackBar(
@@ -672,7 +679,7 @@ Widget build(BuildContext context) {
                                                         style: TextStyle(
                                                           color: Colors.white,
                                                           fontFamily: 'Gilroy',
-                                                          fontSize: 14,
+                                                          fontSize: 13,
                                                           fontWeight: FontWeight.w500,
                                                         ),
                                                       ),
@@ -823,7 +830,8 @@ Widget build(BuildContext context) {
                             user: currentTask!.user != null && currentTask!.user!.isNotEmpty
                                 ? currentTask!.user!.map((user) => user.id) .toList()
                                 : null,
-                            statusId: widget.statusId ?? 0,
+                            statusId: currentTask!.taskStatus?.id ?? 0,
+                            // statusId: widget.statusId ?? 0,
                             description: currentTask!.description,
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,

@@ -11,7 +11,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/event/event_details/lead_list_radio.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -52,7 +52,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
           : '',
     );
 
-    selectedLead = widget.notice.lead!.id.toString();
+    selectedLead = widget.notice.lead?.id.toString();
     selectedManagers = widget.notice.users.map((user) => user.id).toList();
     selectedSubject = widget.notice.title;
 
@@ -172,7 +172,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        LeadRadioGroupWidget(
+                        LeadRadioGroupEventWidget(
                           selectedLead: selectedLead,
                           onSelectLead: (LeadData selectedLeadData) {
                             setState(() {
