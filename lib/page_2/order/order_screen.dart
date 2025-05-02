@@ -614,7 +614,7 @@ class _OrderScreenState extends State<OrderScreen>
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
-                  organizationId: widget.organizationId,
+                  // organizationId: widget.organizationId,
                 ),
               ),
             );
@@ -670,11 +670,7 @@ class _OrderScreenState extends State<OrderScreen>
             }
           },
           backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(
-            Icons.add_outlined,
-            color: Colors.white,
-            size: 22,
-          ),
+          child: const Icon(Icons.add_outlined, color: Colors.white),
         ),
       ),
     );
