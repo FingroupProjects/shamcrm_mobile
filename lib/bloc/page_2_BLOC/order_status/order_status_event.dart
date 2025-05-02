@@ -42,7 +42,7 @@ class CreateOrder extends OrderEvent {
   final String phone;
   final int leadId;
   final bool delivery;
-  final String deliveryAddress;
+  final String? deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int statusId;
@@ -53,7 +53,7 @@ class CreateOrder extends OrderEvent {
     required this.phone,
     required this.leadId,
     required this.delivery,
-    required this.deliveryAddress,
+    this.deliveryAddress,
     required this.goods,
     required this.organizationId,
     required this.statusId,
@@ -67,7 +67,7 @@ class UpdateOrder extends OrderEvent {
   final String phone;
   final int leadId;
   final bool delivery;
-  final String deliveryAddress;
+  final String? deliveryAddress;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int? branchId;
@@ -78,7 +78,7 @@ class UpdateOrder extends OrderEvent {
     required this.phone,
     required this.leadId,
     required this.delivery,
-    required this.deliveryAddress,
+    this.deliveryAddress,
     required this.goods,
     required this.organizationId,
     this.branchId,

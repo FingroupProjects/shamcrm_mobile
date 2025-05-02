@@ -52,11 +52,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         TextEditingController(text: widget.order.deliveryAddress);
     _commentController = TextEditingController();
     _items = widget.order.goods.map((good) {
-      // Используем variantGood для получения imagePath
       final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
           ? good.variantGood!.files[0].path
           : null;
-      print('Good ID: ${good.goodId}, Image Path: $imagePath'); // Отладка
+      print('Good ID: ${good.goodId}, Image Path: $imagePath');
       return {
         'id': good.goodId,
         'name': good.goodName,
@@ -66,9 +65,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       };
     }).toList();
     selectedLead = widget.order.lead.id.toString();
-    _deliveryMethod = widget.order.delivery.toString(); // Инициализация без AppLocalizations
+    _deliveryMethod = widget.order.delivery ? 'delivery' : 'self_delivery';
 
-    // Инициализация номера телефона
     String phoneText = widget.order.phone;
     for (var country in countries) {
       if (phoneText.startsWith(country.dialCode)) {
@@ -82,7 +80,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _phoneController.text = phoneText;
     }
 
-    // Инициализация baseUrl
     _initializeBaseUrl();
     context.read<BranchBloc>().add(FetchBranches());
   }
@@ -95,12 +92,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        print('Base URL initialized: $baseUrl'); // Отладка
+        print('Base URL initialized: $baseUrl');
       });
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
-        print('Fallback Base URL: $baseUrl'); // Отладка
+        print('Fallback Base URL: $baseUrl');
       });
     }
   }
@@ -140,7 +137,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         );
         return Good(
           good: goodItem,
-          variantGood: goodItem, // Устанавливаем variantGood
+          variantGood: goodItem,
           goodId: item['id'],
           goodName: item['name'],
           price: item['price'],
@@ -284,12 +281,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
-                            selectedDeliveryMethod:
-                                _deliveryMethod == 'delivery'
-                                    ? AppLocalizations.of(context)!
-                                        .translate('delivery')
-                                    : AppLocalizations.of(context)!
-                                        .translate('self_delivery'),
+                            selectedDeliveryMethod: _deliveryMethod == 'delivery'
+                                ? AppLocalizations.of(context)!
+                                    .translate('delivery')
+                                : AppLocalizations.of(context)!
+                                    .translate('self_delivery'),
                             onSelectDeliveryMethod: (value) {
                               setState(() {
                                 _deliveryMethod = value ==
@@ -303,16 +299,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('true'))
-                           BranchRadioGroupWidget(
-                             selectedStatus: _selectedBranch?.toString(),
-                             onSelectStatus: (Branch selectedStatusData) {
-                               setState(() {
-                                 _selectedBranch = selectedStatusData;
-                               });
-                             },
-                           ),
-
+                          if (_deliveryMethod == 'self_delivery')
+                            BranchRadioGroupWidget(
+                              selectedStatus: _selectedBranch?.toString(),
+                              onSelectStatus: (Branch selectedStatusData) {
+                                setState(() {
+                                  _selectedBranch = selectedStatusData;
+                                });
+                              },
+                            ),
                           if (_deliveryMethod == 'delivery')
                             CustomTextField(
                               controller: _deliveryAddressController,
@@ -475,7 +470,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }
 
     print(
-        'Rendering item: ${item['name']}, Image Path: ${item['imagePath']}, Base URL: $baseUrl'); // Отладка
+        'Rendering item: ${item['name']}, Image Path: ${item['imagePath']}, Base URL: $baseUrl');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -723,7 +718,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         leadId: int.parse(selectedLead ?? '0'),
                         delivery: _deliveryMethod == 'delivery',
                         deliveryAddress: _deliveryMethod == 'self_delivery'
-                            ? _selectedBranch?.address ?? ''
+                            ? null // null для самовывоза
                             : _deliveryAddressController.text,
                         goods: _items
                             .map((item) => {

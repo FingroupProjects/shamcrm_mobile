@@ -341,15 +341,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             },
                           ),
                           const SizedBox(height: 8),
-                         if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
-                           BranchRadioGroupWidget(
-                             selectedStatus: _selectedBranch?.toString(),
-                             onSelectStatus: (Branch selectedStatusData) {
-                               setState(() {
-                                 _selectedBranch = selectedStatusData;
-                               });
-                             },
-                           ),
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('self_delivery'))
+                            BranchRadioGroupWidget(
+                              selectedStatus: _selectedBranch?.toString(),
+                              onSelectStatus: (Branch selectedStatusData) {
+                                setState(() {
+                                  _selectedBranch = selectedStatusData;
+                                });
+                              },
+                            ),
                           if (_deliveryMethod ==
                               AppLocalizations.of(context)!
                                   .translate('delivery'))
@@ -712,14 +714,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     }
 
                     final orderBloc = context.read<OrderBloc>();
+                    // Определяем, является ли это самовывозом
+                    final isPickup = _deliveryMethod ==
+                        AppLocalizations.of(context)!.translate('self_delivery');
                     orderBloc.add(CreateOrder(
                       phone: selectedDialCode ?? _phoneController.text,
                       leadId: int.parse(selectedLead ?? '0'),
-                      delivery: true,
-                      deliveryAddress: _deliveryMethod ==
-                              AppLocalizations.of(context)!
-                                  .translate('self_delivery')
-                          ? _selectedBranch?.address ?? ''
+                      delivery: !isPickup, // true для доставки, false для самовывоза
+                      deliveryAddress: isPickup
+                          ? null // null для самовывоза
                           : _deliveryAddressController.text,
                       goods: _items
                           .map((item) => {
@@ -730,11 +733,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           .toList(),
                       organizationId: widget.organizationId ?? 1,
                       statusId: selectedStatusId ?? 1,
-                      branchId: _deliveryMethod ==
-                              AppLocalizations.of(context)!
-                                  .translate('self_delivery')
-                          ? _selectedBranch?.id
-                          : null,
+                      branchId: isPickup ? _selectedBranch?.id : null,
                       commentToCourier: _commentController.text.isNotEmpty
                           ? _commentController.text
                           : null,

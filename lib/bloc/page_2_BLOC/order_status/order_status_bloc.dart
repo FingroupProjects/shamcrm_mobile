@@ -190,133 +190,137 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _createOrder');
-    emit(OrderLoading());
-    try {
-      final Map<String, dynamic> body = {
-        'phone': event.phone,
-        'lead_id': event.leadId,
-        'deliveryType': event.delivery ? 'delivery' : 'pickup',
-        'goods': event.goods,
-        'organization_id': event.organizationId.toString(),
-        'status_id': event.statusId,
-        'comment_to_courier': event.commentToCourier, // Добавляем комментарий
-      };
+ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
+  print('OrderBloc: Начало _createOrder');
+  emit(OrderLoading());
+  try {
+    final Map<String, dynamic> body = {
+      'phone': event.phone,
+      'lead_id': event.leadId,
+      'deliveryType': event.delivery ? 'delivery' : 'pickup',
+      'goods': event.goods,
+      'organization_id': event.organizationId.toString(),
+      'status_id': event.statusId,
+      'comment_to_courier': event.commentToCourier,
+    };
 
-      if (event.delivery) {
-        body['delivery_address'] = event.deliveryAddress;
-      } else {
-        body['delivery_address_id'] = null;
-        body['branch_id'] = event.branchId?.toString();
-        body['comment_to_courier'] = event.commentToCourier;
+    if (event.delivery) {
+      body['delivery_address'] = event.deliveryAddress;
+    } else {
+      body['delivery_address'] = null; // null для самовывоза
+      if (event.branchId != null) {
+        body['branch_id'] = event.branchId.toString(); // Отправляем branch_id напрямую
       }
-
-      final result = await apiService.createOrder(
-        phone: event.phone,
-        leadId: event.leadId,
-        delivery: event.delivery,
-        deliveryAddress: event.deliveryAddress,
-        goods: event.goods,
-        organizationId: event.organizationId,
-        statusId: event.statusId,
-        commentToCourier:
-            event.commentToCourier, // Передаем комментарий в метод
-      );
-      print('OrderBloc: Результат создания заказа: $result');
-
-      if (result['success']) {
-        final statusId = result['statusId'] ?? event.statusId;
-        final orderData = result['order'];
-        print('OrderBloc: Новый заказ создан, statusId=$statusId');
-
-        final newOrder = Order.fromJson(orderData);
-        print('OrderBloc: Новый заказ: ${newOrder.toJson()}');
-
-        if (allOrders[statusId] == null) {
-          allOrders[statusId] = [];
-        }
-        allOrders[statusId]!.insert(0, newOrder);
-        print(
-            'OrderBloc: Добавлен новый заказ в allOrders[$statusId]: ${allOrders[statusId]!.map((o) => o.toJson()).toList()}');
-
-        final statuses = await apiService.getOrderStatuses();
-        print(
-            'OrderBloc: Получены статусы после создания заказа: ${statuses.map((s) => s.toJson()).toList()}');
-
-        emit(OrderLoaded(
-          statuses,
-          orders: allOrders[statusId] ?? [],
-          pagination: Pagination(
-            total: (allOrders[statusId]?.length ?? 0) + 1,
-            count: allOrders[statusId]?.length ?? 0,
-            perPage: 20,
-            currentPage: 1,
-            totalPages: 1,
-          ),
-        ));
-        print('OrderBloc: Выдано состояние OrderLoaded после создания заказа');
-
-        emit(OrderSuccess(statusId: statusId));
-        print('OrderBloc: Выдано состояние OrderSuccess');
-      } else {
-        print(
-            'OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
-        emit(OrderError('Не удалось создать заказ: ${result['error']}'));
-      }
-    } catch (e) {
-      print('OrderBloc: Ошибка при создании заказа: $e');
-      emit(OrderError('Ошибка создания заказа: $e'));
     }
-  }
 
-  Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
-    emit(OrderLoading());
-    try {
-      final Map<String, dynamic> body = {
-        'phone': event.phone,
-        'lead_id': event.leadId,
-        'deliveryType': event.delivery ? 'delivery' : 'pickup',
-        'goods': event.goods,
-        'organization_id': event.organizationId.toString(),
-        'comment_to_courier': event.commentToCourier, // Добавляем комментарий
-      };
+    print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
-      if (event.delivery) {
-        body['delivery_address'] = event.deliveryAddress;
-      } else {
-        body['delivery_address_id'] = null;
-        body['branch_id'] = event.branchId?.toString();
+    final result = await apiService.createOrder(
+      phone: event.phone,
+      leadId: event.leadId,
+      delivery: event.delivery,
+      deliveryAddress: event.deliveryAddress,
+      goods: event.goods,
+      organizationId: event.organizationId,
+      statusId: event.statusId,
+      branchId: event.branchId,
+      commentToCourier: event.commentToCourier,
+    );
+    print('OrderBloc: Результат создания заказа: $result');
+
+    if (result['success']) {
+      final statusId = result['statusId'] ?? event.statusId;
+      final orderData = result['order'];
+      print('OrderBloc: Новый заказ создан, statusId=$statusId');
+
+      final newOrder = Order.fromJson(orderData);
+      print('OrderBloc: Новый заказ: ${newOrder.toJson()}');
+
+      if (allOrders[statusId] == null) {
+        allOrders[statusId] = [];
       }
+      allOrders[statusId]!.insert(0, newOrder);
+      print(
+          'OrderBloc: Добавлен новый заказ в allOrders[$statusId]: ${allOrders[statusId]!.map((o) => o.toJson()).toList()}');
 
-      final response = await apiService.updateOrder(
-        orderId: event.orderId,
-        phone: event.phone,
-        leadId: event.leadId,
-        delivery: event.delivery,
-        deliveryAddress: event.deliveryAddress,
-        goods: event.goods,
-        organizationId: event.organizationId,
-        branchId: event.branchId,
-        commentToCourier: event.commentToCourier, // Передаем комментарий
-      );
-      print('OrderBloc: Ответ сервера на обновление заказа: $response');
+      final statuses = await apiService.getOrderStatuses();
+      print(
+          'OrderBloc: Получены статусы после создания заказа: ${statuses.map((s) => s.toJson()).toList()}');
 
-      if (response['success']) {
-        print('OrderBloc: Заказ успешно обновлен');
-        emit(OrderSuccess());
-      } else {
-        print(
-            'OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
-        emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
-      }
-    } catch (e) {
-      print('OrderBloc: Ошибка при обновлении заказа: $e');
-      emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
+      emit(OrderLoaded(
+        statuses,
+        orders: allOrders[statusId] ?? [],
+        pagination: Pagination(
+          total: (allOrders[statusId]?.length ?? 0) + 1,
+          count: allOrders[statusId]?.length ?? 0,
+          perPage: 20,
+          currentPage: 1,
+          totalPages: 1,
+        ),
+      ));
+      print('OrderBloc: Выдано состояние OrderLoaded после создания заказа');
+
+      emit(OrderSuccess(statusId: statusId));
+      print('OrderBloc: Выдано состояние OrderSuccess');
+    } else {
+      print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
+      emit(OrderError('Не удалось создать заказ: ${result['error']}'));
     }
+  } catch (e) {
+    print('OrderBloc: Ошибка при создании заказа: $e');
+    emit(OrderError('Ошибка создания заказа: $e'));
   }
+}
+ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+  print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
+  emit(OrderLoading());
+  try {
+    final Map<String, dynamic> body = {
+      'phone': event.phone,
+      'lead_id': event.leadId,
+      'deliveryType': event.delivery ? 'delivery' : 'pickup',
+      'goods': event.goods,
+      'organization_id': event.organizationId.toString(),
+      'comment_to_courier': event.commentToCourier,
+    };
 
+    if (event.delivery) {
+      body['delivery_address'] = event.deliveryAddress;
+    } else {
+      body['delivery_address'] = null;
+      if (event.branchId != null) {
+        body['branch_id'] = event.branchId.toString(); // Отправляем branch_id напрямую
+      }
+    }
+
+    print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+    final response = await apiService.updateOrder(
+      orderId: event.orderId,
+      phone: event.phone,
+      leadId: event.leadId,
+      delivery: event.delivery,
+      deliveryAddress: event.deliveryAddress,
+      goods: event.goods,
+      organizationId: event.organizationId,
+      branchId: event.branchId,
+      commentToCourier: event.commentToCourier,
+    );
+    print('OrderBloc: Ответ сервера на обновление заказа: $response');
+
+    if (response['success']) {
+      print('OrderBloc: Заказ успешно обновлен');
+      emit(OrderSuccess());
+    } else {
+      print(
+          'OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
+      emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
+    }
+  } catch (e) {
+    print('OrderBloc: Ошибка при обновлении заказа: $e');
+    emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
+  }
+}
   Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
     print('OrderBloc: Начало _deleteOrder для orderId=${event.orderId}');
     emit(OrderLoading());
@@ -339,7 +343,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     }
   }
 
-  Future<void> _changeOrderStatus(
+  Future<void> _bushOrderStatus(
       ChangeOrderStatus event, Emitter<OrderState> emit) async {
     print(
         'OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
@@ -499,6 +503,56 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       emit(OrderError('Ошибка обновления статуса: $e'));
     }
   }
+   Future<void> _changeOrderStatus(
+      ChangeOrderStatus event, Emitter<OrderState> emit) async {
+    print(
+        'OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
+    try {
+      final success = await apiService.changeOrderStatus(
+        orderId: event.orderId,
+        statusId: event.statusId,
+        organizationId: event.organizationId,
+      );
+      print('OrderBloc: Результат смены статуса заказа: $success');
+      if (success) {
+        final statuses = await apiService.getOrderStatuses();
+        print(
+            'OrderBloc: Получены статусы после смены статуса: ${statuses.map((s) => s.toJson()).toList()}');
+        if (state is OrderLoaded) {
+          final currentState = state as OrderLoaded;
+          final updatedOrders = currentState.orders.map((order) {
+            if (order.id == event.orderId) {
+              return order.copyWith(
+                orderStatus: OrderStatusName.fromOrderStatus(
+                  statuses.firstWhere((status) => status.id == event.statusId),
+                ),
+              );
+            }
+            return order;
+          }).toList();
+          print(
+              'OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
+          emit(OrderLoaded(
+            statuses,
+            orders: updatedOrders,
+            pagination: currentState.pagination,
+          ));
+          print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
+        } else {
+          emit(OrderLoaded(statuses));
+          print('OrderBloc: Выдано состояние OrderLoaded с новыми статусами');
+        }
+      } else {
+        print('OrderBloc: Ошибка сервера при смене статуса заказа');
+        emit(OrderError(
+            'Не удалось сменить статус заказа: сервер вернул ошибку'));
+      }
+    } catch (e) {
+      print('OrderBloc: Ошибка при смене статуса заказа: $e');
+      emit(OrderError('Ошибка смены статуса заказа: $e'));
+    }
+  }
+
 
   Future<void> _deleteOrderStatus(
       DeleteOrderStatus event, Emitter<OrderState> emit) async {
