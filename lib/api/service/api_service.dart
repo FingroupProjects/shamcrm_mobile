@@ -6288,7 +6288,7 @@ Future<List<CategoryData>> getCategory({String? search}) async {
 
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
-Future<List<Goods>> getGoods({
+  Future<List<Goods>> getGoods({
     int page = 1,
     int perPage = 20,
     String? search,
@@ -6301,30 +6301,49 @@ Future<List<Goods>> getGoods({
       path += '&search=$search';
     }
     if (filters != null) {
-      if (filters.containsKey('subcategory_id')) {
-        path += '&subcategory_id=${filters['subcategory_id']}';
+      if (filters.containsKey('category_id')) {
+        path += '&category_id=${filters['category_id']}';
       }
       if (filters.containsKey('discount_percent')) {
         path += '&discount_percent=${filters['discount_percent']}';
       }
     }
 
+    if (kDebugMode) {
+      print('ApiService: Формирование запроса товаров: $path');
+    }
+
     final response = await _getRequest(path);
+
+    if (kDebugMode) {
+      print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+    }
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       if (data.containsKey('result') && data['result']['data'] is List) {
+        if (kDebugMode) {
+          print('ApiService: Успешно получено ${data['result']['data'].length} товаров');
+        }
         return (data['result']['data'] as List)
             .map((item) => Goods.fromJson(item as Map<String, dynamic>))
             .toList();
       } else {
+        if (kDebugMode) {
+          print('ApiService: Ошибка формата данных: $data');
+        }
         throw Exception('Ошибка: Неверный формат данных');
       }
     } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+      }
       throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
     }
   }
 
+
+  
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
     final String path = '/good/$goodsId?organization_id=$organizationId';
