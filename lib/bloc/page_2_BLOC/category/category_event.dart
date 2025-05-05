@@ -4,6 +4,15 @@ abstract class CategoryEvent {}
 
 class FetchCategories extends CategoryEvent {}
 
+class SearchCategories extends CategoryEvent {
+  final String query;
+
+  SearchCategories(this.query);
+
+  @override
+  List<Object> get props => [query];
+}
+
 class CreateCategory extends CategoryEvent {
   final String name;
   final int parentId;
