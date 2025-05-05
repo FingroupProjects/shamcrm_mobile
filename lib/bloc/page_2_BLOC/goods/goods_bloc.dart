@@ -181,7 +181,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
   Future<void> _filterGoods(FilterGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
-    _currentFilters = event.filters.isEmpty ? null : event.filters;
+    _currentFilters = event.filters.isEmpty ? null : Map.from(event.filters); // Глубокое копирование фильтров
     if (kDebugMode) {
       print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery');
     }
@@ -239,8 +239,19 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         subCategories = await apiService.getSubCategoryAttributes();
         if (kDebugMode) {
           print('GoodsBloc: Загружено ${subCategories.length} подкатегорий');
+          print('GoodsBloc: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
         }
-        emit(state);
+        if (state is GoodsDataLoaded) {
+          final currentState = state as GoodsDataLoaded;
+          emit(GoodsDataLoaded(
+            currentState.goods,
+            currentState.pagination,
+            subCategories,
+            currentPage: currentState.currentPage,
+          ));
+        } else {
+          emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories));
+        }
       } catch (e) {
         if (kDebugMode) {
           print('GoodsBloc: Ошибка загрузки подкатегорий: $e');
