@@ -16,7 +16,6 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
@@ -213,7 +212,7 @@ void didChangeDependencies() {
     }
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
@@ -224,159 +223,127 @@ void didChangeDependencies() {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(),
-        body: BlocListener<BranchBloc, BranchState>(
+        body: BlocConsumer<OrderBloc, OrderState>(
           listener: (context, state) {
-            if (state is BranchLoaded && widget.order.branchId != null) {
-              final matchingBranch = state.branches.firstWhere(
-                (branch) => branch.id == widget.order.branchId,
-                orElse: () => Branch(
-                  id: widget.order.branchId!,
-                  name: widget.order.branchName ?? '',
-                  address: '',
-                ),
+            if (state is OrderSuccess) {
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
+                isSuccess: true,
               );
-              setState(() {
-                _selectedBranch = matchingBranch;
-                branches = state.branches; // Обновляем список филиалов
-              });
+              Navigator.pop(context, true);
+            } else if (state is OrderError) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
+                isSuccess: false,
+              );
             }
           },
-          child: BlocConsumer<OrderBloc, OrderState>(
-            listener: (context, state) {
-              if (state is OrderSuccess) {
-                showCustomSnackBar(
-                  context: context,
-                  message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
-                  isSuccess: true,
-                );
-                Navigator.pop(context, true);
-              } else if (state is OrderError) {
-                showCustomSnackBar(
-                  context: context,
-                  message: state.message,
-                  isSuccess: false,
-                );
-              }
-            },
-            builder: (context, state) {
-              if (state is OrderLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LeadRadioGroupWidget(
-                              selectedLead: selectedLead,
-                              onSelectLead: (LeadData lead) {
-                                if (mounted) {
-                                  setState(() {
-                                    selectedLead = lead.id.toString();
-                                    _selectedDeliveryAddress = null;
-                                  });
-                                  context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-                                        leadId: lead.id,
-                                      ));
-                                }
+          builder: (context, state) {
+            if (state is OrderLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LeadRadioGroupWidget(
+                            selectedLead: selectedLead,
+                            onSelectLead: (LeadData lead) {
+                              if (mounted) {
+                                setState(() {
+                                  selectedLead = lead.id.toString();
+                                  _selectedDeliveryAddress = null;
+                                });
+                                context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
+                                      leadId: lead.id,
+                                      // organizationId: widget.order.organizationId ?? 1,
+                                    ));
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          CustomPhoneNumberInput(
+                            controller: _phoneController,
+                            onInputChanged: (String number) {
+                              if (mounted) {
+                                setState(() => selectedDialCode = number);
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!.translate('field_required');
+                              }
+                              return null;
+                            },
+                            label: AppLocalizations.of(context)!.translate('phone'),
+                            selectedDialCode: selectedDialCode,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildItemsSection(),
+                          const SizedBox(height: 16),
+                          DeliveryMethodDropdown(
+                            selectedDeliveryMethod: _deliveryMethod,
+                            onSelectDeliveryMethod: (value) {
+                              if (mounted) {
+                                setState(() {
+                                  _deliveryMethod = value;
+                                  _selectedBranch = null;
+                                  _selectedDeliveryAddress = null;
+                                });
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
+                            BranchRadioGroupWidget(
+                              selectedStatus: _selectedBranch?.toString(),
+                              onSelectStatus: (Branch selectedStatusData) {
+                                setState(() {
+                                  _selectedBranch = selectedStatusData;
+                                });
                               },
                             ),
-                            const SizedBox(height: 16),
-                            CustomPhoneNumberInput(
-                              controller: _phoneController,
-                              onInputChanged: (String number) {
-                                if (mounted) {
-                                  setState(() => selectedDialCode = number);
-                                }
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)!.translate('field_required');
-                                }
-                                return null;
-                              },
-                              label: AppLocalizations.of(context)!.translate('phone'),
-                              selectedDialCode: selectedDialCode,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildItemsSection(),
-                            const SizedBox(height: 16),
-                            DeliveryMethodDropdown(
-                              selectedDeliveryMethod: _deliveryMethod,
-                              onSelectDeliveryMethod: (value) {
-                                if (mounted) {
-                                  setState(() {
-                                    _deliveryMethod = value;
-                                    _selectedBranch = null;
-                                    _selectedDeliveryAddress = null;
-                                  });
-                                }
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                            DeliveryAddressDropdown(
+                              leadId: int.parse(selectedLead ?? '0'),
+                              organizationId: widget.order.organizationId ?? 1,
+                              selectedAddress: _selectedDeliveryAddress,
+                              onSelectAddress: (DeliveryAddress address) {
+                                setState(() {
+                                  _selectedDeliveryAddress = address;
+                                });
                               },
                             ),
-                            const SizedBox(height: 8),
-                            if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
-                              BlocBuilder<BranchBloc, BranchState>(
-                                builder: (context, branchState) {
-                                  if (branchState is BranchLoading) {
-                                    return const Center(child: CircularProgressIndicator());
-                                  } else if (branchState is BranchLoaded) {
-                                    return BranchesDropdown(
-                                      label: AppLocalizations.of(context)!.translate('branch_order'),
-                                      branches: branchState.branches,
-                                      selectedBranch: _selectedBranch,
-                                      onSelectBranch: (Branch branch) {
-                                        setState(() {
-                                          _selectedBranch = branch;
-                                        });
-                                      },
-                                    );
-                                  } else if (branchState is BranchError) {
-                                    return Text(
-                                      AppLocalizations.of(context)!.translate('error_loading_branches'),
-                                      style: const TextStyle(color: Colors.red),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
-                              DeliveryAddressDropdown(
-                                leadId: int.parse(selectedLead ?? '0'),
-                                organizationId: widget.order.organizationId ?? 1,
-                                selectedAddress: _selectedDeliveryAddress,
-                                onSelectAddress: (DeliveryAddress address) {
-                                  setState(() {
-                                    _selectedDeliveryAddress = address;
-                                  });
-                                },
-                              ),
-                            const SizedBox(height: 16),
-                            CustomTextField(
-                              controller: _commentController,
-                              hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                              label: AppLocalizations.of(context)!.translate('comment_client'),
-                              maxLines: 5,
-                              keyboardType: TextInputType.multiline,
-                            ),
-                          ],
-                        ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            controller: _commentController,
+                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!.translate('comment_client'),
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                          ),
+                        ],
                       ),
                     ),
-                    _buildActionButtons(context),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                  _buildActionButtons(context),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
+
   AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
