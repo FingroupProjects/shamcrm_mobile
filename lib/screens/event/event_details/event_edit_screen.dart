@@ -10,8 +10,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/screens/event/event_details/lead_list_radio.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -37,7 +35,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   String? selectedLead;
   List<int> selectedManagers = [];
   bool sendNotification = false;
-  bool isLoading = false; // Добавляем состояние загрузки
+  bool isLoading = false;
   String? selectedSubject;
 
   @override
@@ -45,11 +43,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     super.initState();
     titleController = TextEditingController(text: widget.notice.title);
     bodyController = TextEditingController(text: widget.notice.body);
-    dateController = TextEditingController(
-      text: widget.notice.date != null
-          ? DateFormat('dd/MM/yyyy HH:mm')
-              .format(widget.notice.date!.add(Duration(hours: 5)))
-          : '',
+    dateController = TextEditingController( text: widget.notice.date != null ? 
+    DateFormat('dd/MM/yyyy HH:mm').format(widget.notice.date!.add(Duration(hours: 5))) : '',
     );
 
     selectedLead = widget.notice.lead?.id.toString();
@@ -172,15 +167,6 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        LeadRadioGroupEventWidget(
-                          selectedLead: selectedLead,
-                          onSelectLead: (LeadData selectedLeadData) {
-                            setState(() {
-                              selectedLead = selectedLeadData.id.toString();
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 8),
                         CustomTextField(
                           controller: bodyController,
                           hintText: AppLocalizations.of(context)!
@@ -266,26 +252,15 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       // // Проверяем тематику
-      // if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //       content: Text('Выберите тематику!'),
-      //       backgroundColor: Colors.red,
-      //     ),
-      //   );
-      //   return;
-      // }
-
-      // // Проверяем лид
-      // if (selectedLead == null) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //       content: Text('Выберите лид!'),
-      //       backgroundColor: Colors.red,
-      //     ),
-      //   );
-      //   return;
-      // }
+      if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Выберите тематику!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
       setState(() {
         isLoading = true;
