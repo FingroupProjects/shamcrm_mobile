@@ -1,4 +1,3 @@
-// lib/screens/auth/auth_screen.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
