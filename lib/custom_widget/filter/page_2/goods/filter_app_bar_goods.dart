@@ -1,9 +1,11 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -11,11 +13,15 @@ import 'package:flutter/foundation.dart';
 class GoodsFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
+  final int? initialCategoryId;
+  final double? initialDiscountPercent;
 
   GoodsFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
+    this.initialCategoryId,
+    this.initialDiscountPercent,
   }) : super(key: key);
 
   @override
@@ -32,7 +38,21 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     super.initState();
     if (kDebugMode) {
       print('GoodsFilterScreen: Инициализация экрана фильтров');
+      print('GoodsFilterScreen: Начальные значения - category_id: ${widget.initialCategoryId}, discount_percent: ${widget.initialDiscountPercent}');
     }
+
+    if (widget.initialDiscountPercent != null && widget.initialDiscountPercent! >= 0) {
+      discountPercentController.text = widget.initialDiscountPercent!.toStringAsFixed(2);
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
+      }
+    } else {
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Начальный процент скидки не установлен (null или некорректное значение)');
+      }
+    }
+
+    context.read<GoodsBloc>().add(FetchSubCategories());
   }
 
   @override
@@ -61,7 +81,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         ),
         backgroundColor: Colors.white,
         forceMaterialTransparency: true,
-        elevation: 0,
+        elevation: 1,
         actions: [
           TextButton(
             onPressed: () {
@@ -105,6 +125,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               }
               if (discountPercentController.text.isNotEmpty) {
                 filters['discount_percent'] = double.tryParse(discountPercentController.text);
+                if (kDebugMode) {
+                  print('GoodsFilterScreen: Добавлен discount_percent: ${filters['discount_percent']}');
+                }
               }
 
               if (kDebugMode) {
@@ -142,13 +165,38 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
           const SizedBox(width: 10),
         ],
       ),
-      body: BlocBuilder<GoodsBloc, GoodsState>(
+      body: BlocConsumer<GoodsBloc, GoodsState>(
+        listener: (context, state) {
+          if (state is GoodsDataLoaded && widget.initialCategoryId != null && selectedCategory == null) {
+            if (state.subCategories.isNotEmpty) {
+              setState(() {
+                selectedCategory = state.subCategories.firstWhere(
+                  (subCategory) => subCategory.parent.id == widget.initialCategoryId,
+                  orElse: () {
+                    if (kDebugMode) {
+                      print('GoodsFilterScreen: Подкатегория с category_id ${widget.initialCategoryId} не найдена, выбор не установлен');
+                    }
+                    return state.subCategories.first;
+                  },
+                );
+                if (kDebugMode) {
+                  print('GoodsFilterScreen: Установлена начальная подкатегория: ${selectedCategory?.name}, category_id: ${selectedCategory?.parent.id}');
+                }
+              });
+            } else {
+              if (kDebugMode) {
+                print('GoodsFilterScreen: Список подкатегорий пуст в listener');
+              }
+            }
+          }
+        },
         builder: (context, state) {
           List<SubCategoryAttributesData> subCategories = [];
           if (state is GoodsDataLoaded) {
             subCategories = state.subCategories;
             if (kDebugMode) {
               print('GoodsFilterScreen: Подкатегории из GoodsBloc: ${subCategories.length}');
+              print('GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
             }
           } else if (state is GoodsLoading) {
             if (kDebugMode) {
@@ -197,19 +245,22 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
-                          child: CategoryDropdownWidget(
-                            selectedCategory: selectedCategory?.name,
-                            onSelectCategory: (category) {
-                              setState(() {
-                                selectedCategory = category;
-                                isCategoryValid = true;
-                                if (kDebugMode) {
-                                  print('GoodsFilterScreen: Выбрана подкатегория: ${category?.name}, category_id: ${category?.parent.id}');
-                                }
-                              });
-                            },
-                            subCategories: subCategories,
-                            isValid: isCategoryValid,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: CategoryDropdownWidget(
+                              selectedCategory: selectedCategory?.name,
+                              onSelectCategory: (category) {
+                                setState(() {
+                                  selectedCategory = category;
+                                  isCategoryValid = true;
+                                  if (kDebugMode) {
+                                    print('GoodsFilterScreen: Выбрана подкатегория: ${category?.name}, category_id: ${category?.parent.id}');
+                                  }
+                                });
+                              },
+                              subCategories: subCategories,
+                              isValid: isCategoryValid,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -217,32 +268,33 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: TextField(
-                              controller: discountPercentController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!.translate('discount_percent'),
-                                hintText: AppLocalizations.of(context)!.translate('enter_discount_percent'),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xffE8ECF4)),
+                            padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CustomTextField(
+                                  controller: discountPercentController,
+                                  hintText: AppLocalizations.of(context)!.translate('enter_discount_percent'),
+                                  label: AppLocalizations.of(context)!.translate('discount_percent'),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return AppLocalizations.of(context)!.translate('field_required');
+                                    }
+                                    final number = double.tryParse(value);
+                                    if (number == null || number < 0) {
+                                      return AppLocalizations.of(context)!.translate('invalid_discount');
+                                    }
+                                    return null;
+                                  },
+                                  onChanged: (value) {
+                                    if (kDebugMode) {
+                                      print('GoodsFilterScreen: Введен процент скидки: $value');
+                                    }
+                                  },
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xff1E2E52)),
-                                ),
-                                labelStyle: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff99A4BA),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              onChanged: (value) {
-                                if (kDebugMode) {
-                                  print('GoodsFilterScreen: Введен процент скидки: $value');
-                                }
-                              },
+                                const SizedBox(height: 12),
+                              ],
                             ),
                           ),
                         ),

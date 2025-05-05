@@ -60,8 +60,9 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   late Animation<double> _blinkAnimation;
   bool _hasOverdueTasks = false;
   bool _canReadNotice = true;
-  Color _iconColor = Colors.red;
+  Color _iconColor = Colors.black;
   late Timer _timer;
+  bool _isGoodsFiltering = false;
 
   @override
   void initState() {
@@ -501,6 +502,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
+                color: _isGoodsFiltering ? _iconColor : null,
               ),
             ),
             onPressed: () {
@@ -543,12 +545,18 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             if (kDebugMode) {
               print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
             }
+            setState(() {
+              _isGoodsFiltering = filters.isNotEmpty;
+            });
             widget.onFilterGoodsSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
               print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
             }
+            setState(() {
+              _isGoodsFiltering = false;
+            });
             widget.onGoodsResetFilters?.call();
           },
         ),
