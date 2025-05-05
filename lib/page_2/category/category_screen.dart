@@ -21,11 +21,39 @@ class _CategoryScreenState extends State<CategoryScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
+  String _lastSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     context.read<CategoryBloc>().add(FetchCategories());
+    _searchController.addListener(() {
+      _onSearch(_searchController.text);
+    });
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      _lastSearchQuery = query;
+      _isSearching = query.isNotEmpty;
+    });
+    context.read<CategoryBloc>().add(SearchCategories(query));
+  }
+
+  void _resetSearch() {
+    setState(() {
+      _isSearching = false;
+      _lastSearchQuery = '';
+      _searchController.clear();
+    });
+    context.read<CategoryBloc>().add(FetchCategories());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -47,10 +75,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
           showSearchIcon: true,
           showFilterIcon: false,
           showFilterOrderIcon: false,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
+          onChangedSearchInput: (input) {
+            _onSearch(input);
+          },
+          textEditingController: _searchController,
+          focusNode: _searchFocusNode,
+          clearButtonClick: (isSearching) {
+            _resetSearch();
+          },
         ),
       ),
       body: isClickAvatarIcon
@@ -59,24 +91,60 @@ class _CategoryScreenState extends State<CategoryScreen> {
               listener: (context, state) {
                 if (state is CategorySuccess) {
                   showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: true,
-                 );
+                    context: context,
+                    message: AppLocalizations.of(context)!.translate(state.message),
+                    isSuccess: true,
+                  );
+                } else if (state is CategoryError) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!.translate(state.message),
+                    isSuccess: false,
+                  );
                 }
               },
               builder: (context, state) {
                 if (state is CategoryLoading) {
-                  return const Center(child: PlayStoreImageLoading(size: 80.0,duration: Duration(milliseconds: 1000)));               
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  );
                 } else if (state is CategoryError) {
-                  context.read<CategoryBloc>().add(FetchCategories());
-                  return Center(child: Text(state.message));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(localizations!.translate('error_loading_categories')),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<CategoryBloc>().add(FetchCategories());
+                          },
+                          child: Text(localizations.translate('retry')),
+                        ),
+                      ],
+                    ),
+                  );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
-                  return Center(child: Text(AppLocalizations.of(context)!.translate('category_not_found')));
+                  return Center(
+                    child: Text(
+                      _isSearching
+                          ? localizations!.translate('nothing_found')
+                          : localizations!.translate('category_not_found'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  );
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
                   return ListView.builder(
-                    padding: EdgeInsets.only(left: 16, right: 16, top: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final category = categories[index];
@@ -93,7 +161,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     },
                   );
                 }
-                return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                );
               },
             ),
       floatingActionButton: FloatingActionButton(
@@ -101,7 +171,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           CategoryAddBottomSheet.show(context);
         },
         backgroundColor: const Color(0xff1E2E52),
-        child: Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
