@@ -51,11 +51,6 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         print(
             'GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
       }
-    } else {
-      if (kDebugMode) {
-        print(
-            'GoodsFilterScreen: Начальный процент скидки не установлен (null или некорректное значение)');
-      }
     }
 
     context.read<GoodsBloc>().add(FetchSubCategories());
@@ -187,6 +182,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         listener: (context, state) {
           if (state is GoodsDataLoaded &&
               widget.initialCategoryIds != null &&
+              widget.initialCategoryIds!.isNotEmpty &&
               selectedCategories.isEmpty) {
             if (state.subCategories.isNotEmpty) {
               setState(() {
@@ -308,8 +304,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   keyboardType: TextInputType.number,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return AppLocalizations.of(context)!
-                                          .translate('field_required');
+                                      return null; // Allow empty discount
                                     }
                                     final number = double.tryParse(value);
                                     if (number == null || number < 0) {

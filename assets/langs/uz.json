@@ -1046,7 +1046,9 @@
 "branch_order": "Filial:",
 "select_delivery_address": "Yetkazib berish manzilini tanlang",
 "discount_percent": "Chegirma foizi",
-"enter_discount_percent": "Chegirma foizini kiriting"
+"enter_discount_percent": "Chegirma foizini kiriting",
+"error_loading_subcategories": "Pastki toifalarni yuklashda xatolik yuz berdi",
+"selected_subcategories": "Tanlangan pastki toifalar"
 
 
 }

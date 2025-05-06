@@ -22,6 +22,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final VoidCallback? onGoodsResetFilters;
+  final Map<String, dynamic> currentFilters; // Added to receive filter data
 
   CustomAppBarPage2({
     super.key,
@@ -37,6 +38,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterOrderIcon = true,
     this.onFilterGoodsSelected,
     this.onGoodsResetFilters,
+    required this.currentFilters, // Required parameter
   });
 
   @override
@@ -104,6 +106,9 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
       });
     });
+
+    // Set initial filtering state based on currentFilters
+    _isGoodsFiltering = widget.currentFilters.isNotEmpty;
   }
 
   Future<void> _checkOverdueTasks() async {
@@ -536,7 +541,27 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   void navigateToGoodsFilterScreen(BuildContext context) {
     if (kDebugMode) {
       print('CustomAppBarPage2: Переход к экрану фильтров товаров');
+      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
     }
+    // Extract initial filter data
+    List<int>? initialCategoryIds;
+    double? initialDiscountPercent;
+    
+    if (widget.currentFilters.containsKey('category_id') &&
+        widget.currentFilters['category_id'] is List &&
+        widget.currentFilters['category_id'].isNotEmpty) {
+      initialCategoryIds = (widget.currentFilters['category_id'] as List)
+          .map((id) => int.tryParse(id.toString()) ?? 0)
+          .where((id) => id != 0)
+          .toList();
+    }
+    
+    if (widget.currentFilters.containsKey('discount_percent')) {
+      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
+          ? widget.currentFilters['discount_percent']
+          : double.tryParse(widget.currentFilters['discount_percent'].toString());
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -559,6 +584,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             });
             widget.onGoodsResetFilters?.call();
           },
+          initialCategoryIds: initialCategoryIds,
+          initialDiscountPercent: initialDiscountPercent,
         ),
       ),
     );

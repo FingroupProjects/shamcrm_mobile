@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -32,8 +33,7 @@ class PinScreen extends StatefulWidget {
   _PinScreenState createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen>
-    with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -48,29 +48,12 @@ class _PinScreenState extends State<PinScreen>
   int? userRoleId;
   bool _isLoading = true;
   bool isPermissionsLoaded = false;
-  Map<String, dynamic>? tutorialProgress; // Добавлено
-  final ApiService _apiService = ApiService(); // Добавлено
+  Map<String, dynamic>? tutorialProgress;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-
-    _loadUserPhone().then((_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-
-    _loadUserRoleId().then((_) {
-      _checkSavedPin();
-      _initBiometrics();
-    });
-
-    _fetchTutorialProgress(); // Добавлено
-    _fetchSettings(); // Добавляем новый метод для получения настроек
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -85,9 +68,50 @@ class _PinScreenState extends State<PinScreen>
         _animationController.reset();
       }
     });
+
+    _initializeWithInternetCheck();
   }
 
-// Новый метод для получения настроек
+  Future<void> _initializeWithInternetCheck() async {
+    await _ensureInternetConnection();
+
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+
+    await _loadUserPhone();
+    setState(() {
+      _isLoading = false;
+    });
+
+    await _loadUserRoleId();
+    _checkSavedPin();
+    _initBiometrics();
+
+    await _fetchTutorialProgress();
+    await _fetchSettings();
+  }
+
+  Future<void> _ensureInternetConnection() async {
+    bool hasInternet = false;
+    while (!hasInternet) {
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult == ConnectivityResult.none) {
+        await _showNoInternetDialog(context);
+      } else {
+        try {
+          final result = await InternetAddress.lookup('google.com').timeout(Duration(seconds: 5));
+          if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+            hasInternet = true;
+          } else {
+            await _showNoInternetDialog(context);
+          }
+        } catch (e) {
+          await _showNoInternetDialog(context);
+        }
+      }
+    }
+  }
+
+  
   Future<void> _fetchSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -96,9 +120,7 @@ class _PinScreenState extends State<PinScreen>
       final response = await _apiService.getSettings(organizationId);
 
       if (response['result'] != null) {
-        // Обновляем значение department в SharedPreferences
-        await prefs.setBool(
-            'department_enabled', response['result']['department'] ?? false);
+        await prefs.setBool('department_enabled', response['result']['department'] ?? false);
       }
     } catch (e) {
       print('Error fetching settings: $e');
@@ -112,8 +134,7 @@ class _PinScreenState extends State<PinScreen>
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
       print('Tutorial progress updated from server: $tutorialProgress');
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -143,8 +164,7 @@ class _PinScreenState extends State<PinScreen>
       }
       await prefs.remove('userRoles');
 
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
           userRoleId = userProfile.role!.first.id;
@@ -162,7 +182,7 @@ class _PinScreenState extends State<PinScreen>
         });
       }
     } catch (e) {
-      print('Error loading user role!');
+      print('Error loading user role: $e');
       if (mounted) {
         setState(() {
           userRoleId = 0;
@@ -178,9 +198,7 @@ class _PinScreenState extends State<PinScreen>
     String? savedUserNameProfile = prefs.getString('userNameProfile');
     String? savedUserImage = prefs.getString('userImage');
 
-    if (savedUserName != null &&
-        savedUserNameProfile != null &&
-        savedUserImage != null) {
+    if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
       if (mounted) {
         setState(() {
           _userName = savedUserName;
@@ -196,8 +214,7 @@ class _PinScreenState extends State<PinScreen>
       String UUID = prefs.getString('userID') ?? '';
       print('userID : $UUID');
 
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
 
       await prefs.setString('userName', userProfile.name);
       await prefs.setString('userNameProfile', userProfile.name ?? '');
@@ -231,11 +248,9 @@ class _PinScreenState extends State<PinScreen>
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS &&
-              _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.strong)) {
+          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }
@@ -329,11 +344,12 @@ class _PinScreenState extends State<PinScreen>
           await _fetchTutorialProgress();
         }
         if (widget.initialMessage != null) {
+          // Assuming handleMessage is defined elsewhere
           handleMessage(widget.initialMessage!);
         }
       });
     });
-   Navigator.of(context).pushReplacementNamed('/home');
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _triggerErrorEffect() async {
@@ -345,7 +361,7 @@ class _PinScreenState extends State<PinScreen>
       _pin = '';
     });
 
-    _animationController.forward();
+  _animationController.forward();
 
     await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
@@ -518,4 +534,84 @@ class _PinScreenState extends State<PinScreen>
       ),
     );
   }
+
+  Future<void> _showNoInternetDialog(BuildContext context) async {
+  final localizations = AppLocalizations.of(context);
+  return showDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black54,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min, 
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                size: 48.0,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(height: 16.0),
+              Text(
+                localizations?.translate('no_internet') ?? 'No Internet',
+                style: const TextStyle(
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Gilroy',
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8.0),
+              Text( localizations?.translate('please_check_internet') ??
+                    'Please check your internet connection.',
+                style: const TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.black54,
+                  fontFamily: 'Gilroy',
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); 
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent, 
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32.0,
+                    vertical: 12.0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  elevation: 2.0,
+                ),
+                child: Text(
+                  localizations?.translate('retry') ?? 'Retry',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 }

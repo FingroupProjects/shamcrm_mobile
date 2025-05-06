@@ -25,6 +25,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
   bool isClickAvatarIcon = false;
   late ScrollController _scrollController;
   String _lastSearchQuery = '';
+  Map<String, dynamic> _currentFilters = {};
 
   @override
   void initState() {
@@ -82,6 +83,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
     if (kDebugMode) {
       print('GoodsScreen: Применение фильтров: $filters');
     }
+    setState(() {
+      _currentFilters = Map.from(filters);
+      if (kDebugMode) {
+        print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+      }
+    });
     context.read<GoodsBloc>().add(FilterGoods(filters));
   }
 
@@ -89,6 +96,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
     if (kDebugMode) {
       print('GoodsScreen: Сброс фильтров');
     }
+    setState(() {
+      _currentFilters = {};
+      if (kDebugMode) {
+        print('GoodsScreen: Очищены текущие фильтры');
+      }
+    });
     context.read<GoodsBloc>().add(FilterGoods({}));
   }
 
@@ -139,6 +152,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           },
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
+          currentFilters: _currentFilters, // Pass current filters
         ),
       ),
       body: isClickAvatarIcon
@@ -251,22 +265,11 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   if (kDebugMode) {
                     print('GoodsScreen: Ошибка загрузки товаров: ${state.message}');
                   }
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(localizations!.translate('error_loading_goods')),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (kDebugMode) {
-                              print('GoodsScreen: Повторная попытка загрузки товаров');
-                            }
-                            context.read<GoodsBloc>().add(FetchGoods());
-                          },
-                          child: Text(localizations.translate('retry')),
-                        ),
-                      ],
+                  context.read<GoodsBloc>().add(FetchGoods());
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
                     ),
                   );
                 }

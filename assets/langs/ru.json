@@ -1039,7 +1039,9 @@
   "branch_order": "Филиал:",
   "select_delivery_address": "Выберите адрес доставки",
   "discount_percent": "Скидка",
-  "enter_discount_percent": "Введите процент скидки"
+  "enter_discount_percent": "Введите процент скидки",
+  "error_loading_subcategories": "Ошибка при загрузке подкатегорий",
+  "selected_subcategories": "Выбранные подкатегории"
 
 }
   
