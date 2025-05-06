@@ -1038,7 +1038,12 @@
   "comment_to_courier": "Комментарий клиента",
   "branch_order": "Филиал:",
   "select_delivery_address": "Выберите адрес доставки",
-  "discount_percent": "Скидка"
+  "discount_percent": "Скидка",
+  "no_internet": "Нет интернета",
+  "please_check_internet": "Проверьте подключение к интернету!"
+
+
+  
 
 }
   

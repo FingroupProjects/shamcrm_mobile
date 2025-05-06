@@ -1031,7 +1031,10 @@
 "comment_to_courier": "Customer comment",
 "branch_order": "Branch:",
 "select_delivery_address": "Select delivery address",
-"discount_percent": "Discount"
+"discount_percent": "Discount",
+"no_internet": "No internet connection",
+"please_check_internet": "Please check your internet connection!"
+
 
 
 }
