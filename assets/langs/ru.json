@@ -1040,10 +1040,10 @@
   "select_delivery_address": "Выберите адрес доставки",
   "discount_percent": "Скидка",
   "no_internet": "Нет интернета",
-  "please_check_internet": "Проверьте подключение к интернету!"
-
-
-  
+  "please_check_internet": "Проверьте подключение к интернету!",
+  "enter_discount_percent": "Введите процент скидки",
+  "error_loading_subcategories": "Ошибка при загрузке подкатегорий",
+  "selected_subcategories": "Выбранные подкатегории"
 
 }
   

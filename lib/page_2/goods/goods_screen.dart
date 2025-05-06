@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -10,6 +11,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:flutter/foundation.dart';
 
 class GoodsScreen extends StatefulWidget {
   @override
@@ -22,13 +24,85 @@ class _GoodsScreenState extends State<GoodsScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
   late ScrollController _scrollController;
+  String _lastSearchQuery = '';
+  Map<String, dynamic> _currentFilters = {};
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    if (kDebugMode) {
+      print('GoodsScreen: Инициализация экрана товаров');
+    }
     context.read<GoodsBloc>().add(FetchGoods());
+    context.read<GoodsBloc>().add(FetchSubCategories());
+    _searchController.addListener(() {
+      _onSearch(_searchController.text);
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
+        !context.read<GoodsBloc>().allGoodsFetched) {
+      final state = context.read<GoodsBloc>().state;
+      if (state is GoodsDataLoaded) {
+        if (kDebugMode) {
+          print('GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
+        }
+        context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
+      }
+    }
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      _lastSearchQuery = query;
+      _isSearching = query.isNotEmpty;
+      if (kDebugMode) {
+        print('GoodsScreen: Поиск товаров с запросом: $query');
+      }
+    });
+    context.read<GoodsBloc>().add(SearchGoods(query));
+  }
+
+  void _resetSearch() {
+    setState(() {
+      _isSearching = false;
+      _lastSearchQuery = '';
+      _searchController.clear();
+      if (kDebugMode) {
+        print('GoodsScreen: Сброс поиска');
+      }
+    });
+    context.read<GoodsBloc>().add(FetchGoods());
+  }
+
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    if (kDebugMode) {
+      print('GoodsScreen: Применение фильтров: $filters');
+    }
+    setState(() {
+      _currentFilters = Map.from(filters);
+      if (kDebugMode) {
+        print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+      }
+    });
+    context.read<GoodsBloc>().add(FilterGoods(filters));
+  }
+
+  void _onResetFilters() {
+    if (kDebugMode) {
+      print('GoodsScreen: Сброс фильтров');
+    }
+    setState(() {
+      _currentFilters = {};
+      if (kDebugMode) {
+        print('GoodsScreen: Очищены текущие фильтры');
+      }
+    });
+    context.read<GoodsBloc>().add(FilterGoods({}));
   }
 
   @override
@@ -36,18 +110,10 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-        !(context.read<GoodsBloc>().allGoodsFetched)) {
-      final state = context.read<GoodsBloc>().state;
-      if (state is GoodsDataLoaded) {
-        context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
-      }
+    if (kDebugMode) {
+      print('GoodsScreen: Очистка ресурсов');
     }
+    super.dispose();
   }
 
   @override
@@ -63,40 +129,88 @@ class _GoodsScreenState extends State<GoodsScreen> {
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
+              if (kDebugMode) {
+                print('GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
+              }
             });
           },
-          clearButtonClickFiltr: (isSearching) {},
+          clearButtonClickFiltr: (isSearching) {
+            if (kDebugMode) {
+              print('GoodsScreen: Очистка фильтров через AppBar');
+            }
+          },
           showSearchIcon: true,
           showFilterOrderIcon: false,
           showFilterIcon: true,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
+          onChangedSearchInput: (input) {
+            _onSearch(input);
+          },
+          textEditingController: _searchController,
+          focusNode: _searchFocusNode,
+          clearButtonClick: (isSearching) {
+            _resetSearch();
+          },
+          onFilterGoodsSelected: _onFilterSelected,
+          onGoodsResetFilters: _onResetFilters,
+          currentFilters: _currentFilters, // Pass current filters
         ),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : BlocBuilder<GoodsBloc, GoodsState>(
+          : BlocConsumer<GoodsBloc, GoodsState>(
+              listener: (context, state) {
+                if (state is GoodsSuccess) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!.translate(state.message),
+                    isSuccess: true,
+                  );
+                  if (kDebugMode) {
+                    print('GoodsScreen: Успех: ${state.message}');
+                  }
+                } else if (state is GoodsError) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!.translate(state.message),
+                    isSuccess: false,
+                  );
+                  if (kDebugMode) {
+                    print('GoodsScreen: Ошибка: ${state.message}');
+                  }
+                }
+              },
               builder: (context, state) {
                 if (state is GoodsLoading) {
+                  if (kDebugMode) {
+                    print('GoodsScreen: Состояние загрузки');
+                  }
                   return const Center(
-                      child: PlayStoreImageLoading(
-                          size: 80.0,
-                          duration: Duration(milliseconds: 1000)));
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  );
                 } else if (state is GoodsDataLoaded) {
+                  if (kDebugMode) {
+                    print('GoodsScreen: Загружено товаров: ${state.goods.length}');
+                  }
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: state.goods.length + (context.read<GoodsBloc>().allGoodsFetched ? 0 : 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: state.goods.length +
+                        (context.read<GoodsBloc>().allGoodsFetched ? 0 : 1),
                     itemBuilder: (context, index) {
                       if (index == state.goods.length) {
+                        if (kDebugMode) {
+                          print('GoodsScreen: Отображение индикатора загрузки для следующей страницы');
+                        }
                         return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(8),
                             child: PlayStoreImageLoading(
-                                size: 80.0,
-                                duration: Duration(milliseconds: 1000)),
+                              size: 80.0,
+                              duration: Duration(milliseconds: 1000),
+                            ),
                           ),
                         );
                       }
@@ -115,45 +229,74 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     },
                   );
                 } else if (state is GoodsEmpty) {
+                  if (kDebugMode) {
+                    print('GoodsScreen: Список товаров пуст');
+                  }
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2_outlined,
+                        const Icon(Icons.inventory_2_outlined,
                             size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(AppLocalizations.of(context)!.translate('no_products'),
-                          style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                              fontFamily: 'Gilroy'),
+                        const SizedBox(height: 16),
+                        Text(
+                          _isSearching
+                              ? localizations!.translate('nothing_found')
+                              : localizations!.translate('no_products'),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontFamily: 'Gilroy',
+                          ),
                         ),
                         TextButton(
-                          onPressed: () =>
-                              context.read<GoodsBloc>().add(FetchGoods()),
-                          child: Text(AppLocalizations.of(context)!.translate('update')),
+                          onPressed: () {
+                            if (kDebugMode) {
+                              print('GoodsScreen: Обновление списка товаров');
+                            }
+                            context.read<GoodsBloc>().add(FetchGoods());
+                          },
+                          child: Text(localizations!.translate('update')),
                         ),
                       ],
                     ),
                   );
                 } else if (state is GoodsError) {
-                  return Center(child: Text(state.message));
+                  if (kDebugMode) {
+                    print('GoodsScreen: Ошибка загрузки товаров: ${state.message}');
+                  }
+                  context.read<GoodsBloc>().add(FetchGoods());
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  );
                 }
-                return Center(child: Text('Error'));
+                if (kDebugMode) {
+                  print('GoodsScreen: Неизвестное состояние');
+                }
+                return const Center(child: Text('Error'));
               },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          if (kDebugMode) {
+            print('GoodsScreen: Переход к экрану добавления товара');
+          }
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => GoodsAddScreen()),
           );
           if (result == true) {
+            if (kDebugMode) {
+              print('GoodsScreen: Обновление списка товаров после добавления');
+            }
             context.read<GoodsBloc>().add(FetchGoods());
           }
         },
         backgroundColor: const Color(0xff1E2E52),
-        child: Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

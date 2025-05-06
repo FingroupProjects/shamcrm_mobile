@@ -1033,8 +1033,9 @@
 "select_delivery_address": "Select delivery address",
 "discount_percent": "Discount",
 "no_internet": "No internet connection",
-"please_check_internet": "Please check your internet connection!"
-
-
+"please_check_internet": "Please check your internet connection!",
+"enter_discount_percent": "Enter discount percentage",
+"error_loading_subcategories": "Error loading subcategories",
+"selected_subcategories": "Selected subcategories"
 
 }

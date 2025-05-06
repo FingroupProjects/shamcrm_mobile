@@ -6038,20 +6038,23 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<List<CategoryData>> getCategory() async {
+Future<List<CategoryData>> getCategory({String? search}) async {
     final organizationId = await getSelectedOrganization();
-    // final String path = '/category/organization_id=$organizationId';
-    final String path = '/category';
+    String path = '/category';
+    path += '?organization_id=$organizationId';
+    
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
 
-    final response = await _getRequest(path); // Ваш метод запроса
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
 
       if (data.containsKey('result') && data['result'] is List) {
         return (data['result'] as List)
-            .map((category) =>
-                CategoryData.fromJson(category as Map<String, dynamic>))
+            .map((category) => CategoryData.fromJson(category as Map<String, dynamic>))
             .toList();
       } else {
         throw Exception('Ошибка: Неверный формат данных');
@@ -6060,6 +6063,7 @@ Future<Map<String, dynamic>> createMyTask({
       throw Exception('Ошибка загрузки категории: ${response.statusCode}');
     }
   }
+
 
   Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
     try {
@@ -6284,27 +6288,65 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
-  Future<List<Goods>> getGoods({int page = 1, int perPage = 20}) async {
-    final organizationId = await getSelectedOrganization();
-    final String path =
-        '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        return (data['result']['data'] as List)
-            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
+Future<List<Goods>> getGoods({
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+  
+  if (filters != null) {
+    if (filters.containsKey('category_id') && 
+        filters['category_id'] is List && 
+        (filters['category_id'] as List).isNotEmpty) {
+      
+      // Правильное формирование параметра для массива
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
       }
-    } else {
-      throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+    }
+    
+    if (filters.containsKey('discount_percent')) {
+      path += '&discount_percent=${filters['discount_percent']}';
     }
   }
-
+  
+  if (kDebugMode) {
+    print('ApiService: Формирование запроса товаров: $path');
+  }
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${data['result']['data'].length} товаров');
+      }
+      return (data['result']['data'] as List)
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка формата данных: $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+  }
+}
+  
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
     final String path = '/good/$goodsId?organization_id=$organizationId';
@@ -6319,15 +6361,13 @@ Future<Map<String, dynamic>> createMyTask({
         throw Exception('Ошибка: Неверный формат данных');
       }
     } else {
-      throw Exception(
-          'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+      throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
     }
   }
 
   Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
     final organizationId = await getSelectedOrganization();
-    final String path =
-        '/category/get/subcategories?organization_id=$organizationId';
+    final String path = '/category/get/subcategories?organization_id=$organizationId';
 
     final response = await _getRequest(path);
 
@@ -6335,15 +6375,13 @@ Future<Map<String, dynamic>> createMyTask({
       final Map<String, dynamic> data = json.decode(response.body);
       if (data.containsKey('data')) {
         return (data['data'] as List)
-            .map((item) => SubCategoryAttributesData.fromJson(
-                item as Map<String, dynamic>))
+            .map((item) => SubCategoryAttributesData.fromJson(item as Map<String, dynamic>))
             .toList();
       } else {
         throw Exception('Ошибка: Неверный формат данных');
       }
     } else {
-      throw Exception(
-          'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+      throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
     }
   }
 

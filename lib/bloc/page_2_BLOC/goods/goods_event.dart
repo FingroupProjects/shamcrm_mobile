@@ -13,10 +13,30 @@ class FetchMoreGoods extends GoodsEvent {
   FetchMoreGoods(this.currentPage);
 }
 
+class SearchGoods extends GoodsEvent {
+  final String query;
+
+  SearchGoods(this.query);
+
+  @override
+  List<Object> get props => [query];
+}
+
+class FilterGoods extends GoodsEvent {
+  final Map<String, dynamic> filters;
+
+  FilterGoods(this.filters);
+
+  @override
+  List<Object> get props => [filters];
+}
+
+class FetchSubCategories extends GoodsEvent {}
+
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
-  final int unitId; // Оставляем как есть, хотя закомментировано
+  final int unitId;
   final int quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
@@ -24,7 +44,7 @@ class CreateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch; // Новое поле для филиала
+  final int branch;
 
   CreateGoods({
     required this.name,
@@ -37,9 +57,10 @@ class CreateGoods extends GoodsEvent {
     this.images,
     required this.isActive,
     this.discountPrice,
-    required this.branch, // Добавляем филиал
+    required this.branch,
   });
 }
+
 class UpdateGoods extends GoodsEvent {
   final int goodId;
   final String name;
@@ -52,7 +73,7 @@ class UpdateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch; // Добавляем поле branch
+  final int branch;
 
   UpdateGoods({
     required this.goodId,
@@ -66,6 +87,6 @@ class UpdateGoods extends GoodsEvent {
     this.images,
     required this.isActive,
     this.discountPrice,
-    required this.branch, // Добавляем branch в конструктор
+    required this.branch,
   });
 }

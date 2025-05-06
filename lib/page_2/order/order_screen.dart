@@ -277,6 +277,7 @@ class _OrderScreenState extends State<OrderScreen>
               }
             },
             clearButtonClickFiltr: (value) {},
+            currentFilters: {}, // Provide empty map since no filters are used
           ),
         ),
         body: isClickAvatarIcon
@@ -614,8 +615,8 @@ class _OrderScreenState extends State<OrderScreen>
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
-                  // organizationId: widget.organizationId,
-                ),
+                    // organizationId: widget.organizationId,
+                    ),
               ),
             );
 

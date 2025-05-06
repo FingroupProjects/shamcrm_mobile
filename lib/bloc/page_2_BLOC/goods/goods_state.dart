@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 
 abstract class GoodsState {}
 
@@ -10,13 +11,16 @@ class GoodsDataLoaded extends GoodsState {
   final List<Goods> goods;
   final Pagination pagination;
   final int currentPage;
+  final List<SubCategoryAttributesData> subCategories;
 
-  GoodsDataLoaded(this.goods, this.pagination, {this.currentPage = 1});
+  GoodsDataLoaded(this.goods, this.pagination, this.subCategories, {this.currentPage = 1});
 
-  GoodsDataLoaded merge(List<Goods> newGoods, Pagination newPagination) {
+  GoodsDataLoaded merge(List<Goods> newGoods, Pagination newPagination, List<SubCategoryAttributesData> newSubCategories) {
     return GoodsDataLoaded(
       [...goods, ...newGoods],
-      newPagination, currentPage: currentPage + 1
+      newPagination,
+      newSubCategories,
+      currentPage: currentPage + 1,
     );
   }
 }
