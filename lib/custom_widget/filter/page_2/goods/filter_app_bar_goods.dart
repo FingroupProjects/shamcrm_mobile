@@ -2,8 +2,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
-import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter/material.dart';
@@ -13,14 +13,14 @@ import 'package:flutter/foundation.dart';
 class GoodsFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
-  final int? initialCategoryId;
+  final List<int>? initialCategoryIds;
   final double? initialDiscountPercent;
 
   GoodsFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
-    this.initialCategoryId,
+    this.initialCategoryIds,
     this.initialDiscountPercent,
   }) : super(key: key);
 
@@ -29,8 +29,9 @@ class GoodsFilterScreen extends StatefulWidget {
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
-  final TextEditingController discountPercentController = TextEditingController();
-  SubCategoryAttributesData? selectedCategory;
+  final TextEditingController discountPercentController =
+      TextEditingController();
+  List<SubCategoryAttributesData> selectedCategories = [];
   bool isCategoryValid = true;
 
   @override
@@ -38,17 +39,17 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     super.initState();
     if (kDebugMode) {
       print('GoodsFilterScreen: Инициализация экрана фильтров');
-      print('GoodsFilterScreen: Начальные значения - category_id: ${widget.initialCategoryId}, discount_percent: ${widget.initialDiscountPercent}');
+      print(
+          'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, discount_percent: ${widget.initialDiscountPercent}');
     }
 
-    if (widget.initialDiscountPercent != null && widget.initialDiscountPercent! >= 0) {
-      discountPercentController.text = widget.initialDiscountPercent!.toStringAsFixed(2);
+    if (widget.initialDiscountPercent != null &&
+        widget.initialDiscountPercent! >= 0) {
+      discountPercentController.text =
+          widget.initialDiscountPercent!.toStringAsFixed(2);
       if (kDebugMode) {
-        print('GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
-      }
-    } else {
-      if (kDebugMode) {
-        print('GoodsFilterScreen: Начальный процент скидки не установлен (null или некорректное значение)');
+        print(
+            'GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
       }
     }
 
@@ -90,7 +91,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                   print('GoodsFilterScreen: Сброс фильтров');
                 }
                 widget.onResetFilters?.call();
-                selectedCategory = null;
+                selectedCategories = [];
                 discountPercentController.clear();
                 isCategoryValid = true;
               });
@@ -116,30 +117,42 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
           const SizedBox(width: 10),
           TextButton(
             onPressed: () {
-              final filters = <String, dynamic>{};
-              if (selectedCategory != null) {
-                filters['category_id'] = selectedCategory!.parent.id;
-                if (kDebugMode) {
-                  print('GoodsFilterScreen: Добавлен category_id: ${selectedCategory!.parent.id}');
-                }
-              }
+              final filters = <String, dynamic>{
+                'lead_id': null,
+                'page': '1',
+                'per_page': '20',
+                'organization_id': '2',
+                'category_id': selectedCategories.isNotEmpty
+                    ? selectedCategories
+                        .map((category) => category.parent.id.toString())
+                        .toList()
+                    : [],
+              };
               if (discountPercentController.text.isNotEmpty) {
-                filters['discount_percent'] = double.tryParse(discountPercentController.text);
-                if (kDebugMode) {
-                  print('GoodsFilterScreen: Добавлен discount_percent: ${filters['discount_percent']}');
+                final discount =
+                    double.tryParse(discountPercentController.text);
+                if (discount != null) {
+                  filters['discount_percent'] = discount;
+                  if (kDebugMode) {
+                    print(
+                        'GoodsFilterScreen: Добавлен discount_percent: ${filters['discount_percent']}');
+                  }
                 }
               }
 
               if (kDebugMode) {
                 print('GoodsFilterScreen: Применение фильтров: $filters');
-                print('GoodsFilterScreen: onSelectedDataFilter существует: ${widget.onSelectedDataFilter != null}');
+                print(
+                    'GoodsFilterScreen: onSelectedDataFilter существует: ${widget.onSelectedDataFilter != null}');
               }
 
-              if (filters.isNotEmpty) {
+              if (filters['category_id'].isNotEmpty ||
+                  filters.containsKey('discount_percent')) {
                 widget.onSelectedDataFilter?.call(filters);
               } else {
                 if (kDebugMode) {
-                  print('GoodsFilterScreen: Фильтры пусты, ничего не отправлено');
+                  print(
+                      'GoodsFilterScreen: Фильтры пусты, ничего не отправлено');
                 }
               }
               Navigator.pop(context);
@@ -167,20 +180,19 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       ),
       body: BlocConsumer<GoodsBloc, GoodsState>(
         listener: (context, state) {
-          if (state is GoodsDataLoaded && widget.initialCategoryId != null && selectedCategory == null) {
+          if (state is GoodsDataLoaded &&
+              widget.initialCategoryIds != null &&
+              widget.initialCategoryIds!.isNotEmpty &&
+              selectedCategories.isEmpty) {
             if (state.subCategories.isNotEmpty) {
               setState(() {
-                selectedCategory = state.subCategories.firstWhere(
-                  (subCategory) => subCategory.parent.id == widget.initialCategoryId,
-                  orElse: () {
-                    if (kDebugMode) {
-                      print('GoodsFilterScreen: Подкатегория с category_id ${widget.initialCategoryId} не найдена, выбор не установлен');
-                    }
-                    return state.subCategories.first;
-                  },
-                );
+                selectedCategories = state.subCategories
+                    .where((subCategory) => widget.initialCategoryIds!
+                        .contains(subCategory.parent.id))
+                    .toList();
                 if (kDebugMode) {
-                  print('GoodsFilterScreen: Установлена начальная подкатегория: ${selectedCategory?.name}, category_id: ${selectedCategory?.parent.id}');
+                  print(
+                      'GoodsFilterScreen: Установлены начальные подкатегории: ${selectedCategories.map((c) => c.name).toList()}, category_ids: ${selectedCategories.map((c) => c.parent.id).toList()}');
                 }
               });
             } else {
@@ -195,8 +207,10 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
           if (state is GoodsDataLoaded) {
             subCategories = state.subCategories;
             if (kDebugMode) {
-              print('GoodsFilterScreen: Подкатегории из GoodsBloc: ${subCategories.length}');
-              print('GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
+              print(
+                  'GoodsFilterScreen: Подкатегории из GoodsBloc: ${subCategories.length}');
+              print(
+                  'GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
             }
           } else if (state is GoodsLoading) {
             if (kDebugMode) {
@@ -207,22 +221,26 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
             );
           } else if (state is GoodsError) {
             if (kDebugMode) {
-              print('GoodsFilterScreen: Ошибка загрузки подкатегорий: ${state.message}');
+              print(
+                  'GoodsFilterScreen: Ошибка загрузки подкатегорий: ${state.message}');
             }
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(AppLocalizations.of(context)!.translate('error_loading_subcategories')),
+                  Text(AppLocalizations.of(context)!
+                      .translate('error_loading_subcategories')),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
                       if (kDebugMode) {
-                        print('GoodsFilterScreen: Повторная попытка загрузки подкатегорий');
+                        print(
+                            'GoodsFilterScreen: Повторная попытка загрузки подкатегорий');
                       }
                       context.read<GoodsBloc>().add(FetchSubCategories());
                     },
-                    child: Text(AppLocalizations.of(context)!.translate('retry')),
+                    child:
+                        Text(AppLocalizations.of(context)!.translate('retry')),
                   ),
                 ],
               ),
@@ -230,11 +248,13 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
           }
 
           if (kDebugMode) {
-            print('GoodsFilterScreen: Отрисовка с подкатегориями: ${subCategories.length}');
+            print(
+                'GoodsFilterScreen: Отрисовка с подкатегориями: ${subCategories.length}');
           }
 
           return Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
             child: Column(
               children: [
                 Expanded(
@@ -243,53 +263,60 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                       children: [
                         const SizedBox(height: 8),
                         Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: CategoryDropdownWidget(
-                              selectedCategory: selectedCategory?.name,
-                              onSelectCategory: (category) {
+                            child: SubCategoryMultiSelectWidget(
+                              initialSubCategoryIds: widget.initialCategoryIds,
+                              onSelectSubCategories: (categories) {
                                 setState(() {
-                                  selectedCategory = category;
+                                  selectedCategories = categories;
                                   isCategoryValid = true;
                                   if (kDebugMode) {
-                                    print('GoodsFilterScreen: Выбрана подкатегория: ${category?.name}, category_id: ${category?.parent.id}');
+                                    print(
+                                        'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent.id).toList()}');
                                   }
                                 });
                               },
-                              subCategories: subCategories,
                               isValid: isCategoryValid,
                             ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
-                            padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 0),
+                            padding: const EdgeInsets.only(
+                                left: 12, right: 12, top: 4, bottom: 0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 CustomTextField(
                                   controller: discountPercentController,
-                                  hintText: AppLocalizations.of(context)!.translate('enter_discount_percent'),
-                                  label: AppLocalizations.of(context)!.translate('discount_percent'),
+                                  hintText: AppLocalizations.of(context)!
+                                      .translate('enter_discount_percent'),
+                                  label: AppLocalizations.of(context)!
+                                      .translate('discount_percent'),
                                   keyboardType: TextInputType.number,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return AppLocalizations.of(context)!.translate('field_required');
+                                      return null; // Allow empty discount
                                     }
                                     final number = double.tryParse(value);
                                     if (number == null || number < 0) {
-                                      return AppLocalizations.of(context)!.translate('invalid_discount');
+                                      return AppLocalizations.of(context)!
+                                          .translate('invalid_discount');
                                     }
                                     return null;
                                   },
                                   onChanged: (value) {
                                     if (kDebugMode) {
-                                      print('GoodsFilterScreen: Введен процент скидки: $value');
+                                      print(
+                                          'GoodsFilterScreen: Введен процент скидки: $value');
                                     }
                                   },
                                 ),

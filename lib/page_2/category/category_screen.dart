@@ -83,6 +83,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           clearButtonClick: (isSearching) {
             _resetSearch();
           },
+           currentFilters: {}, // Provide empty map since no filters are used
         ),
       ),
       body: isClickAvatarIcon
@@ -112,19 +113,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     ),
                   );
                 } else if (state is CategoryError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(localizations!.translate('error_loading_categories')),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<CategoryBloc>().add(FetchCategories());
-                          },
-                          child: Text(localizations.translate('retry')),
-                        ),
-                      ],
+                  context.read<CategoryBloc>().add(FetchCategories());
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
                     ),
                   );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {

@@ -1032,6 +1032,8 @@
 "branch_order": "Branch:",
 "select_delivery_address": "Select delivery address",
 "discount_percent": "Discount",
-"enter_discount_percent": "Enter discount percentage"
+"enter_discount_percent": "Enter discount percentage",
+"error_loading_subcategories": "Error loading subcategories",
+"selected_subcategories": "Selected subcategories"
 
 }
