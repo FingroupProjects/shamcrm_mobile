@@ -6288,61 +6288,64 @@ Future<List<CategoryData>> getCategory({String? search}) async {
 
   //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
-  Future<List<Goods>> getGoods({
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    Map<String, dynamic>? filters,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
+Future<List<Goods>> getGoods({
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+  
+  if (filters != null) {
+    if (filters.containsKey('category_id') && 
+        filters['category_id'] is List && 
+        (filters['category_id'] as List).isNotEmpty) {
+      
+      // Правильное формирование параметра для массива
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
+      }
+    }
     
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-    if (filters != null) {
-      if (filters.containsKey('category_id')) {
-        path += '&category_id=${filters['category_id']}';
-      }
-      if (filters.containsKey('discount_percent')) {
-        path += '&discount_percent=${filters['discount_percent']}';
-      }
-    }
-
-    if (kDebugMode) {
-      print('ApiService: Формирование запроса товаров: $path');
-    }
-
-    final response = await _getRequest(path);
-
-    if (kDebugMode) {
-      print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
-    }
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        if (kDebugMode) {
-          print('ApiService: Успешно получено ${data['result']['data'].length} товаров');
-        }
-        return (data['result']['data'] as List)
-            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        if (kDebugMode) {
-          print('ApiService: Ошибка формата данных: $data');
-        }
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
-      if (kDebugMode) {
-        print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
-      }
-      throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+    if (filters.containsKey('discount_percent')) {
+      path += '&discount_percent=${filters['discount_percent']}';
     }
   }
-
-
+  
+  if (kDebugMode) {
+    print('ApiService: Формирование запроса товаров: $path');
+  }
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${data['result']['data'].length} товаров');
+      }
+      return (data['result']['data'] as List)
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка формата данных: $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+  }
+}
   
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();

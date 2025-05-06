@@ -88,10 +88,15 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
     if (await _checkInternetConnection()) {
       try {
+        final filters = _currentFilters != null
+            ? Map<String, dynamic>.from(_currentFilters!)
+            : {'organization_id': '1', 'search': null, 'category_id': []};
+        filters['search'] = _currentQuery;
+
         final goods = await apiService.getGoods(
           page: 1,
           search: _currentQuery,
-          filters: _currentFilters,
+          filters: filters,
         );
 
         allGoods = goods;
@@ -181,7 +186,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
   Future<void> _filterGoods(FilterGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
-    _currentFilters = event.filters.isEmpty ? null : Map.from(event.filters); // Глубокое копирование фильтров
+    _currentFilters = event.filters.isEmpty ? null : Map.from(event.filters);
     if (kDebugMode) {
       print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery');
     }
