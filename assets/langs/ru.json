@@ -974,8 +974,8 @@
   "view_variant": "Просмотр варианта",
   "no_date": "Нет даты",
   "no_phone": "Нет телефона",
-  "self_delivery": "Курьер",
-  "delivery": "Доставка",
+  "self_delivery": "Самовывоз",
+  "delivery": "Курьер",
   "please_select_product": "Выберите хотя бы один товар",
   "no_products_found": "Товары не найдены",
   "loading_data": "Ожидание данных...",
@@ -984,7 +984,7 @@
   "order_created_success": "Заказ успешно создан",
   "please_enter_comment": "Введите комментарий",
   "comment_client": "Комментарий клиента:",
-  
+  "no_history_available":"Нет истории",
   "new_order": "Новый заказ",
   "delete_order": "Удалить заказ",
   "confirm_delete_order": "Вы уверены, что хотите удалить этот заказ?",
@@ -1043,7 +1043,8 @@
   "please_check_internet": "Проверьте подключение к интернету!",
   "enter_discount_percent": "Введите процент скидки",
   "error_loading_subcategories": "Ошибка при загрузке подкатегорий",
-  "selected_subcategories": "Выбранные подкатегории"
+  "selected_subcategories": "Выбранные подкатегории",
+  "pickup": "Самовывоз"
 
 }
   

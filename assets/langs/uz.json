@@ -1050,7 +1050,9 @@
 "please_check_internet": "Iltimos, internet ulanishini tekshiring!",
 "enter_discount_percent": "Chegirma foizini kiriting",
 "error_loading_subcategories": "Pastki toifalarni yuklashda xatolik yuz berdi",
-"selected_subcategories": "Tanlangan pastki toifalar"
+"selected_subcategories": "Tanlangan pastki toifalar",
+  "no_history_available":"Tarix mavjud emas",
+  "pickup":"Olib ketish"
 
 
 }

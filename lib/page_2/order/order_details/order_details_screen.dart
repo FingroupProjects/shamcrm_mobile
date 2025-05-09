@@ -39,55 +39,55 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
 
- void _updateDetails(Order order) {
-  String formattedDate = order.lead.createdAt != null
-      ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-      : AppLocalizations.of(context)!.translate('not_specified');
+  void _updateDetails(Order order) {
+    String formattedDate = order.lead.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+        : AppLocalizations.of(context)!.translate('not_specified');
 
-  details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('order_number'),
-      'value': order.orderNumber
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client'),
-      'value': order.lead.name
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client_phone'),
-      'value': order.phone
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_date'),
-      'value': formattedDate
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_status'),
-      'value': order.orderStatus.name
-    },
-    {
-      'label': order.delivery
-          ? AppLocalizations.of(context)!.translate('order_address')
-          : AppLocalizations.of(context)!.translate('branch_order'),
-      'value': order.delivery
-          ? (order.deliveryAddress ??
-              AppLocalizations.of(context)!.translate('not_specified'))
-          : (order.branchName ??
-              AppLocalizations.of(context)!.translate('not_specified')),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('comment_client'),
-      'value': order.commentToCourier ??
-          AppLocalizations.of(context)!.translate('no_comment')
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('price'),
-      'value': order.sum != null && order.sum! > 0
-          ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-          : AppLocalizations.of(context)!.translate('0')
-    },
-  ];
-}
+    details = [
+      {
+        'label': AppLocalizations.of(context)!.translate('order_number'),
+        'value': order.orderNumber
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client'),
+        'value': order.lead.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client_phone'),
+        'value': order.phone
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_date'),
+        'value': formattedDate
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_status'),
+        'value': order.orderStatus.name
+      },
+      {
+        'label': order.delivery
+            ? AppLocalizations.of(context)!.translate('order_address')
+            : AppLocalizations.of(context)!.translate('branch_order'),
+        'value': order.delivery
+            ? (order.deliveryAddress ??
+                AppLocalizations.of(context)!.translate('not_specified'))
+            : (order.branchName ??
+                AppLocalizations.of(context)!.translate('not_specified')),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment_client'),
+        'value': order.commentToCourier ??
+            AppLocalizations.of(context)!.translate('no_comment')
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('price'),
+        'value': order.sum != null && order.sum! > 0
+            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
+            : AppLocalizations.of(context)!.translate('0')
+      },
+    ];
+  }
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -153,66 +153,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  void _showHistoryDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('order_history'),
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 400),
-                width: double.maxFinite,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: BlocProvider(
-                  create: (context) =>
-                      OrderHistoryBloc(context.read<ApiService>())
-                        ..add(FetchOrderHistory(widget.orderId)),
-                  child: OrderHistoryWidget(orderId: widget.orderId),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff1E2E52),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('close'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -238,6 +178,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(),
+                    const SizedBox(height: 16),
+                    OrderHistoryWidget(orderId: widget.orderId),
+                    const SizedBox(height: 16),
                     OrderGoodsScreen(
                       goods: state.orderDetails!.goods,
                       order: widget.order,
@@ -278,16 +221,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(
-            Icons.history,
-            size: 30,
-            color: Color.fromARGB(224, 0, 0, 0),
-          ),
-          onPressed: _showHistoryDialog,
-        ),
         IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),

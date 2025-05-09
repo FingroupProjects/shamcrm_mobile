@@ -42,6 +42,18 @@ class _SubCategoryMultiSelectWidgetState
     }
   }
 
+  // Метод для сброса выбранных подкатегорий
+  void resetSubCategories() {
+    setState(() {
+      selectedSubCategories = [];
+      allSelected = false;
+      if (kDebugMode) {
+        print('SubCategoryMultiSelectWidget: Подкатегории сброшены');
+      }
+    });
+    widget.onSelectSubCategories(selectedSubCategories);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -84,9 +96,10 @@ class _SubCategoryMultiSelectWidgetState
                   selectedSubCategories.isEmpty) {
                 selectedSubCategories = subCategoriesList
                     .where((subCategory) => widget.initialSubCategoryIds!
-                        .contains(subCategory.parent.id))
+                        .contains(subCategory.id))
                     .toList();
-                allSelected = selectedSubCategories.length == subCategoriesList.length;
+                allSelected =
+                    selectedSubCategories.length == subCategoriesList.length;
                 if (kDebugMode) {
                   print(
                       'SubCategoryMultiSelectWidget: Инициализировано выбранных подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
@@ -232,15 +245,19 @@ class _SubCategoryMultiSelectWidgetState
                         ),
                       ),
                       onListChanged: (values) {
-                        widget.onSelectSubCategories(values);
                         setState(() {
                           selectedSubCategories = values;
                           allSelected = values.length == subCategoriesList.length;
+                          if (values.isEmpty) {
+                            selectedSubCategories = [];
+                            allSelected = false;
+                          }
                           if (kDebugMode) {
                             print(
                                 'SubCategoryMultiSelectWidget: Изменён список подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
                           }
                         });
+                        widget.onSelectSubCategories(selectedSubCategories);
                       },
                     ),
                   ),
@@ -317,7 +334,7 @@ class _SubCategoryMultiSelectWidgetState
         FocusScope.of(context).unfocus();
         if (kDebugMode) {
           print(
-              'SubCategoryMultiSelectWidget: Выбрана подкатегория: ${item.name}, ID: ${item.parent.id}');
+              'SubCategoryMultiSelectWidget: Выбрана подкатегория: ${item.name}, ID: ${item.id}');
         }
       },
     );

@@ -197,7 +197,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
     final Map<String, dynamic> body = {
       'phone': event.phone,
       'lead_id': event.leadId,
-      'deliveryType': event.delivery ? 'delivery' : 'pickup',
+      'deliveryType': event.delivery ? 'pickup' : 'delivery',
       'goods': event.goods,
       'organization_id': event.organizationId.toString(),
       'status_id': event.statusId,

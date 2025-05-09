@@ -11,6 +11,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
   List<Goods> allGoods = [];
   List<SubCategoryAttributesData> subCategories = [];
+  List<SubCategoryAttributesData> selectedSubCategories = []; // Храним выбранные подкатегории
   bool allGoodsFetched = false;
   final int _perPage = 20;
   String? _currentQuery;
@@ -24,6 +25,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     on<SearchGoods>(_searchGoods);
     on<FilterGoods>(_filterGoods);
     on<FetchSubCategories>(_fetchSubCategories);
+    on<ResetSubCategories>(_resetSubCategories); // Добавляем обработчик сброса
     if (kDebugMode) {
       print('GoodsBloc: Инициализация блока');
     }
@@ -63,7 +65,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           if (kDebugMode) {
             print('GoodsBloc: Загружено ${goods.length} товаров');
           }
-          emit(GoodsDataLoaded(goods, pagination, subCategories));
+          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -119,7 +121,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           if (kDebugMode) {
             print('GoodsBloc: Найдено ${goods.length} товаров при поиске');
           }
-          emit(GoodsDataLoaded(goods, pagination, subCategories));
+          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -169,7 +171,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         if (kDebugMode) {
           print('GoodsBloc: Загружено ${newGoods.length} дополнительных товаров');
         }
-        emit(currentState.merge(newGoods, newPagination, subCategories));
+        emit(currentState.merge(newGoods, newPagination, subCategories, selectedSubCategories));
       } catch (e) {
         if (kDebugMode) {
           print('GoodsBloc: Ошибка загрузки дополнительных товаров: $e');
@@ -219,7 +221,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           if (kDebugMode) {
             print('GoodsBloc: Найдено ${goods.length} товаров после применения фильтров');
           }
-          emit(GoodsDataLoaded(goods, pagination, subCategories));
+          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -244,7 +246,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         subCategories = await apiService.getSubCategoryAttributes();
         if (kDebugMode) {
           print('GoodsBloc: Загружено ${subCategories.length} подкатегорий');
-          print('GoodsBloc: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
+          print('GoodsBloc: ID подкатегорий: ${subCategories.map((c) => c.id).toList()}');
         }
         if (state is GoodsDataLoaded) {
           final currentState = state as GoodsDataLoaded;
@@ -252,10 +254,11 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
             currentState.goods,
             currentState.pagination,
             subCategories,
+            selectedSubCategories: selectedSubCategories,
             currentPage: currentState.currentPage,
           ));
         } else {
-          emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories));
+          emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories, selectedSubCategories: selectedSubCategories));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -268,6 +271,25 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         print('GoodsBloc: Нет подключения к интернету при загрузке подкатегорий');
       }
       emit(GoodsError('Нет подключения к интернету'));
+    }
+  }
+
+  Future<void> _resetSubCategories(ResetSubCategories event, Emitter<GoodsState> emit) async {
+    if (kDebugMode) {
+      print('GoodsBloc: Сброс выбранных подкатегорий');
+    }
+    selectedSubCategories = [];
+    if (state is GoodsDataLoaded) {
+      final currentState = state as GoodsDataLoaded;
+      emit(GoodsDataLoaded(
+        currentState.goods,
+        currentState.pagination,
+        currentState.subCategories,
+        selectedSubCategories: selectedSubCategories,
+        currentPage: currentState.currentPage,
+      ));
+    } else {
+      emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories, selectedSubCategories: selectedSubCategories));
     }
   }
 

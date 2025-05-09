@@ -1036,6 +1036,8 @@
 "please_check_internet": "Please check your internet connection!",
 "enter_discount_percent": "Enter discount percentage",
 "error_loading_subcategories": "Error loading subcategories",
-"selected_subcategories": "Selected subcategories"
+"selected_subcategories": "Selected subcategories",
+"no_history_available":"No history available",
+"pickup": "Pickup"
 
 }

@@ -12,14 +12,27 @@ class GoodsDataLoaded extends GoodsState {
   final Pagination pagination;
   final int currentPage;
   final List<SubCategoryAttributesData> subCategories;
+  final List<SubCategoryAttributesData> selectedSubCategories; // Добавляем поле для выбранных подкатегорий
 
-  GoodsDataLoaded(this.goods, this.pagination, this.subCategories, {this.currentPage = 1});
+  GoodsDataLoaded(
+    this.goods,
+    this.pagination,
+    this.subCategories, {
+    this.currentPage = 1,
+    this.selectedSubCategories = const [], // По умолчанию пустой список
+  });
 
-  GoodsDataLoaded merge(List<Goods> newGoods, Pagination newPagination, List<SubCategoryAttributesData> newSubCategories) {
+  GoodsDataLoaded merge(
+    List<Goods> newGoods,
+    Pagination newPagination,
+    List<SubCategoryAttributesData> newSubCategories, [
+    List<SubCategoryAttributesData>? newSelectedSubCategories, // Опционально для сохранения текущих
+  ]) {
     return GoodsDataLoaded(
       [...goods, ...newGoods],
       newPagination,
       newSubCategories,
+      selectedSubCategories: newSelectedSubCategories ?? selectedSubCategories,
       currentPage: currentPage + 1,
     );
   }

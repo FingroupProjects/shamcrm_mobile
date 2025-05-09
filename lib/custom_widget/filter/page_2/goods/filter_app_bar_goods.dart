@@ -124,7 +124,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 'organization_id': '2',
                 'category_id': selectedCategories.isNotEmpty
                     ? selectedCategories
-                        .map((category) => category.parent.id.toString())
+                        .map((category) => category.id.toString())
                         .toList()
                     : [],
               };

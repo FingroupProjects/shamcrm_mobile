@@ -22,19 +22,16 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
   @override
   void initState() {
     super.initState();
-    // Устанавливаем начальное значение без обращения к AppLocalizations
     selectedDeliveryMethod = widget.selectedDeliveryMethod;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Устанавливаем значение по умолчанию, если selectedDeliveryMethod не задано
     if (selectedDeliveryMethod == null) {
       setState(() {
         selectedDeliveryMethod = AppLocalizations.of(context)!.translate('delivery');
       });
-      // Вызываем коллбэк после инициализации
       if (mounted) {
         widget.onSelectDeliveryMethod(selectedDeliveryMethod!);
       }
@@ -43,7 +40,6 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    // Локальный список способов доставки
     final List<String> deliveryMethods = [
       AppLocalizations.of(context)!.translate('self_delivery'),
       AppLocalizations.of(context)!.translate('delivery'),

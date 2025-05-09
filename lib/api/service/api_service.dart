@@ -6313,7 +6313,7 @@ Future<List<Goods>> getGoods({
     }
     
     if (filters.containsKey('discount_percent')) {
-      path += '&discount_percent=${filters['discount_percent']}';
+      path += '&discount=${filters['discount_percent']}';
     }
   }
   
@@ -6896,73 +6896,73 @@ Future<List<Goods>> getGoods({
     }
   }
 
-  Future<Map<String, dynamic>> updateOrder({
-    required int orderId,
-    required String phone,
-    required int leadId,
-    required bool delivery,
-    String? deliveryAddress,
-    int? deliveryAddressId, // Новое поле
-    required List<Map<String, dynamic>> goods,
-    required int organizationId,
-    int? branchId,
-    String? commentToCourier,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
+ Future<Map<String, dynamic>> updateOrder({
+  required int orderId,
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  String? deliveryAddress,
+  int? deliveryAddressId,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+  int? branchId,
+  String? commentToCourier,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
 
-      final uri =
-          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-      final body = {
-        'phone': phone,
-        'lead_id': leadId,
-        'deliveryType': delivery ? 'delivery' : 'pickup',
-        'goods': goods,
-        'organization_id': organizationId.toString(),
-        'comment_to_courier': commentToCourier,
-      };
+    final uri =
+        Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+    final body = {
+      'phone': phone,
+      'lead_id': leadId,
+      'deliveryType': delivery ? 'pickup' : 'delivery',
+      'goods': goods,
+      'organization_id': organizationId.toString(),
+      'comment_to_courier': commentToCourier,
+    };
 
-      if (delivery) {
-        body['delivery_address'] = deliveryAddress;
-        body['delivery_address_id'] = deliveryAddressId?.toString();
-      } else {
-        body['delivery_address'] = null;
-        body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId.toString();
-        }
+    if (!delivery) {
+      body['delivery_address'] = deliveryAddress;
+      body['delivery_address_id'] = deliveryAddressId?.toString();
+    } else {
+      body['delivery_address'] = null;
+      body['delivery_address_id'] = null;
+      if (branchId != null) {
+        body['branch_id'] = branchId.toString();
       }
-
-      print(
-          'ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
-
-      final response = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final jsonResponse = jsonDecode(response.body);
-        return {
-          'success': true,
-          'order': jsonResponse['result'],
-        };
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
-      }
-    } catch (e) {
-      print('ApiService: Ошибка обновления заказа: $e');
-      return {'success': false, 'error': e.toString()};
     }
+
+    print(
+        'ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final jsonResponse = jsonDecode(response.body);
+      return {
+        'success': true,
+        'order': jsonResponse['result'],
+      };
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+    }
+  } catch (e) {
+    print('ApiService: Ошибка обновления заказа: $e');
+    return {'success': false, 'error': e.toString()};
+  }
   }
 
   Future<DeliveryAddressResponse> getDeliveryAddresses({
