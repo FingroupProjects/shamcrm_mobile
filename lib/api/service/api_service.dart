@@ -23,6 +23,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_tas
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/department.dart';
+import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
@@ -3592,6 +3593,61 @@ class ApiService {
       throw Exception('Ошибка загрузки отделов');
     }
   }
+
+
+  Future<DirectoryDataResponse> getDirectory() async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _getRequest(
+      '/directory${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+  late DirectoryDataResponse dataDirectory;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataDirectory = DirectoryDataResponse.fromJson(data);
+    } else {
+      throw ('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw ('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw ('Внутренняя ошибка сервера');
+  } else {
+    throw ('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {
+    print('getAll directory!');
+  }
+
+  return dataDirectory;
+}
+
+Future<void> linkDirectory({
+  required int directoryId,
+  required String modelType,
+  required String organizationId,
+}) async {
+  final response = await _postRequest(
+    '/directoryLink?organization_id=$organizationId',
+    {
+      'directory_id': directoryId,
+      'model_type': modelType,
+      'organization_id': organizationId,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw ('Ошибка при связывании справочника: ${response.statusCode}');
+  }
+
+  if (kDebugMode) {
+    print('Directory linked successfully!');
+  }
+}
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//

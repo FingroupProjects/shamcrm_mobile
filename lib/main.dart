@@ -281,7 +281,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
-        BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
+        BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),BlocProvider(create: (context) => GetTaskProjectBloc()),
+
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
