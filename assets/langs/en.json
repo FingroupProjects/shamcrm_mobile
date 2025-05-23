@@ -1038,6 +1038,10 @@
 "error_loading_subcategories": "Error loading subcategories",
 "selected_subcategories": "Selected subcategories",
 "no_history_available":"No history available",
-"pickup": "Pickup"
+"pickup": "Pickup",
+    "manual_input": "Manual input",
+    "directory": "Directory",
+    "add_directory": "Add directory",
+    "select_directory": "Select directory"
 
 }
