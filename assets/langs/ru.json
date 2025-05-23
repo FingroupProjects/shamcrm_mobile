@@ -931,7 +931,7 @@
   "enter_price": "Введите цену",
   "branch": "Филиал",
   "branch_details": "Филиал",
-  "goods_updated_successfully": "Товар успешно обновлён"  ,
+  "goods_updated_successfully": "Товар успешно обновлён",
   "has_price_characteristics_description": "Если включено, характеристики категории будут влиять на формирование цены товара",
   "new_subcategory": "Новая подкатегория",
   "subcategories": "Подкатегории",
@@ -984,7 +984,7 @@
   "order_created_success": "Заказ успешно создан",
   "please_enter_comment": "Введите комментарий",
   "comment_client": "Комментарий клиента:",
-  "no_history_available":"Нет истории",
+  "no_history_available": "Нет истории",
   "new_order": "Новый заказ",
   "delete_order": "Удалить заказ",
   "confirm_delete_order": "Вы уверены, что хотите удалить этот заказ?",
@@ -1032,7 +1032,7 @@
   "confirm_delete_status": "Вы уверены, что хотите удалить этот статус?",
   "order_history": "История действия",
   "delivery_type": "Тип доставки",
-    "enter_correct_number": "Введите корректное число",
+  "enter_correct_number": "Введите корректное число",
   "select_subject_required": "Поле тематика обезятельно!",
   "please_create_status": "Сначала создайте статус!",
   "comment_to_courier": "Комментарий клиента",
@@ -1044,8 +1044,9 @@
   "enter_discount_percent": "Введите процент скидки",
   "error_loading_subcategories": "Ошибка при загрузке подкатегорий",
   "selected_subcategories": "Выбранные подкатегории",
-  "pickup": "Самовывоз"
-
+  "pickup": "Самовывоз",
+  "manual_input": "Ручной ввод",
+  "directory": "Справочник",
+  "add_directory": "Добавить справочник",
+  "select_directory": "Выбрать из справочника"
 }
-  
-  
