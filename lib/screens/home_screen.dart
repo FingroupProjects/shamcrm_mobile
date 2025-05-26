@@ -8,7 +8,6 @@ import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_screen.dart';
-import 'package:crm_task_manager/screens/page_test.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';

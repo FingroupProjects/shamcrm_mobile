@@ -84,6 +84,12 @@ PODS:
     - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - flutter_voximplant (3.14.0):
+    - Flutter
+    - VoxImplantSDK (= 2.54.0)
+  - flutter_webrtc (0.12.6):
+    - Flutter
+    - WebRTC-SDK (= 125.6422.06)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -155,6 +161,10 @@ PODS:
     - Flutter
   - vibration (1.7.5):
     - Flutter
+  - VoxImplantSDK (2.54.0):
+    - VoxImplantWebRTC (= 112.0.0)
+  - VoxImplantWebRTC (112.0.0)
+  - WebRTC-SDK (125.6422.06)
 
 DEPENDENCIES:
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
@@ -170,6 +180,8 @@ DEPENDENCIES:
   - flutter_localization (from `.symlinks/plugins/flutter_localization/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_voximplant (from `.symlinks/plugins/flutter_voximplant/ios`)
+  - flutter_webrtc (from `.symlinks/plugins/flutter_webrtc/ios`)
   - image_gallery_saver_plus (from `.symlinks/plugins/image_gallery_saver_plus/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
@@ -200,6 +212,9 @@ SPEC REPOS:
     - PromisesObjC
     - SDWebImage
     - SwiftyGif
+    - VoxImplantSDK
+    - VoxImplantWebRTC
+    - WebRTC-SDK
 
 EXTERNAL SOURCES:
   app_tracking_transparency:
@@ -228,6 +243,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_voximplant:
+    :path: ".symlinks/plugins/flutter_voximplant/ios"
+  flutter_webrtc:
+    :path: ".symlinks/plugins/flutter_webrtc/ios"
   image_gallery_saver_plus:
     :path: ".symlinks/plugins/image_gallery_saver_plus/ios"
   image_picker_ios:
@@ -278,6 +297,8 @@ SPEC CHECKSUMS:
   flutter_localization: f43b18844a2b3d2c71fd64f04ffd6b1e64dd54d4
   flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  flutter_voximplant: 8cea8db4f747cec4e65514d9eb5b49c937c0572c
+  flutter_webrtc: 90260f83024b1b96d239a575ea4e3708e79344d1
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   image_gallery_saver_plus: 782ade975fe6a4600b53e7c1983e3a2979d1e9e5
@@ -298,6 +319,9 @@ SPEC CHECKSUMS:
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   vibration: 7d883d141656a1c1a6d8d238616b2042a51a1241
+  VoxImplantSDK: 1521c74508638f1ae7fa0ae44d44738f7a5e6493
+  VoxImplantWebRTC: 2256a8b9157cc46e1a4c8e0ed5816c5c672d7d5d
+  WebRTC-SDK: 79942c006ea64f6fb48d7da8a4786dfc820bc1db
 
 PODFILE CHECKSUM: 373fbf90126f7ac656ee43342d41ba82eb3e90ac
 
