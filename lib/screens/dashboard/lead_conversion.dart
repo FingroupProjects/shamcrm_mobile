@@ -370,6 +370,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                     borderData: FlBorderData(
                       show: true,
                       border: Border(
+                        
                         bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
                         left: BorderSide(color: Colors.grey.withOpacity(0.2)),
                       ),
