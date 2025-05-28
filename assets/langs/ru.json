@@ -1048,5 +1048,6 @@
   "manual_input": "Ручной ввод",
   "directory": "Справочник",
   "add_directory": "Добавить справочник",
-  "select_directory": "Выбрать из справочника"
+  "select_directory": "Выбрать из справочника",
+  "select_field": "Выберите значение из справочника"
 }

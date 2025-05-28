@@ -1056,5 +1056,6 @@
   "manual_input": "Qoʻlda kiritish",
   "directory": "Maʼlumotnoma",
   "add_directory": "Maʼlumotnoma qoʻshish",
-  "select_directory": "Maʼlumotnomani tanlang"
+  "select_directory": "Maʼlumotnomani tanlang",
+  "select_field": "Ma'lumotnomadan qiymatni tanlang"
 }

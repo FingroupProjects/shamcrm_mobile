@@ -225,75 +225,73 @@ Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) asyn
 }
 
 Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+  emit(TaskLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      final result = await apiService.createTask(
-        name: event.name,
-        statusId: event.statusId,
-        taskStatusId: event.taskStatusId,
-        priority: event.priority,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        projectId: event.projectId,
-        userId: event.userId,
-        description: event.description,
-        customFields: event.customFields,
-        filePaths: event.filePaths,
-      );
-
-      if (result['success']) {
-        emit(TaskSuccess(
-            event.localizations.translate('task_create_successfully')));
-      } else {
-        emit(TaskError(result['message']));
-      }
-    } catch (e) {
-      emit(TaskError(event.localizations.translate('task_creation_error')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(TaskError(event.localizations.translate('no_internet_connection')));
+    return;
   }
 
-  Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+  try {
+    final result = await apiService.createTask(
+      name: event.name,
+      statusId: event.statusId,
+      taskStatusId: event.taskStatusId,
+      priority: event.priority,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      projectId: event.projectId,
+      userId: event.userId,
+      description: event.description,
+      customFields: event.customFields,
+      filePaths: event.filePaths,
+      directoryValues: event.directoryValues, // Передаем новое поле
+    );
 
-    if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
-      return;
+    if (result['success']) {
+      emit(TaskSuccess(event.localizations.translate('task_create_successfully')));
+    } else {
+      emit(TaskError(result['message']));
     }
+  } catch (e) {
+    emit(TaskError(event.localizations.translate('task_creation_error')));
+  }
+}
 
-    try {
-      final result = await apiService.updateTask(
-        taskId: event.taskId,
-        name: event.name,
-        priority: event.priority,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        projectId: event.projectId,
-        userId: event.userId,
-        description: event.description,
-        taskStatusId: event.taskStatusId,
-        customFields: event.customFields,
-        filePaths: event.filePaths,
-      );
+ Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
+  emit(TaskLoading());
 
-      if (result['success']) {
-        emit(TaskSuccess(
-            event.localizations!.translate('task_update_successfully')));
-        // add(FetchTasks(event.statusId));
-      } else {
-        emit(TaskError(result['message']));
-      }
-    } catch (e) {
-      emit(TaskError(
-          event.localizations.translate('error_task_update_successfully')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(TaskError(event.localizations.translate('no_internet_connection')));
+    return;
   }
 
+  try {
+    final result = await apiService.updateTask(
+      taskId: event.taskId,
+      name: event.name,
+      taskStatusId: event.taskStatusId,
+      priority: event.priority,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      projectId: event.projectId,
+      userId: event.userId,
+      description: event.description,
+      customFields: event.customFields,
+      filePaths: event.filePaths,
+      existingFiles: event.existingFiles,
+      directoryValues: event.directoryValues, // Add for consistency
+    );
+
+    if (result['success']) {
+      emit(TaskSuccess(event.localizations.translate('task_update_successfully')));
+    } else {
+      emit(TaskError(event.localizations.translate(result['message'])));
+    }
+  } catch (e) {
+    emit(TaskError(event.localizations.translate('error_task_update_successfully')));
+  }
+}
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');

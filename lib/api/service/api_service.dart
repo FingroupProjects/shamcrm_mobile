@@ -23,6 +23,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_tas
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/department.dart';
+import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
@@ -31,6 +32,7 @@ import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
@@ -2966,141 +2968,150 @@ class ApiService {
     }
   }*/
 // Метод для создание задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, String>>? customFields,
-    List<String>? filePaths, // Список путей к файлам
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken(); // Получаем токен
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, String>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues, // Новое поле
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['status_id'] = statusId.toString();
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
+    request.fields['organization_id'] = organizationId.toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toString().split(' ')[0];
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toString().split(' ')[0];
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toString().split(' ')[0];
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toString().split(' ')[0];
-      }
+    }
 
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['task_custom_fields[$i][value]'] = field.values.first;
       }
-      if (description != null) {
-        request.fields['description'] = description;
+    }
+
+    // Добавляем directory_values
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
       }
+    }
 
-      // Добавляем пользователей
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
-      }
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        // Обработка ошибок валидации
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
   }
+}
 
   //Метод для обновление задачи
   Future<Map<String, dynamic>> updateTask({
@@ -3117,6 +3128,7 @@ class ApiService {
     List<Map<String, String>>? customFields,
     List<TaskFiles>?
         existingFiles, // Добавляем параметр для существующих файлов
+        List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -3178,7 +3190,12 @@ class ApiService {
           request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
         }
       }
-
+if (directoryValues != null && directoryValues.isNotEmpty) {
+      directoryValues.asMap().forEach((i, value) {
+        request.fields['directory_values[$i][entry_id]'] = value['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] = value['directory_id'].toString();
+      });
+    }
       // Добавляем новые файлы
       if (filePaths != null && filePaths.isNotEmpty) {
         for (var filePath in filePaths) {
@@ -3626,6 +3643,31 @@ class ApiService {
   return dataDirectory;
 }
 
+
+
+Future<MainFieldResponse> getMainFields(int directoryId) async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _getRequest(
+    '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return MainFieldResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении данных справочника!');
+  }
+}
+
 Future<void> linkDirectory({
   required int directoryId,
   required String modelType,
@@ -3646,6 +3688,74 @@ Future<void> linkDirectory({
 
   if (kDebugMode) {
     print('Directory linked successfully!');
+  }
+}
+
+Future<DirectoryLinkResponse> getTaskDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
+
+// Для лидов
+Future<DirectoryLinkResponse> getLeadDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
+
+// Для сделок
+Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
   }
 }
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
