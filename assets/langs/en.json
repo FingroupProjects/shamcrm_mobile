@@ -1042,6 +1042,7 @@
     "manual_input": "Manual input",
     "directory": "Directory",
     "add_directory": "Add directory",
-    "select_directory": "Select directory"
+    "select_directory": "Select directory",
+    "select_field": "Select a value from the directory"
 
 }

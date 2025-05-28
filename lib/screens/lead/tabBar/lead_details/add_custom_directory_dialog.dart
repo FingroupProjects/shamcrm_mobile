@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_event.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_state.dart';
@@ -9,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class AddCustomDirectoryDialog extends StatefulWidget {
-  final void Function(Directory) onAddDirectory; // Изменено на void Function
+  final void Function(Directory) onAddDirectory;
 
   AddCustomDirectoryDialog({required this.onAddDirectory});
 
@@ -19,6 +20,7 @@ class AddCustomDirectoryDialog extends StatefulWidget {
 
 class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
   Directory? selectedDirectory;
+  final ApiService apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
@@ -33,18 +35,25 @@ class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
           color: Color(0xff1E2E52),
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DirectoryGroupWidget(
-            onSelectDirectory: (Directory directory) {
-              setState(() {
-                selectedDirectory = directory;
-              });
-            },
-            selectedDirectory: null,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DirectoryGroupWidget(
+                onSelectDirectory: (Directory directory) {
+                  setState(() {
+                    selectedDirectory = directory;
+                  });
+                },
+                selectedDirectory: null,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       actions: [
         Row(
@@ -64,9 +73,19 @@ class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
             Expanded(
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('add'),
-                onPressed: () {
+                onPressed: () async {
                   if (selectedDirectory != null) {
                     widget.onAddDirectory(selectedDirectory!);
+                    try {
+                      final organizationId = await apiService.getSelectedOrganization();
+                      await apiService.linkDirectory(
+                        directoryId: selectedDirectory!.id,
+                        modelType: 'task',
+                        organizationId: organizationId.toString(),
+                      );
+                    } catch (e) {
+                      print('Ошибка при связывании справочника: $e');
+                    }
                     Navigator.of(context).pop();
                   }
                 },
@@ -81,7 +100,6 @@ class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
   }
 }
 
-// DirectoryGroupWidget остаётся без изменений
 class DirectoryGroupWidget extends StatefulWidget {
   final String? selectedDirectory;
   final Function(Directory) onSelectDirectory;
@@ -110,6 +128,7 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
   @override
   void initState() {
     super.initState();
+    selectedDirectoryData = null;
     context.read<GetDirectoryBloc>().add(GetDirectoryEv());
   }
 
@@ -150,13 +169,20 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                     if (widget.selectedDirectory != null && directoriesList.isNotEmpty) {
                       try {
                         selectedDirectoryData = directoriesList.firstWhere(
-                          (directory) =>
-                              directory.id.toString() == widget.selectedDirectory,
+                          (directory) => directory.id.toString() == widget.selectedDirectory,
+                          orElse: () => selectedDirectoryData ?? directoriesList.first,
                         );
                       } catch (e) {
                         selectedDirectoryData = null;
                       }
+                    } else {
+                      selectedDirectoryData = null;
                     }
+                  } else if (state is GetDirectoryError) {
+                    return Text(
+                      state.message,
+                      style: TextStyle(color: Colors.red),
+                    );
                   }
 
                   return CustomDropdown<Directory>.search(
@@ -165,7 +191,7 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                     searchHintText: AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
+                      closedFillColor: const Color(0xFFF4F7FD),
                       expandedFillColor: Colors.white,
                       closedBorder: Border.all(
                         color: Colors.transparent,
@@ -185,7 +211,7 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                           vertical: 8,
                         ),
                         child: Text(
-                          item.name!, // Ошибка здесь не возникает, но использует ! из-за возможного несоответствия
+                          item.name!,
                           style: directoryTextStyle,
                         ),
                       );
