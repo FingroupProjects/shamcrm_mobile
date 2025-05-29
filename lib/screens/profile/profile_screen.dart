@@ -559,6 +559,18 @@ Future<void> _checkPermissionsAndTutorial() async {
                         if (_hasPermissionForOneC)
                           UpdateWidget1C(
                               organization: selectedOrg),
+                                  SizedBox(height: 156),
+                        Center(
+                          child: Text(
+                            'Версия приложения: 2.0.9+15',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color.fromARGB(255, 102, 102, 102), // Немного серый цвет
+                            ),
+                          ),
+                        ),
                       ],
                     );
                   } else if (state is OrganizationError) {

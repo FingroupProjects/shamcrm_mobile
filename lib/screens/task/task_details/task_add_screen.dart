@@ -112,17 +112,26 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
   }
 
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
-    setState(() {
-      customFields.add(CustomField(
-        fieldName: fieldName,
-        controller: TextEditingController(),
-        isDirectoryField: isDirectory,
-        directoryId: directoryId,
-        uniqueId: Uuid().v4(), // Генерируем уникальный ID
-      ));
-    });
+ void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
+  print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
+  if (isDirectory && directoryId != null) {
+    // Проверяем, существует ли уже поле с таким directoryId
+    bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+    if (directoryExists) {
+      print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+      return; // Игнорируем добавление, если справочник уже существует
+    }
   }
+  setState(() {
+    customFields.add(CustomField(
+      fieldName: fieldName,
+      controller: TextEditingController(),
+      isDirectoryField: isDirectory,
+      directoryId: directoryId,
+      uniqueId: Uuid().v4(),
+    ));
+  });
+}
 
   void _showAddFieldMenu() {
     showMenu(

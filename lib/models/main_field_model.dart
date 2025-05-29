@@ -1,25 +1,24 @@
 import 'dart:convert';
 
 class MainField {
-  final int id;
-  final String value;
+    final int id;
+    final String value;
 
-  MainField({
-    required this.id,
-    required this.value,
-  });
+    MainField({
+        required this.id,
+        required this.value,
+    });
 
-  factory MainField.fromJson(Map<String, dynamic> json) => MainField(
+    factory MainField.fromJson(Map<String, dynamic> json) => MainField(
         id: json['id'],
-        value: json['value'] ?? '',
-      );
+        value: json['value'] ?? json['name'] ?? '', // Добавляем fallback на name
+    );
 
-  Map<String, dynamic> toJson() => {
+    Map<String, dynamic> toJson() => {
         'id': id,
         'value': value,
-      };
+    };
 }
-
 class MainFieldResponse {
   final List<MainField>? result;
   final dynamic errors;

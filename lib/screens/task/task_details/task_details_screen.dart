@@ -947,6 +947,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   height: 24,
                 ),
                 onPressed: () async {
+                  print(
+                      'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
+                      print('Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
                   final createdAtString = currentTask?.createdAt != null &&
                           currentTask!.createdAt!.isNotEmpty
                       ? DateFormat('dd/MM/yyyy')
@@ -972,18 +975,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   .toList()
                               : null,
                           statusId: currentTask!.taskStatus?.id ?? 0,
-                          // statusId: widget.statusId ?? 0,
                           description: currentTask!.description,
                           startDate: currentTask!.startDate,
                           endDate: currentTask!.endDate,
                           createdAt: createdAtString,
                           taskCustomFields: currentTask!.taskCustomFields,
-                          // file: currentTask!.taskFile,
                           files: currentTask!.files,
+                          directoryValues: currentTask!.directoryValues,
                         ),
                       ),
                     );
-
                     if (shouldUpdate == true) {
                       context
                           .read<TaskByIdBloc>()
