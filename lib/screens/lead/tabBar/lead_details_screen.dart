@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
@@ -23,12 +25,12 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dar
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
@@ -119,16 +121,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
+      await prefs.setString( 'tutorial_progress', json.encode(progress['result']));
 
-      bool isTutorialShown =
-          prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
 
-      // Инициализируем targets с актуальными значениями разрешений
       _initTutorialTargets();
 
       if (tutorialProgress != null &&
@@ -147,8 +146,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        bool isTutorialShown =
-            prefs.getBool('isTutorialShownLeadDetails') ?? false;
+        bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
@@ -168,15 +166,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   void _initTutorialTargets() {
-    targets.clear(); // Очищаем список перед добавлением
+    targets.clear(); 
     targets.addAll([
       createTarget(
         identify: "LeadHistory",
         keyTarget: keyLeadHistory,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_history_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_history_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -185,10 +181,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadEdit",
           keyTarget: keyLeadEdit,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_edit_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_edit_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -197,10 +191,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadDelete",
           keyTarget: keyLeadDelete,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_delete_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_delete_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -208,10 +200,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       createTarget(
         identify: "keyNavigateChat",
         keyTarget: keyLeadNavigateChat,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_chat_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_chat_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_description'),
         align: ContentAlign.top,
         extraSpacing:
             SizedBox(height: MediaQuery.of(context).size.height * 0.3),
@@ -221,35 +211,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "keyLeadNotice",
           keyTarget: keyLeadNotice,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_notice_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_notice_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_description'),
           align: ContentAlign.top,
-          extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       if (_canReadDeal)
         createTarget(
           identify: "keyLeadDeal",
           keyTarget: keyLeadDeal,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_deal_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_deal_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_description'),
           align: ContentAlign.top,
-          extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       createTarget(
         identify: "keyLeadContactPerson",
         keyTarget: keyLeadContactPerson,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_contact_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_contact_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_description'),
         align: ContentAlign.top,
         extraSpacing:
             SizedBox(height: MediaQuery.of(context).size.height * 0.2),
@@ -260,12 +242,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, skipping');
       return;
     }
 
@@ -276,7 +256,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         tutorialProgress!['leads']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      print('Tutorial conditions not met');
       return;
     }
 
@@ -313,7 +292,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onSkip: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {
-          print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -324,7 +302,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onFinish: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {
-          print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -334,7 +311,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     ).show(context: context);
   }
 
-  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -355,75 +331,64 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   }
 
-  // Обновление данных лида
   void _updateDetails(LeadById lead) {
-    currentLead = lead;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('name_details'),
-        'value': lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('phone_use'),
-        'value': lead.phone ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('region_details'),
-        'value': lead.region?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('manager_details'),
-        'value': lead.manager != null
-            ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('system_text'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('source_details'),
-        'value': lead.source?.name ?? ''
-      },
-      {'label': 'Instagram:', 'value': lead.instagram ?? ''},
-      {'label': 'Facebook:', 'value': lead.facebook ?? ''},
-      {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {
-        'label': AppLocalizations.of(context)!.translate('email_details'),
-        'value': lead.email ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('birthday_details'),
-        'value': formatDate(lead.birthday)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details_lead'),
-        'value': lead.description ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': lead.author?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': formatDate(lead.createdAt)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': lead.leadStatus?.title ?? ''
-      },
-    ];
-    for (var field in lead.leadCustomFields) {
-      details.add({'label': '${field.key}:', 'value': field.value});
-    }
+  currentLead = lead;
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('Lead'),
+      'value': lead.name
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('phone_use'),
+      'value': lead.phone ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('region_details'),
+      'value': lead.region?.name ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('manager_details'),
+      'value': lead.manager != null
+          ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+          : 'become_manager'
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('source_details'),
+      'value': lead.source?.name ?? ''
+    },
+    {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+    {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+    {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+    {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+    {
+      'label': AppLocalizations.of(context)!.translate('email_details'),
+      'value': lead.email ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('birthday_details'),
+      'value': formatDate(lead.birthday)
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('description_details_lead'),
+      'value': lead.description ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('author_details'),
+      'value': lead.author?.name ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'value': formatDate(lead.createdAt)
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('status_details'),
+      'value': lead.leadStatus?.title ?? ''
+    },
+  ];
+  for (var field in lead.leadCustomFields) {
+    details.add({'label': '${field.key}:', 'value': field.value});
   }
-
-  bool _isTextOverflow(String text, TextStyle style, double maxWidth) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: ui.TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
-
-    return textPainter.didExceedMaxLines;
-  }
+}
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -449,6 +414,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
@@ -466,42 +432,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             if (state is LeadByIdLoaded) {
             } else if (state is LeadByIdError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
+                  showCustomSnackBar(
+                   context: context,
+                   message: AppLocalizations.of(context)!.translate(state.message),
+                   isSuccess: false,
+                 );
               });
             }
           },
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
             builder: (context, state) {
               if (state is LeadByIdLoading) {
-                return Center(
-                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                return Center( child: CircularProgressIndicator(color: Color(0xff1E2E52)));
               } else if (state is LeadByIdLoaded) {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
                 return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
                     controller: _scrollController,
                     children: [
@@ -525,14 +472,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         NotesWidget(
                           leadId: int.parse(widget.leadId),
                           key: keyLeadNotice,
-                          managerId:
-                              lead.manager?.id, // Передаем managerId из лида
+                          managerId: lead.manager?.id, 
                         ),
-                      // const SizedBox(height: 16),
                       if (_canReadDeal)
-                        DealsWidget(
-                            leadId: int.parse(widget.leadId), key: keyLeadDeal),
-                      // const SizedBox(height: 16),
+                        DealsWidget( leadId: int.parse(widget.leadId), key: keyLeadDeal),
                       ContactPersonWidget(
                           leadId: int.parse(widget.leadId),
                           key: keyLeadContactPerson),
@@ -558,7 +501,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ));
   }
 
-  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -671,9 +613,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       );
 
                       if (shouldUpdate == true) {
-                        // Перезагружаем данные лида
-                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
-                            leadId: int.parse(widget.leadId)));
+                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
                       }
                     }
@@ -752,7 +692,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -763,7 +702,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
   }
 
-  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -776,66 +714,99 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  Widget _buildValue(String value, String label) {
-    if (value.isEmpty) return Container();
+Widget _buildValue(String value, String label) {
+  if (value.isEmpty) return Container();
 
-    if (label == AppLocalizations.of(context)!.translate('phone_use')) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => _makePhoneCall(value),
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1E2E52),
-                decoration: TextDecoration.underline,
-              ),
+  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        GestureDetector(
+          onTap: () => _makePhoneCall(value),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1E2E52),
+              decoration: TextDecoration.underline,
             ),
-          ),
-          if (_canExportContact && _isExportContactEnabled)
-            GestureDetector(
-              onTap: () => _addContact(widget.leadName, value),
-              child: Icon(
-                Icons.contacts,
-                size: 24,
-                color: Color(0xFF1E2E52),
-              ),
-            ),
-        ],
-      );
-    }
-
-    if (label == 'WhatsApp:') {
-      return GestureDetector(
-        onTap: () => _openWhatsApp(value),
-        child: Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1E2E52),
-            decoration: TextDecoration.underline,
           ),
         ),
-      );
-    }
-
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
-      ),
-      overflow: TextOverflow.visible,
+        if (_canExportContact && _isExportContactEnabled)
+          GestureDetector(
+            onTap: () => _addContact(widget.leadName, value),
+            child: Icon(
+              Icons.contacts,
+              size: 24,
+              color: Color(0xFF1E2E52),
+            ),
+          ),
+      ],
     );
   }
+
+  if (label == 'WhatsApp:') {
+    return GestureDetector(
+      onTap: () => _openWhatsApp(value),
+      child: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1E2E52),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+if (label == AppLocalizations.of(context)!.translate('manager_details') && value == 'become_manager') {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    // mainAxisAlignment: MainAxisAlignment.end, 
+    children: [
+      GestureDetector(
+        onTap: () {
+          _assignManager();
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.yellow,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Text(
+            AppLocalizations.of(context)!.translate('become_manager'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+  return Text(
+    value,
+    style: TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF1E2E52),
+    ),
+    overflow: TextOverflow.visible,
+  );
+}
+
+
 
   @override
   void dispose() {
@@ -873,7 +844,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+                    textAlign: TextAlign.justify, 
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -906,7 +877,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-  // Добавьте эту функцию для совершения звонка
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -918,14 +888,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    // Убираем все не числовые символы из номера телефона
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
-    // Если номер начинается с '8', заменяем на '+7'
     if (cleanNumber.startsWith('8')) {
       cleanNumber = '+7${cleanNumber.substring(1)}';
     }
-    // Если номер начинается с '7', добавляем '+'
     else if (cleanNumber.startsWith('7')) {
       cleanNumber = '+$cleanNumber';
     }
@@ -933,60 +900,147 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     try {
       Uri whatsappUri;
       if (Platform.isIOS) {
-        // Для iOS используем другую схему URL
         whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
       } else {
-        // Для Android оставляем прежнюю схему
         whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
       }
 
       if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
-        // Если не удалось открыть, показываем сообщение
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            duration: Duration(seconds: 3),
-          ),
-        );
+      showCustomSnackBar(
+         context: context,
+         message: AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+         isSuccess: false,
+       );
       }
     } catch (e) {
-      // Обработка ошибок
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      showCustomSnackBar(
+         context: context,
+         message: AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+         isSuccess: false,
+       );
     }
   }
+
+Future<void> _assignManager() async {
+  bool? confirm = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        title: Center(
+          child: Text(
+            AppLocalizations.of(context)!.translate('confirm_manager_title'),
+            style: TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E2E52),
+            ),
+          ),
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.translate('confirm_manager_message'),
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52),
+          ),
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Expanded(
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('no'),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  buttonColor: Colors.red,
+                  textColor: Colors.white,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('yes'),
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  buttonColor: Color(0xFF1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirm != true) {
+    return;
+  }
+
+  if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
+    showCustomSnackBar(
+      context: context,
+      message: AppLocalizations.of(context)!.translate('phone_required'),
+      isSuccess: false,
+    );
+    return; 
+  }
+
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userID = prefs.getString('userID');
+
+    if (userID == null || userID.isEmpty) {
+      return;
+    }
+    int? parsedUserId = int.tryParse(userID);
+
+    final completer = Completer<void>();
+    final leadBloc = context.read<LeadBloc>();
+
+    final listener = context.read<LeadBloc>().stream.listen((state) {
+      if (state is LeadSuccess) {
+        completer.complete();
+      } else if (state is LeadError) {
+        completer.completeError(Exception(state.message));
+      }
+    });
+
+    final localizations = AppLocalizations.of(context)!;
+    leadBloc.add(UpdateLead(
+      leadId: currentLead!.id,
+      name: currentLead!.name,
+      phone: currentLead!.phone ?? "",
+      managerId: parsedUserId,
+      leadStatusId: currentLead?.leadStatus?.id ?? 0,
+      localizations: localizations,
+    ));
+
+    await completer.future;
+    listener.cancel();
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: currentLead!.id));
+    context.read<LeadBloc>().add(FetchLeadStatuses());
+    showCustomSnackBar(
+      context: context,
+      message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
+      isSuccess: true,
+    );
+  } catch (e) {
+    showCustomSnackBar(
+      context: context,
+      message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
+      isSuccess: false,
+    );
+  }
 }
+
+}
+
+
+

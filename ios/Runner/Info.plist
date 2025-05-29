@@ -42,6 +42,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>Bitcode</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -63,7 +65,9 @@
 	<key>NSBiometricUsageDescription</key>
 	<string>Нам нужно ваше разрешение на использование биометрии для безопасного входа в систему.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Access camera</string>
+	<string>Для сканирования QR-кодов</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Это приложение требует доступа к вашим контактам.</string>
 	<key>NSDocumentsUsageDescription</key>
 	<string>Это приложение требует доступ к документам для управления файлами.</string>
 	<key>NSFaceIDUsageDescription</key>
@@ -71,20 +75,20 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Это приложение требует доступа к микрофону.</string>
+	<string>Мы используем микрофон для записи голосовых сообщений в чате</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>The app saves the image to your photo gallery.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+	<string>Для загрузки изображения с QR-кодом</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений и рекламы.</string>
+	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
 		<string>processing</string>
 		<string>remote-notification</string>
+		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>Launch Screen</string>
@@ -115,13 +119,5 @@
 	<true/>
 	<key>com.apple.security.device.microphone</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Для сканирования QR-кодов</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Для загрузки изображения с QR-кодом</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Это приложение требует доступа к вашим контактам.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 </dict>
 </plist>

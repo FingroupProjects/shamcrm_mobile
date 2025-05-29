@@ -344,7 +344,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
           await _fetchTutorialProgress();
         }
         if (widget.initialMessage != null) {
-          // Assuming handleMessage is defined elsewhere
           handleMessage(widget.initialMessage!);
         }
       });

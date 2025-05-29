@@ -72,7 +72,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
       children: [
         BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
           builder: (context, state) {
-            // Обработка ошибок
             if (state is GetAllManagerError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
