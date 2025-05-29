@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
@@ -158,7 +159,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedSource = widget.sourceId;
     selectedManager = widget.manager;
     for (var customField in widget.leadCustomFields) {
-      customFields.add(CustomField(fieldName: customField.key)
+      customFields.add(CustomField(fieldName: customField.key, controller: TextEditingController())
         ..controller.text = customField.value);
     }
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
@@ -167,7 +168,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   void _addCustomField(String fieldName) {
     setState(() {
-      customFields.add(CustomField(fieldName: fieldName));
+      customFields.add(CustomField(fieldName: fieldName, controller: TextEditingController()));
     });
   }
 

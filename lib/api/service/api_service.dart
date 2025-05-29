@@ -2109,22 +2109,122 @@ class ApiService {
   }
 
 // Метод для создания Сделки
-  Future<Map<String, dynamic>> createDeal({
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final requestBody = {
+ Future<Map<String, dynamic>> createDeal({
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  int? leadId,
+  List<Map<String, String>>? customFields,
+  List<Map<String, int>>? directoryValues, // Новое поле
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/deal${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['deal_status_id'] = dealStatusId.toString();
+    request.fields['position'] = '1';
+    if (managerId != null) {
+      request.fields['manager_id'] = managerId.toString();
+    }
+    if (startDate != null) {
+      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
+      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
+    request.fields['sum'] = sum;
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+    if (dealtypeId != null) {
+      request.fields['deal_type_id'] = dealtypeId.toString();
+    }
+    if (leadId != null) {
+      request.fields['lead_id'] = leadId.toString();
+    }
+
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['deal_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['deal_custom_fields[$i][value]'] = field.values.first;
+      }
+    }
+
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'deal_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      }
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'error_directory_values'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'error_deal_create_successfully'};
+    }
+  } catch (e) {
+    return {'success': false, 'message': 'error_deal_create_successfully'};
+  }
+}
+
+  // Метод для обновления сделки
+ Future<Map<String, dynamic>> updateDeal({
+  required int dealId,
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  required int? leadId,
+  List<Map<String, String>>? customFields,
+  List<Map<String, int>>? directoryValues, // Новое поле для справочников
+}) async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _patchRequest(
+    '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
       'name': name,
       'deal_status_id': dealStatusId,
-      'position': 1,
       if (managerId != null) 'manager_id': managerId,
       if (startDate != null) 'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate.toIso8601String(),
@@ -2132,90 +2232,29 @@ class ApiService {
       if (description != null) 'description': description,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
-      // Здесь добавляем deal_custom_fields
       'deal_custom_fields': customFields?.map((field) {
-            // Изменяем структуру для соответствия новому формату
-            return {
-              'key': field.keys.first,
-              'value': field.values.first,
-            };
-          }).toList() ??
-          [],
-    };
-    final organizationId = await getSelectedOrganization();
+        return {
+          'key': field.keys.first,
+          'value': field.values.first,
+        };
+      }).toList() ?? [],
+      'directory_values': directoryValues ?? [], // Отправляем справочные поля
+    },
+  );
 
-    final response = await _postRequest(
-        '/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'deal_create_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      // Другие проверки на ошибки...
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_create_successfully'};
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'deal_update_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
+      return {'success': false, 'message': 'invalid_name_length'};
     }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_deal_update_successfully'};
   }
-
-  // Метод для обновления сделки
-  Future<Map<String, dynamic>> updateDeal({
-    required int dealId,
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _patchRequest(
-        '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'name': name,
-          'deal_status_id': dealStatusId,
-          if (managerId != null) 'manager_id': managerId,
-          if (startDate != null) 'start_date': startDate.toIso8601String(),
-          if (endDate != null) 'end_date': endDate.toIso8601String(),
-          'sum': sum,
-          if (description != null) 'description': description,
-          if (dealtypeId != null) 'deal_type_id': dealtypeId,
-          if (leadId != null) 'lead_id': leadId,
-          'deal_custom_fields': customFields?.map((field) {
-                return {
-                  'key': field.keys.first,
-                  'value': field.values.first,
-                };
-              }).toList() ??
-              [],
-        });
-
-    // Обработка ответа
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'deal_update_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('"name"')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      // Дополнительные проверки на другие поля могут быть добавлены здесь...
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_update_successfully'};
-    }
-  }
-
+}
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
     final organizationId = await getSelectedOrganization();
@@ -2696,131 +2735,146 @@ class ApiService {
   }
 
 // Метод для создание задачи из сделки
-  Future<Map<String, dynamic>> createTaskFromDeal({
-    required int dealId,
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, String>>? customFields,
-    List<String>? filePaths, // Список путей к файлам
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<Map<String, dynamic>> createTaskFromDeal({
+  required int dealId,
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, String>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues, // Added for directory support
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toIso8601String();
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
+    }
 
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['task_custom_fields[$i][value]'] = field.values.first;
       }
+    }
 
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
+    // Добавляем directory_values
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
       }
+    }
 
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_deal_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.statusCode == 500) {
-          return {'success': false, 'message': 'error_server_text'};
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_deal_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.statusCode == 500) {
+        return {'success': false, 'message': 'error_server_text'};
+      }
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
   }
+}
 
 /*
 // Метод для создание задачи
@@ -3643,31 +3697,29 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
   return dataDirectory;
 }
 
-
-
 Future<MainFieldResponse> getMainFields(int directoryId) async {
-  final organizationId = await getSelectedOrganization();
+    final organizationId = await getSelectedOrganization();
+    print('Вызов getMainFields для directoryId: $directoryId');
+    final response = await _getRequest(
+        '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
 
-  final response = await _getRequest(
-    '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return MainFieldResponse.fromJson(data);
+    if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Ответ getMainFields для directoryId $directoryId: $data');
+        if (data['result'] != null) {
+            return MainFieldResponse.fromJson(data);
+        } else {
+            throw Exception('Результат отсутствует в ответе');
+        }
+    } else if (response.statusCode == 404) {
+        throw Exception('Ресурс не найден');
+    } else if (response.statusCode == 500) {
+        throw Exception('Внутренняя ошибка сервера');
     } else {
-      throw Exception('Результат отсутствует в ответе');
+        throw Exception('Ошибка при получении данных справочника!');
     }
-  } else if (response.statusCode == 404) {
-    throw Exception('Ресурс не найден');
-  } else if (response.statusCode == 500) {
-    throw Exception('Внутренняя ошибка сервера');
-  } else {
-    throw Exception('Ошибка при получении данных справочника!');
-  }
 }
-
 Future<void> linkDirectory({
   required int directoryId,
   required String modelType,
