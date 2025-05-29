@@ -1039,7 +1039,7 @@
   "branch_order": "Филиал:",
   "select_delivery_address": "Выберите адрес доставки",
   "discount_percent": "Скидка",
-  "no_internet": "Нет интернета",
+  "no_internet": "Нет соединение",
   "please_check_internet": "Проверьте подключение к интернету!",
   "enter_discount_percent": "Введите процент скидки",
   "error_loading_subcategories": "Ошибка при загрузке подкатегорий",
@@ -1048,5 +1048,11 @@
   "manual_input": "Ручной ввод",
   "directory": "Справочник",
   "add_directory": "Добавить справочник",
-  "select_directory": "Выбрать из справочника"
+  "become_manager": "Стать менеджером",
+  "confirm_manager_title": "Стать менеджером",
+  "confirm_manager_message": "Вы уверены, что хотите стать менеджером этого лида?",
+  "manager_assigned_success": "Вы успешно стали менеджером этого лида!",
+  "manager_assign_failed": "Ошибка при назначении менеджера",
+  "phone_required": "Сначало добавьте номер телефона!"
+
 }

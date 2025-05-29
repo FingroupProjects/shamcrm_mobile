@@ -1032,16 +1032,24 @@
 "branch_order": "Branch:",
 "select_delivery_address": "Select delivery address",
 "discount_percent": "Discount",
-"no_internet": "No internet connection",
+"no_internet": "No connection",
 "please_check_internet": "Please check your internet connection!",
 "enter_discount_percent": "Enter discount percentage",
 "error_loading_subcategories": "Error loading subcategories",
 "selected_subcategories": "Selected subcategories",
 "no_history_available":"No history available",
 "pickup": "Pickup",
-    "manual_input": "Manual input",
-    "directory": "Directory",
-    "add_directory": "Add directory",
-    "select_directory": "Select directory"
+"manual_input": "Manual input",
+"directory": "Directory",
+"add_directory": "Add directory",
+"select_directory": "Select directory",
+"become_manager": "Become a manager",
+"confirm_manager_title": "Become a manager",
+"confirm_manager_message": "Are you sure you want to become the manager of this lead?",
+"manager_assigned_success": "You have successfully become the manager of this lead!",
+"manager_assign_failed": "Failed to assign manager",
+"phone_required": "Please add a phone number first!"
+
+
 
 }

@@ -1056,5 +1056,13 @@
   "manual_input": "Qoʻlda kiritish",
   "directory": "Maʼlumotnoma",
   "add_directory": "Maʼlumotnoma qoʻshish",
-  "select_directory": "Maʼlumotnomani tanlang"
+  "select_directory": "Maʼlumotnomani tanlang",
+  "become_manager": "Menejer bo‘lish",
+  "confirm_manager_title": "Menejer bo‘lish",
+  "confirm_manager_message": "Siz ushbu leadning menejeri bo‘lishni xohlaysizmi?",
+  "manager_assigned_success": "Siz muvaffaqiyatli ravishda ushbu leadning menejeri bo‘ldingiz!",
+  "manager_assign_failed": "Menejerni tayinlashda xatolik yuz berdi",
+  "phone_required": "Avval telefon raqamini kiriting!"
+
+
 }
