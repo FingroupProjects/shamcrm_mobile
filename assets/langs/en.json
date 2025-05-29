@@ -1043,13 +1043,13 @@
 "directory": "Directory",
 "add_directory": "Add directory",
 "select_directory": "Select directory",
+"select_field": "Select a value from the directory",
 "become_manager": "Become a manager",
 "confirm_manager_title": "Become a manager",
 "confirm_manager_message": "Are you sure you want to become the manager of this lead?",
 "manager_assigned_success": "You have successfully become the manager of this lead!",
 "manager_assign_failed": "Failed to assign manager",
 "phone_required": "Please add a phone number first!"
-
 
 
 }

@@ -1048,11 +1048,12 @@
   "manual_input": "Ручной ввод",
   "directory": "Справочник",
   "add_directory": "Добавить справочник",
+   "select_directory": "Выбрать из справочника",
+  "select_field": "Выберите значение из справочника",
   "become_manager": "Стать менеджером",
   "confirm_manager_title": "Стать менеджером",
   "confirm_manager_message": "Вы уверены, что хотите стать менеджером этого лида?",
   "manager_assigned_success": "Вы успешно стали менеджером этого лида!",
   "manager_assign_failed": "Ошибка при назначении менеджера",
   "phone_required": "Сначало добавьте номер телефона!"
-
 }
