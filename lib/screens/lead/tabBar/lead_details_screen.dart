@@ -335,66 +335,69 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   currentLead = lead;
   details = [
     {
-      'label': AppLocalizations.of(context)!.translate('lead_name'),
+      'label': '  ${AppLocalizations.of(context)!.translate('lead_name')}',
       'value': lead.name
     },
     {
-      'label': AppLocalizations.of(context)!.translate('phone_use'),
+      'label': '  ${AppLocalizations.of(context)!.translate('phone_use')}',
       'value': lead.phone ?? ''
     },
     {
-      'label': AppLocalizations.of(context)!.translate('region_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('region_details')}',
       'value': lead.region?.name ?? ''
     },
+    if (lead.manager != null)
+      {
+        'label': '  ${AppLocalizations.of(context)!.translate('manager_details')}',
+        'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+      }
+    else
+      {
+        'label': '',
+        'value': 'become_manager'
+      },
     {
-      'label': AppLocalizations.of(context)!.translate('manager_details'),
-      'value': lead.manager != null
-          ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-          : 'become_manager'
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('source_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('source_details')}',
       'value': lead.source?.name ?? ''
     },
-    {'label': 'Instagram:', 'value': lead.instagram ?? ''},
-    {'label': 'Facebook:', 'value': lead.facebook ?? ''},
-    {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-    {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+    {'label': '  Instagram:', 'value': lead.instagram ?? ''},
+    {'label': '  Facebook:', 'value': lead.facebook ?? ''},
+    {'label': '  Telegram:', 'value': lead.telegram ?? ''},
+    {'label': '  WhatsApp:', 'value': lead.whatsApp ?? ''},
     {
-      'label': AppLocalizations.of(context)!.translate('email_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('email_details')}',
       'value': lead.email ?? ''
     },
     {
-      'label': AppLocalizations.of(context)!.translate('birthday_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('birthday_details')}',
       'value': formatDate(lead.birthday)
     },
     {
-      'label': AppLocalizations.of(context)!.translate('description_details_lead'),
+      'label': '  ${AppLocalizations.of(context)!.translate('description_details_lead')}',
       'value': lead.description ?? ''
     },
     {
-      'label': AppLocalizations.of(context)!.translate('author_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('author_details')}',
       'value': lead.author?.name ?? ''
     },
     {
-      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('created_at_details')}',
       'value': formatDate(lead.createdAt)
     },
     {
-      'label': AppLocalizations.of(context)!.translate('status_details'),
+      'label': '  ${AppLocalizations.of(context)!.translate('status_details')}',
       'value': lead.leadStatus?.title ?? ''
     },
   ];
-  // Добавляем пользовательские поля
   for (var field in lead.leadCustomFields) {
-    details.add({'label': '${field.key}:', 'value': field.value});
-  }
-  // Добавляем значения справочников
+    details.add({'label': '  ${field.key}:', 'value': field.value});
+
   for (var dirValue in lead.directoryValues) {
     final directoryName = dirValue.entry.directory.name;
     final value = dirValue.entry.values['value'] ?? '';
-    details.add({'label': '$directoryName:', 'value': value});
+    details.add({'label': '  $directoryName:', 'value': value});
   }
+}
 }
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -769,36 +772,59 @@ Widget _buildValue(String value, String label) {
     );
   }
 
-if (label == AppLocalizations.of(context)!.translate('manager_details') && value == 'become_manager') {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    // mainAxisAlignment: MainAxisAlignment.end, 
-    children: [
-      GestureDetector(
-        onTap: () {
-          _assignManager();
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.yellow,
-            borderRadius: BorderRadius.circular(5),
+if (label == '' && value == 'become_manager') {
+  return Padding(
+    padding: EdgeInsets.only(left: 0), 
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Text(
+          '${AppLocalizations.of(context)!.translate('manager_details')}  ',
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w400,
+            color: Color(0xfff99A4BA),
           ),
-          child: Text(
-            AppLocalizations.of(context)!.translate('become_manager'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
+        ),
+        GestureDetector(
+          onTap: () {
+            _assignManager();
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            decoration: BoxDecoration(
+              color: Color(0xff1E2E52),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.person_add_alt_1,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  AppLocalizations.of(context)!.translate('become_manager'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 }
+
 
   return Text(
     value,
