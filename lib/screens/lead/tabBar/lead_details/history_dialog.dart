@@ -181,7 +181,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
       }
     };
 
-    // Словарь переводов ключей
     final Map<String, String> translations = {
       "name": "Название",
       "phone": "Телефон",
@@ -202,11 +201,9 @@ class _HistoryDialogState extends State<HistoryDialog> {
           DateTime date;
           String dateStr = value.toString();
 
-          // Пробуем распарсить дату, даже если она в разных форматах
           if (dateStr.contains('T')) {
             date = DateTime.parse(dateStr);
           } else {
-            // Для простых строк без времени
             date = DateTime.parse(dateStr);
           }
 
@@ -246,7 +243,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
     }).toList();
   }
 
-//И здесь name, phone, email, region, manager, tg_nick, birthday, description, insta_login, facebook_login
   Widget _buildHistoryItem(LeadHistory item) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -256,13 +252,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
           color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
 
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.05),
-          //     blurRadius: 4,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,13 +496,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
         decoration: BoxDecoration(
           color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.05),
-          //     blurRadius: 4,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,13 +551,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
         decoration: BoxDecoration(
           color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.05),
-          //     blurRadius: 4,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,7 +715,15 @@ class _HistoryDialogState extends State<HistoryDialog> {
     }).toList();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
+String _formatDate(DateTime date) {
+  final adjustedDate = date.add(Duration(hours: 5));
+  final day = adjustedDate.day.toString().padLeft(2, '0');
+  final month = adjustedDate.month.toString().padLeft(2, '0');
+  final year = adjustedDate.year;
+  final hour = adjustedDate.hour.toString().padLeft(2, '0');
+  final minute = adjustedDate.minute.toString().padLeft(2, '0');
+
+  return '$day.$month.$year $hour:$minute';
+}
+
 }

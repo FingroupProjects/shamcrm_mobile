@@ -43,7 +43,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: Color(0xfff1E2E52),
                 ),
               ),
@@ -97,7 +97,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: Color(0xfff1E2E52),
                     ),
                     overflow: _isTextExpanded

@@ -169,18 +169,22 @@ class _TasksWidgetState extends State<TasksWidget> {
                       Text(
                         task.name,
                         style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow
-                            .ellipsis, // Ограничение текста в одну строку
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4),
+                       Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('project')}${task.project?.name ?? ''} ',
+                            style: TaskCardStyles.priorityStyle.copyWith(
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 4),
                       Row(
                         children: [
-                          // Text(
-                          //   '${AppLocalizations.of(context)!.translate('from')}$formattedDateFrom',
-                          //   style: TaskCardStyles.priorityStyle.copyWith(
-                          //     color: Color(0xff1E2E52),
-                          //   ),
-                          // ),
                           Text(
                             '${AppLocalizations.of(context)!.translate('deadLine')}$formattedDateTo',
                             style: TaskCardStyles.priorityStyle.copyWith(
@@ -189,6 +193,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                           ),
                         ],
                       ),
+                     
                     ],
                   ),
                 ),

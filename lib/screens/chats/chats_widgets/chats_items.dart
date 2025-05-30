@@ -43,7 +43,6 @@ class ChatListItem extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              // Убираем обводку для support, оставляем для остальных
               border: isSupportAvatar
                   ? null
                   : Border.all(
@@ -66,10 +65,12 @@ class ChatListItem extends StatelessWidget {
                       height: 20,
                     ),
                     const SizedBox(width: 4),
-                    Expanded(
+                   Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty
-                            ? chatItem.name
+                            ? (chatItem.name == 'support'
+                                ? AppLocalizations.of(context)!.translate('support_chat_name')
+                                : chatItem.name)
                             : AppLocalizations.of(context)!.translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,

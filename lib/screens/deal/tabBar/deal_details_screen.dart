@@ -668,7 +668,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         fontWeight: FontWeight.w500,
         color: Color(0xff1E2E52),
       ),
-      overflow: TextOverflow.visible,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
