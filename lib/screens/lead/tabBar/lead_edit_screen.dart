@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
@@ -8,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
@@ -18,6 +20,8 @@ import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -25,6 +29,9 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'package:crm_task_manager/models/directory_model.dart'
+    as directory_model;
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -43,24 +50,27 @@ class LeadEditScreen extends StatefulWidget {
   final String? description;
   final int statusId;
   final List<LeadCustomFieldsById> leadCustomFields;
+  final List<DirectoryValue> directoryValues; // Новое поле
 
-  LeadEditScreen(
-      {required this.leadId,
-      required this.leadName,
-      required this.statusId,
-      this.region,
-      this.manager,
-      this.sourceId,
-      this.birthday,
-      this.createAt,
-      this.instagram,
-      this.facebook,
-      this.telegram,
-      this.phone,
-      this.whatsApp,
-      this.email,
-      this.description,
-      required this.leadCustomFields});
+  LeadEditScreen({
+    required this.leadId,
+    required this.leadName,
+    required this.statusId,
+    this.region,
+    this.manager,
+    this.sourceId,
+    this.birthday,
+    this.createAt,
+    this.instagram,
+    this.facebook,
+    this.telegram,
+    this.phone,
+    this.whatsApp,
+    this.email,
+    this.description,
+    required this.leadCustomFields,
+    required this.directoryValues, // Добавляем в конструктор
+  });
 
   @override
   _LeadEditScreenState createState() => _LeadEditScreenState();
@@ -91,6 +101,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   bool _isWhatsAppEdited = false;
 
   List<CustomField> customFields = [];
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -159,30 +170,174 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedSource = widget.sourceId;
     selectedManager = widget.manager;
     for (var customField in widget.leadCustomFields) {
-      customFields.add(CustomField(fieldName: customField.key, controller: TextEditingController())
-        ..controller.text = customField.value);
+      customFields.add(CustomField(
+        fieldName: customField.key,
+        controller: TextEditingController(),
+        uniqueId: Uuid().v4(),
+      )..controller.text = customField.value);
+    }
+    // Добавляем значения справочников
+    for (var dirValue in widget.directoryValues) {
+      customFields.add(CustomField(
+        fieldName: dirValue.entry.directory.name,
+        controller:
+            TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+        isDirectoryField: true,
+        directoryId: dirValue.entry.directory.id,
+        entryId: dirValue.entry.id,
+        uniqueId: Uuid().v4(),
+      ));
     }
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    _fetchAndAddDirectoryFields();
   }
 
-  void _addCustomField(String fieldName) {
+  void _fetchAndAddDirectoryFields() async {
+    try {
+      final directoryLinkData = await _apiService.getLeadDirectoryLinks();
+      if (directoryLinkData.data != null) {
+        setState(() {
+          for (var link in directoryLinkData.data!) {
+            // Проверяем, есть ли уже поле справочника с таким directoryId
+            bool directoryExists = customFields.any((field) =>
+                field.isDirectoryField &&
+                field.directoryId == link.directory.id);
+            if (!directoryExists) {
+              // Ищем соответствующее значение в widget.directoryValues
+              final existingValue = widget.directoryValues.firstWhere(
+                (dirValue) => dirValue.entry.directory.id == link.directory.id,
+                orElse: () => DirectoryValue(
+                  id: 0,
+                  entry: DirectoryEntry(
+                    id: 0,
+                    directory: Directory(
+                        id: link.directory.id, name: link.directory.name),
+                    values: {},
+                    createdAt: '',
+                  ),
+                ),
+              );
+              // Добавляем поле справочника с учетом существующего значения
+              customFields.add(CustomField(
+                fieldName: link.directory.name,
+                controller: TextEditingController(
+                    text: existingValue.entry.values['value'] ?? ''),
+                isDirectoryField: true,
+                directoryId: link.directory.id,
+                entryId:
+                    existingValue.entry.id != 0 ? existingValue.entry.id : null,
+                uniqueId: Uuid().v4(),
+              ));
+            }
+          }
+        });
+      }
+    } catch (e) {
+      print('Ошибка при получении данных справочников: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!
+                .translate('error_fetching_directories'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId}) {
+    print(
+        'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
+    if (isDirectory && directoryId != null) {
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
+      if (directoryExists) {
+        print(
+            'Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+        return;
+      }
+    }
     setState(() {
-      customFields.add(CustomField(fieldName: fieldName, controller: TextEditingController()));
+      customFields.add(CustomField(
+        fieldName: fieldName,
+        controller: TextEditingController(),
+        isDirectoryField: isDirectory,
+        directoryId: directoryId,
+        uniqueId: Uuid().v4(),
+      ));
     });
   }
 
   void _showAddFieldDialog() {
-    showDialog(
+    showMenu(
       context: context,
-      builder: (BuildContext context) {
-        return AddCustomFieldDialog(
-          onAddField: (fieldName) {
-            _addCustomField(fieldName);
+      position: RelativeRect.fromLTRB(300, 650, 200, 300),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'manual',
+          child: Text(
+            AppLocalizations.of(context)!.translate('manual_input'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'directory',
+          child: Text(
+            AppLocalizations.of(context)!.translate('directory'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'manual') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomFieldDialog(
+              onAddField: (fieldName) {
+                _addCustomField(fieldName);
+              },
+            );
           },
         );
-      },
-    );
+      } else if (value == 'directory') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomDirectoryDialog(
+              onAddDirectory: (directory_model.Directory directory) {
+                _addCustomField(directory.name,
+                    isDirectory: true, directoryId: directory.id);
+              },
+            );
+          },
+        );
+      }
+    });
   }
 
   @override
@@ -228,8 +383,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -252,8 +406,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -384,8 +537,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         const SizedBox(height: 8),
                         CustomPhoneNumberInput(
                           controller: whatsAppController,
-                          selectedDialCode:
-                              selectedWhatsAppDialCode, // Используем отдельный код страны для WhatsApp
+                          selectedDialCode: selectedWhatsAppDialCode,
                           onInputChanged: (String number) {
                             setState(() {
                               _isWhatsAppEdited = true;
@@ -426,14 +578,54 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                           physics: NeverScrollableScrollPhysics(),
                           itemCount: customFields.length,
                           itemBuilder: (context, index) {
-                            return CustomFieldWidget(
-                              fieldName: customFields[index].fieldName,
-                              valueController: customFields[index].controller,
-                              onRemove: () {
-                                setState(() {
-                                  customFields.removeAt(index);
-                                });
-                              },
+                            final field = customFields[index];
+                            return Container(
+                              key: ValueKey(field.uniqueId),
+                              child: field.isDirectoryField &&
+                                      field.directoryId != null
+                                  ? MainFieldDropdownWidget(
+                                      directoryId: field.directoryId!,
+                                      directoryName: field.fieldName,
+                                      selectedField: field.entryId != null
+                                          ? MainField(
+                                              id: field.entryId!,
+                                              value: field.controller.text,
+                                            )
+                                          : null,
+                                      onSelectField: (MainField selectedField) {
+                                        setState(() {
+                                          customFields[index] = field.copyWith(
+                                            entryId: selectedField.id,
+                                            controller: TextEditingController(
+                                                text: selectedField.value),
+                                          );
+                                        });
+                                      },
+                                      controller: field.controller,
+                                      onSelectEntryId: (int entryId) {
+                                        setState(() {
+                                          customFields[index] = field.copyWith(
+                                            entryId: entryId,
+                                          );
+                                        });
+                                      },
+                                      onRemove: () {
+                                        setState(() {
+                                          customFields.removeAt(index);
+                                        });
+                                      },
+                                      initialEntryId: field
+                                          .entryId, // Передаем initialEntryId
+                                    )
+                                  : CustomFieldWidget(
+                                      fieldName: field.fieldName,
+                                      valueController: field.controller,
+                                      onRemove: () {
+                                        setState(() {
+                                          customFields.removeAt(index);
+                                        });
+                                      },
+                                    ),
                             );
                           },
                         ),
@@ -497,7 +689,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     whatsAppToSend = whatsAppController
                                             .text.isNotEmpty
                                         ? '$selectedWhatsAppDialCode${whatsAppController.text}'
-                                        : ''; // Если поле пустое, отправляем пустую строку
+                                        : '';
                                   }
                                   DateTime? parsedBirthday;
 
@@ -522,21 +714,29 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   }
                                   List<Map<String, String>> customFieldList =
                                       [];
+                                  List<Map<String, int>> directoryValues = [];
+
                                   for (var field in customFields) {
                                     String fieldName = field.fieldName.trim();
-
                                     String fieldValue =
                                         field.controller.text.trim();
-                                    if (fieldName.isNotEmpty &&
+
+                                    if (field.isDirectoryField &&
+                                        field.directoryId != null &&
+                                        field.entryId != null) {
+                                      directoryValues.add({
+                                        'directory_id': field.directoryId!,
+                                        'entry_id': field.entryId!,
+                                      });
+                                    } else if (fieldName.isNotEmpty &&
                                         fieldValue.isNotEmpty) {
                                       customFieldList
                                           .add({fieldName: fieldValue});
                                     }
                                   }
-                                  bool isSystemManager = selectedManager ==
-                                          "-1" ||
-                                      selectedManager ==
-                                          "0"; // "Система" для id = -1 или 0
+                                  bool isSystemManager =
+                                      selectedManager == "-1" ||
+                                          selectedManager == "0";
                                   final leadBloc = context.read<LeadBloc>();
                                   context
                                       .read<LeadBloc>()
@@ -565,6 +765,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     description: descriptionController.text,
                                     leadStatusId: _selectedStatuses!.toInt(),
                                     customFields: customFieldList,
+                                    directoryValues: directoryValues,
                                     localizations: localizations,
                                     isSystemManager: isSystemManager,
                                   ));

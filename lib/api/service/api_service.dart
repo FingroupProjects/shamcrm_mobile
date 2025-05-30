@@ -1267,7 +1267,7 @@ class ApiService {
   }
 
   // Метод для Обновления Лида
-  Future<Map<String, dynamic>> updateLead({
+ Future<Map<String, dynamic>> updateLead({
     required int leadId,
     required String name,
     required int leadStatusId,
@@ -1283,10 +1283,13 @@ class ApiService {
     String? description,
     String? waPhone,
     List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+    List<Map<String, int>>? directoryValues, // Новое поле для справочников
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final Map<String, dynamic> requestData = {
+  final response = await _patchRequest(
+    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
       'name': name,
       'lead_status_id': leadStatusId,
       'phone': phone,
@@ -1307,24 +1310,21 @@ class ApiService {
                   })
               .toList() ??
           [],
-    };
+      'directory_values': directoryValues ?? [], // Отправляем справочные поля
+    },
+  );
 
-    final response = await _patchRequest(
-      '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestData,
-    );
-
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'lead_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else {
-      return {'success': false, 'message': 'error_update_lead'};
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
     }
+    return {'success': false, 'message': 'unknown_error'};
+  } else {
+    return {'success': false, 'message': 'error_update_lead'};
   }
+}
 
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
