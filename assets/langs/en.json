@@ -1049,7 +1049,11 @@
 "confirm_manager_message": "Are you sure you want to become the manager of this lead?",
 "manager_assigned_success": "You have successfully become the manager of this lead!",
 "manager_assign_failed": "Failed to assign manager",
-"phone_required": "Please add a phone number first!"
+"phone_required": "Please add a phone number first!",
+"no_camera": "Camera access not granted!",
+"no_photos": "Gallery access not granted!",
+"open_settings": "Open settings"
+
 
 
 }
