@@ -331,69 +331,71 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   }
 
-void _updateDetails(LeadById lead) {
+ void _updateDetails(LeadById lead) {
   currentLead = lead;
   details = [
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('Lead')}',
+      'label': AppLocalizations.of(context)!.translate('lead_name'),
       'value': lead.name
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('phone_use')}',
+      'label': AppLocalizations.of(context)!.translate('phone_use'),
       'value': lead.phone ?? ''
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('region_details')}',
+      'label': AppLocalizations.of(context)!.translate('region_details'),
       'value': lead.region?.name ?? ''
     },
-    if (lead.manager != null)
-      {
-        'label': '   ${AppLocalizations.of(context)!.translate('manager_details')}',
-        'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-      }
-    else
-      {
-        'label': '',
-        'value': 'become_manager'
-      },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('source_details')}',
+      'label': AppLocalizations.of(context)!.translate('manager_details'),
+      'value': lead.manager != null
+          ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+          : 'become_manager'
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('source_details'),
       'value': lead.source?.name ?? ''
     },
-    {'label': '   Instagram:', 'value': lead.instagram ?? ''},
-    {'label': '   Facebook:', 'value': lead.facebook ?? ''},
-    {'label': '   Telegram:', 'value': lead.telegram ?? ''},
-    {'label': '   WhatsApp:', 'value': lead.whatsApp ?? ''},
+    {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+    {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+    {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+    {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('email_details')}',
+      'label': AppLocalizations.of(context)!.translate('email_details'),
       'value': lead.email ?? ''
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('birthday_details')}',
+      'label': AppLocalizations.of(context)!.translate('birthday_details'),
       'value': formatDate(lead.birthday)
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('description_details_lead')}',
+      'label': AppLocalizations.of(context)!.translate('description_details_lead'),
       'value': lead.description ?? ''
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('author_details')}',
+      'label': AppLocalizations.of(context)!.translate('author_details'),
       'value': lead.author?.name ?? ''
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('created_at_details')}',
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
       'value': formatDate(lead.createdAt)
     },
     {
-      'label': '   ${AppLocalizations.of(context)!.translate('status_details')}',
+      'label': AppLocalizations.of(context)!.translate('status_details'),
       'value': lead.leadStatus?.title ?? ''
     },
   ];
+  // Добавляем пользовательские поля
   for (var field in lead.leadCustomFields) {
-    details.add({'label': '   ${field.key}:', 'value': field.value});
+    details.add({'label': '${field.key}:', 'value': field.value});
+  }
+  // Добавляем значения справочников
+  for (var dirValue in lead.directoryValues) {
+    final directoryName = dirValue.entry.directory.name;
+    final value = dirValue.entry.values['value'] ?? '';
+    details.add({'label': '$directoryName:', 'value': value});
   }
 }
-
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
       fontSize: 16,
@@ -445,23 +447,19 @@ void _updateDetails(LeadById lead) {
             }
           },
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-        builder: (context, state) {
-          if (state is LeadByIdLoading) {
-            return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-          } else if (state is LeadByIdLoaded) {
-            LeadById lead = state.lead;
-            _updateDetails(lead);
-            return ListView(
-              controller: _scrollController,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 0, right: 16, bottom: 8,top: 8),
-                  child: _buildDetailsList(),
-                ),
-                Padding(
+            builder: (context, state) {
+              if (state is LeadByIdLoading) {
+                return Center( child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              } else if (state is LeadByIdLoaded) {
+                LeadById lead = state.lead;
+                _updateDetails(lead);
+                return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
+                  child: ListView(
+                    controller: _scrollController,
                     children: [
+                      _buildDetailsList(),
+                      const SizedBox(height: 8),
                       LeadNavigateToChat(
                         key: keyLeadNavigateChat,
                         leadId: int.parse(widget.leadId),
@@ -480,20 +478,17 @@ void _updateDetails(LeadById lead) {
                         NotesWidget(
                           leadId: int.parse(widget.leadId),
                           key: keyLeadNotice,
-                          managerId: lead.manager?.id,
+                          managerId: lead.manager?.id, 
                         ),
                       if (_canReadDeal)
-                        DealsWidget(leadId: int.parse(widget.leadId), key: keyLeadDeal),
+                        DealsWidget( leadId: int.parse(widget.leadId), key: keyLeadDeal),
                       ContactPersonWidget(
-                        leadId: int.parse(widget.leadId),
-                        key: keyLeadContactPerson,
-                      ),
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadContactPerson),
                     ],
                   ),
-                ),
-              ],
-            );
-          } else if (state is LeadByIdError) {
+                );
+              } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
                     AppLocalizations.of(context)!.translate(state.message),
@@ -619,10 +614,10 @@ void _updateDetails(LeadById lead) {
                             email: currentLead!.email,
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
+                            directoryValues: currentLead!.directoryValues, // Передаем directoryValues
                           ),
                         ),
                       );
-
                       if (shouldUpdate == true) {
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -671,7 +666,7 @@ void _updateDetails(LeadById lead) {
       itemCount: details.length,
       itemBuilder: (context, index) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: _buildDetailItem(
             details[index]['label']!,
             details[index]['value']!,
@@ -725,7 +720,6 @@ void _updateDetails(LeadById lead) {
     );
   }
 
-  
 Widget _buildValue(String value, String label) {
   if (value.isEmpty) return Container();
 
@@ -775,60 +769,36 @@ Widget _buildValue(String value, String label) {
     );
   }
 
-if (label == '' && value == 'become_manager') {
-  return Padding(
-    padding: EdgeInsets.only(left: 4), 
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Text(
-          '${AppLocalizations.of(context)!.translate('manager_details')}  ',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w400,
-            color: Color(0xfff99A4BA),
+if (label == AppLocalizations.of(context)!.translate('manager_details') && value == 'become_manager') {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    // mainAxisAlignment: MainAxisAlignment.end, 
+    children: [
+      GestureDetector(
+        onTap: () {
+          _assignManager();
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.yellow,
+            borderRadius: BorderRadius.circular(5),
           ),
-        ),
-        GestureDetector(
-          onTap: () {
-            _assignManager();
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-            decoration: BoxDecoration(
-              color: Color(0xff1E2E52),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.person_add_alt_1,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.translate('become_manager'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+          child: Text(
+            AppLocalizations.of(context)!.translate('become_manager'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
             ),
           ),
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
-
-
 
   return Text(
     value,
@@ -841,6 +811,7 @@ if (label == '' && value == 'become_manager') {
     overflow: TextOverflow.visible,
   );
 }
+
 
 
   @override
@@ -1076,7 +1047,6 @@ Future<void> _assignManager() async {
 }
 
 }
-
 
 
 

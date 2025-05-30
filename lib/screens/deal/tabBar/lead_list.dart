@@ -28,31 +28,37 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
-    // Инициализация selectedLeadData
+    // Load leads if not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllLeadBloc>().state;
         if (state is GetAllLeadSuccess) {
           leadsList = state.dataLead.result ?? [];
-          if (widget.selectedLead != null && leadsList.isNotEmpty) {
-            try {
-              selectedLeadData = leadsList.firstWhere(
-                (lead) => lead.id.toString() == widget.selectedLead,
-              );
-              if (selectedLeadData?.managerId != null) {
-                widget.onSelectLead(selectedLeadData!);
-              }
-            } catch (e) {
-              selectedLeadData = null;
-            }
-          }
+          _updateSelectedLeadData();
         }
-        // Загружаем лиды только если они еще не загружены
+        // Fetch leads only if not already loaded
         if (state is! GetAllLeadSuccess) {
           context.read<GetAllLeadBloc>().add(GetAllLeadEv());
         }
       }
     });
+  }
+
+  void _updateSelectedLeadData() {
+    if (widget.selectedLead != null && leadsList.isNotEmpty) {
+      try {
+        selectedLeadData = leadsList.firstWhere(
+          (lead) => lead.id.toString() == widget.selectedLead,
+        );
+        if (selectedLeadData?.managerId != null) {
+          widget.onSelectLead(selectedLeadData!);
+        }
+      } catch (e) {
+        selectedLeadData = null;
+      }
+    } else {
+      selectedLeadData = null;
+    }
   }
 
   @override
@@ -66,7 +72,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52), // Исправлен неверный цвет
+            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 4),
@@ -74,103 +80,92 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           builder: (context, state) {
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
-              // Обновляем selectedLeadData только если изменился список лидов
-              if (widget.selectedLead != null &&
-                  leadsList.isNotEmpty &&
-                  selectedLeadData == null) {
-                try {
-                  selectedLeadData = leadsList.firstWhere(
-                    (lead) => lead.id.toString() == widget.selectedLead,
-                  );
-                } catch (e) {
-                  selectedLeadData = null;
-                }
-              }
+              _updateSelectedLeadData();
             }
 
-            return Container(
-              child: CustomDropdown<LeadData>.search(
-                closeDropDownOnClearFilterSearch: true,
-                items: leadsList,
-                searchHintText: AppLocalizations.of(context)!.translate('search'),
-                overlayHeight: 400,
-                enabled: true,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
+            return CustomDropdown<LeadData>.search(
+              closeDropDownOnClearFilterSearch: true,
+              items: leadsList,
+              searchHintText: AppLocalizations.of(context)!.translate('search'),
+              overlayHeight: 400,
+              enabled: true,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: const Color(0xffF4F7FD),
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
                 ),
-                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
+                ),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.name ?? '',
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                if (state is GetAllLeadLoading) {
                   return Text(
-                    item.name ?? '',
+                    AppLocalizations.of(context)!.translate('select_leads'),
                     style: const TextStyle(
-                      color: Color(0xff1E2E52),
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
                   );
-                },
-                headerBuilder: (context, selectedItem, enabled) {
-                  if (state is GetAllLeadLoading) {
-                    return Text(
+                }
+                return Text(
+                  selectedItem?.name ??
                       AppLocalizations.of(context)!.translate('select_leads'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  }
-                  return Text(
-                    selectedItem?.name ??
-                        AppLocalizations.of(context)!.translate('select_leads'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                hintBuilder: (context, hint, enabled) => Text(
-                  AppLocalizations.of(context)!.translate('select_lead'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
                     color: Color(0xff1E2E52),
                   ),
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                AppLocalizations.of(context)!.translate('select_lead'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
                 ),
-                excludeSelected: false,
-                initialItem: selectedLeadData,
-                validator: (value) {
-                  if (value == null) {
-                    return AppLocalizations.of(context)!
-                        .translate('field_required_project');
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  if (value != null) {
-                    widget.onSelectLead(value);
-                    setState(() {
-                      selectedLeadData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
-                },
               ),
+              excludeSelected: false,
+              initialItem: leadsList.contains(selectedLeadData)
+                  ? selectedLeadData
+                  : null,
+              validator: (value) {
+                if (value == null) {
+                  return AppLocalizations.of(context)!
+                      .translate('field_required_project');
+                }
+                return null;
+              },
+              onChanged: (value) {
+                if (value != null) {
+                  widget.onSelectLead(value);
+                  setState(() {
+                    selectedLeadData = value;
+                  });
+                  FocusScope.of(context).unfocus();
+                }
+              },
             );
           },
         ),

@@ -14,7 +14,8 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
-import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
+import 'package:crm_task_manager/models/directory_model.dart'
+    as directory_model;
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -48,7 +49,7 @@ class TaskEditScreen extends StatefulWidget {
   final int? priority;
   final List<TaskCustomFieldsById> taskCustomFields;
   final List<TaskFiles>? files;
-
+  final List<DirectoryValues>? directoryValues; // Добавляем directoryValues
   TaskEditScreen({
     required this.taskId,
     required this.taskName,
@@ -63,6 +64,7 @@ class TaskEditScreen extends StatefulWidget {
     this.priority,
     this.files,
     required this.taskCustomFields,
+    this.directoryValues, // Добавляем в конструктор
   });
 
   @override
@@ -105,12 +107,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _fetchAndAddCustomFields() async {
+    print('Начало загрузки справочных полей');
     try {
-      // Получаем связанные справочники для задачи
       final directoryLinkData = await _apiService.getTaskDirectoryLinks();
+      print('Получены directoryLinkData: ${directoryLinkData.data}');
       if (directoryLinkData.data != null) {
         setState(() {
           customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
+            print(
+                'Добавление справочного поля: ${link.directory.name}, id: ${link.directory.id}');
             return CustomField(
               fieldName: link.directory.name,
               controller: TextEditingController(),
@@ -167,7 +172,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _selectedStatuses = widget.statusId;
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
-      startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+      startDateController.text =
+          DateFormat('dd/MM/yyyy').format(parsedStartDate);
     }
     if (widget.endDate != null) {
       DateTime parsedEndDate = DateTime.parse(widget.endDate!);
@@ -177,6 +183,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     selectedProject = widget.project;
     selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
     selectedPriority = widget.priority ?? 1;
+
+    print(
+        'Инициализация customFields из taskCustomFields: ${widget.taskCustomFields}');
     for (var customField in widget.taskCustomFields) {
       final controller = TextEditingController(text: customField.value);
       customFields.add(CustomField(
@@ -185,6 +194,33 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         uniqueId: Uuid().v4(),
       ));
     }
+
+    print('Инициализация directoryValues: ${widget.directoryValues}');
+    if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+      // Удаляем дубликаты по directoryId и entryId
+      final seen = <String>{};
+      final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+        return seen.add(key);
+      }).toList();
+
+      for (var dirValue in uniqueDirectoryValues) {
+        print(
+            'Обработка directoryValue: ${dirValue.entry.directory.name}, entryId: ${dirValue.entry.id}, value: ${dirValue.entry.values['value']}');
+        final controller =
+            TextEditingController(text: dirValue.entry.values['value'] ?? '');
+        customFields.add(CustomField(
+          fieldName: dirValue.entry.directory.name,
+          controller: controller,
+          isDirectoryField: true,
+          directoryId: dirValue.entry.directory.id,
+          entryId: dirValue.entry.id,
+          uniqueId: Uuid().v4(),
+        ));
+      }
+    } else {
+      print('directoryValues пустой или null');
+    }
   }
 
   void _loadInitialData() {
@@ -192,7 +228,20 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     context.read<UserTaskBloc>().add(FetchUsers());
   }
 
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
+  void _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId}) {
+    print(
+        'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
+    if (isDirectory && directoryId != null) {
+      // Проверяем, существует ли уже поле с таким directoryId
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
+      if (directoryExists) {
+        print(
+            'Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+        return; // Игнорируем добавление, если справочник уже существует
+      }
+    }
     setState(() {
       customFields.add(CustomField(
         fieldName: fieldName,
@@ -257,7 +306,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory_model.Directory directory) {
-                _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
+                _addCustomField(directory.name,
+                    isDirectory: true, directoryId: directory.id);
               },
             );
           },
@@ -383,7 +433,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 backgroundColor: Colors.white,
                                 title: Center(
                                   child: Text(
-                                    AppLocalizations.of(context)!.translate('delete_file'),
+                                    AppLocalizations.of(context)!
+                                        .translate('delete_file'),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontFamily: 'Gilroy',
@@ -393,7 +444,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   ),
                                 ),
                                 content: Text(
-                                  AppLocalizations.of(context)!.translate('confirm_delete_file'),
+                                  AppLocalizations.of(context)!
+                                      .translate('confirm_delete_file'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontFamily: 'Gilroy',
@@ -407,7 +459,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     children: [
                                       Expanded(
                                         child: CustomButton(
-                                          buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                                          buttonText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('cancel'),
                                           onPressed: () {
                                             Navigator.of(context).pop(false);
                                           },
@@ -418,70 +472,114 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: CustomButton(
-                                          buttonText: AppLocalizations.of(context)!.translate('unpin'),
+                                          buttonText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('unpin'),
                                           onPressed: () async {
                                             if (isExistingFile) {
                                               try {
-                                                final result = await _apiService.deleteTaskFile(existingFiles[index].id);
-                                                if (result['result'] == 'Success') {
+                                                final result = await _apiService
+                                                    .deleteTaskFile(
+                                                        existingFiles[index]
+                                                            .id);
+                                                if (result['result'] ==
+                                                    'Success') {
                                                   setState(() {
-                                                    existingFiles.removeAt(index);
+                                                    existingFiles
+                                                        .removeAt(index);
                                                     fileNames.removeAt(index);
                                                   });
-                                                  Navigator.of(context).pop(true);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                  Navigator.of(context)
+                                                      .pop(true);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
                                                     SnackBar(
                                                       content: Text(
-                                                        AppLocalizations.of(context)!.translate('file_deleted_successfully'),
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'file_deleted_successfully'),
                                                         style: TextStyle(
                                                           fontFamily: 'Gilroy',
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                           color: Colors.white,
                                                         ),
                                                       ),
-                                                      behavior: SnackBarBehavior.floating,
-                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(12),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      margin:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 8),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
-                                                      backgroundColor: Colors.green,
+                                                      backgroundColor:
+                                                          Colors.green,
                                                       elevation: 3,
-                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      duration: Duration(seconds: 3),
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              vertical: 12,
+                                                              horizontal: 16),
+                                                      duration:
+                                                          Duration(seconds: 3),
                                                     ),
                                                   );
                                                 }
                                               } catch (e) {
-                                                Navigator.of(context).pop(false);
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                Navigator.of(context)
+                                                    .pop(false);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
                                                   SnackBar(
                                                     content: Text(
-                                                      AppLocalizations.of(context)!.translate('failed_to_delete_file'),
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate(
+                                                              'failed_to_delete_file'),
                                                       style: TextStyle(
                                                         fontFamily: 'Gilroy',
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                    behavior: SnackBarBehavior.floating,
-                                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                    margin:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                     backgroundColor: Colors.red,
                                                     elevation: 3,
-                                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                    duration: Duration(seconds: 3),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            vertical: 12,
+                                                            horizontal: 16),
+                                                    duration:
+                                                        Duration(seconds: 3),
                                                   ),
                                                 );
                                               }
                                             } else {
                                               setState(() {
-                                                selectedFiles.removeAt(index - existingFiles.length);
+                                                selectedFiles.removeAt(index -
+                                                    existingFiles.length);
                                                 fileNames.removeAt(index);
-                                                fileSizes.removeAt(index - existingFiles.length);
+                                                fileSizes.removeAt(index -
+                                                    existingFiles.length);
                                               });
                                               Navigator.of(context).pop(true);
                                             }
@@ -522,7 +620,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   Future<void> _pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null) {
         double totalSize = selectedFiles.fold<double>(
@@ -688,8 +787,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         children: [
                           CustomTextFieldWithPriority(
                             controller: nameController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_title'),
-                            label: AppLocalizations.of(context)!.translate('event_name'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_title'),
+                            label: AppLocalizations.of(context)!
+                                .translate('event_name'),
                             showPriority: true,
                             isPrioritySelected: selectedPriority == 3,
                             onPriorityChanged: (bool? value) {
@@ -697,10 +798,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 selectedPriority = value == true ? 3 : 1;
                               });
                             },
-                            priorityText: AppLocalizations.of(context)!.translate('urgent'),
+                            priorityText: AppLocalizations.of(context)!
+                                .translate('urgent'),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
@@ -717,8 +820,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                            label: AppLocalizations.of(context)!.translate('description_list'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_description'),
+                            label: AppLocalizations.of(context)!
+                                .translate('description_list'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -727,7 +832,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             selectedUsers: selectedUsers,
                             onSelectUsers: (List<UserData> selectedUsersData) {
                               setState(() {
-                                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                                selectedUsers = selectedUsersData
+                                    .map((user) => user.id.toString())
+                                    .toList();
                               });
                             },
                           ),
@@ -736,26 +843,31 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             selectedProject: selectedProject,
                             onSelectProject: (ProjectTask selectedProjectData) {
                               setState(() {
-                                selectedProject = selectedProjectData.id.toString();
+                                selectedProject =
+                                    selectedProjectData.id.toString();
                               });
                             },
                           ),
                           CustomTextFieldDate(
                             controller: endDateController,
-                            label: AppLocalizations.of(context)!.translate('deadline'),
+                            label: AppLocalizations.of(context)!
+                                .translate('deadline'),
                             hasError: isEndDateInvalid,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 16),
                           if (fileNames.isNotEmpty) _buildFileSelection(),
-                          if (_shouldShowAdditionalFieldsButton && !_showAdditionalFields)
+                          if (_shouldShowAdditionalFieldsButton &&
+                              !_showAdditionalFields)
                             CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                              buttonText: AppLocalizations.of(context)!
+                                  .translate('additionally'),
                               buttonColor: Color(0xff1E2E52),
                               textColor: Colors.white,
                               onPressed: _toggleAdditionalFields,
@@ -769,25 +881,33 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               itemCount: customFields.length,
                               itemBuilder: (context, index) {
                                 final field = customFields[index];
+                                // print( 'Построение поля: ${field.fieldName}, isDirectoryField: ${field.isDirectoryField}, entryId: ${field.entryId}');
                                 return Container(
                                   key: ValueKey(field.uniqueId),
-                                  child: field.isDirectoryField && field.directoryId != null
+                                  child: field.isDirectoryField &&
+                                          field.directoryId != null
                                       ? MainFieldDropdownWidget(
                                           directoryId: field.directoryId!,
                                           directoryName: field.fieldName,
                                           selectedField: null,
-                                          onSelectField: (MainField selectedField) {
+                                          onSelectField:
+                                              (MainField selectedField) {
                                             setState(() {
-                                              customFields[index] = field.copyWith(
+                                              customFields[index] =
+                                                  field.copyWith(
                                                 entryId: selectedField.id,
-                                                controller: TextEditingController(text: selectedField.value),
+                                                controller:
+                                                    TextEditingController(
+                                                        text: selectedField
+                                                            .value),
                                               );
                                             });
                                           },
                                           controller: field.controller,
                                           onSelectEntryId: (int entryId) {
                                             setState(() {
-                                              customFields[index] = field.copyWith(
+                                              customFields[index] =
+                                                  field.copyWith(
                                                 entryId: entryId,
                                               );
                                             });
@@ -798,6 +918,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                               _checkAdditionalFields();
                                             });
                                           },
+                                          initialEntryId:
+                                              field.entryId, // Передаем entryId
                                         )
                                       : CustomFieldWidget(
                                           fieldName: field.fieldName,
@@ -813,7 +935,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               },
                             ),
                             CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                              buttonText: AppLocalizations.of(context)!
+                                  .translate('add_field'),
                               buttonColor: Color(0xff1E2E52),
                               textColor: Colors.white,
                               onPressed: _showAddFieldMenu,
@@ -825,12 +948,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                   child: Row(
                     children: [
                       Expanded(
                         child: CustomButton(
-                          buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('cancel'),
                           buttonColor: const Color(0xffF4F7FD),
                           textColor: Colors.black,
                           onPressed: () => Navigator.pop(context, null),
@@ -848,7 +973,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               );
                             } else {
                               return CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('save'),
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('save'),
                                 buttonColor: const Color(0xff4759FF),
                                 textColor: Colors.white,
                                 onPressed: () {
@@ -857,52 +983,80 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     DateTime? endDate;
                                     try {
                                       if (startDateController.text.isNotEmpty) {
-                                        startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+                                        startDate = DateFormat('dd/MM/yyyy')
+                                            .parseStrict(
+                                                startDateController.text);
                                       }
                                       if (endDateController.text.isNotEmpty) {
-                                        endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
+                                        endDate = DateFormat('dd/MM/yyyy')
+                                            .parseStrict(
+                                                endDateController.text);
                                       }
-                                      if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                      if (startDate != null &&
+                                          endDate != null &&
+                                          startDate.isAfter(endDate)) {
                                         setState(() {
                                           isEndDateInvalid = true;
                                         });
                                         _showErrorSnackBar(
-                                          AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'start_date_after_end_date'),
                                         );
                                         return;
                                       }
 
-                                      List<Map<String, String>> customFieldList = [];
-                                      List<Map<String, int>> directoryValues = [];
+                                      List<Map<String, String>>
+                                          customFieldList = [];
+                                      List<Map<String, int>> directoryValues =
+                                          [];
 
                                       for (var field in customFields) {
-                                        String fieldName = field.fieldName.trim();
-                                        String fieldValue = field.controller.text.trim();
+                                        String fieldName =
+                                            field.fieldName.trim();
+                                        String fieldValue =
+                                            field.controller.text.trim();
 
-                                        if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+                                        if (field.isDirectoryField &&
+                                            field.directoryId != null &&
+                                            field.entryId != null) {
                                           directoryValues.add({
                                             'directory_id': field.directoryId!,
                                             'entry_id': field.entryId!,
                                           });
-                                        } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-                                          customFieldList.add({fieldName: fieldValue});
+                                        } else if (fieldName.isNotEmpty &&
+                                            fieldValue.isNotEmpty) {
+                                          customFieldList
+                                              .add({fieldName: fieldValue});
                                         }
                                       }
 
-                                      final localizations = AppLocalizations.of(context)!;
+                                      final localizations =
+                                          AppLocalizations.of(context)!;
 
                                       context.read<TaskBloc>().add(
                                             UpdateTask(
                                               taskId: widget.taskId,
                                               name: nameController.text,
-                                              statusId: _selectedStatuses!.toInt(),
-                                              taskStatusId: _selectedStatuses!.toInt(),
+                                              statusId:
+                                                  _selectedStatuses!.toInt(),
+                                              taskStatusId:
+                                                  _selectedStatuses!.toInt(),
                                               startDate: startDate,
                                               endDate: endDate,
-                                              projectId: selectedProject != null ? int.parse(selectedProject!) : null,
-                                              userId: selectedUsers != null ? selectedUsers!.map((id) => int.parse(id)).toList() : null,
-                                              priority: selectedPriority?.toString(),
-                                              description: descriptionController.text,
+                                              projectId: selectedProject != null
+                                                  ? int.parse(selectedProject!)
+                                                  : null,
+                                              userId: selectedUsers != null
+                                                  ? selectedUsers!
+                                                      .map(
+                                                          (id) => int.parse(id))
+                                                      .toList()
+                                                  : null,
+                                              priority:
+                                                  selectedPriority?.toString(),
+                                              description:
+                                                  descriptionController.text,
                                               customFields: customFieldList,
                                               filePaths: selectedFiles,
                                               directoryValues: directoryValues,
@@ -912,12 +1066,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           );
                                     } catch (e) {
                                       _showErrorSnackBar(
-                                        AppLocalizations.of(context)!.translate('error_format_date'),
+                                        AppLocalizations.of(context)!
+                                            .translate('error_format_date'),
                                       );
                                     }
                                   } else {
                                     _showErrorSnackBar(
-                                      AppLocalizations.of(context)!.translate('fill_required_fields'),
+                                      AppLocalizations.of(context)!
+                                          .translate('fill_required_fields'),
                                     );
                                   }
                                 },

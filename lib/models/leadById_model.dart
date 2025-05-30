@@ -22,6 +22,7 @@ class LeadById {
   final String? description;
   final LeadStatusById? leadStatus;
   final List<LeadCustomFieldsById> leadCustomFields;
+  final List<DirectoryValue> directoryValues; // Новое поле для справочников
 
   LeadById({
     required this.id,
@@ -43,6 +44,7 @@ class LeadById {
     this.description,
     this.leadStatus,
     required this.leadCustomFields,
+    required this.directoryValues, // Добавляем в конструктор
   });
 
   factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -84,6 +86,10 @@ class LeadById {
               ?.map((field) => LeadCustomFieldsById.fromJson(field))
               .toList() ??
           [],
+      directoryValues: (json['directory_values'] as List<dynamic>?)
+              ?.map((item) => DirectoryValue.fromJson(item))
+              .toList() ??
+          [], // Парсим directory_values
     );
   }
 }
@@ -155,6 +161,67 @@ class LeadStatusById {
       id: json['id'],
       title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
+    );
+  }
+}
+
+class DirectoryValue {
+  final int id;
+  final DirectoryEntry entry;
+
+  DirectoryValue({
+    required this.id,
+    required this.entry,
+  });
+
+  factory DirectoryValue.fromJson(Map<String, dynamic> json) {
+    return DirectoryValue(
+      id: json['id'] ?? 0,
+      entry: DirectoryEntry.fromJson(json['entry']),
+    );
+  }
+}
+
+class DirectoryEntry {
+  final int id;
+  final Directory directory;
+  final Map<String, String> values;
+  final String createdAt;
+
+  DirectoryEntry({
+    required this.id,
+    required this.directory,
+    required this.values,
+    required this.createdAt,
+  });
+
+  factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
+    return DirectoryEntry(
+      id: json['id'] ?? 0,
+      directory: Directory.fromJson(json['directory']),
+      values: (json['values'] as Map<String, dynamic>?)?.cast<String, String>() ??
+          {},
+      createdAt: json['created_at'] ?? '',
+    );
+  }
+}
+
+class Directory {
+  final int id;
+  final String name;
+  final String? createdAt;
+
+  Directory({
+    required this.id,
+    required this.name,
+    this.createdAt,
+  });
+
+  factory Directory.fromJson(Map<String, dynamic> json) {
+    return Directory(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      createdAt: json['created_at'],
     );
   }
 }

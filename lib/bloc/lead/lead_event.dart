@@ -98,6 +98,7 @@ class CreateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
+  final List<Map<String, int>>? directoryValues; // Новое поле для справочников
   final AppLocalizations localizations;
   final bool isSystemManager;
 
@@ -116,11 +117,11 @@ class CreateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    this.directoryValues,
     this.isSystemManager = false,
     required this.localizations,
   });
 }
-
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -137,6 +138,7 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
+  final List<Map<String, int>>? directoryValues; // Новое поле
   final bool isSystemManager;
   final AppLocalizations localizations;
 
@@ -156,11 +158,11 @@ class UpdateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    this.directoryValues, // Добавляем в конструктор
     required this.localizations,
     this.isSystemManager = false,
   });
 }
-
 class DeleteLead extends LeadEvent {
   final int leadId;
   final AppLocalizations localizations;

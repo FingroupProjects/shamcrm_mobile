@@ -64,7 +64,8 @@ class CreateDeal extends DealEvent {
   final int? dealtypeId;
   final int? leadId;
   final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, int>>? directoryValues; // Новое поле для справочников
+  final AppLocalizations localizations;
 
   CreateDeal({
     required this.name,
@@ -77,6 +78,7 @@ class CreateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues, // Добавляем в конструктор
     required this.localizations,
   });
 }
@@ -93,7 +95,8 @@ class UpdateDeal extends DealEvent {
   final int? dealtypeId;
   final int? leadId;
   final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, int>>? directoryValues; // Новое поле
+  final AppLocalizations localizations;
 
   UpdateDeal({
     required this.dealId,
@@ -107,6 +110,7 @@ class UpdateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues, // Добавляем в конструктор
     required this.localizations,
   });
 }
