@@ -286,7 +286,7 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     }
   }
 
-  
+
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -323,6 +323,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
             'key': field.keys.first,
             'value': field.values.first,
           }).toList() ?? [],
+      'directory_values': event.directoryValues ?? [], // Добавляем справочные поля
     };
 
     // Обработка менеджера
@@ -348,7 +349,6 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     emit(LeadError(event.localizations.translate('error_update_lead')));
   }
 }
-
   Future<void> _createLeadStatus(
       CreateLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());

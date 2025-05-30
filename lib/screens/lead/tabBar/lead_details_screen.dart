@@ -331,11 +331,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   }
 
-  void _updateDetails(LeadById lead) {
+ void _updateDetails(LeadById lead) {
   currentLead = lead;
   details = [
     {
-      'label': AppLocalizations.of(context)!.translate('Lead'),
+      'label': AppLocalizations.of(context)!.translate('lead_name'),
       'value': lead.name
     },
     {
@@ -385,11 +385,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       'value': lead.leadStatus?.title ?? ''
     },
   ];
+  // Добавляем пользовательские поля
   for (var field in lead.leadCustomFields) {
     details.add({'label': '${field.key}:', 'value': field.value});
   }
+  // Добавляем значения справочников
+  for (var dirValue in lead.directoryValues) {
+    final directoryName = dirValue.entry.directory.name;
+    final value = dirValue.entry.values['value'] ?? '';
+    details.add({'label': '$directoryName:', 'value': value});
+  }
 }
-
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
       fontSize: 16,
@@ -608,10 +614,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             email: currentLead!.email,
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
+                            directoryValues: currentLead!.directoryValues, // Передаем directoryValues
                           ),
                         ),
                       );
-
                       if (shouldUpdate == true) {
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
