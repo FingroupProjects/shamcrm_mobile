@@ -12,6 +12,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -252,20 +253,21 @@ Future<void> _loadUserPhone() async {
     }
   }
 
-  Future<void> _showImagePickerDialog() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(
-                AppLocalizations.of(context)!.translate('gallery'),
-              ),
-              onTap: () async {
-                // Показываем диалог загрузки
+Future<void> _showImagePickerDialog() async {
+  await showModalBottomSheet<void>(
+    context: context,
+    builder: (BuildContext context) => Container(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: Text(
+              AppLocalizations.of(context)!.translate('gallery'),
+            ),
+            onTap: () async {
+              PermissionStatus status = await Permission.photos.request();
+              if (status.isGranted) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -308,7 +310,6 @@ Future<void> _loadUserPhone() async {
                     final file = File(pickedFile.path);
                     final int fileSize = await file.length();
 
-                    // Закрываем диалог загрузки
                     Navigator.of(context).pop();
 
                     if (fileSize > 2 * 1024 * 1024) {
@@ -337,7 +338,7 @@ Future<void> _loadUserPhone() async {
                       _userImage = '';
                     });
 
-                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -355,9 +356,8 @@ Future<void> _loadUserPhone() async {
                       ),
                     );
                   } catch (e) {
-                    // Закрываем диалог загрузки, если он еще открыт
                     Navigator.of(context).pop();
-                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    Navigator.pop(context); 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -375,18 +375,22 @@ Future<void> _loadUserPhone() async {
                     );
                   }
                 } else {
-                  // Если пользователь отменил выбор, закрываем диалог загрузки
                   Navigator.of(context).pop();
                 }
-              },
+              } else {
+                Navigator.pop(context); 
+                _showPermissionDeniedSnackBar('photos');
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: Text(
+              AppLocalizations.of(context)!.translate('camera'),
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(
-                AppLocalizations.of(context)!.translate('camera'),
-              ),
-              onTap: () async {
-                // Показываем диалог загрузки
+            onTap: () async {
+              PermissionStatus status = await Permission.camera.request();
+              if (status.isGranted) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -429,11 +433,10 @@ Future<void> _loadUserPhone() async {
                     final file = File(pickedFile.path);
                     final int fileSize = await file.length();
 
-                    // Закрываем диалог загрузки
                     Navigator.of(context).pop();
 
                     if (fileSize > 2 * 1024 * 1024) {
-                      Navigator.pop(context); // Закрываем модальное окно выбора
+                      Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -458,7 +461,7 @@ Future<void> _loadUserPhone() async {
                       _userImage = '';
                     });
 
-                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    Navigator.pop(context); 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -476,9 +479,8 @@ Future<void> _loadUserPhone() async {
                       ),
                     );
                   } catch (e) {
-                    // Закрываем диалог загрузки, если он еще открыт
                     Navigator.of(context).pop();
-                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -496,16 +498,51 @@ Future<void> _loadUserPhone() async {
                     );
                   }
                 } else {
-                  // Если пользователь отменил выбор, закрываем диалог загрузки
                   Navigator.of(context).pop();
                 }
-              },
-            ),
-          ],
+              } else {
+                Navigator.pop(context);
+                _showPermissionDeniedSnackBar('camera');
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showPermissionDeniedSnackBar(String permissionType) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        AppLocalizations.of(context)!.translate('no_${permissionType}'),
+        style: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
         ),
       ),
-    );
-  }
+      action: SnackBarAction(
+        label: AppLocalizations.of(context)!.translate('open_settings'),
+        textColor: Colors.white,
+        onPressed: () {
+          openAppSettings(); 
+        },
+      ),
+      behavior: SnackBarBehavior.floating,
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      backgroundColor: Colors.red,
+      elevation: 3,
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      duration: Duration(seconds: 5),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
