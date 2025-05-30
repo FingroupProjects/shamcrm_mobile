@@ -178,7 +178,10 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.arrow_drop_down),
+                icon: Transform.rotate(
+                  angle: 90 * 3.1415926535 / 180,
+                  child: Image.asset('assets/icons/arrow_down.png', width: 10, height: 10),
+                ),
                 onPressed: () {
                   setState(() {
                     _isDropdownVisible = !_isDropdownVisible;

@@ -1,5 +1,4 @@
-import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';

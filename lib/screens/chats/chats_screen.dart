@@ -47,8 +47,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
 
-  Map<String, dynamic>?
-      tutorialProgress; // Добавлено: Для хранения прогресса туториалов
+  Map<String, dynamic>? tutorialProgress; 
 
   bool _showCorporateChat = false;
   bool _showLeadChat = false;
@@ -62,6 +61,8 @@ class _ChatsScreenState extends State<ChatsScreen>
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isTaskScreenTutorialCompleted = false;
+
+  bool _isTabControllerInitialized = false;
 
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
@@ -94,25 +95,29 @@ class _ChatsScreenState extends State<ChatsScreen>
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
         setState(() {
-          _tabTitles = [
-            AppLocalizations.of(context)!.translate('tab_leads'),
-            AppLocalizations.of(context)!.translate('tab_tasks'),
-            AppLocalizations.of(context)!.translate('tab_corp_chat'),
-          ];
-
+          _tabTitles = _getTabTitles(context);
           _tabController = TabController(
             length: _tabTitles.length,
             vsync: this,
             initialIndex: selectTabIndex,
           );
+          _isTabControllerInitialized = true;
         });
         setUpServices();
       }
-      _fetchTutorialProgress(); // Переносим сюда для синхронной загрузки
+      _fetchTutorialProgress();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initTutorialTargets();
     });
+  }
+
+  List<String> _getTabTitles(BuildContext context) {
+    return [
+      AppLocalizations.of(context)!.translate('tab_leads'),
+      AppLocalizations.of(context)!.translate('tab_tasks'),
+      AppLocalizations.of(context)!.translate('tab_corp_chat'),
+    ];
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -128,14 +133,13 @@ class _ChatsScreenState extends State<ChatsScreen>
       if (isTutorialShown) {
         setState(() {
           _isTaskScreenTutorialCompleted = true;
-          _isTutorialShown = true; // Синхронизируем флаг
+          _isTutorialShown = true;
         });
       }
-      // Проверяем условия и вызываем туториал только если он еще не показан
       if (tutorialProgress != null &&
           tutorialProgress!['chat']?['index'] == false &&
           !isTutorialShown &&
-          !_isTutorialShown && // Добавляем проверку локального флага
+          !_isTutorialShown && 
           mounted) {
         showTutorial();
       }
@@ -151,13 +155,13 @@ class _ChatsScreenState extends State<ChatsScreen>
         if (isTutorialShown) {
           setState(() {
             _isTaskScreenTutorialCompleted = true;
-            _isTutorialShown = true; // Синхронизируем флаг
+            _isTutorialShown = true; 
           });
         }
         if (tutorialProgress != null &&
             tutorialProgress!['chat']?['index'] == false &&
             !isTutorialShown &&
-            !_isTutorialShown && // Добавляем проверку локального флага
+            !_isTutorialShown && 
             mounted) {
           showTutorial();
         }
@@ -170,44 +174,35 @@ class _ChatsScreenState extends State<ChatsScreen>
       createTarget(
         identify: "chatLead",
         keyTarget: keyChatLead,
-        title:
-            AppLocalizations.of(context)!.translate('tutorial_chat_lead_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_chat_lead_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_chat_lead_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_chat_lead_description'),
         align: ContentAlign.bottom,
-        extraPadding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+        extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
       createTarget(
         identify: "chatTask",
         keyTarget: keyChatTask,
-        title:
-            AppLocalizations.of(context)!.translate('tutorial_chat_task_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_chat_task_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_chat_task_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_chat_task_description'),
         align: ContentAlign.bottom,
-        extraPadding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+        extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
       createTarget(
         identify: "chatCorporate",
         keyTarget: keyChatCorporate,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_chat_corporate_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_chat_corporate_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_chat_corporate_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_chat_corporate_description'),
         align: ContentAlign.bottom,
-        extraPadding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+        extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
     ]);
   }
 
   void showTutorial() async {
-    if (_isTutorialShown) return; // Предотвращаем повторный вызов
+    if (_isTutorialShown) return; 
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
@@ -238,7 +233,6 @@ class _ChatsScreenState extends State<ChatsScreen>
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Пропустить");
         prefs.setBool('isTutorialShowninChat', true);
         apiService.markPageCompleted("chat", "index").catchError((e) {
           print('Error marking page completed on skip: $e');
@@ -250,7 +244,6 @@ class _ChatsScreenState extends State<ChatsScreen>
         return true;
       },
       onFinish: () async {
-        print("Завершено");
         await prefs.setBool('isTutorialShowninChat', true);
         try {
           await apiService.markPageCompleted("chat", "index");
@@ -263,20 +256,6 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
       },
     ).show(context: context);
-  }
-
-  final PagingController<int, Chats> _pagingController =
-      PagingController(firstPageKey: 0);
-
-  void _searchChats(String query, String endPoint) {
-    _pagingController.refresh();
-
-    final chatsBloc = BlocProvider.of<ChatsBloc>(context);
-    if (query.isEmpty) {
-      chatsBloc.add(FetchChats(endPoint: endPoint));
-    } else {
-      chatsBloc.add(FetchChats(endPoint: endPoint, query: query));
-    }
   }
 
   Timer? _debounce;
@@ -388,9 +367,20 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool isClickAvatarIcon = false;
   int selectTabIndex = 0;
 
-  @override
+@override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    
+    _tabTitles = _getTabTitles(context);
+
+    if (_isTabControllerInitialized && _tabController.length != _tabTitles.length) {
+      _tabController.dispose();
+      _tabController = TabController(
+        length: _tabTitles.length,
+        vsync: this,
+        initialIndex: selectTabIndex.clamp(0, _tabTitles.length - 1),
+      );
+    }
     return Unfocuser(
       child: Scaffold(
         appBar: AppBar(
@@ -437,17 +427,11 @@ class _ChatsScreenState extends State<ChatsScreen>
                     final chatsBloc = context.read<ChatsBloc>();
                     chatsBloc.add(ClearChats());
                     if (selectTabIndex == 0) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'lead'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
                     } else if (selectTabIndex == 1) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'task'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                     } else if (selectTabIndex == 2) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'corporate'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
                     }
                   });
                 }
@@ -547,7 +531,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
       },
       child: Container(
-        key: tabKey, // Привязываем ключ к контейнеру таба
+        key: tabKey,
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Center(

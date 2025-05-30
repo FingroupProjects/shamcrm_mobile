@@ -19,8 +19,8 @@ class Chats {
   final Group? group;
   final Task? task;
   final ChatUser? user;
-  final String? customName; // Новое поле для кастомного названия
-  final String? customImage; // Новое поле для кастомной аватарки
+  final String? customName; 
+  final String? customImage;
 
   Chats({
     required this.id,
@@ -39,14 +39,14 @@ class Chats {
     required this.chatUsers,
     this.group,
     this.task,
-    this.user, // добавим в конструктор
-    this.customName, // Добавляем в конструктор
-    this.customImage, // Добавляем в конструктор
+    this.user, 
+    this.customName, 
+    this.customImage, 
   });
 
   factory Chats.fromJson(
     Map<String, dynamic> json, {
-    String? supportChatName, // Добавляем необязательный параметр
+    String? supportChatName, 
     String? supportChatImage,
   }) {
     List<ChatUser> users = [];
@@ -69,14 +69,11 @@ class Chats {
     if (json['user'] != null) {
       user = ChatUser.fromJson({'participant': json['user']});
     }
-    // Задаем кастомные значения для чата типа support
     String? customName;
     String? customImage;
     if (json['type'] == 'support') {
-      customName = supportChatName ??
-          'Техподдержка'; // Используем переданное значение или дефолтное
-      customImage =
-          supportChatImage ?? 'assets/icons/Profile/chat_support.png';
+      customName = json['type'] ; 
+      customImage = supportChatImage ?? 'assets/icons/Profile/chat_support.png';
     }
 
     return Chats(
