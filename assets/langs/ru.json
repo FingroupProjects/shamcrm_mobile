@@ -400,14 +400,14 @@
   "hour": "Час",
   "enter_phone_number": "Введите номер телефона",
   "error_phone_number": "Неправильный номер телефона!",
-  "enter_textfield_text": "Введите значение поля!",
+  "enter_textfield_text": "Введите значение поля",
   "COMMENT_TITLE_SCREEN_NOTIFICATION": "----------------------------Тексты для экрана NOTIFICATION---------------------------",
   "all_notifications_deleted_successfully": "Все уведомления успешно удалены!",
   "notifications": "Уведомления",
   "no_notifications_yet": "У вас пока нет уведомлений.",
   "new_message": "Новое сообщение",
   "deal_reminder": "Напоминание о сделке",
-  "note_reminder": "Напоминание о заметке",
+  "note_reminder": "Напоминание о событии",
   "task_new": "Новая задача",
   "task_closed": "Задача закрыта",
   "task_deadline_reminder": "Напоминание о просроченном сроке задачи",
@@ -566,7 +566,7 @@
   "in_progress": "В процессе",
   "lead_name": "Лид:",
   "date": "Напоминание:",
-  "new_notice": "Добавление событии",
+  "new_notice": "Добавление события",
   "enter_notice_title": "Введите название",
   "notice_title": "Тематика",
   "reminder_date": "Напоминание",
@@ -1049,7 +1049,7 @@
   "directory": "Справочник",
   "add_directory": "Добавить справочник",
    "select_directory": "Выбрать из справочника",
-  "select_field": "Выберите значение из справочника",
+  "select_field": "Выберите значение",
   "become_manager": "Назначить себя",
   "confirm_manager_title": "Стать менеджером",
   "confirm_manager_message": "Вы уверены, что хотите стать менеджером этого лида?",
@@ -1059,5 +1059,6 @@
 
   "no_camera": "Доступ к камере не предоставлен!",
   "no_photos": "Доступ к галерее не предоставлен!",
-  "open_settings": "Открыть настройки"
+  "open_settings": "Открыть настройки",
+  "version_mobile": "Версия приложения"
 }

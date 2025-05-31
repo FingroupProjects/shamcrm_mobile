@@ -27,7 +27,8 @@ class MainFieldDropdownWidget extends StatefulWidget {
   });
 
   @override
-  State<MainFieldDropdownWidget> createState() => _MainFieldDropdownWidgetState();
+  State<MainFieldDropdownWidget> createState() =>
+      _MainFieldDropdownWidgetState();
 }
 
 class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
@@ -46,7 +47,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
   @override
   void initState() {
     super.initState();
-    print('Инициализация MainFieldDropdownWidget, directoryId: ${widget.directoryId}, initialEntryId: ${widget.initialEntryId}');
+    print(
+        'Инициализация MainFieldDropdownWidget, directoryId: ${widget.directoryId}, initialEntryId: ${widget.initialEntryId}');
     _fetchMainFields();
   }
 
@@ -61,7 +63,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
         print('mainFieldsList: $mainFieldsList');
         if (widget.initialEntryId != null && mainFieldsList.isNotEmpty) {
           try {
-            print('Поиск selectedFieldData по initialEntryId: ${widget.initialEntryId}');
+            print(
+                'Поиск selectedFieldData по initialEntryId: ${widget.initialEntryId}');
             selectedFieldData = mainFieldsList.firstWhere(
               (field) => field.id == widget.initialEntryId,
               orElse: () => MainField(id: -1, value: widget.controller.text),
@@ -70,9 +73,11 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
               print('Найден selectedFieldData: ${selectedFieldData?.value}');
               widget.controller.text = selectedFieldData!.value;
               widget.onSelectEntryId(selectedFieldData!.id);
-              print('Установлен текст контроллера: ${widget.controller.text}, entryId: ${selectedFieldData!.id}');
+              print(
+                  'Установлен текст контроллера: ${widget.controller.text}, entryId: ${selectedFieldData!.id}');
             } else {
-              print('initialEntryId ${widget.initialEntryId} не найден в mainFieldsList, использование значения контроллера');
+              print(
+                  'initialEntryId ${widget.initialEntryId} не найден в mainFieldsList, использование значения контроллера');
               selectedFieldData = null; // Сбрасываем, если не найдено
             }
           } catch (e) {
@@ -81,14 +86,16 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
           }
         } else if (widget.selectedField != null && mainFieldsList.isNotEmpty) {
           try {
-            print('Поиск selectedFieldData по selectedField.id: ${widget.selectedField!.id}');
+            print(
+                'Поиск selectedFieldData по selectedField.id: ${widget.selectedField!.id}');
             selectedFieldData = mainFieldsList.firstWhere(
               (field) => field.id == widget.selectedField!.id,
             );
             print('Найден selectedFieldData: ${selectedFieldData?.value}');
             widget.controller.text = selectedFieldData!.value;
             widget.onSelectEntryId(selectedFieldData!.id);
-            print('Установлен текст контроллера: ${widget.controller.text}, entryId: ${selectedFieldData!.id}');
+            print(
+                'Установлен текст контроллера: ${widget.controller.text}, entryId: ${selectedFieldData!.id}');
           } catch (e) {
             print('Ошибка при поиске selectedField: $e');
             selectedFieldData = null;
@@ -96,7 +103,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
         } else {
           // Если initialEntryId нет, но контроллер заполнен, используем его значение
           if (widget.controller.text.isNotEmpty) {
-            print('Контроллер уже заполнен: ${widget.controller.text}, пропускаем установку selectedFieldData');
+            print(
+                'Контроллер уже заполнен: ${widget.controller.text}, пропускаем установку selectedFieldData');
           }
         }
       });
@@ -111,7 +119,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('Построение MainFieldDropdownWidget, selectedFieldData: ${selectedFieldData?.value}');
+    print(
+        'Построение MainFieldDropdownWidget, selectedFieldData: ${selectedFieldData?.value}');
     return Row(
       children: [
         Expanded(
@@ -155,7 +164,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                         : CustomDropdown<MainField>.search(
                             closeDropDownOnClearFilterSearch: true,
                             items: mainFieldsList,
-                            searchHintText: AppLocalizations.of(context)!.translate('search'),
+                            searchHintText: AppLocalizations.of(context)!
+                                .translate('search'),
                             overlayHeight: 400,
                             decoration: CustomDropdownDecoration(
                               closedFillColor: const Color(0xffF4F7FD),
@@ -171,7 +181,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                               ),
                               expandedBorderRadius: BorderRadius.circular(12),
                             ),
-                            listItemBuilder: (context, item, isSelected, onItemSelect) {
+                            listItemBuilder:
+                                (context, item, isSelected, onItemSelect) {
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -183,18 +194,22 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                                 ),
                               );
                             },
-                            headerBuilder: (BuildContext context, MainField? selectedItem, bool isFocused) {
+                            headerBuilder: (BuildContext context,
+                                MainField? selectedItem, bool isFocused) {
                               return Text(
                                 selectedItem?.value ??
                                     (widget.controller.text.isNotEmpty
                                         ? widget.controller.text
-                                        : AppLocalizations.of(context)!.translate('select_field')),
+                                        : AppLocalizations.of(context)!
+                                            .translate('select_field')),
                                 style: fieldTextStyle,
                               );
                             },
-                            hintBuilder: (context, String hint, bool isFocused) {
+                            hintBuilder:
+                                (context, String hint, bool isFocused) {
                               return Text(
-                                AppLocalizations.of(context)!.translate('select_field'),
+                                AppLocalizations.of(context)!
+                                    .translate('select_field'),
                                 style: fieldTextStyle.copyWith(
                                   fontSize: 14,
                                   color: const Color(0xFF6B7280),
@@ -205,7 +220,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                             initialItem: selectedFieldData,
                             onChanged: (MainField? selectedField) {
                               if (selectedField != null) {
-                                print('Выбрано поле: ${selectedField.value}, id: ${selectedField.id}');
+                                print(
+                                    'Выбрано поле: ${selectedField.value}, id: ${selectedField.id}');
                                 widget.onSelectField(selectedField);
                                 widget.onSelectEntryId(selectedField.id);
                                 widget.controller.text = selectedField.value;
@@ -236,10 +252,11 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
             },
           ),
         ),
+        // const SizedBox(height: 8),
         IconButton(
           icon: const Icon(
             Icons.remove_circle,
-            color: Color(0xff99A4BA),
+            color: Color.fromARGB(255, 236, 64, 16),
           ),
           onPressed: widget.onRemove,
         ),

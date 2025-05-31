@@ -398,7 +398,7 @@
   "hour": "Soat",
   "enter_phone_number": "Telefon raqamini kiriting",
   "error_phone_number": "Noto'g'ri telefon raqami!",
-  "enter_textfield_text": "Maydon qiymatini kiriting!",
+  "enter_textfield_text": "Maydon qiymatini kiriting",
   "COMMENT_TITLE_SCREEN_NOTIFICATION": "----------------------------Тексты для экрана NOTIFICATION---------------------------",
   "all_notifications_deleted_successfully": "Barcha bildirishnomalar muvaffaqiyatli o'chirildi!",
   "notifications": "Bildirishnomalar",
@@ -1057,7 +1057,7 @@
   "directory": "Maʼlumotnoma",
   "add_directory": "Maʼlumotnoma qoʻshish",
   "select_directory": "Maʼlumotnomani tanlang",
-  "select_field": "Ma'lumotnomadan qiymatni tanlang",
+  "select_field": "Ma'lumotnomadan",
   "become_manager": "O'zingizni nomzod qiling",
   "confirm_manager_title": "Menejer bo‘lish",
   "confirm_manager_message": "Siz ushbu leadning menejeri bo‘lishni xohlaysizmi?",
@@ -1067,6 +1067,7 @@
   "no_camera": "Kamera uchun ruxsat berilmagan!",
   "no_photos": "Galereyaga ruxsat berilmagan!",
   "open_settings": "Sozlamalarni ochish",
-  "support_chat_name": "Texnik yordam"
+  "support_chat_name": "Texnik yordam",
+  "version_mobile": "Mobil versiyasi"
 
 }

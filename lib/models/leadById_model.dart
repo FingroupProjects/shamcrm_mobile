@@ -1,3 +1,5 @@
+
+// Модель LeadById и связанные классы
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
@@ -22,7 +24,7 @@ class LeadById {
   final String? description;
   final LeadStatusById? leadStatus;
   final List<LeadCustomFieldsById> leadCustomFields;
-  final List<DirectoryValue> directoryValues; // Новое поле для справочников
+  final List<DirectoryValue> directoryValues;
 
   LeadById({
     required this.id,
@@ -44,11 +46,17 @@ class LeadById {
     this.description,
     this.leadStatus,
     required this.leadCustomFields,
-    required this.directoryValues, // Добавляем в конструктор
+    required this.directoryValues,
   });
 
   factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
-    return LeadById(
+    print('LeadById: Parsing JSON for leadId: ${json['id']}');
+    final directoryValues = (json['directory_values'] as List<dynamic>?)
+            ?.map((item) => DirectoryValue.fromJson(item))
+            .toList() ??
+        [];
+    print('LeadById: Parsed directoryValues: $directoryValues');
+    final lead = LeadById(
       id: json['id'] is int ? json['id'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       source: json['source'] != null && json['source'] is Map<String, dynamic>
@@ -59,10 +67,9 @@ class LeadById {
       region: json['region'] != null && json['region'] is Map<String, dynamic>
           ? RegionData.fromJson(json['region'])
           : null,
-      manager:
-          json['manager'] != null && json['manager'] is Map<String, dynamic>
-              ? ManagerData.fromJson(json['manager'])
-              : null,
+      manager: json['manager'] != null && json['manager'] is Map<String, dynamic>
+          ? ManagerData.fromJson(json['manager'])
+          : null,
       sourceLead: json['source_lead'] != null &&
               json['source_lead'] is Map<String, dynamic>
           ? SourceLead.fromJson(json['source_lead'])
@@ -86,11 +93,10 @@ class LeadById {
               ?.map((field) => LeadCustomFieldsById.fromJson(field))
               .toList() ??
           [],
-      directoryValues: (json['directory_values'] as List<dynamic>?)
-              ?.map((item) => DirectoryValue.fromJson(item))
-              .toList() ??
-          [], // Парсим directory_values
+      directoryValues: directoryValues,
     );
+    print('LeadById: Lead object created: id=${lead.id}, name=${lead.name}, directoryValues length=${lead.directoryValues.length}');
+    return lead;
   }
 }
 
@@ -104,10 +110,13 @@ class Author {
   });
 
   factory Author.fromJson(Map<String, dynamic> json) {
-    return Author(
+    print('Author: Parsing JSON for author: ${json['id']}');
+    final author = Author(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
     );
+    print('Author: Author created: id=${author.id}, name=${author.name}');
+    return author;
   }
 }
 
@@ -118,10 +127,13 @@ class Source {
   Source({required this.name, required this.id});
 
   factory Source.fromJson(Map<String, dynamic> json) {
-    return Source(
+    print('Source: Parsing JSON for source: ${json['id']}');
+    final source = Source(
       name: json['name'],
       id: json['id'],
     );
+    print('Source: Source created: id=${source.id}, name=${source.name}');
+    return source;
   }
 }
 
@@ -137,11 +149,14 @@ class LeadCustomFieldsById {
   });
 
   factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return LeadCustomFieldsById(
+    print('LeadCustomFieldsById: Parsing JSON for custom field: ${json['id']}');
+    final field = LeadCustomFieldsById(
       id: json['id'] ?? 0,
       key: json['key'] ?? '',
       value: json['value'] ?? '',
     );
+    print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
+    return field;
   }
 }
 
@@ -157,11 +172,14 @@ class LeadStatusById {
   });
 
   factory LeadStatusById.fromJson(Map<String, dynamic> json) {
-    return LeadStatusById(
+    print('LeadStatusById: Parsing JSON for status: ${json['id']}');
+    final status = LeadStatusById(
       id: json['id'],
       title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
     );
+    print('LeadStatusById: Status created: id=${status.id}, title=${status.title}, color=${status.color}');
+    return status;
   }
 }
 
@@ -175,10 +193,13 @@ class DirectoryValue {
   });
 
   factory DirectoryValue.fromJson(Map<String, dynamic> json) {
-    return DirectoryValue(
+    print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
+    final value = DirectoryValue(
       id: json['id'] ?? 0,
       entry: DirectoryEntry.fromJson(json['entry']),
     );
+    print('DirectoryValue: Directory value created: id=${value.id}');
+    return value;
   }
 }
 
@@ -196,13 +217,16 @@ class DirectoryEntry {
   });
 
   factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
-    return DirectoryEntry(
+    print('DirectoryEntry: Parsing JSON for entry: ${json['id']}');
+    final entry = DirectoryEntry(
       id: json['id'] ?? 0,
       directory: Directory.fromJson(json['directory']),
       values: (json['values'] as Map<String, dynamic>?)?.cast<String, String>() ??
           {},
       createdAt: json['created_at'] ?? '',
     );
+    print('DirectoryEntry: Entry created: id=${entry.id}, directoryName=${entry.directory.name}, values=${entry.values}');
+    return entry;
   }
 }
 
@@ -218,10 +242,13 @@ class Directory {
   });
 
   factory Directory.fromJson(Map<String, dynamic> json) {
-    return Directory(
+    print('Directory: Parsing JSON for directory: ${json['id']}');
+    final directory = Directory(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       createdAt: json['created_at'],
     );
+    print('Directory: Directory created: id=${directory.id}, name=${directory.name}');
+    return directory;
   }
 }
