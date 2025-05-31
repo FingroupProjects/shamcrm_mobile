@@ -398,7 +398,7 @@
     "hour": "Hour",
     "enter_phone_number": "Enter phone number",
     "error_phone_number": "Invalid phone number!",
-    "enter_textfield_text": "Enter field value!",
+    "enter_textfield_text": "Enter field value",
     "COMMENT_TITLE_SCREEN_NOTIFICATION": "----------------------------Тексты для экрана NOTIFICATION---------------------------",
     "all_notifications_deleted_successfully": "All notifications successfully deleted!",
     "notifications": "Notifications",
@@ -1043,7 +1043,7 @@
 "directory": "Directory",
 "add_directory": "Add directory",
 "select_directory": "Select directory",
-"select_field": "Select a value from the directory",
+"select_field": "Select a value ",
 "become_manager": "Nominate yourself",
 "confirm_manager_title": "Become a manager",
 "confirm_manager_message": "Are you sure you want to become the manager of this lead?",
@@ -1053,6 +1053,7 @@
 "no_camera": "Camera access not granted!",
 "no_photos": "Gallery access not granted!",
 "open_settings": "Open settings",
-"support_chat_name": "Support"
+"support_chat_name": "Support",
+"version_mobilе": "Mobile version"
 
 }
