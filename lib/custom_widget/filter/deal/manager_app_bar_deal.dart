@@ -1,13 +1,18 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 
 class DealManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
@@ -42,8 +47,7 @@ class DealManagerFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _DealManagerFilterScreenState createState() =>
-      _DealManagerFilterScreenState();
+  _DealManagerFilterScreenState createState() => _DealManagerFilterScreenState();
 }
 
 class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
@@ -55,6 +59,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   bool? _hasTasks;
   int? _daysWithoutActivity;
   DateTime? _createAt;
+  Map<int, MainField?> _selectedDirectoryFields = {};
+  List<DirectoryLink> _directoryLinks = [];
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
@@ -69,8 +75,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
@@ -88,14 +93,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             scaffoldBackgroundColor: Colors.white,
             dialogBackgroundColor: Colors.white,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Цвет выделенной даты
-              onPrimary: Colors.white, // Цвет текста на выделенной дате
-              onSurface: Colors.black, // Цвет обычного текста
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Цвет кнопок
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
             ),
           ),
           child: child!,
@@ -119,6 +122,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     _toDate = widget.initialToDate;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
     _hasTasks = widget.initialHasTasks;
+    _fetchDirectoryLinks();
+  }
+
+  Future<void> _fetchDirectoryLinks() async {
+    try {
+      final response = await ApiService().getDealDirectoryLinks();
+      if (response.data != null) {
+        setState(() {
+          _directoryLinks = response.data!;
+          for (var link in _directoryLinks) {
+            // Используем DirectoryLink.id как ключ
+            if (!_selectedDirectoryFields.containsKey(link.id)) {
+              _selectedDirectoryFields[link.id] = null;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
+      );
+    }
   }
 
   void _selectDateRange() async {
@@ -138,12 +163,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               primary: Colors.blue,
               onPrimary: Colors.white,
               onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1), 
+              secondary: Colors.blue.withOpacity(0.1),
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
             ),
           ),
           child: child!,
@@ -167,10 +190,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
           style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
-              fontFamily: 'Gilroy'),
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+            fontFamily: 'Gilroy',
+          ),
         ),
         backgroundColor: Colors.white,
         forceMaterialTransparency: true,
@@ -187,6 +211,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _toDate = null;
                 _daysWithoutActivity = null;
                 _hasTasks = null;
+                _selectedDirectoryFields.clear();
+                for (var link in _directoryLinks) {
+                  _selectedDirectoryFields[link.id] = null;
+                }
               });
             },
             style: TextButton.styleFrom(
@@ -218,29 +246,19 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 'fromDate': _fromDate,
                 'toDate': _toDate,
                 'daysWithoutActivity': _daysWithoutActivity,
-                'hasTask': _hasTasks
+                'hasTask': _hasTasks,
+                'directoryFields': _selectedDirectoryFields.map((key, value) => MapEntry('directory_link_$key', value?.id)),
               };
-print('Selected Leads: $_selectedLeads');
-print('Selected Managers: $_selectedManagers');
-print('Selected Statuses: $_selectedStatuses');
-print('From Date: $_fromDate');
-print('To Date: $_toDate');
-print('Days Without Activity: $_daysWithoutActivity');
-print('Has Tasks: $_hasTasks');
-              // Managers only
               if (_selectedManagers.isNotEmpty ||
                   _selectedLeads.isNotEmpty ||
                   _selectedStatuses != null ||
                   _fromDate != null ||
                   _toDate != null ||
                   _daysWithoutActivity != null ||
-                  _hasTasks != null) {
-                print('COMBINED FILTERS');
+                  _hasTasks != null ||
+                  _selectedDirectoryFields.values.any((field) => field != null)) {
                 widget.onManagersSelected?.call(filterData);
-              } else {
-                print('NO FILTERS SELECTED');
               }
-
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
@@ -269,8 +287,7 @@ print('Has Tasks: $_hasTasks');
         child: Column(
           children: [
             Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: GestureDetector(
                 onTap: _selectDateRange,
@@ -286,8 +303,7 @@ print('Has Tasks: $_hasTasks');
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_date_range'),
+                            : AppLocalizations.of(context)!.translate('select_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -296,51 +312,19 @@ print('Has Tasks: $_hasTasks');
                 ),
               ),
             ),
-            // Card(
-            //   shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(12)),
-            //   color: Colors.white,
-            //   child: GestureDetector(
-            //     onTap: _selectCreateAt,
-            //     child: Container(
-            //       padding: const EdgeInsets.all(12),
-            //       decoration: BoxDecoration(
-            //         color: Colors.white,
-            //         borderRadius: BorderRadius.circular(12),
-            //       ),
-            //       child: Row(
-            //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //         children: [
-            //           Text(
-            //             _createAt != null
-            //                 ? "${_createAt!.day.toString().padLeft(2, '0')}.${_createAt!.month.toString().padLeft(2, '0')}.${_createAt!.year}"
-            //                 : AppLocalizations.of(context)!
-            //                     .translate('select_creation_date'),
-            //             style: TextStyle(color: Colors.black54, fontSize: 14),
-            //           ),
-            //           Icon(Icons.calendar_today, color: Colors.black54),
-            //         ],
-            //       ),
-            //     ),
-            //   ),
-            // ),
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: ManagerMultiSelectWidget(
-                          selectedManagers: _selectedManagers
-                              .map((manager) => manager.id.toString())
-                              .toList(),
-                          onSelectManagers:
-                              (List<ManagerData> selectedUsersData) {
+                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
+                          onSelectManagers: (List<ManagerData> selectedUsersData) {
                             setState(() {
                               _selectedManagers = selectedUsersData;
                             });
@@ -350,15 +334,12 @@ print('Has Tasks: $_hasTasks');
                     ),
                     const SizedBox(height: 8),
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: LeadMultiSelectWidget(
-                          selectedLeads: _selectedLeads
-                              .map((lead) => lead.id.toString())
-                              .toList(),
+                          selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
                           onSelectLeads: (List<LeadData> selectedUsersData) {
                             setState(() {
                               _selectedLeads = selectedUsersData;
@@ -369,8 +350,7 @@ print('Has Tasks: $_hasTasks');
                     ),
                     const SizedBox(height: 8),
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
@@ -384,16 +364,34 @@ print('Has Tasks: $_hasTasks');
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    if (_directoryLinks.isNotEmpty) ...[
+                      for (var link in _directoryLinks)
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: DirectoryDropdownWidget(
+                              directoryId: link.directory.id,
+                              directoryName: link.directory.name,
+                              onSelectField: (MainField? field) {
+                                setState(() {
+                                  _selectedDirectoryFields[link.id] = field;
+                                });
+                              },
+                              initialField: _selectedDirectoryFields[link.id],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                    ],
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!
-                                .translate('hasTask'),
+                            AppLocalizations.of(context)!.translate('hasTask'),
                             _hasTasks ?? false,
                             (value) => setState(() => _hasTasks = value),
                           ),
@@ -402,23 +400,20 @@ print('Has Tasks: $_hasTasks');
                     ),
                     const SizedBox(height: 8),
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.only(
-                            left: 12, right: 12, top: 4, bottom: 0),
+                        padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('daysWithoutActivity'),
+                              AppLocalizations.of(context)!.translate('daysWithoutActivity'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: 'Gilroy',
-                                color: Color(0xfff1E2E52),
+                                color: Color(0xff1E2E52),
                               ),
                             ),
                             Slider(
@@ -432,10 +427,8 @@ print('Has Tasks: $_hasTasks');
                                   _daysWithoutActivity = value.toInt();
                                 });
                               },
-                              activeColor:
-                                  ChatSmsStyles.messageBubbleSenderColor,
-                              inactiveColor: Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
+                              activeColor: ChatSmsStyles.messageBubbleSenderColor,
+                              inactiveColor: Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
                             ),
                             Center(
                               child: Text(
@@ -444,7 +437,7 @@ print('Has Tasks: $_hasTasks');
                                   fontSize: 20,
                                   fontWeight: FontWeight.w500,
                                   fontFamily: 'Gilroy',
-                                  color: Color(0xfff1E2E52),
+                                  color: Color(0xff1E2E52),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
