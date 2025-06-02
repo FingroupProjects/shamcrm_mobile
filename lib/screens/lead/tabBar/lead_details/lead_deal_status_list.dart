@@ -21,7 +21,6 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
-
         if (state is DealLoading) {
           dropdownItems = [
             DropdownMenuItem(
@@ -148,10 +147,16 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                   ),
                 ),
                 dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                icon: Padding(
+                  padding: const EdgeInsets.only(right: 6), 
+                  child: Transform.rotate(
+                    angle: 90 * 3.1415926535 / 180,
+                    child: Image.asset(
+                      'assets/icons/arrow_down.png',
+                      width: 10,
+                      height: 10,
+                    ),
+                  ),
                 ),
               ),
             ),
