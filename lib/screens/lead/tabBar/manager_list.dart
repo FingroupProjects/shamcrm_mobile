@@ -10,39 +10,36 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   final String? selectedManager;
   final Function(ManagerData) onSelectManager;
   final String? currentUserId;
+  final bool hasError;
 
   const ManagerRadioGroupWidget({
     super.key,
     required this.onSelectManager,
     this.selectedManager,
     this.currentUserId,
+    this.hasError = false,
   });
 
   @override
-  State<ManagerRadioGroupWidget> createState() =>
-      _ManagerRadioGroupWidgetState();
+  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
 }
 
 class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
-  bool isInitialized = false; // Флаг для предотвращения повторной инициализации
+  bool isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Инициализируем список с "Системой"
     managersList = [
       ManagerData(
-        id: -1,
+        id: 1,
         name: "Система",
         lastname: "",
       ),
     ];
-
-    print(
-        'ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}');
     if (widget.currentUserId != null) {
       currentUserId = widget.currentUserId;
     } else {
@@ -69,6 +66,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
           builder: (context, state) {
@@ -86,26 +84,23 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
               });
             }
 
-            // Устанавливаем данные только при успехе и если еще не инициализировано
             if (state is GetAllManagerSuccess && !isInitialized) {
               managersList = [
                 ManagerData(
-                  id: -1,
+                  id: 1,
                   name: "Система",
                   lastname: "",
                 ),
@@ -115,13 +110,12 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               if (widget.selectedManager != null && managersList.isNotEmpty) {
                 selectedManagerData = managersList.firstWhere(
                   (manager) => manager.id.toString() == widget.selectedManager,
-                  orElse: () => managersList[0], // Default to "Система"
+                  orElse: () => managersList[0],
                 );
               }
-              isInitialized = true; // Устанавливаем флаг после первой инициализации
+              isInitialized = true;
             }
 
-            // Отображаем UI
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -138,21 +132,20 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                 CustomDropdown<ManagerData>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: managersList,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
+                  searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
                     closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
+                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      width: 1.5,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
+                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      width: 1.5,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
@@ -170,8 +163,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is GetAllManagerLoading) {
                       return Text(
-                        AppLocalizations.of(context)!
-                            .translate('select_manager'),
+                        AppLocalizations.of(context)!.translate('select_manager'),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -182,10 +174,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     }
                     return Text(
                       selectedItem != null
-                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
-                              .trim()
-                          : AppLocalizations.of(context)!
-                              .translate('select_manager'),
+                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
+                          : AppLocalizations.of(context)!.translate('select_manager'),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -214,6 +204,14 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     }
                   },
                 ),
+                if (widget.hasError) ...[
+                  Text(
+                    ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 241, 50, 36),
+                    ),
+                  ),
+                ],
               ],
             );
           },

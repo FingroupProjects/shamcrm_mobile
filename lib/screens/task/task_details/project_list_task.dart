@@ -55,10 +55,9 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
               AppLocalizations.of(context)!.translate('projects'),
               style: projectTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
-                fontSize: 14,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
@@ -148,7 +147,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       AppLocalizations.of(context)!.translate('select_project'),
                       style: projectTextStyle.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF6B7280),
+                        color: const Color(0xFF1E2E52),
                       ),
                     ),
                     excludeSelected: false,

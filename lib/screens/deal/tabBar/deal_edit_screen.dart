@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
-import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
@@ -7,7 +6,6 @@ import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
-import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -17,7 +15,6 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -100,6 +97,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
+    print('SELECTEED LEAD _____________');
+    print(selectedLead);
 
     for (var customField in widget.dealCustomFields) {
       customFields.add(CustomField(

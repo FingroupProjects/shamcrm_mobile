@@ -4486,7 +4486,7 @@ Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
 
     final response = await http.get(
       Uri.parse(
-          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+          '$baseUrl/department/get/users${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

@@ -669,8 +669,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                           const SizedBox(height: 8),
                           CustomTextFieldWithPriority(
                             controller: nameController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
-                            label: AppLocalizations.of(context)!.translate('name_list'),
+                            hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
+                            label: AppLocalizations.of(context)!.translate('category_name'),
                             showPriority: true,
                             isPrioritySelected: selectedPriority == 3,
                             onPriorityChanged: (bool? value) {
