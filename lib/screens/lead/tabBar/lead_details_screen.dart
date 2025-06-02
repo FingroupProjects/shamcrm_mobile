@@ -28,6 +28,7 @@ import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -101,6 +102,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _isTutorialInProgress = false;
   Map<String, dynamic>? tutorialProgress;
 
+// Новые поля для кэширования контактов
+  Set<String> _normalizedContactPhones = {};
+  bool _isLoadingContacts = true;
+
   @override
   void initState() {
     super.initState();
@@ -115,11 +120,78 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       context
           .read<LeadByIdBloc>()
           .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+          _loadContactsToCache();
     });
     _fetchTutorialProgress();
     _listenToPrefsChanges(); // Новый метод для отслеживания изменений
   }
+// Метод для загрузки и кэширования контактов
+  Future<void> _loadContactsToCache() async {
+    try {
+      if (!await FlutterContacts.requestPermission()) {
+        print('LeadDetailsScreen: Permission to access contacts denied');
+        setState(() {
+          _isLoadingContacts = false;
+        });
+        return;
+      }
 
+      // Загружаем контакты с телефона
+      List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
+      print('LeadDetailsScreen: Loaded ${contacts.length} contacts');
+
+      // Нормализуем номера и сохраняем в Set для быстрого поиска
+      Set<String> normalizedPhones = {};
+      for (var contact in contacts) {
+        for (var phone in contact.phones) {
+          String normalizedPhone = phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+          normalizedPhones.add(normalizedPhone);
+        }
+      }
+
+      setState(() {
+        _normalizedContactPhones = normalizedPhones;
+        _isLoadingContacts = false;
+      });
+      print('LeadDetailsScreen: Cached ${normalizedPhones.length} normalized phone numbers');
+    } catch (e) {
+      print('LeadDetailsScreen: Error loading contacts: $e');
+      setState(() {
+        _isLoadingContacts = false;
+      });
+    }
+  }
+
+  // Метод для проверки наличия номера в кэше
+  bool _isPhoneInContacts(String phoneNumber) {
+    // Нормализуем номер телефона из lead
+    String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    // Проверяем наличие в Set (O(1) сложность)
+    bool exists = _normalizedContactPhones.contains(normalizedLeadPhone);
+    print('LeadDetailsScreen: Checking phone $phoneNumber, normalized: $normalizedLeadPhone, exists: $exists');
+    return exists;
+  }
+
+  // Обновленный метод _addContact
+  Future<void> _addContact(String name, String phone) async {
+    print('LeadDetailsScreen: Adding contact - name: $name, phone: $phone');
+    bool? result = await showDialog<bool>(
+      context: context,
+      builder: (context) => ExportContactDialog(
+        leadName: name,
+        phoneNumber: phone,
+      ),
+    );
+    // Если диалог вернул true (контакт успешно добавлен)
+    if (result == true) {
+      // Нормализуем номер и добавляем в кэш
+      String normalizedPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+      setState(() {
+        _normalizedContactPhones.add(normalizedPhone);
+        print('LeadDetailsScreen: Added $normalizedPhone to contact cache after export');
+      });
+    }
+  }
   Future<void> _listenToPrefsChanges() async {
     print(
         'LeadDetailsScreen: Starting to listen for SharedPreferences changes');
@@ -750,17 +822,50 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
     );
   }
+// Future<bool> _isPhoneInContacts(String phoneNumber) async {
+//   try {
+//     // Запрашиваем разрешение на доступ к контактам
+//     if (!await FlutterContacts.requestPermission()) {
+//       print('LeadDetailsScreen: Permission to access contacts denied');
+//       return false;
+//     }
 
-  Future<void> _addContact(String name, String phone) async {
-    // print('LeadDetailsScreen: Adding contact - name: $name, phone: $phone');
-    showDialog(
-      context: context,
-      builder: (context) => ExportContactDialog(
-        leadName: name,
-        phoneNumber: phone,
-      ),
-    );
-  }
+//     // Получаем все контакты с телефона
+//     List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
+    
+//     // Нормализуем номер телефона из lead (удаляем пробелы, скобки, дефисы и т.д.)
+//     String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+//     // Проверяем каждый контакт
+//     for (var contact in contacts) {
+//       for (var phone in contact.phones) {
+//         // Нормализуем номер телефона из контактов
+//         String normalizedContactPhone = phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+        
+//         // Сравниваем нормализованные номера
+//         if (normalizedContactPhone == normalizedLeadPhone) {
+//           print('LeadDetailsScreen: Phone number $phoneNumber found in contacts');
+//           return true;
+//         }
+//       }
+//     }
+//     print('LeadDetailsScreen: Phone number $phoneNumber not found in contacts');
+//     return false;
+//   } catch (e) {
+//     print('LeadDetailsScreen: Error checking contacts: $e');
+//     return false;
+//   }
+// }
+  // Future<void> _addContact(String name, String phone) async {
+  //   // print('LeadDetailsScreen: Adding contact - name: $name, phone: $phone');
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => ExportContactDialog(
+  //       leadName: name,
+  //       phoneNumber: phone,
+  //     ),
+  //   );
+  // }
 
   Widget _buildDetailsList() {
     // print(
@@ -841,7 +946,7 @@ Widget _buildValue(String value, String label) {
       return Container();
     }
 
-    if (label == AppLocalizations.of(context)!.translate('phone_use')) {
+  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
       print('LeadDetailsScreen: Handling phone field, canExport: $_canExportContact, isExportEnabled: $_isExportContactEnabled');
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -860,18 +965,28 @@ Widget _buildValue(String value, String label) {
             ),
           ),
           if (_canExportContact && _isExportContactEnabled)
-            GestureDetector(
-              onTap: () => _addContact(widget.leadName, value),
-              child: Icon(
-                Icons.contacts,
-                size: 24,
-                color: Color(0xFF1E2E52),
-              ),
-            ),
+            _isLoadingContacts
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF1E2E52),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : !_isPhoneInContacts(value)
+                    ? GestureDetector(
+                        onTap: () => _addContact(widget.leadName, value),
+                        child: Icon(
+                          Icons.contacts,
+                          size: 24,
+                          color: Color(0xFF1E2E52),
+                        ),
+                      )
+                    : Container(),
         ],
       );
     }
-
     if (label == 'WhatsApp:') {
       print('LeadDetailsScreen: Handling WhatsApp field');
       return GestureDetector(
