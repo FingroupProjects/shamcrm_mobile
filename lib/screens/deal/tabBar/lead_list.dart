@@ -28,7 +28,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
-    // Load leads if not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllLeadBloc>().state;
@@ -36,7 +35,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           leadsList = state.dataLead.result ?? [];
           _updateSelectedLeadData();
         }
-        // Fetch leads only if not already loaded
         if (state is! GetAllLeadSuccess) {
           context.read<GetAllLeadBloc>().add(GetAllLeadEv());
         }
@@ -54,10 +52,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           widget.onSelectLead(selectedLeadData!);
         }
       } catch (e) {
-        selectedLeadData = null;
+        // selectedLeadData = null;
       }
     } else {
-      selectedLeadData = null;
+      // selectedLeadData = null;
     }
   }
 
@@ -152,8 +150,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   : null,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!
-                      .translate('field_required_project');
+                  return AppLocalizations.of(context)!.translate('field_required_project');
                 }
                 return null;
               },

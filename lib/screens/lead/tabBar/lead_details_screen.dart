@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -111,19 +110,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     super.initState();
     _scrollController = ScrollController();
 
-    print('LeadDetailsScreen: initState started for leadId=${widget.leadId}');
     _checkPermissions().then((_) {
-      print('LeadDetailsScreen: Permissions checked');
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      print('LeadDetailsScreen: Fetching LeadById for leadId=${widget.leadId}');
       context
           .read<LeadByIdBloc>()
           .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
           _loadContactsToCache();
     });
     _fetchTutorialProgress();
-    _listenToPrefsChanges(); // Новый метод для отслеживания изменений
+    _listenToPrefsChanges(); 
   }
 // Метод для загрузки и кэширования контактов
   Future<void> _loadContactsToCache() async {
@@ -193,15 +189,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
   }
   Future<void> _listenToPrefsChanges() async {
-    print(
-        'LeadDetailsScreen: Starting to listen for SharedPreferences changes');
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // Простой способ периодически проверять изменения
     _prefsSubscription =
         Stream.periodic(Duration(seconds: 1)).listen((_) async {
       bool newValue = prefs.getBool('switchContact') ?? false;
       if (newValue != _isExportContactEnabled) {
-        print('LeadDetailsScreen: switchContact changed to: $newValue');
         setState(() {
           _isExportContactEnabled = newValue;
         });
@@ -211,21 +203,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Future<void> _fetchTutorialProgress() async {
     try {
-      // print('LeadDetailsScreen: Fetching tutorial progress');
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
-      // print('LeadDetailsScreen: Tutorial progress fetched: $progress');
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
-      bool isTutorialShown =
-          prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
-      // print('LeadDetailsScreen: isTutorialShown=$_isTutorialShown');
       _initTutorialTargets();
       if (tutorialProgress != null &&
           tutorialProgress!['leads']?['view'] == false &&
@@ -233,24 +220,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        // print('LeadDetailsScreen: Showing tutorial');
         showTutorial();
       }
     } catch (e) {
-      // print('LeadDetailsScreen: Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        bool isTutorialShown =
-            prefs.getBool('isTutorialShownLeadDetails') ?? false;
+        bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
-        // print(
-        //     'LeadDetailsScreen: Loaded saved tutorial progress: $tutorialProgress');
         _initTutorialTargets();
         if (tutorialProgress != null &&
             tutorialProgress!['leads']?['view'] == false &&
@@ -258,7 +240,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          // print('LeadDetailsScreen: Showing tutorial from saved progress');
           showTutorial();
         }
       }
@@ -267,14 +248,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   @override
   void dispose() {
-    print('LeadDetailsScreen: Disposing screen');
-    _prefsSubscription?.cancel(); // Отменяем подписку
+    _prefsSubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
   void _initTutorialTargets() {
-    // print('LeadDetailsScreen: Initializing tutorial targets');
     targets.clear();
     targets.addAll([
       createTarget(
@@ -328,13 +307,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "keyLeadNotice",
           keyTarget: keyLeadNotice,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_notice_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_notice_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_description'),
           align: ContentAlign.top,
-          extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       if (_canReadDeal)
@@ -363,18 +339,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         context: context,
       ),
     ]);
-    // print(
-    //     'LeadDetailsScreen: Tutorial targets initialized: ${targets.length} targets');
   }
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      // print('LeadDetailsScreen: Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      // print('LeadDetailsScreen: No tutorial targets, skipping');
       return;
     }
 
@@ -385,14 +357,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         tutorialProgress!['leads']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      // print('LeadDetailsScreen: Tutorial conditions not met, skipping');
       return;
     }
 
     setState(() {
       _isTutorialInProgress = true;
     });
-    // print('LeadDetailsScreen: Tutorial started');
     await Future.delayed(const Duration(milliseconds: 700));
 
     TutorialCoachMark(
@@ -412,7 +382,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ),
       colorShadow: Color(0xff1E2E52),
       onClickTarget: (target) {
-        // print('LeadDetailsScreen: Tutorial target clicked: ${target.identify}');
         if (target.identify == "keyNavigateChat") {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
@@ -422,10 +391,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         }
       },
       onSkip: () {
-        // print('LeadDetailsScreen: Tutorial skipped');
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {
-          // print('LeadDetailsScreen: Error marking page completed: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -434,10 +401,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return true;
       },
       onFinish: () {
-        // print('LeadDetailsScreen: Tutorial finished');
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {
-          // print('LeadDetailsScreen: Error marking page completed: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -476,20 +441,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     print('LeadDetailsScreen: Phone value: ${lead.phone}');
     details = [
       {
-        'label': AppLocalizations.of(context)!.translate('lead_name'), // Без двоеточия, если оно есть в локализации
+        'label': AppLocalizations.of(context)!.translate('lead_name'), 
         'value': lead.name
       },
       {
-        'label': AppLocalizations.of(context)!.translate('phone_use'), // Без двоеточия, для корректной работы иконки
+        'label': AppLocalizations.of(context)!.translate('phone_use'), 
         'value': lead.phone ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('region_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('region_details')}', 
         'value': lead.region?.name ?? ''
       },
       if (lead.manager != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('manager_details')}', // Добавляем двоеточие
+          'label': '${AppLocalizations.of(context)!.translate('manager_details')}', 
           'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
         }
       else
@@ -498,54 +463,52 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           'value': 'become_manager'
         },
       {
-        'label': '${AppLocalizations.of(context)!.translate('source_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('source_details')}', 
         'value': lead.source?.name ?? ''
       },
-      {'label': 'Instagram:', 'value': lead.instagram ?? ''}, // Возвращаем двоеточие
-      {'label': 'Facebook:', 'value': lead.facebook ?? ''}, // Возвращаем двоеточие
-      {'label': 'Telegram:', 'value': lead.telegram ?? ''}, // Возвращаем двоеточие
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''}, // Возвращаем двоеточие
+      {'label': 'Instagram:', 'value': lead.instagram ?? ''}, 
+      {'label': 'Facebook:', 'value': lead.facebook ?? ''}, 
+      {'label': 'Telegram:', 'value': lead.telegram ?? ''}, 
+      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''}, 
       {
-        'label': '${AppLocalizations.of(context)!.translate('email_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('email_details')}',
         'value': lead.email ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('birthday_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('birthday_details')}', 
         'value': formatDate(lead.birthday)
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('description_details_lead')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('description_details_lead')}', 
         'value': lead.description ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('author_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('author_details')}', 
         'value': lead.author?.name ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('created_at_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('created_at_details')}',
         'value': formatDate(lead.createdAt)
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('status_details')}', // Добавляем двоеточие
+        'label': '${AppLocalizations.of(context)!.translate('status_details')}',
         'value': lead.leadStatus?.title ?? ''
       },
     ];
     print('LeadDetailsScreen: Initial details added: ${details.length} items');
     for (var field in lead.leadCustomFields) {
       print('LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
-      details.add({'label': '${field.key}:', 'value': field.value}); // Возвращаем двоеточие
+      details.add({'label': '${field.key}:', 'value': field.value}); 
     }
     for (var dirValue in lead.directoryValues) {
       final directoryName = dirValue.entry.directory.name;
       final value = dirValue.entry.values['value'] ?? '';
       print('LeadDetailsScreen: Adding directory - name: $directoryName, value: $value');
-      details.add({'label': '$directoryName:', 'value': value}); // Возвращаем двоеточие
+      details.add({'label': '$directoryName:', 'value': value});
     }
     print('LeadDetailsScreen: Final details list: ${details.length} items');
   }
   Widget _buildExpandableText(String label, String value, double maxWidth) {
-    // print(
-    //     'LeadDetailsScreen: Building expandable text - label: $label, value: $value, maxWidth: $maxWidth');
     final TextStyle style = TextStyle(
       fontSize: 16,
       fontFamily: 'Gilroy',
@@ -569,10 +532,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // print('LeadDetailsScreen: Building UI');
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // print('LeadDetailsScreen: Triggering tutorial post frame');
         showTutorial();
         setState(() {
           _isTutorialShown = true;
@@ -585,11 +546,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       backgroundColor: Colors.white,
       body: BlocListener<LeadByIdBloc, LeadByIdState>(
         listener: (context, state) {
-          // print('LeadDetailsScreen: BlocListener state: $state');
           if (state is LeadByIdLoaded) {
-            // print('LeadDetailsScreen: LeadByIdLoaded, lead: ${state.lead.id}');
           } else if (state is LeadByIdError) {
-            // print('LeadDetailsScreen: LeadByIdError: ${state.message}');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               showCustomSnackBar(
                 context: context,
@@ -601,13 +559,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         },
         child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
           builder: (context, state) {
-            // print('LeadDetailsScreen: BlocBuilder state: $state');
             if (state is LeadByIdLoading) {
-              print('LeadDetailsScreen: Loading state');
               return Center(
                   child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is LeadByIdLoaded) {
-              // print('LeadDetailsScreen: Lead loaded, updating details');
               LeadById lead = state.lead;
               _updateDetails(lead);
               return Padding(
@@ -648,7 +603,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 ),
               );
             } else if (state is LeadByIdError) {
-              // print('LeadDetailsScreen: Error state: ${state.message}');
               return Center(
                 child: Text(
                   AppLocalizations.of(context)!.translate(state.message),
@@ -661,7 +615,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 ),
               );
             }
-            // print('LeadDetailsScreen: Default empty state');
             return Center(child: Text(''));
           },
         ),
@@ -670,7 +623,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    // print('LeadDetailsScreen: Building AppBar with title: $title');
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -688,7 +640,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               height: 24,
             ),
             onPressed: () async {
-              // print('LeadDetailsScreen: Back button pressed');
               Navigator.pop(context, widget.statusId);
             },
           ),
@@ -717,8 +668,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             color: Color.fromARGB(224, 0, 0, 0),
           ),
           onPressed: () {
-            // print(
-            //     'LeadDetailsScreen: History button pressed for leadId: ${currentLead?.id}');
             showDialog(
               context: context,
               builder: (context) => HistoryDialog(
@@ -742,8 +691,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     height: 24,
                   ),
                   onPressed: () async {
-                    // print(
-                    //     'LeadDetailsScreen: Edit button pressed for leadId: ${currentLead?.id}');
                     if (currentLead != null) {
                       final birthdayString = currentLead!.birthday != null &&
                               currentLead!.birthday!.isNotEmpty
@@ -755,8 +702,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           ? DateFormat('dd/MM/yyyy')
                               .format(DateTime.parse(currentLead!.createdAt!))
                           : null;
-                      // print(
-                      //     'LeadDetailsScreen: Navigating to LeadEditScreen with leadId: ${currentLead!.id}');
                       final shouldUpdate = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -788,8 +733,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ),
                       );
                       if (shouldUpdate == true) {
-                        // print(
-                        //     'LeadDetailsScreen: Update required, fetching lead and statuses');
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
                             leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -808,8 +751,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     height: 24,
                   ),
                   onPressed: () {
-                    // print(
-                    //     'LeadDetailsScreen: Delete button pressed for leadId: ${currentLead?.id}');
                     showDialog(
                       context: context,
                       builder: (context) =>
@@ -867,16 +808,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   //   );
   // }
 
+
   Widget _buildDetailsList() {
-    // print(
-    //     'LeadDetailsScreen: Building details list, item count: ${details.length}');
     return ListView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       itemCount: details.length,
       itemBuilder: (context, index) {
-        // print(
-        //     'LeadDetailsScreen: Building detail item at index: $index, label: ${details[index]['label']}, value: ${details[index]['value']}');
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: _buildDetailItem(
@@ -891,8 +829,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        // print(
-        //     'LeadDetailsScreen: Building detail item - label: $label, value: $value, maxWidth: ${constraints.maxWidth}');
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -913,21 +849,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   String formatDate(String? dateString) {
-    // print('LeadDetailsScreen: Formatting date: $dateString');
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
       final formatted = DateFormat('dd/MM/yyyy').format(parsedDate);
-      // print('LeadDetailsScreen: Date formatted: $formatted');
       return formatted;
     } catch (e) {
-      // print('LeadDetailsScreen: Date format error: $e');
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
   Widget _buildLabel(String label) {
-    // print('LeadDetailsScreen: Building label: $label');
+
     return Text(
       label,
       style: TextStyle(
@@ -940,14 +873,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
 Widget _buildValue(String value, String label) {
-    print('LeadDetailsScreen: Building value - label: $label, value: $value');
     if (value.isEmpty) {
-      print('LeadDetailsScreen: Value is empty, returning Container');
       return Container();
     }
 
+
   if (label == AppLocalizations.of(context)!.translate('phone_use')) {
       print('LeadDetailsScreen: Handling phone field, canExport: $_canExportContact, isExportEnabled: $_isExportContactEnabled');
+
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -988,7 +921,6 @@ Widget _buildValue(String value, String label) {
       );
     }
     if (label == 'WhatsApp:') {
-      print('LeadDetailsScreen: Handling WhatsApp field');
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
         child: Text(
@@ -1005,9 +937,8 @@ Widget _buildValue(String value, String label) {
     }
 
     if (label == '' && value == 'become_manager') {
-      print('LeadDetailsScreen: Handling become_manager field');
       return Padding(
-        padding: EdgeInsets.only(left: 0),
+        padding: EdgeInsets.only(left: 0,),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
@@ -1022,7 +953,6 @@ Widget _buildValue(String value, String label) {
             ),
             GestureDetector(
               onTap: () {
-                print('LeadDetailsScreen: Become manager tapped');
                 _assignManager();
               },
               child: Container(
@@ -1082,14 +1012,6 @@ Widget _buildValue(String value, String label) {
       overflow: TextOverflow.visible,
     );
   }
-
-  // @override
-  // void dispose() {
-  //   print('LeadDetailsScreen: Disposing screen');
-  //   _scrollController.dispose();
-  //   super.dispose();
-  // }
-
   void _showFullTextDialog(String title, String content) {
     print(
         'LeadDetailsScreen: Showing full text dialog - title: $title, content: $content');
@@ -1137,7 +1059,6 @@ Widget _buildValue(String value, String label) {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
-                    print('LeadDetailsScreen: Closing full text dialog');
                     Navigator.pop(context);
                   },
                   buttonColor: Color(0xff1E2E52),
@@ -1152,28 +1073,23 @@ Widget _buildValue(String value, String label) {
   }
 
   Future<void> _loadSelectedOrganization() async {
-    print('LeadDetailsScreen: Loading selected organization');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       selectedOrganization = prefs.getString('selectedOrganization');
     });
-    print('LeadDetailsScreen: Selected organization: $selectedOrganization');
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    print('LeadDetailsScreen: Making phone call to: $phoneNumber');
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
     );
     if (!await launchUrl(launchUri)) {
-      print('LeadDetailsScreen: Failed to launch phone call: $launchUri');
       throw Exception('Could not launch $launchUri');
     }
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    print('LeadDetailsScreen: Opening WhatsApp for: $phoneNumber');
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
     if (cleanNumber.startsWith('8')) {
@@ -1181,7 +1097,6 @@ Widget _buildValue(String value, String label) {
     } else if (cleanNumber.startsWith('7')) {
       cleanNumber = '+$cleanNumber';
     }
-    print('LeadDetailsScreen: Cleaned WhatsApp number: $cleanNumber');
 
     try {
       Uri whatsappUri;
@@ -1190,9 +1105,7 @@ Widget _buildValue(String value, String label) {
       } else {
         whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
       }
-      print('LeadDetailsScreen: WhatsApp URI: $whatsappUri');
       if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
-        print('LeadDetailsScreen: WhatsApp not installed');
         showCustomSnackBar(
           context: context,
           message:
@@ -1201,7 +1114,6 @@ Widget _buildValue(String value, String label) {
         );
       }
     } catch (e) {
-      print('LeadDetailsScreen: Error opening WhatsApp: $e');
       showCustomSnackBar(
         context: context,
         message:
@@ -1212,7 +1124,6 @@ Widget _buildValue(String value, String label) {
   }
 
   Future<void> _assignManager() async {
-    print('LeadDetailsScreen: Assigning manager');
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -1246,7 +1157,6 @@ Widget _buildValue(String value, String label) {
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('no'),
                     onPressed: () {
-                      print('LeadDetailsScreen: Manager assignment cancelled');
                       Navigator.of(context).pop(false);
                     },
                     buttonColor: Colors.red,
@@ -1258,7 +1168,6 @@ Widget _buildValue(String value, String label) {
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('yes'),
                     onPressed: () {
-                      print('LeadDetailsScreen: Manager assignment confirmed');
                       Navigator.of(context).pop(true);
                     },
                     buttonColor: Color(0xFF1E2E52),
@@ -1273,12 +1182,10 @@ Widget _buildValue(String value, String label) {
     );
 
     if (confirm != true) {
-      print('LeadDetailsScreen: Manager assignment not confirmed');
       return;
     }
 
     if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
-      print('LeadDetailsScreen: Phone required for manager assignment');
       showCustomSnackBar(
         context: context,
         message: AppLocalizations.of(context)!.translate('phone_required'),
@@ -1290,30 +1197,23 @@ Widget _buildValue(String value, String label) {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? userID = prefs.getString('userID');
-      print('LeadDetailsScreen: User ID from prefs: $userID');
       if (userID == null || userID.isEmpty) {
-        print('LeadDetailsScreen: User ID is null or empty');
         return;
       }
       int? parsedUserId = int.tryParse(userID);
-      print('LeadDetailsScreen: Parsed user ID: $parsedUserId');
 
       final completer = Completer<void>();
       final leadBloc = context.read<LeadBloc>();
 
       final listener = context.read<LeadBloc>().stream.listen((state) {
-        print('LeadDetailsScreen: LeadBloc state: $state');
         if (state is LeadSuccess) {
-          print('LeadDetailsScreen: Lead update successful');
           completer.complete();
         } else if (state is LeadError) {
-          print('LeadDetailsScreen: Lead update error: ${state.message}');
           completer.completeError(Exception(state.message));
         }
       });
 
       final localizations = AppLocalizations.of(context)!;
-      print('LeadDetailsScreen: Updating lead with managerId: $parsedUserId');
       leadBloc.add(UpdateLead(
         leadId: currentLead!.id,
         name: currentLead!.name,
@@ -1325,23 +1225,17 @@ Widget _buildValue(String value, String label) {
 
       await completer.future;
       listener.cancel();
-      print('LeadDetailsScreen: Fetching updated lead and statuses');
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: currentLead!.id));
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: currentLead!.id));
       context.read<LeadBloc>().add(FetchLeadStatuses());
       showCustomSnackBar(
         context: context,
-        message:
-            AppLocalizations.of(context)!.translate('manager_assigned_success'),
+        message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
         isSuccess: true,
       );
     } catch (e) {
-      print('LeadDetailsScreen: Error assigning manager: $e');
       showCustomSnackBar(
         context: context,
-        message:
-            AppLocalizations.of(context)!.translate('manager_assign_failed'),
+        message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
         isSuccess: false,
       );
     }

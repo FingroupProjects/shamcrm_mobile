@@ -13,7 +13,6 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -21,6 +20,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,6 +49,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   String? selectedLead;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  bool isTitleInvalid = false;
+  bool isManagerInvalid = false; // Новая переменная для ошибки менеджера
   bool _showAdditionalFields = false;
 
   @override
@@ -62,7 +64,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void _fetchAndAddCustomFields() async {
     try {
       print('Загрузка кастомных полей и справочников для сделки');
-      // Получаем кастомные поля
       final customFieldsData = await ApiService().getCustomFieldsdeal();
       if (customFieldsData['result'] != null) {
         setState(() {
@@ -76,7 +77,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
         });
       }
 
-      // Получаем связанные справочники для сделки
       final directoryLinkData = await ApiService().getDealDirectoryLinks();
       if (directoryLinkData.data != null) {
         setState(() {
@@ -99,11 +99,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
     print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
     if (isDirectory && directoryId != null) {
-      // Проверяем, существует ли уже поле с таким directoryId
       bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
         print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
-        return; // Игнорируем добавление, если справочник уже существует
+        return;
       }
     }
     setState(() {
@@ -174,7 +173,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
               onAddDirectory: (directory) {
                 print('Выбран справочник: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
-                // Связываем справочник с моделью deal
                 ApiService().linkDirectory(
                   directoryId: directory.id,
                   modelType: 'deal',
@@ -237,53 +235,21 @@ class _DealAddScreenState extends State<DealAddScreen> {
         child: BlocListener<DealBloc, DealState>(
           listener: (context, state) {
             if (state is DealError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: false,
               );
             } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.green,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: true,
               );
-              Navigator.pop(context, widget.statusId);
-              context.read<DealBloc>().add(FetchDealStatuses());
+              if (context.mounted) {
+                Navigator.pop(context, widget.statusId);
+                context.read<DealBloc>().add(FetchDealStatuses());
+              }
             }
           },
           child: Form(
@@ -305,8 +271,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             onSelectDealName: (String dealName) {
                               setState(() {
                                 titleController.text = dealName;
+                                isTitleInvalid = dealName.isEmpty;
                               });
                             },
+                            hasError: isTitleInvalid,
                           ),
                           const SizedBox(height: 8),
                           LeadRadioGroupWidget(
@@ -323,8 +291,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
                                 selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false; 
                               });
                             },
+                            hasError: isManagerInvalid, 
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
@@ -477,6 +447,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   void _submitForm() {
+    setState(() {
+      isTitleInvalid = titleController.text.isEmpty;
+      isManagerInvalid = selectedManager == null; 
+    });
+
     if (_formKey.currentState!.validate() &&
         titleController.text.isNotEmpty &&
         selectedManager != null &&

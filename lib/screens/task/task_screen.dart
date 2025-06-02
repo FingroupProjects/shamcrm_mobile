@@ -80,8 +80,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
-  List<String> _selectedAuthors = []; // Add this
-  List<String> _initialSelectedAuthors = []; // Add this
+  List<String> _selectedAuthors = []; 
+  List<String> _initialSelectedAuthors = []; 
   String? _selectedDepartment;
   String? _initialSelectedDepartment;
   final GlobalKey keySearchIcon = GlobalKey();
@@ -251,7 +251,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
+          _isTaskScreenTutorialCompleted = true;
         });
         return true;
       },
@@ -260,7 +260,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
+          _isTaskScreenTutorialCompleted = true;
         });
       },
     ).show(context: context);
@@ -285,9 +285,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      authors:
-          _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
-      department: _selectedDepartment, // Убедитесь, что это есть
+      authors: _selectedAuthors,
+      department: _selectedDepartment, 
     ));
   }
 
@@ -300,15 +299,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _toDate = filterData['toDate'];
       _deadlinefromDate = filterData['deadlinefromDate'];
       _deadlinetoDate = filterData['deadlinetoDate'];
-      // Добавляем новые фильтры
       _isOverdue = filterData['overdue'] ?? false;
       _hasFile = filterData['hasFile'] ?? false;
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
-      _selectedAuthors = filterData['authors'] ?? []; // Add this
+      _selectedAuthors = filterData['authors'] ?? []; 
 
-      // Сохраняем начальные значения
       _initialselectedUsers = filterData['users'] ?? [];
       _initialSelStatus = filterData['statuses'];
       _intialFromDate = filterData['fromDate'];
@@ -418,7 +415,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _lastSearchQuery = '';
       _searchController.clear();
 
-      // Сбрасываем новые фильтры
       _isOverdue = false;
       _hasFile = false;
       _hasDeal = false;
@@ -426,9 +422,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _deadlinefromDate = null;
       _deadlinetoDate = null;
       _selectedProject = null;
-      _selectedAuthors = []; // Add this
+      _selectedAuthors = []; 
 
-      // Сбрасываем начальные значения
       _initialselectedUsers = [];
       _initialSelStatus = null;
       _intialFromDate = null;
@@ -439,7 +434,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
-      _initialSelectedAuthors = []; // Add this
+      _initialSelectedAuthors = []; 
       _selectedDepartment = null;
       _initialSelectedDepartment = null;
     });
@@ -453,8 +448,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchTasks(query, currentStatusId);
   }
-
-  // Метод для проверки разрешени
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -494,7 +487,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             onStatusAndDateRangeSelected: _handleStatusAndDateSelected,
             initialUsers: _initialselectedUsers,
             initialStatuses: _initialSelStatus,
-            initialAuthors: _initialSelectedAuthors, // Add this
+            initialAuthors: _initialSelectedAuthors,
             initialDepartment: _initialSelectedDepartment,
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,
@@ -597,7 +590,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Task> tasks) {
-    // Если идёт поиск и ничего не найдено
     if (_isSearching && tasks.isEmpty) {
       return Center(
         child: Text(
@@ -611,7 +603,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
       );
     }
-    // Если пользователь выбран, но задач нет
     else if (_isUser && tasks.isEmpty) {
       return Center(
         child: Text(
@@ -627,7 +618,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
       );
     }
-    // Если задачи пусты, но поиск не активен
     else if (tasks.isEmpty) {
       return Center(
         child: Text(
@@ -642,7 +632,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Если задачи есть, показываем список
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
@@ -673,7 +662,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         if (state is TaskDataLoaded) {
           final List<Task> tasks = state.tasks;
-          // Если включён поиск и список задач пуст
           if (_isSearching && tasks.isEmpty) {
             return Center(
               child: Text(
@@ -688,7 +676,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           }
 
-          // Если показывается список пользователя и он пуст
           if (_isUser && tasks.isEmpty) {
             return Center(
               child: Text(
@@ -705,7 +692,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           }
 
-          // Если есть задачи, отображаем их
           if (tasks.isNotEmpty) {
             return Flexible(
               child: ListView.builder(
@@ -730,7 +716,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           }
         }
 
-        // Если задачи загружаются
         if (state is TaskLoading) {
           debugPrint('Loading tasks...');
           return const Center(
@@ -741,7 +726,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           );
         }
 
-        // Если состояние неизвестное или пустое
         debugPrint('Unknown state or no data');
         return Center(
           child: Text(
@@ -814,7 +798,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? "0"; // Используем leadsCount
+          taskCount = taskStatus?.tasksCount ?? "0"; 
         }
         return GestureDetector(
           key: _tabKeys[index],
