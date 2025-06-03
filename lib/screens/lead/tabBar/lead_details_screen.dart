@@ -101,7 +101,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _isTutorialInProgress = false;
   Map<String, dynamic>? tutorialProgress;
 
-// Новые поля для кэширования контактов
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
 
@@ -121,22 +120,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     _fetchTutorialProgress();
     _listenToPrefsChanges(); 
   }
-// Метод для загрузки и кэширования контактов
   Future<void> _loadContactsToCache() async {
     try {
       if (!await FlutterContacts.requestPermission()) {
-        print('LeadDetailsScreen: Permission to access contacts denied');
         setState(() {
           _isLoadingContacts = false;
         });
         return;
       }
 
-      // Загружаем контакты с телефона
       List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
-      print('LeadDetailsScreen: Loaded ${contacts.length} contacts');
 
-      // Нормализуем номера и сохраняем в Set для быстрого поиска
       Set<String> normalizedPhones = {};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
@@ -149,28 +143,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         _normalizedContactPhones = normalizedPhones;
         _isLoadingContacts = false;
       });
-      print('LeadDetailsScreen: Cached ${normalizedPhones.length} normalized phone numbers');
     } catch (e) {
-      print('LeadDetailsScreen: Error loading contacts: $e');
       setState(() {
         _isLoadingContacts = false;
       });
     }
   }
 
-  // Метод для проверки наличия номера в кэше
   bool _isPhoneInContacts(String phoneNumber) {
-    // Нормализуем номер телефона из lead
     String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    // Проверяем наличие в Set (O(1) сложность)
     bool exists = _normalizedContactPhones.contains(normalizedLeadPhone);
-    print('LeadDetailsScreen: Checking phone $phoneNumber, normalized: $normalizedLeadPhone, exists: $exists');
     return exists;
   }
 
-  // Обновленный метод _addContact
   Future<void> _addContact(String name, String phone) async {
-    print('LeadDetailsScreen: Adding contact - name: $name, phone: $phone');
     bool? result = await showDialog<bool>(
       context: context,
       builder: (context) => ExportContactDialog(
@@ -178,13 +164,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         phoneNumber: phone,
       ),
     );
-    // Если диалог вернул true (контакт успешно добавлен)
     if (result == true) {
-      // Нормализуем номер и добавляем в кэш
       String normalizedPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
       setState(() {
         _normalizedContactPhones.add(normalizedPhone);
-        print('LeadDetailsScreen: Added $normalizedPhone to contact cache after export');
       });
     }
   }
@@ -259,10 +242,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       createTarget(
         identify: "LeadHistory",
         keyTarget: keyLeadHistory,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_history_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_history_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -271,10 +252,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadEdit",
           keyTarget: keyLeadEdit,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_edit_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_edit_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -283,10 +262,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadDelete",
           keyTarget: keyLeadDelete,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_delete_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_delete_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -294,13 +271,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       createTarget(
         identify: "keyNavigateChat",
         keyTarget: keyLeadNavigateChat,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_chat_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_chat_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_description'),
         align: ContentAlign.top,
-        extraSpacing:
-            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+        extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
         context: context,
       ),
       if (_canReadNotes)
@@ -317,25 +291,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "keyLeadDeal",
           keyTarget: keyLeadDeal,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_deal_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_lead_details_deal_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_description'),
           align: ContentAlign.top,
-          extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       createTarget(
         identify: "keyLeadContactPerson",
         keyTarget: keyLeadContactPerson,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_contact_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_details_contact_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_description'),
         align: ContentAlign.top,
-        extraSpacing:
-            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
     ]);
@@ -414,13 +382,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
    Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    print('LeadDetailsScreen: Checking permissions');
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
-    print('LeadDetailsScreen: API Permissions - lead.update: $canEdit, lead.delete: $canDelete, notice.read: $canReadNotes, deal.read: $canReadDeal, lead.create: $canExportContact');
     
     setState(() {
       _canEditLead = canEdit;
@@ -430,15 +396,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _canExportContact = canExportContact;
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
-    print('LeadDetailsScreen: Permissions set - canEdit: $_canEditLead, canDelete: $_canDeleteLead, canReadNotes: $_canReadNotes, canReadDeal: $_canReadDeal, canExportContact: $_canExportContact, isExportContactEnabled: $_isExportContactEnabled');
   }
 
      void _updateDetails(LeadById lead) {
-    print('LeadDetailsScreen: Updating details for lead: ${lead.id}');
     currentLead = lead;
-    print('LeadDetailsScreen: Current lead set: ${lead.name}');
-    print('LeadDetailsScreen: Directory values: ${lead.directoryValues}');
-    print('LeadDetailsScreen: Phone value: ${lead.phone}');
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('lead_name'), 
@@ -495,7 +456,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'value': lead.leadStatus?.title ?? ''
       },
     ];
-    print('LeadDetailsScreen: Initial details added: ${details.length} items');
     for (var field in lead.leadCustomFields) {
       print('LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value}); 
@@ -503,10 +463,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     for (var dirValue in lead.directoryValues) {
       final directoryName = dirValue.entry.directory.name;
       final value = dirValue.entry.values['value'] ?? '';
-      print('LeadDetailsScreen: Adding directory - name: $directoryName, value: $value');
       details.add({'label': '$directoryName:', 'value': value});
     }
-    print('LeadDetailsScreen: Final details list: ${details.length} items');
   }
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -763,51 +721,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
     );
   }
-// Future<bool> _isPhoneInContacts(String phoneNumber) async {
-//   try {
-//     // Запрашиваем разрешение на доступ к контактам
-//     if (!await FlutterContacts.requestPermission()) {
-//       print('LeadDetailsScreen: Permission to access contacts denied');
-//       return false;
-//     }
-
-//     // Получаем все контакты с телефона
-//     List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
-    
-//     // Нормализуем номер телефона из lead (удаляем пробелы, скобки, дефисы и т.д.)
-//     String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    
-//     // Проверяем каждый контакт
-//     for (var contact in contacts) {
-//       for (var phone in contact.phones) {
-//         // Нормализуем номер телефона из контактов
-//         String normalizedContactPhone = phone.number.replaceAll(RegExp(r'[^\d+]'), '');
-        
-//         // Сравниваем нормализованные номера
-//         if (normalizedContactPhone == normalizedLeadPhone) {
-//           print('LeadDetailsScreen: Phone number $phoneNumber found in contacts');
-//           return true;
-//         }
-//       }
-//     }
-//     print('LeadDetailsScreen: Phone number $phoneNumber not found in contacts');
-//     return false;
-//   } catch (e) {
-//     print('LeadDetailsScreen: Error checking contacts: $e');
-//     return false;
-//   }
-// }
-  // Future<void> _addContact(String name, String phone) async {
-  //   // print('LeadDetailsScreen: Adding contact - name: $name, phone: $phone');
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => ExportContactDialog(
-  //       leadName: name,
-  //       phoneNumber: phone,
-  //     ),
-  //   );
-  // }
-
 
   Widget _buildDetailsList() {
     return ListView.builder(
@@ -835,10 +748,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(
-                          AppLocalizations.of(context)!.translate('lead')) ||
-                      label.contains(AppLocalizations.of(context)!
-                          .translate('description_details_lead')))
+              child: (label.contains( AppLocalizations.of(context)!.translate('lead')) ||
+                      label.contains(AppLocalizations.of(context)!.translate('description_details_lead')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value, label),
             ),
@@ -879,7 +790,6 @@ Widget _buildValue(String value, String label) {
 
 
   if (label == AppLocalizations.of(context)!.translate('phone_use')) {
-      print('LeadDetailsScreen: Handling phone field, canExport: $_canExportContact, isExportEnabled: $_isExportContactEnabled');
 
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -988,19 +898,6 @@ Widget _buildValue(String value, String label) {
         ),
       );
     }
-
-    // // Явная обработка справочников
-    // if (label.contains('dilshod') ||
-    //     label.contains('тест') ||
-    //     label.contains('тет')) {
-    //   print(
-    //       'LeadDetailsScreen: Handling directory field - label: $label, value: $value');
-    //   return _buildExpandableText(
-    //       label, value, MediaQuery.of(context).size.width);
-    // }
-
-    // print(
-    //     'LeadDetailsScreen: Default case for value - label: $label, value: $value');
     return Text(
       value,
       style: TextStyle(
@@ -1009,12 +906,11 @@ Widget _buildValue(String value, String label) {
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
       ),
-      overflow: TextOverflow.visible,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
   void _showFullTextDialog(String title, String content) {
-    print(
-        'LeadDetailsScreen: Showing full text dialog - title: $title, content: $content');
     showDialog(
       context: context,
       builder: (BuildContext context) {
