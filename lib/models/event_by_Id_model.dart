@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/event_model.dart';
-import 'package:crm_task_manager/models/user.dart';
 
 class Notice {
   final int id;
@@ -29,7 +28,7 @@ class Notice {
     required this.createdAt,
     required this.canFinish,
     this.conclusion,
-    this.call, // Добавляем в конструктор
+    this.call, 
   });
 
   factory Notice.fromJson(Map<String, dynamic> json) {
@@ -69,7 +68,7 @@ class Notice {
         conclusion: json['conclusion'] as String?,
         call: json['call'] != null
             ? Call.fromJson(json['call'] as Map<String, dynamic>)
-            : null, // Парсим call
+            : null,
       );
     } catch (e) {
       print('Error parsing Notice: $e');
@@ -123,7 +122,7 @@ class Call {
     leadId: json['lead_id'] as int? ?? 0,
     callRecordPath: json['call_record_path'] as String? ?? '',
     userId: json['user_id'] as int?,
-    internalNumber: json['internal_number']?.toString(), // Convert int to String safely
+    internalNumber: json['internal_number']?.toString(), 
     callDuration: json['call_duration'] as int?,
     callRingingDuration: json['call_ringing_duration'] as int?,
     missed: json['missed'] as bool? ?? false,

@@ -252,42 +252,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                             : notification.type == 'updateLeadStatus'
                                                               ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
                                                               : notification.type,
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52)),
+                                style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff1E2E52),
                               ),
-                              subtitle: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      notification.message,
-                                      maxLines: 2,
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${notification.message}',
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff5A6B87),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      DateFormat('dd.MM.yyyy HH:mm').format(notification.createdAt.add(Duration(hours: 5))),
                                       style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color(0xff5A6B87)),
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff1E2E52),
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    DateFormat('dd.MM.yyyy HH:mm').format(notification.createdAt.add(Duration(hours: 5))),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                navigateToScreen(notification.type,
-                                    notification.id, notification.modelId);
-                              },
+                                  ],
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              navigateToScreen(notification.type, notification.id, notification.modelId);
+                            },
                             ),
                           ),
                         );
@@ -435,9 +439,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           print("Ошибка загрузки данных!");
         }
       }
-    } else if (type == 'task' ||
-        type == 'taskFinished' ||
-        type == 'taskOutDated') {
+    } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
       showDialog(
         context: context,
         barrierDismissible: false,
