@@ -58,9 +58,12 @@ class CustomAppBar extends StatefulWidget {
   final Function(DateTime?, DateTime?)? onDateRangeEventSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
   final Function(DateTime?, DateTime?)? onNoticeDateRangeEventSelected;
-  final Function(int?, DateTime?, DateTime?)? onNoticeStatusAndDateRangeEventSelected;
-  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeStatusAndDateRangeSelected;
-  final Function(DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeAndDateRangeSelected;
+  final Function(int?, DateTime?, DateTime?)?
+      onNoticeStatusAndDateRangeEventSelected;
+  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)?
+      onDateNoticeStatusAndDateRangeSelected;
+  final Function(DateTime?, DateTime?, DateTime?, DateTime?)?
+      onDateNoticeAndDateRangeSelected;
 
   final Function(Map)? onUsersSelected;
   final Function(int?)? onStatusSelected;
@@ -89,6 +92,8 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasUnreadMessages;
   final bool? initialManagerLeadHasDeal;
   final int? initialManagerLeadDaysWithoutActivity;
+  final List<Map<String, dynamic>>?
+      initialDirectoryValuesLead; // Новый параметр для лидов
 
   final List? initialManagersDeal;
   final List? initialLeadsDeal;
@@ -97,6 +102,8 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialManagerDealToDate;
   final bool? initialManagerDealHasTasks;
   final int? initialManagerDealDaysWithoutActivity;
+  final List<Map<String, dynamic>>?
+      initialDirectoryValuesDeal; // Добавляем начальные значения справочников
 
   final List? initialManagersEvent;
   final int? initialManagerEventStatuses;
@@ -122,6 +129,8 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialDeadlineToDate;
   final List<String>? initialAuthors;
   final String? initialDepartment;
+  final List<Map<String, dynamic>>?
+      initialDirectoryValuesTask; // Добавляем начальные значения справочников
 
   CustomAppBar({
     super.key,
@@ -158,6 +167,9 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadHasUnreadMessages,
     this.initialManagerLeadHasDeal,
     this.initialManagerLeadDaysWithoutActivity,
+    this.initialDirectoryValuesLead, // Добавляем в конструктор
+    this.initialDirectoryValuesTask, // Добавляем в конструктор
+
     this.initialManagersDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
@@ -216,14 +228,18 @@ class CustomAppBar extends StatefulWidget {
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
     this.initialAuthors,
-    this.initialDepartment, this.onLeadsDealSelected,
+    this.initialDepartment,
+    this.onLeadsDealSelected,
+    this.initialDirectoryValuesDeal, // Добавляем в конструктор
+    
   });
 
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
 }
 
-class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderStateMixin {
+class _CustomAppBarState extends State<CustomAppBar>
+    with SingleTickerProviderStateMixin {
   bool _isSearching = false;
   final ApiService _apiService = ApiService();
   late TextEditingController _searchController;
@@ -332,7 +348,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
   }
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint('--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    debugPrint(
+        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final enteredDomainMap = await ApiService().getEnteredDomain();
@@ -340,13 +357,14 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) { },
+      connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
@@ -354,8 +372,11 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
-      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -368,7 +389,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
 
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
-      notificationSubscription = myPresenceChannel.bind('notification.created').listen((event) {
+      notificationSubscription =
+          myPresenceChannel.bind('notification.created').listen((event) {
         debugPrint('Received notification: ${event.data}');
         setState(() {
           _hasNewNotification = true;
@@ -401,9 +423,11 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? AppLocalizations.of(context)!.translate('not_found');
+      String UUID = prefs.getString('userID') ??
+          AppLocalizations.of(context)!.translate('not_found');
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
@@ -526,8 +550,10 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           ),
         );
       } else {
-        final text = RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
-        final backgroundColor = extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
+        final text =
+            RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
+        final backgroundColor =
+            extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
 
         return Container(
           width: 40,
@@ -624,7 +650,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                 focusNode: focusNode,
                 onChanged: widget.onChangedSearchInput,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: TextStyle(fontSize: 16),
@@ -786,8 +813,10 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                       initialStatuses: widget.initialManagerEventStatuses,
                       initialFromDate: widget.initialManagerEventFromDate,
                       initialToDate: widget.initialManagerEventToDate,
-                      initialNoticeFromDate: widget.initialNoticeManagerEventFromDate,
-                      initialNoticeToDate: widget.initialNoticeManagerEventToDate,
+                      initialNoticeFromDate:
+                          widget.initialNoticeManagerEventFromDate,
+                      initialNoticeToDate:
+                          widget.initialNoticeManagerEventToDate,
                       onResetFilters: widget.onEventResetFilters,
                     ),
                   ),
@@ -844,7 +873,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           Transform.translate(
             offset: const Offset(6, 0),
             child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('appbar_my_tasks'),
+              message:
+                  AppLocalizations.of(context)!.translate('appbar_my_tasks'),
               preferBelow: false,
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -900,7 +930,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
               ),
             ),
           ),
-        if (widget.showCalendarDashboard  && _canReadCalendar)
+        if (widget.showCalendarDashboard && _canReadCalendar)
           Transform.translate(
             offset: const Offset(6, 0),
             child: Tooltip(
@@ -1100,7 +1130,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                           ],
                         ),
                         SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.translate('appbar_my_tasks')),
+                        Text(AppLocalizations.of(context)!
+                            .translate('appbar_my_tasks')),
                       ],
                     ),
                   ),
@@ -1115,7 +1146,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
                           height: 24,
                         ),
                         SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.translate('calendar')),
+                        Text(AppLocalizations.of(context)!
+                            .translate('calendar')),
                       ],
                     ),
                   ),
@@ -1139,7 +1171,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           initialFromDate: widget.initialManagerLeadFromDate,
           initialToDate: widget.initialManagerLeadToDate,
           initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
-          initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
+          initialHasInProgressDeals:
+              widget.initialManagerLeadHasInProgressDeals,
           initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
           initialHasNotices: widget.initialManagerLeadHasNotices,
           initialHasContact: widget.initialManagerLeadHasContact,
@@ -1147,8 +1180,11 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           initialHasNoReplies: widget.initialManagerLeadHasNoReplies,
           initialHasUnreadMessages: widget.initialManagerLeadHasUnreadMessages,
           initialHasDeal: widget.initialManagerLeadHasDeal,
-          initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
+          initialDaysWithoutActivity:
+              widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,
+          initialDirectoryValues:
+              widget.initialDirectoryValuesLead, // Передаем начальные значения
         ),
       ),
     );
@@ -1171,7 +1207,10 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           initialFromDate: widget.initialManagerDealFromDate,
           initialToDate: widget.initialManagerDealToDate,
           onResetFilters: widget.onDealResetFilters,
-          initialDaysWithoutActivity: widget.initialManagerDealDaysWithoutActivity,
+          initialDaysWithoutActivity:
+              widget.initialManagerDealDaysWithoutActivity,
+          initialDirectoryValues: widget
+              .initialDirectoryValuesDeal, // Передаем начальные значения справочников
         ),
       ),
     );
@@ -1199,6 +1238,8 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
           initialDepartment: widget.initialDepartment,
           initialDeadlineFromDate: widget.initialDeadlineFromDate,
           initialDeadlineToDate: widget.initialDeadlineToDate,
+          initialDirectoryValues: widget
+              .initialDirectoryValuesTask, // Передаем начальные значения справочников
         ),
       ),
     );

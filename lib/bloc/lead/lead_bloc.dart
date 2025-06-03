@@ -27,6 +27,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
   int? _currentDaysWithoutActivity;
+    List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
+
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -72,6 +74,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     _currentHasUnreadMessages = event.hasUnreadMessages; // Новый параметр
     _currentHasDeal = event.hasDeal;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
+        _currentDirectoryValues = event.directoryValues; // Сохраняем текущие значения
+
 
     if (!await _checkInternetConnection()) {
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
@@ -110,6 +114,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasUnreadMessages: event.hasUnreadMessages, // Новый параметр
         hasDeal: event.hasDeal,
         daysWithoutActivity: event.daysWithoutActivity,
+                directoryValues: event.directoryValues, // Передаем в API
+
       );
 
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
@@ -210,6 +216,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasUnreadMessages: _currentHasUnreadMessages, // Новый параметр
         hasDeal: _currentHasDeal,
         daysWithoutActivity: _currentDaysWithoutActivity,
+                directoryValues: _currentDirectoryValues, // Передаем сохраненные значения
+
       );
 
       if (leads.isEmpty) {

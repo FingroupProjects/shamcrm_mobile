@@ -20,7 +20,9 @@ class FetchTasks extends TaskEvent {
   final DateTime? deadlinetoDate;
   final String? project;
   final List<String>? authors;
-  final String? department; 
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+
   FetchTasks(
     this.statusId, {
     this.query,
@@ -37,6 +39,7 @@ class FetchTasks extends TaskEvent {
     this.project,
     this.authors,
     this.department,
+    this.directoryValues, // Добавляем в конструктор
   });
 }
 
@@ -48,10 +51,42 @@ class FetchTaskStatus extends TaskEvent {
 class FetchMoreTasks extends TaskEvent {
   final int statusId;
   final int currentPage;
+  final String? query;
+  final List<int>? userIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? overdue;
+  final bool? hasFile;
+  final bool? hasDeal;
+  final bool? urgent;
+  final DateTime? deadlinefromDate;
+  final DateTime? deadlinetoDate;
+  final String? project;
+  final List<String>? authors;
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
 
-  FetchMoreTasks(this.statusId, this.currentPage);
+  FetchMoreTasks(
+    this.statusId,
+    this.currentPage, {
+    this.query,
+    this.userIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.deadlinefromDate,
+    this.deadlinetoDate,
+    this.overdue,
+    this.hasFile,
+    this.hasDeal,
+    this.urgent,
+    this.project,
+    this.authors,
+    this.department,
+    this.directoryValues, // Добавляем в конструктор
+  });
 }
-
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
