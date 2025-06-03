@@ -10,9 +10,13 @@ import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/department/department_bloc.dart'; // Импорт BLoC для Department
+import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Импорт ApiService
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
+import 'package:crm_task_manager/models/directory_link_model.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
+import 'dart:convert';
 
 class UserFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;
@@ -31,7 +35,8 @@ class UserFilterScreen extends StatefulWidget {
   final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
   final List<String>? initialAuthors;
-  final String? initialDepartment; // Добавлено для начального значения отдела
+  final String? initialDepartment;
+  final List<Map<String, dynamic>>? initialDirectoryValues;
 
   UserFilterScreen({
     Key? key,
@@ -51,7 +56,8 @@ class UserFilterScreen extends StatefulWidget {
     this.initialDeadlineToDate,
     this.onResetFilters,
     this.initialAuthors,
-    this.initialDepartment, // Добавлено
+    this.initialDepartment,
+    this.initialDirectoryValues,
   }) : super(key: key);
 
   @override
@@ -70,9 +76,11 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   bool _hasFile = false;
   bool _hasDeal = false;
   bool _isUrgent = false;
-  String? _selectedDepartment; // Добавлено для хранения выбранного отдела
-  bool _isDepartmentEnabled =
-      false; // Новое поле для отслеживания доступности department
+  String? _selectedDepartment;
+  bool _isDepartmentEnabled = false;
+  Map<int, MainField?> _selectedDirectoryFields = {};
+  List<DirectoryLink> _directoryLinks = [];
+
   @override
   void initState() {
     super.initState();
@@ -87,8 +95,10 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _isUrgent = widget.initialIsUrgent ?? false;
     _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
-    _selectedDepartment = widget.initialDepartment; // Инициализация отдела
-    _loadDepartmentStatus(); // Загружаем статус department
+    _selectedDepartment = widget.initialDepartment;
+    _loadDepartmentStatus();
+    _loadFilterState();
+    _fetchDirectoryLinks();
   }
 
   Future<void> _loadDepartmentStatus() async {
@@ -96,6 +106,39 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     setState(() {
       _isDepartmentEnabled = prefs.getBool('department_enabled') ?? false;
     });
+  }
+
+  Future<void> _loadFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedDirectoryFields = (jsonDecode(prefs.getString('task_selected_directory_fields') ?? '{}') as Map)
+          .map((key, value) => MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
+    });
+  }
+
+  Future<void> _saveFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'task_selected_directory_fields',
+        jsonEncode(_selectedDirectoryFields.map((key, value) => MapEntry(key.toString(), value?.toJson()))));
+  }
+
+  Future<void> _fetchDirectoryLinks() async {
+    try {
+      final response = await ApiService().getTaskDirectoryLinks();
+      if (response.data != null) {
+        setState(() {
+          _directoryLinks = response.data!;
+          for (var link in _directoryLinks) {
+            _selectedDirectoryFields[link.id] = _selectedDirectoryFields[link.id] ?? null;
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
+      );
+    }
   }
 
   void _selectDateRange() async {
@@ -185,8 +228,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
@@ -225,7 +267,11 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _isUrgent = false;
                 _deadlinefromDate = null;
                 _deadlinetoDate = null;
-                _selectedDepartment = null; // Сброс отдела
+                _selectedDepartment = null;
+                _selectedDirectoryFields.clear();
+                for (var link in _directoryLinks) {
+                  _selectedDirectoryFields[link.id] = null;
+                }
               });
             },
             style: TextButton.styleFrom(
@@ -250,8 +296,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           TextButton(
             onPressed: () async {
               await TaskCache.clearAllTasks();
+              await _saveFilterState();
 
-              // Собираем все параметры фильтров в один объект
               final filters = {
                 'users': _selectedUsers,
                 'statuses': _selectedStatuses,
@@ -264,10 +310,19 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'deadlinefromDate': _deadlinefromDate,
                 'deadlinetoDate': _deadlinetoDate,
                 'authors': _selectedAuthors,
-                'department': _selectedDepartment, // Добавляем ID отдела
+                'department': _selectedDepartment,
+                'directory_values': _selectedDirectoryFields.entries
+                    .where((entry) => entry.value != null)
+                    .map((entry) => {
+                          'directory_id': _directoryLinks
+                              .firstWhere((link) => link.id == entry.key)
+                              .directory
+                              .id,
+                          'entry_id': entry.value!.id,
+                        })
+                    .toList(),
               };
 
-              // Проверяем, есть ли хотя бы один активный фильтр
               final bool hasFilters = _selectedUsers.isNotEmpty ||
                   _selectedStatuses != null ||
                   (_fromDate != null && _toDate != null) ||
@@ -277,7 +332,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _isUrgent ||
                   (_deadlinefromDate != null && _deadlinetoDate != null) ||
                   _selectedAuthors.isNotEmpty ||
-                  _selectedDepartment != null;
+                  _selectedDepartment != null ||
+                  _selectedDirectoryFields.values.any((field) => field != null);
 
               if (hasFilters) {
                 print('APPLYING FILTERS');
@@ -431,26 +487,47 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    if (_directoryLinks.isNotEmpty) ...[
+                      for (var link in _directoryLinks)
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: DirectoryDropdownWidget(
+                              directoryId: link.directory.id,
+                              directoryName: link.directory.name,
+                              onSelectField: (MainField? field) {
+                                setState(() {
+                                  _selectedDirectoryFields[link.id] = field;
+                                });
+                              },
+                              initialField: _selectedDirectoryFields[link.id],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                    ],
                     if (_isDepartmentEnabled)
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: BlocProvider(
-                          create: (context) => DepartmentBloc(ApiService()),
-                          child: DepartmentWidget(
-                            selectedDepartment: _selectedDepartment,
-                            onChanged: (departmentId) {
-                              setState(() {
-                                _selectedDepartment = departmentId;
-                              });
-                            },
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: BlocProvider(
+                            create: (context) => DepartmentBloc(ApiService()),
+                            child: DepartmentWidget(
+                              selectedDepartment: _selectedDepartment,
+                              onChanged: (departmentId) {
+                                setState(() {
+                                  _selectedDepartment = departmentId;
+                                });
+                              },
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
@@ -55,6 +57,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<int>? _selectedUserIds;
   bool _showCustomTabBar = true;
   bool _hasPermissionToAddTask = false;
+  List<Map<String, dynamic>> _selectedDirectoryValues = []; // Добавляем directoryValues
 
   String _lastSearchQuery = "";
 
@@ -76,6 +79,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _intialToDate;
   DateTime? _intialDeadlineFromDate;
   DateTime? _intialDeadlineToDate;
+  List<Map<String, dynamic>> _initialDirectoryValues = []; // Добавляем initialDirectoryValues
   bool _initialOverdue = false;
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
@@ -100,6 +104,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _loadUserRoles();
+    _loadFilterState(); // Загружаем состояние фильтров
     TaskCache.getTaskStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
@@ -124,6 +129,52 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _checkPermissions();
   }
 
+Future<void> _loadFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedUsers = (jsonDecode(prefs.getString('task_selected_users') ?? '[]') as List)
+          .map((u) => UserData.fromJson(u))
+          .toList();
+      _selectedStatuses = prefs.getInt('task_selected_statuses');
+      _fromDate = prefs.getString('task_from_date') != null
+          ? DateTime.parse(prefs.getString('task_from_date')!)
+          : null;
+      _toDate = prefs.getString('task_to_date') != null
+          ? DateTime.parse(prefs.getString('task_to_date')!)
+          : null;
+      _deadlinefromDate = prefs.getString('task_deadline_from_date') != null
+          ? DateTime.parse(prefs.getString('task_deadline_from_date')!)
+          : null;
+      _deadlinetoDate = prefs.getString('task_deadline_to_date') != null
+          ? DateTime.parse(prefs.getString('task_deadline_to_date')!)
+          : null;
+      _isOverdue = prefs.getBool('task_is_overdue') ?? false;
+      _hasFile = prefs.getBool('task_has_file') ?? false;
+      _hasDeal = prefs.getBool('task_has_deal') ?? false;
+      _isUrgent = prefs.getBool('task_is_urgent') ?? false;
+      _selectedProject = prefs.getString('task_selected_project');
+      _selectedAuthors = (jsonDecode(prefs.getString('task_selected_authors') ?? '[]') as List).cast<String>();
+      _selectedDepartment = prefs.getString('task_selected_department');
+      _selectedDirectoryValues = (jsonDecode(prefs.getString('task_selected_directory_values') ?? '[]') as List)
+          .map((d) => Map<String, dynamic>.from(d))
+          .toList();
+
+      _initialselectedUsers = List.from(_selectedUsers);
+      _initialSelStatus = _selectedStatuses;
+      _intialFromDate = _fromDate;
+      _intialToDate = _toDate;
+      _intialDeadlineFromDate = _deadlinefromDate;
+      _intialDeadlineToDate = _deadlinetoDate;
+      _initialOverdue = _isOverdue;
+      _initialHasFile = _hasFile;
+      _initialHasDeal = _hasDeal;
+      _initialUrgent = _isUrgent;
+      _initialSelectedAuthors = List.from(_selectedAuthors);
+      _initialSelectedDepartment = _selectedDepartment;
+      _initialDirectoryValues = List.from(_selectedDirectoryValues);
+      
+    });
+  }
   void _onScroll() {
   if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -136,7 +187,23 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 }
-
+Future<void> _saveFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('task_selected_users', jsonEncode(_selectedUsers.map((u) => u.toJson()).toList()));
+    await prefs.setInt('task_selected_statuses', _selectedStatuses ?? 0);
+    await prefs.setString('task_from_date', _fromDate?.toIso8601String() ?? '');
+    await prefs.setString('task_to_date', _toDate?.toIso8601String() ?? '');
+    await prefs.setString('task_deadline_from_date', _deadlinefromDate?.toIso8601String() ?? '');
+    await prefs.setString('task_deadline_to_date', _deadlinetoDate?.toIso8601String() ?? '');
+    await prefs.setBool('task_is_overdue', _isOverdue);
+    await prefs.setBool('task_has_file', _hasFile);
+    await prefs.setBool('task_has_deal', _hasDeal);
+    await prefs.setBool('task_is_urgent', _isUrgent);
+    await prefs.setString('task_selected_project', _selectedProject ?? '');
+    await prefs.setString('task_selected_authors', jsonEncode(_selectedAuthors));
+    await prefs.setString('task_selected_department', _selectedDepartment ?? '');
+    await prefs.setString('task_selected_directory_values', jsonEncode(_selectedDirectoryValues));
+  }
   @override
   void dispose() {
     _scrollController.dispose();
@@ -287,6 +354,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       project: _selectedProject,
       authors: _selectedAuthors,
       department: _selectedDepartment, 
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+      
     ));
   }
 
@@ -341,6 +410,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       project: _selectedProject,
       authors: _selectedAuthors,
       department: _selectedDepartment,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -358,6 +428,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       currentStatusId,
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -378,6 +449,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -402,6 +474,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -423,7 +496,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _deadlinetoDate = null;
       _selectedProject = null;
       _selectedAuthors = []; 
-
+_selectedDirectoryValues = []; // Очищаем directoryValues
       _initialselectedUsers = [];
       _initialSelStatus = null;
       _intialFromDate = null;
@@ -497,6 +570,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
+            initialDirectoryValuesTask: _initialDirectoryValues, // Передаем initialDirectoryValues
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -550,6 +624,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       deadlinetoDate: _toDate,
                       authors: _selectedAuthors,
                       department: _selectedDepartment,
+                      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
                     ));
                   }
                 } else if (_selectedUserIds != null &&

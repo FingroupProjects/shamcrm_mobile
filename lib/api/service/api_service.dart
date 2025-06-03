@@ -700,7 +700,7 @@ class ApiService {
   }
 
   // Метод для получения списка Лидов с пагинацией
-  Future<List<Lead>> getLeads(
+ Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
@@ -719,8 +719,9 @@ class ApiService {
     bool? hasChat,
     bool? hasDeal,
     int? daysWithoutActivity,
-    bool? hasNoReplies, // Новый параметр
-    bool? hasUnreadMessages, // Новый параметр
+    bool? hasNoReplies,
+    bool? hasUnreadMessages,
+    List<Map<String, dynamic>>? directoryValues, // Новый параметр
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
@@ -739,10 +740,11 @@ class ApiService {
         (hasContact == true) ||
         (hasChat == true) ||
         (hasDeal == true) ||
-        (hasNoReplies == true) || // Новый параметр
-        (hasUnreadMessages == true) || // Новый параметр
+        (hasNoReplies == true) ||
+        (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
-        (statuses != null);
+        (statuses != null) ||
+        (directoryValues != null && directoryValues.isNotEmpty); // Добавляем проверку
 
     if (leadStatusId != null && !hasFilters) {
       path += '&lead_status_id=$leadStatusId';
@@ -759,7 +761,7 @@ class ApiService {
     }
     if (regions != null && regions.isNotEmpty) {
       for (int i = 0; i < regions.length; i++) {
-        path += '&regions[$i]=${regions[i]}';
+        path += '&regions[$i]=${regions[i]}'; // Исправляем опечатку: было "®ions"
       }
     }
     if (sources != null && sources.isNotEmpty) {
@@ -768,18 +770,14 @@ class ApiService {
       }
     }
     if (hasNoReplies == true) {
-      // Новый параметр
       path += '&hasNoReplies=1';
     }
-
     if (hasUnreadMessages == true) {
-      // Новый параметр
       path += '&hasUnreadMessages=1';
     }
     if (statuses != null) {
       path += '&lead_status_id=$statuses';
     }
-
     if (fromDate != null && toDate != null) {
       final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
       final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
@@ -809,6 +807,14 @@ class ApiService {
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
     }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        final directoryId = directoryValues[i]['directory_id'];
+        final entryId = directoryValues[i]['entry_id'];
+        path += '&directory_values[$i][directory_id]=$directoryId';
+        path += '&directory_values[$i][entry_id]=$entryId';
+      }
+    }
 
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -824,7 +830,6 @@ class ApiService {
       throw Exception('Ошибка загрузки лидов!');
     }
   }
-
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1867,6 +1872,7 @@ class ApiService {
     DateTime? toDate,
     int? daysWithoutActivity,
     bool? hasTasks,
+    List<Map<String, dynamic>>? directoryValues,
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
@@ -1879,7 +1885,8 @@ class ApiService {
         (toDate != null) ||
         (daysWithoutActivity != null) ||
         (hasTasks == true) ||
-        (statuses != null);
+        (statuses != null) ||
+        (directoryValues != null && directoryValues.isNotEmpty);
 
     if (dealStatusId != null && !hasFilters) {
       path += '&deal_status_id=$dealStatusId';
@@ -1910,9 +1917,16 @@ class ApiService {
     }
 
     if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      final formattedFromDate = "${fromDate!.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
+      final formattedToDate = "${toDate!.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
       path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+    }
+
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+        path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+      }
     }
 
     final response = await _getRequest(path);
@@ -2382,105 +2396,115 @@ class ApiService {
   }
 
   // API Service
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1,
-      int perPage = 20,
-      String? search,
-      List<int>? users,
-      int? statuses,
-      DateTime? fromDate,
-      DateTime? toDate,
-      bool? overdue,
-      bool? hasFile,
-      bool? hasDeal,
-      bool? urgent,
-      DateTime? deadlinefromDate,
-      DateTime? deadlinetoDate,
-      String? project,
-      final List<String>? authors,
-      String? department}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/task?page=$page&per_page=$perPage';
-    path += '&organization_id=$organizationId';
-    bool hasFilters = (search != null && search.isNotEmpty) ||
-        (users != null && users.isNotEmpty) ||
-        (fromDate != null) ||
-        (toDate != null) ||
-        (statuses != null) ||
-        overdue == true ||
-        hasFile == true ||
-        hasDeal == true ||
-        urgent == true ||
-        (deadlinefromDate != null) ||
-        (deadlinetoDate != null) ||
-        (project != null && project.isNotEmpty) ||
-        (authors != null && authors.isNotEmpty) ||
-        (department != null && department.isNotEmpty);
-    if (taskStatusId != null && !hasFilters) {
-      path += '&task_status_id=$taskStatusId';
-    }
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-    if (users != null && users.isNotEmpty) {
-      for (int i = 0; i < users.length; i++) {
-        path += '&users[$i]=${users[i]}';
-      }
-    }
-    if (statuses != null) {
-      path += '&task_status_id=$statuses';
-    }
-    if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-      path += '&from=$formattedFromDate&to=$formattedToDate';
-    }
-    if (overdue == true) {
-      path += '&overdue=1';
-    }
-    if (hasFile == true) {
-      path += '&hasFile=1';
-    }
-    if (hasDeal == true) {
-      path += '&hasDeal=1';
-    }
-    if (urgent == true) {
-      path += '&urgent=1';
-    }
-    if (deadlinefromDate != null && deadlinetoDate != null) {
-      final formattedFromDate =
-          DateFormat('yyyy-MM-dd').format(deadlinefromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
-      path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
-    }
-    if (project != null && project.isNotEmpty) {
-      path += '&project=$project';
-    }
-    if (authors != null && authors.isNotEmpty) {
-      for (int i = 0; i < authors.length; i++) {
-        path += '&authors[$i]=${authors[i]}';
-      }
-    }
-    if (department != null && department.isNotEmpty) {
-      path += '&department_id=$department';
-    }
+ Future<List<Task>> getTasks(
+  int? taskStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? users,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? overdue,
+  bool? hasFile,
+  bool? hasDeal,
+  bool? urgent,
+  DateTime? deadlinefromDate,
+  DateTime? deadlinetoDate,
+  String? project,
+  List<String>? authors,
+  String? department,
+  List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/task?page=$page&per_page=$perPage';
+  path += '&organization_id=$organizationId';
 
-    final response = await _getRequest(path);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      print('Error response! - ${response.body}');
-      throw Exception('Ошибка загрузки задач!');
+  bool hasFilters = (search != null && search.isNotEmpty) ||
+      (users != null && users.isNotEmpty) ||
+      (fromDate != null) ||
+      (toDate != null) ||
+      (statuses != null) ||
+      overdue == true ||
+      hasFile == true ||
+      hasDeal == true ||
+      urgent == true ||
+      (deadlinefromDate != null) ||
+      (deadlinetoDate != null) ||
+      (project != null && project.isNotEmpty) ||
+      (authors != null && authors.isNotEmpty) ||
+      (department != null && department.isNotEmpty) ||
+      (directoryValues != null && directoryValues.isNotEmpty); // Проверяем directoryValues
+
+  if (taskStatusId != null && !hasFilters) {
+    path += '&task_status_id=$taskStatusId';
+  }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+  if (users != null && users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      path += '&users[$i]=${users[i]}';
+    }
+  }
+  if (statuses != null) {
+    path += '&task_status_id=$statuses';
+  }
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+    path += '&from=$formattedFromDate&to=$formattedToDate';
+  }
+  if (overdue == true) {
+    path += '&overdue=1';
+  }
+  if (hasFile == true) {
+    path += '&hasFile=1';
+  }
+  if (hasDeal == true) {
+    path += '&hasDeal=1';
+  }
+  if (urgent == true) {
+    path += '&urgent=1';
+  }
+  if (deadlinefromDate != null && deadlinetoDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+  }
+  if (project != null && project.isNotEmpty) {
+    path += '&project=$project';
+  }
+  if (authors != null && authors.isNotEmpty) {
+    for (int i = 0; i < authors.length; i++) {
+      path += '&authors[$i]=${authors[i]}';
+    }
+  }
+  if (department != null && department.isNotEmpty) {
+    path += '&department_id=$department';
+  }
+  if (directoryValues != null && directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+      path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
     }
   }
 
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    print('Error response! - ${response.body}');
+    throw Exception('Ошибка загрузки задач!');
+  }
+}
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();

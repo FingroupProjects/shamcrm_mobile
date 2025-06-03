@@ -23,6 +23,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasUnreadMessages; // Новый параметр
   final bool? hasDeal;
   final int? daysWithoutActivity;
+  final List<Map<String, dynamic>>? directoryValues; // Новый параметр
 
   FetchLeads(
     this.statusId, {
@@ -43,6 +44,7 @@ class FetchLeads extends LeadEvent {
     this.hasUnreadMessages, // Новый параметр
     this.hasDeal,
     this.daysWithoutActivity,
+    this.directoryValues, // Добавляем в конструктор
   });
 }
 
@@ -122,6 +124,7 @@ class CreateLead extends LeadEvent {
     required this.localizations,
   });
 }
+
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -163,6 +166,7 @@ class UpdateLead extends LeadEvent {
     this.isSystemManager = false,
   });
 }
+
 class DeleteLead extends LeadEvent {
   final int leadId;
   final AppLocalizations localizations;
