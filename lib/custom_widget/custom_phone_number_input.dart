@@ -22,158 +22,104 @@ class CustomPhoneNumberInput extends StatefulWidget {
 
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    //print('Инициализация: Установка начальной страны (TJ)');
     selectedCountry = countries.firstWhere(
       (country) => country.name == "TJ",
-      orElse: () {
-        //print('Ошибка: Страна TJ не найдена в списке');
-        return countries.first;
-      },
+      orElse: () => countries.first,
     );
-    //print('Начальная страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
     widget.controller.addListener(_onTextChanged);
   }
 
-  @override
-  void dispose() {
-    //print('Уничтожение: Удаление слушателя контроллера');
-    widget.controller.removeListener(_onTextChanged);
-    super.dispose();
-  }
-
-  // Обработка изменений текста (ручной ввод)
   void _onTextChanged() {
-    //print('Ручной ввод: Текущий текст в контроллере: ${widget.controller.text}');
     final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-    //print('Максимальная длина для ${selectedCountry?.dialCode}: $maxLength');
     final value = widget.controller.text;
     if (value.length > maxLength) {
-      //print('Текст превышает максимальную длину, обрезаем до $maxLength');
       widget.controller.text = value.substring(0, maxLength);
-      widget.controller.selection =
-          TextSelection.fromPosition(TextPosition(offset: maxLength));
-      //print('Обрезанный текст: ${widget.controller.text}');
+      widget.controller.selection = TextSelection.fromPosition(TextPosition(offset: maxLength));
     }
     final formattedNumber = (selectedCountry?.dialCode ?? '') + widget.controller.text;
-    //print('Форматированный номер для onInputChanged: $formattedNumber');
     if (widget.onInputChanged != null) {
       widget.onInputChanged!(formattedNumber);
-      //print('Вызван onInputChanged с номером: $formattedNumber');
     }
   }
 
-  // Форматтер для обработки вставки номера
   TextInputFormatter _phoneNumberPasteFormatter() {
     return TextInputFormatter.withFunction((oldValue, newValue) {
-      //print('Formatter: Входной текст: ${newValue.text}, старый текст: ${oldValue.text}');
       
-      // Проверяем, является ли ввод вставкой (длина текста резко увеличилась)
       bool isPaste = (newValue.text.length - oldValue.text.length).abs() > 1;
-      bool isDeletion = newValue.text.length < oldValue.text.length;
-      // //print('Formatter: Это вставка? $isPaste, Это удаление? $isDeletion '
-      //     '(длина нового: ${newValue.text.length}, старого: ${oldValue.text.length})');
 
-      // Получаем максимальную длину для текущей страны
       int maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-      //print('Formatter: Максимальная длина для текущей страны ${selectedCountry?.dialCode}: $maxLength');
 
       if (isPaste) {
         String newText = newValue.text;
-        //print('Formatter: Обработка вставки, текст: $newText');
 
-        // Проверяем, начинается ли текст с кода страны (с "+" или без)
         String? matchedDialCode;
         Country? matchedCountry;
         bool hasPlus = newText.startsWith('+');
-        String checkText = hasPlus ? newText : '+' + newText; // Добавляем "+" для проверки
+        String checkText = hasPlus ? newText : '+' + newText;
 
-        //print('Formatter: Проверка текста: $checkText');
         for (var code in countryCodes) {
           if (checkText.startsWith(code) && (matchedDialCode == null || code.length > matchedDialCode.length)) {
             matchedDialCode = code;
             matchedCountry = countries.firstWhere(
               (country) => country.dialCode == code,
               orElse: () {
-                //print('Formatter: Код $code не найден в списке стран');
                 return Country(name: '', flag: '', dialCode: '');
               },
             );
-            //print('Formatter: Найден код: $code, страна: ${matchedCountry.name}');
           }
         }
 
-        // Если код страны найден и он валидный
         if (matchedDialCode != null && matchedCountry != null && matchedCountry.name.isNotEmpty) {
-          //print('Formatter: Обработка кода страны $matchedDialCode');
-          // Вырезаем код страны из текста
+
           String phoneNumber = hasPlus
               ? newText.substring(matchedDialCode.length)
-              : newText.substring(matchedDialCode.length - 1); // Учитываем отсутствие "+"
-          //print('Formatter: Извлеченный номер: $phoneNumber');
-          // Проверяем, что номер состоит только из цифр
+              : newText.substring(matchedDialCode.length - 1); 
+        
           if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
-            //print('Formatter: Номер валидный (только цифры)');
-            // Ограничиваем длину номера
+         
             int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;
-            //print('Formatter: Максимальная длина номера для $matchedDialCode: $newMaxLength');
             if (phoneNumber.length > newMaxLength) {
-              //print('Formatter: Номер слишком длинный, обрезаем до $newMaxLength');
               phoneNumber = phoneNumber.substring(0, newMaxLength);
             }
-
-                      // Обновляем состояние и контроллер
-            //print('Formatter: Обновляем selectedCountry и controller');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
                 selectedCountry = matchedCountry;
                 widget.controller.text = phoneNumber;
-                //print('Formatter: Установлена страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
-                //print('Formatter: Установлен текст в контроллере: ${widget.controller.text}');
               });
               final formattedNumber = (matchedCountry?.dialCode ?? '') + phoneNumber;
-              //print('Formatter: Форматированный номер для onInputChanged: $formattedNumber');
               if (widget.onInputChanged != null) {
                 widget.onInputChanged!(formattedNumber);
-                //print('Formatter: Вызван onInputChanged с номером: $formattedNumber');
               }
             });
-            // Возвращаем только номер телефона для текстового поля
-            //print('Formatter: Возвращаем текст для поля: $phoneNumber');
             return TextEditingValue(
               text: phoneNumber,
               selection: TextSelection.collapsed(offset: phoneNumber.length),
             );
           } else {
-            //print('Formatter: Номер содержит недопустимые символы: $phoneNumber');
-            return oldValue; // Отклоняем вставку, если номер содержит не цифры
+            return oldValue;
           }
         } else {
-          //print('Formatter: Код страны не найден или невалидный');
-          // Обрабатываем как обычный номер, обрезая по максимальной длине текущей страны
+
           String phoneNumber = newText;
           if (phoneNumber.length > maxLength) {
-            //print('Formatter: Номер слишком длинный для текущей страны, обрезаем до $maxLength');
             phoneNumber = phoneNumber.substring(0, maxLength);
           }
-          //print('Formatter: Возвращаем обрезанный текст: $phoneNumber');
           return TextEditingValue(
             text: phoneNumber,
             selection: TextSelection.collapsed(offset: phoneNumber.length),
           );
         }
       } else {
-        //print('Formatter: Ручной ввод или удаление, пропускаем проверку кодов стран');
-        // Проверяем длину для текущей страны
         String phoneNumber = newValue.text;
         if (phoneNumber.length > maxLength) {
-          //print('Formatter: Номер слишком длинный, обрезаем до $maxLength');
           phoneNumber = phoneNumber.substring(0, maxLength);
         }
-        //print('Formatter: Возвращаем текст для ручного ввода/удаления: $phoneNumber');
         return TextEditingValue(
           text: phoneNumber,
           selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -182,9 +128,102 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     });
   }
 
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showCountryPicker(BuildContext context) async {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8, 
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: StatefulBuilder(
+            builder: (context, setStateModal) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                        hintStyle: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setStateModal(() {
+                          _searchQuery = value.toLowerCase();
+                        });
+                      },
+                    ),
+                    Expanded(
+                      child: ListView(
+                        children: countries
+                            .where((country) =>
+                                country.name.toLowerCase().contains(_searchQuery) ||
+                                country.fullname!.toLowerCase().contains(_searchQuery) ||
+                                country.dialCode.contains(_searchQuery))
+                            .map((country) => ListTile(
+                                  leading: Text(country.flag, style: TextStyle(fontSize: 24)),
+                                  title: Text(
+                                    "${country.name} (${country.dialCode})",
+                                    style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      selectedCountry = country;
+                                      widget.controller.text = '';
+                                      if (widget.onInputChanged != null) {
+                                        widget.onInputChanged!(country.dialCode);
+                                      }
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    //print('Build: Отрисовка CustomPhoneNumberInput, текущая страна: ${selectedCountry?.name}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -210,54 +249,31 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             filled: true,
             fillColor: const Color(0xffF4F7FD),
             contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            prefixIcon: DropdownButtonHideUnderline(
-              child: DropdownButton<Country>(
-                value: selectedCountry,
-                dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                menuMaxHeight: 500,
-                itemHeight: 48,
-                items: countries.map((Country country) {
-                  return DropdownMenuItem<Country>(
-                    value: country,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        Text(country.flag, style: const TextStyle(fontSize: 24)),
-                        const SizedBox(width: 4),
-                        Text(
-                          country.dialCode,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          country.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+            prefixIcon: InkWell(
+              onTap: () => _showCountryPicker(context),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      selectedCountry?.dialCode ?? '+?',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (Country? newValue) {
-                  //print('Dropdown: Выбрана новая страна: ${newValue?.name}, код: ${newValue?.dialCode}');
-                  setState(() {
-                    selectedCountry = newValue;
-                    widget.controller.text = '';
-                    //print('Dropdown: Очищен текст в контроллере');
-                    if (newValue != null && widget.onInputChanged != null) {
-                      widget.onInputChanged!(newValue.dialCode);
-                      //print('Dropdown: Вызван onInputChanged с кодом: ${newValue.dialCode}');
-                    }
-                  });
-                },
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Text(
+                      selectedCountry?.flag ?? '',
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                  ),
+                  Icon(Icons.arrow_drop_down),
+                ],
               ),
             ),
             errorStyle: const TextStyle(
@@ -286,8 +302,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           ),
           keyboardType: TextInputType.phone,
           inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly, // Только цифры
-            _phoneNumberPasteFormatter(), // Обработка вставки
+            FilteringTextInputFormatter.digitsOnly,
+            _phoneNumberPasteFormatter(),
           ],
           validator: widget.validator,
         ),
