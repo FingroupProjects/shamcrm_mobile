@@ -673,7 +673,7 @@ class _OrderScreenState extends State<OrderScreen>
           backgroundColor: const Color(0xff1E2E52),
           child: const Icon(
             Icons.add,
-            color: Color(0xff1E2E52),
+            color: Color.fromARGB(255, 255, 255, 255),
             size: 25,
           ),
         ),
