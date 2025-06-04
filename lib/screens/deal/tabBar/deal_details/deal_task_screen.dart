@@ -175,7 +175,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                        Row(
                         children: [
                           Text(
-                            '${AppLocalizations.of(context)!.translate('project')}${task.project?.name ?? ''} ',
+                            '${AppLocalizations.of(context)!.translate('status_details')} ${task.taskStatus?.taskStatus?.name ?? ''} ',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),

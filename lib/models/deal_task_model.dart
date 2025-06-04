@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 
 class DealTask {
   final int id;
@@ -8,6 +9,8 @@ class DealTask {
   final String from;
   final String to;
   final Project? project; 
+  final TaskStatus? taskStatus;
+
 
   DealTask({
     required this.id,
@@ -17,6 +20,7 @@ class DealTask {
     required this.from,
     required this.to,
     this.project, 
+    this.taskStatus, 
   });
 
   factory DealTask.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,9 @@ class DealTask {
       from: json['from'] ?? '',
       to: json['to'] ?? '',
       project: json['project'] != null ? Project.fromJson(json['project']) : null, 
+      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      ? TaskStatus.fromJson(json['taskStatus'])
+      : null,
     );
   }
 }

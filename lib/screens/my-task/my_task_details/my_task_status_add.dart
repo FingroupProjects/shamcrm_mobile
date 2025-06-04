@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,10 +98,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       });
                     },
                     activeColor: const Color.fromARGB(255, 255, 255, 255),
-                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
-                        .withOpacity(0.5),
-                    activeTrackColor:
-                        const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                    activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
                     inactiveThumbColor:
                         const Color.fromARGB(255, 255, 255, 255),
                   ),

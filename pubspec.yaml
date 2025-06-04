@@ -18,7 +18,7 @@ dependencies:
   intl: ^0.20.2 
   open_file: ^3.5.9
   path_provider: ^2.1.5
-  dropdown_search: ^5.0.2
+  dropdown_search: ^6.0.2
   dart_pusher_channels: ^1.2.3
   social_media_recorder: ^1.2.1
   fl_chart: ^0.69.0
@@ -64,7 +64,6 @@ dependencies:
   connectivity_plus: ^6.1.4
   permission_handler: ^11.4.0
   
-  # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
   path: lib/widgets/bottom_navy_bar.dart
 
@@ -79,11 +78,6 @@ flutter_native_splash:
   #  ios: true
   image: assets/icons/playstore.png
 
-#  color: "#000000"
-#  fullscreen: true
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-# The following section is specific to Flutter packages.
 flutter:
 
   uses-material-design: true
@@ -133,12 +127,9 @@ flutter:
     - assets/icons/files/ppt.png
     - assets/icons/files/pptx.png
     - assets/icons/Profile/support_chat.png
-    # - assets/audio/send.mp3
-    # - assets/audio/get.mp3
     - assets/audio/
     - assets/page_2/icons/
 
-  #   - images/a_dot_ham.jpeg
   fonts:
     - family: Gilroy
       fonts:
@@ -150,14 +141,9 @@ flutter:
         - asset: assets/fonts/Golos-Regular.ttf
         - asset: assets/fonts/Golos-Bold.ttf
           weight: 700
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
 
 flutter_intl:
   enabled: true
 
 dependency_overrides:
-  intl: ^0.20.2  # Явно указываем зависимость intl для всех пакетов
+  intl: ^0.20.2  

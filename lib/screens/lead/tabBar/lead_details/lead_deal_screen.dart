@@ -203,7 +203,14 @@ class _DealsWidgetState extends State<DealsWidget> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      formattedDate,
+                      '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('status_details')} ${deal.dealStatus.title ?? ''}',
                       style: TaskCardStyles.priorityStyle.copyWith(
                         color: Color(0xff1E2E52),
                       ),

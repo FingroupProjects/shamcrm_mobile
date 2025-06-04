@@ -14,6 +14,7 @@ class Deal {
   final DealStatus? dealStatus;
   final List<DealCustomField> dealCustomFields;
   final bool outDated;
+  final String? createdAt;
 
   Deal({
     required this.id,
@@ -28,6 +29,7 @@ class Deal {
     this.dealStatus,
     required this.dealCustomFields,
     required this.outDated,
+    this.createdAt,
   });
 
 factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
@@ -51,12 +53,12 @@ factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
     dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
             ?.map((field) => DealCustomField.fromJson(field))
             .toList() ?? [],
-    outDated: json['out_dated'] ?? false
+    outDated: json['out_dated'] ?? false,
+    createdAt: json['created_at'] 
   );
 }
 
 
-  // Method to convert Deal object to JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -71,6 +73,7 @@ factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
       'deal_status': dealStatus?.toJson(),
       'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
       'out_dated': outDated,
+      'created_at': createdAt,
 
     };
   }
