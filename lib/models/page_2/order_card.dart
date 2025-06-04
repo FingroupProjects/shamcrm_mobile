@@ -14,6 +14,7 @@ class Order {
   final int? organizationId;
   final String? commentToCourier;
   final double? sum;
+  final String? paymentMethod; // Add this field
 
   Order({
     required this.id,
@@ -30,6 +31,7 @@ class Order {
     this.organizationId,
     this.commentToCourier,
     this.sum,
+    this.paymentMethod, // Add to constructor
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {

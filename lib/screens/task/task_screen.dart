@@ -175,14 +175,32 @@ Future<void> _loadFilterState() async {
       
     });
   }
-  void _onScroll() {
+void _onScroll() {
   if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     if (taskBloc.state is TaskDataLoaded) {
       final state = taskBloc.state as TaskDataLoaded;
       if (!taskBloc.allTasksFetched) {
         final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        taskBloc.add(FetchMoreTasks(currentStatusId, state.currentPage));
+        taskBloc.add(FetchMoreTasks(
+          currentStatusId,
+          state.currentPage,
+          query: _lastSearchQuery,
+          userIds: _selectedUsers.map((user) => user.id).toList(),
+          statusIds: _selectedStatuses,
+          fromDate: _fromDate,
+          toDate: _toDate,
+          overdue: _isOverdue,
+          hasFile: _hasFile,
+          hasDeal: _hasDeal,
+          urgent: _isUrgent,
+          deadlinefromDate: _deadlinefromDate,
+          deadlinetoDate: _deadlinetoDate,
+          project: _selectedProject,
+          authors: _selectedAuthors,
+          department: _selectedDepartment,
+          directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+        ));
       }
     }
   }
@@ -374,6 +392,10 @@ Future<void> _saveFilterState() async {
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
       _selectedAuthors = filterData['authors'] ?? []; 
+      _selectedDirectoryValues = (filterData['directory_values'] as List?)?.map((item) => {
+          'directory_id': item['directory_id'],
+          'entry_id': item['entry_id'],
+        }).toList() ?? []; // Добавляем directory_values
 
       _initialselectedUsers = filterData['users'] ?? [];
       _initialSelStatus = filterData['statuses'];
@@ -388,6 +410,7 @@ Future<void> _saveFilterState() async {
       _initialSelectedAuthors = filterData['authors'] ?? [];
       _selectedDepartment = filterData['department'];
       _initialSelectedDepartment = filterData['department'];
+      _initialDirectoryValues = List.from(_selectedDirectoryValues); // Обновляем initial
     });
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
