@@ -98,6 +98,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                         label: AppLocalizations.of(context)!.translate('enter_name_group'),
                         isPassword: false,
                         keyboardType: TextInputType.text,
+                        
                       ),
                       if (groupNameError != null)
                         Padding(

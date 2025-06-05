@@ -183,7 +183,10 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.arrow_drop_down),
+                icon: Transform.rotate(
+                  angle: 90 * 3.1415926535 / 180,
+                  child: Image.asset('assets/icons/arrow_down.png', width: 12, height: 12),
+                ),
                 onPressed: () {
                   setState(() {
                     _isDropdownVisible = !_isDropdownVisible;

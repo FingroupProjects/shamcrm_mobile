@@ -2,43 +2,45 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 abstract class DealEvent {}
 
-class FetchDealStatuses extends DealEvent {}
+  class FetchDealStatuses extends DealEvent {}
 
-class FetchDeals extends DealEvent {
-  final int statusId;
-  final String? query;
-  final List<int>? managerIds; 
-  final List<int>? leadIds; 
-  final int? statusIds; 
-  final DateTime? fromDate; 
-  final DateTime? toDate; 
-  final int? daysWithoutActivity;
-  final bool? hasTasks ;
+  class FetchDeals extends DealEvent {
+    final int statusId;
+    final String? query;
+    final List<int>? managerIds;
+    final List<int>? leadIds;
+    final int? statusIds;
+    final DateTime? fromDate;
+    final DateTime? toDate;
+    final int? daysWithoutActivity;
+    final bool? hasTasks;
+    final List<Map<String, dynamic>>? directoryValues; // Добавляем directory_values
 
-  FetchDeals(
-    this.statusId, {
-    this.query,
-    this.managerIds,
-    this.leadIds,
-    this.statusIds,
-    this.fromDate,
-    this.toDate,
-    this.daysWithoutActivity,
-    this.hasTasks,
-  });
-}
-class FetchDealStatus extends DealEvent {
-  final int dealStatusId;
-  FetchDealStatus(this.dealStatusId);
-}
+    FetchDeals(
+      this.statusId, {
+      this.query,
+      this.managerIds,
+      this.leadIds,
+      this.statusIds,
+      this.fromDate,
+      this.toDate,
+      this.daysWithoutActivity,
+      this.hasTasks,
+      this.directoryValues,
+    });
+  }
 
-class FetchMoreDeals extends DealEvent {
-  final int statusId;
-  final int currentPage;
+  class FetchDealStatus extends DealEvent {
+    final int dealStatusId;
+    FetchDealStatus(this.dealStatusId);
+  }
 
-  FetchMoreDeals(this.statusId, this.currentPage);
-}
+  class FetchMoreDeals extends DealEvent {
+    final int statusId;
+    final int currentPage;
 
+    FetchMoreDeals(this.statusId, this.currentPage);
+  }
 class CreateDealStatus extends DealEvent {
   final String title;
   final int? day;
@@ -64,7 +66,8 @@ class CreateDeal extends DealEvent {
   final int? dealtypeId;
   final int? leadId;
   final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, int>>? directoryValues; // Новое поле для справочников
+  final AppLocalizations localizations;
 
   CreateDeal({
     required this.name,
@@ -77,6 +80,7 @@ class CreateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues, // Добавляем в конструктор
     required this.localizations,
   });
 }
@@ -93,7 +97,8 @@ class UpdateDeal extends DealEvent {
   final int? dealtypeId;
   final int? leadId;
   final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, int>>? directoryValues; // Новое поле
+  final AppLocalizations localizations;
 
   UpdateDeal({
     required this.dealId,
@@ -107,6 +112,7 @@ class UpdateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues, // Добавляем в конструктор
     required this.localizations,
   });
 }

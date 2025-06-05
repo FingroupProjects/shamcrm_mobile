@@ -4,10 +4,9 @@ import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
-import 'package:intl/intl.dart'; // Импорт для форматирования даты
+import 'package:flutter/material.dart'; 
+import 'package:intl/intl.dart'; 
 
-/// Класс виджета для отображения карточки задачи
 class MyTaskCard extends StatefulWidget {
   final MyTask task;
   final String name;
@@ -64,92 +63,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
     }
   }
 
-  /// Получение инициалов пользователя из имени
-  String _getUserInitials(String name) {
-    final parts = name.split(' '); // Разделение имени на части
-    if (parts.length == 1) {
-      return parts[0][0]; // Если только одно слово, берем первую букву
-    } else if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'; // Если больше двух, берем первые буквы двух слов
-    }
-    return '';
-  }
-
   @override
   Widget build(BuildContext context) {
-    String? extractImageUrlFromSvg(String svg) {
-      if (svg.contains('href="')) {
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        return svg.substring(start, end);
-      }
-      return null;
-    }
 
-    Color? extractBackgroundColorFromSvg(String svg) {
-      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-      if (fillMatch != null) {
-        final colorHex = fillMatch.group(1);
-        if (colorHex != null) {
-          final hex = colorHex.replaceAll('#', '');
-          return Color(int.parse('FF$hex', radix: 16));
-        }
-      }
-      return null;
-    }
-
-    Widget buildSvgAvatar(String svg, {double size = 32}) {
-      if (svg.contains('image href=')) {
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } else {
-        final backgroundColor =
-            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
-
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: backgroundColor,
-            border: Border.all(
-              color: Colors.white,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: Padding(
-                padding: EdgeInsets.all(size * 0.3),
-                child: Text(
-                  RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: size * 0.4,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                    letterSpacing: 0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    // Получаем количество просроченных дней
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
     return GestureDetector(
@@ -158,17 +74,14 @@ class _MyTaskCardState extends State<MyTaskCard> {
           context,
           MaterialPageRoute(
             builder: (context) => MyTaskDetailsScreen(
-              taskId:
-                  widget.task.id.toString(), // ID задачи для детального экрана
-              taskName: widget.task.name ??
-                  AppLocalizations.of(context)!
-                      .translate('no_name'), // Название задачи
-              startDate: widget.task.startDate, // Дата начала задачи
+              taskId: widget.task.id.toString(),
+              taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'),
+              startDate: widget.task.startDate,
               taskNumber: widget.task.taskNumber,
-              endDate: widget.task.endDate, // Дата окончания задачи
-              taskStatus: dropdownValue, // Текущий статус задачи
-              statusId: widget.statusId, // ID статуса задачи
-              description: widget.task.description, // Описание задачи
+              endDate: widget.task.endDate, 
+              taskStatus: dropdownValue, 
+              statusId: widget.statusId, 
+              description: widget.task.description, 
             ),
           ),
         );
@@ -177,7 +90,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
         decoration:
-            MyTaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+            MyTaskCardStyles.taskCardDecoration, 
         child: Stack(
           children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -187,13 +100,11 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        text: widget.task.name ??
-                            AppLocalizations.of(context)!.translate('no_name'),
+                        text: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'),
                         style: MyTaskCardStyles.titleStyle,
                         children: const <TextSpan>[
                           TextSpan(
-                            text:
-                                '\n\u200B', // Невидимый пробел (Zero Width Space)
+                            text: '\n\u200B',
                             style: TaskCardStyles.titleStyle,
                           ),
                         ],
@@ -208,8 +119,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
               Row(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate(
-                        'column'), // Надпись "Колонка" для статуса задачи
+                    AppLocalizations.of(context)!.translate('column'), 
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -242,14 +152,11 @@ class _MyTaskCardState extends State<MyTaskCard> {
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
                         child: Row(
                           children: [
                             Container(
-                              constraints: BoxConstraints(
-                                  maxWidth:
-                                      200), //Размер колонки Выбора Статуса
+                              constraints: BoxConstraints( maxWidth: 200), 
                               child: Text(
                                 dropdownValue,
                                 style: const TextStyle(
@@ -275,16 +182,13 @@ class _MyTaskCardState extends State<MyTaskCard> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(2), // Отступы
+                padding: const EdgeInsets.all(2),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment
-                      .spaceBetween, // Пространство между элементами
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween, 
                   children: [
-                    // Date section
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Date icon
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(
                             (widget.task.overdue != null &&
@@ -315,11 +219,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
                         ),
                       ],
                     ),
-                    // Overdue indicator, positioned 10px from the right
                     if (widget.task.overdue != null && widget.task.overdue! > 0)
                       Container(
-                        margin: const EdgeInsets.only(
-                            right: 10), // Strictly 10px from the right
+                        margin: const EdgeInsets.only(right: 10), 
                         width: 24,
                         height: 24,
                         decoration: const BoxDecoration(
@@ -332,14 +234,11 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
-                              fontFamily:
-                                  'Gilroy', // Ensure consistent font (if used elsewhere)
-                              fontWeight: FontWeight.w500, // Consistent weight
-                              height:
-                                  1.0, // Set line height to 1.0 to remove extra vertical space
+                              fontFamily: 'Gilroy', 
+                              fontWeight: FontWeight.w500, 
+                              height: 1.0, 
                             ),
-                            textAlign: TextAlign
-                                .center, // Ensure text is centered horizontally
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),

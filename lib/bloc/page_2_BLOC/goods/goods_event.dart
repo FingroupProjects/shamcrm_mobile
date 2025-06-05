@@ -33,6 +33,8 @@ class FilterGoods extends GoodsEvent {
 
 class FetchSubCategories extends GoodsEvent {}
 
+class ResetSubCategories extends GoodsEvent {} // Новое событие для сброса подкатегорий
+
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;

@@ -689,28 +689,28 @@ Future<void> _loadUserPhone() async {
                                             ),
                                           ),
                                 const SizedBox(height: 10),
-                                ElevatedButton(
-                                  onPressed: _showImagePickerDialog,
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    backgroundColor: const Color(0xff1E2E52),
-                                  ),
-                                  child: Text(
-                                    _userImage ==
-                                                AppLocalizations.of(context)!
-                                                    .translate('not_found') ||
-                                            _userImage.isEmpty
-                                        ? AppLocalizations.of(context)!
-                                            .translate('change_photo')
-                                        : AppLocalizations.of(context)!
-                                            .translate('change_photo'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
+                                // ElevatedButton(
+                                //   onPressed: _showImagePickerDialog,
+                                //   style: ElevatedButton.styleFrom(
+                                //     padding: const EdgeInsets.symmetric(
+                                //         horizontal: 16, vertical: 8),
+                                //     backgroundColor: const Color(0xff1E2E52),
+                                //   ),
+                                //   child: Text(
+                                //     _userImage ==
+                                //                 AppLocalizations.of(context)!
+                                //                     .translate('not_found') ||
+                                //             _userImage.isEmpty
+                                //         ? AppLocalizations.of(context)!
+                                //             .translate('change_photo')
+                                //         : AppLocalizations.of(context)!
+                                //             .translate('change_photo'),
+                                //     style: const TextStyle(
+                                //       color: Colors.white,
+                                //       fontSize: 16,
+                                //     ),
+                                //   ),
+                                // ),
                               ],
                             ),
                           ],

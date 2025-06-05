@@ -12,18 +12,16 @@
     final int statusId;
     final VoidCallback onStatusUpdated;
     final void Function(int newStatusId) onStatusId;
-  final GlobalKey? dropdownKey; // Добавьте этот параметр
+    final GlobalKey? dropdownKey; 
 
     DealCard({
-          Key? key, 
-
+      Key? key, 
       required this.deal,
       required this.title,
       required this.statusId,
       required this.onStatusUpdated,
       required this.onStatusId,
-          this.dropdownKey, // Инициализируйте параметр
-
+      this.dropdownKey, 
     }): super(key: key);
 
     @override
@@ -37,7 +35,7 @@
     late final bool isSuccess = widget.deal.dealStatus!.isSuccess;
     late final bool isFailure = widget.deal.dealStatus!.isFailure;
     late final bool outDated = widget.deal.outDated;
-  final GlobalKey keyDropdown = GlobalKey(); // Добавляем ключ для dropdown
+    final GlobalKey keyDropdown = GlobalKey(); 
 
     @override
     void initState() {
@@ -142,9 +140,9 @@
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
                         color: Color(0xfff99A4BA),
-                        overflow: TextOverflow.ellipsis, // Обрезка текста
+                        overflow: TextOverflow.ellipsis, 
                       ),
-                      maxLines: 1, // Ограничение строк
+                      maxLines: 1,
                     ),
                   ),
                   Text(
@@ -189,7 +187,7 @@
                       );
                     },
                     child: Container(
-                       key: widget.dropdownKey, // Используйте переданный ключ
+                      key: widget.dropdownKey, 
                       padding:
                           const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Container(
@@ -248,9 +246,7 @@
                           const SizedBox(width: 4),
                           Text(
                             ' ${formatDate(
-                              widget.deal.startDate ??
-                                  AppLocalizations.of(context)!
-                                      .translate('unknow'),
+                              widget.deal.createdAt ?? AppLocalizations.of(context)!.translate('unknow'),
                             )}',
                             style: const TextStyle(
                               fontSize: 14,
@@ -262,8 +258,7 @@
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Color(0xFFE9EDF5),
                           borderRadius: BorderRadius.circular(4),

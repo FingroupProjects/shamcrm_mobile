@@ -82,7 +82,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             filled: true,
             fillColor: widget.backgroundColor, 
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(

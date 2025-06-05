@@ -72,10 +72,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasNotices = false;
   bool? _hasContact = false;
   bool? _hasChat = false;
-  bool? _hasNoReplies = false; // Новый параметр
-  bool? _hasUnreadMessages = false; // Новый параметр
+  bool? _hasNoReplies = false;
+  bool? _hasUnreadMessages = false;
   bool? _hasDeal = false;
   int? _daysWithoutActivity;
+  List<Map<String, dynamic>> _directoryValues = []; // Новое поле
+  List<Map<String, dynamic>> _initialDirectoryValues = []; // Новое поле
 
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
@@ -89,8 +91,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasNotices;
   bool? _initialHasContact;
   bool? _initialHasChat;
-  bool? _initialHasNoReplies; // Новый параметр
-  bool? _initialHasUnreadMessages; // Новый параметр
+  bool? _initialHasNoReplies;
+  bool? _initialHasUnreadMessages;
   bool? _initialHasDeal;
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
@@ -150,7 +152,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         final state = leadBloc.state as LeadDataLoaded;
         if (!leadBloc.allLeadsFetched) {
           final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          leadBloc.add(FetchMoreLeads(currentStatusId, state.currentPage));
+          leadBloc.add(FetchMoreLeads(
+            currentStatusId,
+            state.currentPage,
+       ));
         }
       }
     }
@@ -296,10 +301,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       hasNotices: _hasNotices,
       hasContact: _hasContact,
       hasChat: _hasChat,
-      hasNoReplies: _hasNoReplies, // Новый параметр
-      hasUnreadMessages: _hasUnreadMessages, // Новый параметр
+      hasNoReplies: _hasNoReplies,
+      hasUnreadMessages: _hasUnreadMessages,
       hasDeal: _hasDeal,
       daysWithoutActivity: _daysWithoutActivity,
+      directoryValues: _directoryValues, // Передаем значения
     ));
   }
 
@@ -318,10 +324,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       _hasNotices = false;
       _hasContact = false;
       _hasChat = false;
-      _hasNoReplies = false; // Новый параметр
-      _hasUnreadMessages = false; // Новый параметр
+      _hasNoReplies = false;
+      _hasUnreadMessages = false;
       _hasDeal = false;
       _daysWithoutActivity = null;
+      _directoryValues = []; // Сбрасываем значения справочников
       _initialSelectedManagers = [];
       _initialSelectedRegions = [];
       _initialSelectedSources = [];
@@ -334,10 +341,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       _initialHasNotices = false;
       _initialHasContact = false;
       _initialHasChat = false;
-      _initialHasNoReplies = false; // Новый параметр
-      _initialHasUnreadMessages = false; // Новый параметр
+      _initialHasNoReplies = false;
+      _initialHasUnreadMessages = false;
       _initialHasDeal = false;
       _initialDaysWithoutActivity = null;
+      _initialDirectoryValues = []; // Сбрасываем начальные значения
       _lastSearchQuery = '';
       _searchController.clear();
     });
@@ -360,10 +368,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       _hasNotices = managers['hasNotices'];
       _hasContact = managers['hasContact'];
       _hasChat = managers['hasChat'];
-      _hasNoReplies = managers['hasNoReplies']; // Новый параметр
-      _hasUnreadMessages = managers['hasUnreadMessages']; // Новый параметр
+      _hasNoReplies = managers['hasNoReplies'];
+      _hasUnreadMessages = managers['hasUnreadMessages'];
       _hasDeal = managers['hasDeal'];
       _daysWithoutActivity = managers['daysWithoutActivity'];
+      _directoryValues = managers['directory_values'] ?? []; // Сохраняем значения
 
       _initialSelectedManagers = managers['managers'];
       _initialSelectedRegions = managers['regions'];
@@ -377,10 +386,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       _initialHasNotices = managers['hasNotices'];
       _initialHasContact = managers['hasContact'];
       _initialHasChat = managers['hasChat'];
-      _initialHasNoReplies = managers['hasNoReplies']; // Новый параметр
-      _initialHasUnreadMessages = managers['hasUnreadMessages']; // Новый параметр
+      _initialHasNoReplies = managers['hasNoReplies'];
+      _initialHasUnreadMessages = managers['hasUnreadMessages'];
       _initialHasDeal = managers['hasDeal'];
       _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+      _initialDirectoryValues = managers['directory_values'] ?? []; // Сохраняем начальные значения
     });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -399,10 +409,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       hasNotices: _hasNotices,
       hasContact: _hasContact,
       hasChat: _hasChat,
-      hasNoReplies: _hasNoReplies, // Новый параметр
-      hasUnreadMessages: _hasUnreadMessages, // Новый параметр
+      hasNoReplies: _hasNoReplies,
+      hasUnreadMessages: _hasUnreadMessages,
       hasDeal: _hasDeal,
       daysWithoutActivity: _daysWithoutActivity,
+      directoryValues: _directoryValues, // Передаем значения
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
@@ -458,10 +469,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           initialManagerLeadHasNotices: _initialHasNotices,
           initialManagerLeadHasContact: _initialHasContact,
           initialManagerLeadHasChat: _initialHasChat,
-          initialManagerLeadHasNoReplies: _initialHasNoReplies, // Новый параметр
-          initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages, // Новый параметр
+          initialManagerLeadHasNoReplies: _initialHasNoReplies,
+          initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages,
           initialManagerLeadHasDeal: _initialHasDeal,
           initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
+          initialDirectoryValuesLead: _initialDirectoryValues, // Передаем начальные значения
           onLeadResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
@@ -491,9 +503,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     _hasNotices == false &&
                     _hasContact == false &&
                     _hasChat == false &&
-                    _hasNoReplies == false && // Новый параметр
-                    _hasUnreadMessages == false && // Новый параметр
-                    _hasDeal == false) {
+                    _hasNoReplies == false &&
+                    _hasUnreadMessages == false &&
+                    _hasDeal == false &&
+                    _directoryValues.isEmpty) { // Проверяем справочники
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
@@ -526,10 +539,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     hasNotices: _hasNotices,
                     hasContact: _hasContact,
                     hasChat: _hasChat,
-                    hasNoReplies: _hasNoReplies, // Новый параметр
-                    hasUnreadMessages: _hasUnreadMessages, // Новый параметр
+                    hasNoReplies: _hasNoReplies,
+                    hasUnreadMessages: _hasUnreadMessages,
                     hasDeal: _hasDeal,
                     daysWithoutActivity: _daysWithoutActivity,
+                    directoryValues: _directoryValues, // Передаем значения
                   ));
                 }
               } else if (_selectedManagerIds != null &&
@@ -544,6 +558,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   query: _searchController.text.isNotEmpty
                       ? _searchController.text
                       : null,
+                  directoryValues: _directoryValues, // Передаем значения
                 ));
               }
             }

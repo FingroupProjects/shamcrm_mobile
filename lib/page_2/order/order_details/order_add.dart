@@ -11,6 +11,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -20,7 +21,9 @@ import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdo
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +54,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   List<Branch> branches = [];
   String? selectedDialCode;
   String? baseUrl;
+  String? selectedManager;
+  String? _selectedPaymentMethod;
 
   @override
   void initState() {
@@ -84,6 +89,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               updatedAt: '',
             )
           : null;
+      _selectedPaymentMethod =
+          widget.order!.paymentMethod; // Assuming Order model has paymentMethod
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -238,7 +245,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         BlocProvider(
             create: (context) => BranchBloc(context.read<ApiService>())),
         BlocProvider(
-            create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
+            create: (context) =>
+                DeliveryAddressBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -284,17 +292,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       ? AppLocalizations.of(context)!.translate('delivery')
                       : AppLocalizations.of(context)!
                           .translate('self_delivery');
-                  _selectedDeliveryAddress = state.orderDetails!.deliveryAddress !=
-                          null
-                      ? DeliveryAddress(
-                          id: state.orderDetails!.deliveryAddressId ?? 0,
-                          address: state.orderDetails!.deliveryAddress ?? '',
-                          leadId: state.orderDetails!.lead.id,
-                          isActive: 0,
-                          createdAt: '',
-                          updatedAt: '',
-                        )
-                      : null;
+                  _selectedDeliveryAddress =
+                      state.orderDetails!.deliveryAddress != null
+                          ? DeliveryAddress(
+                              id: state.orderDetails!.deliveryAddressId ?? 0,
+                              address:
+                                  state.orderDetails!.deliveryAddress ?? '',
+                              leadId: state.orderDetails!.lead.id,
+                              isActive: 0,
+                              createdAt: '',
+                              updatedAt: '',
+                            )
+                          : null;
                 });
               });
             }
@@ -336,6 +345,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               });
                             },
                           ),
+                          const SizedBox(height: 15),
+                          ManagerRadioGroupWidget(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager =
+                                    selectedManagerData.id.toString();
+                              });
+                            },
+                          ),
                           const SizedBox(height: 16),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
@@ -357,6 +376,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             },
                             label: AppLocalizations.of(context)!
                                 .translate('phone'),
+                          ),
+                          PaymentMethodDropdown(
+                            key: const Key('payment_method_dropdown'),
+                            selectedPaymentMethod: _selectedPaymentMethod,
+                            onSelectPaymentMethod: (value) {
+                              setState(() {
+                                _selectedPaymentMethod = value;
+                              });
+                            },
                           ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
@@ -754,15 +782,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
                     final orderBloc = context.read<OrderBloc>();
                     final isPickup = _deliveryMethod ==
-                        AppLocalizations.of(context)!.translate('self_delivery');
+                        AppLocalizations.of(context)!
+                            .translate('self_delivery');
 
                     orderBloc.add(CreateOrder(
                       phone: selectedDialCode ?? _phoneController.text,
                       leadId: int.parse(selectedLead ?? '0'),
                       delivery: !isPickup,
-                      deliveryAddress: isPickup
-                          ? null
-                          : _selectedDeliveryAddress?.address,
+                      deliveryAddress:
+                          isPickup ? null : _selectedDeliveryAddress?.address,
                       deliveryAddressId:
                           isPickup ? null : _selectedDeliveryAddress?.id,
                       goods: _items

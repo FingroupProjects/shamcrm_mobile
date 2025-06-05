@@ -23,6 +23,7 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/use
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
+import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
@@ -282,6 +283,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
+        BlocProvider(create: (context) => GetDirectoryBloc()),
+
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

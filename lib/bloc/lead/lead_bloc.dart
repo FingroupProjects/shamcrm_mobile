@@ -27,6 +27,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
   int? _currentDaysWithoutActivity;
+    List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
+
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -72,6 +74,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     _currentHasUnreadMessages = event.hasUnreadMessages; // Новый параметр
     _currentHasDeal = event.hasDeal;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
+        _currentDirectoryValues = event.directoryValues; // Сохраняем текущие значения
+
 
     if (!await _checkInternetConnection()) {
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
@@ -110,6 +114,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasUnreadMessages: event.hasUnreadMessages, // Новый параметр
         hasDeal: event.hasDeal,
         daysWithoutActivity: event.daysWithoutActivity,
+                directoryValues: event.directoryValues, // Передаем в API
+
       );
 
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
@@ -210,6 +216,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasUnreadMessages: _currentHasUnreadMessages, // Новый параметр
         hasDeal: _currentHasDeal,
         daysWithoutActivity: _currentDaysWithoutActivity,
+                directoryValues: _currentDirectoryValues, // Передаем сохраненные значения
+
       );
 
       if (leads.isEmpty) {
@@ -226,59 +234,67 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
- Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
-  emit(LeadLoading());
+Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
 
-  // Проверка подключения к интернету
-  if (!await _checkInternetConnection()) {
-    emit(LeadError(event.localizations.translate('no_internet_connection')));
-    return;
-  }
-
-  try {
-    // Формируем данные для отправки
-    Map<String, dynamic> requestData = {
-      'name': event.name,
-      'lead_status_id': event.leadStatusId,
-      'phone': event.phone,
-      'position': 1,
-      'lead_custom_fields': event.customFields?.map((field) => {
-            'key': field.keys.first,
-            'value': field.values.first,
-          }).toList() ?? [],
-    };
-
-    // Добавляем manager или manager_id в зависимости от выбора
-    if (event.isSystemManager) {
-      requestData['manager'] = 'system';
-    } else if (event.managerId != null) {
-      requestData['manager_id'] = event.managerId;
+    if (!await _checkInternetConnection()) {
+      emit(LeadError(event.localizations.translate('no_internet_connection')));
+      return;
     }
 
-    // Добавляем остальные необязательные поля
-    if (event.regionId != null) requestData['region_id'] = event.regionId;
-    if (event.sourceId != null) requestData['source_id'] = event.sourceId;
-    if (event.instaLogin != null) requestData['insta_login'] = event.instaLogin;
-    if (event.facebookLogin != null) requestData['facebook_login'] = event.facebookLogin;
-    if (event.tgNick != null) requestData['tg_nick'] = event.tgNick;
-    if (event.waPhone != null) requestData['wa_phone'] = event.waPhone;
-    if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
-    if (event.email != null) requestData['email'] = event.email;
-    if (event.description != null) requestData['description'] = event.description;
+    try {
+      Map<String, dynamic> requestData = {
+        'name': event.name,
+        'lead_status_id': event.leadStatusId,
+        'phone': event.phone,
+        'position': 1,
+      };
 
-    // Вызов метода создания лида с динамическими данными
-    final result = await apiService.createLeadWithData(requestData);
+      // Добавляем lead_custom_fields только если они не пустые
+      if (event.customFields != null && event.customFields!.isNotEmpty) {
+        requestData['lead_custom_fields'] = event.customFields!.map((field) => {
+              'key': field.keys.first,
+              'value': field.values.first,
+            }).toList();
+      }
 
-    // Если успешно, обновляем состояние
-    if (result['success']) {
-      emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
-    } else {
-      emit(LeadError(result['message']));
+      // Добавляем directory_values только если они не пустые
+      if (event.directoryValues != null && event.directoryValues!.isNotEmpty) {
+        requestData['directory_values'] = event.directoryValues!.map((dir) => {
+              'directory_id': dir['directory_id'],
+              'entry_id': dir['entry_id'],
+            }).toList();
+      }
+
+      if (event.isSystemManager) {
+        requestData['manager'] = 'system';
+      } else if (event.managerId != null) {
+        requestData['manager_id'] = event.managerId;
+      }
+
+      if (event.regionId != null) requestData['region_id'] = event.regionId;
+      if (event.sourceId != null) requestData['source_id'] = event.sourceId;
+      if (event.instaLogin != null) requestData['insta_login'] = event.instaLogin;
+      if (event.facebookLogin != null) requestData['facebook_login'] = event.facebookLogin;
+      if (event.tgNick != null) requestData['tg_nick'] = event.tgNick;
+      if (event.waPhone != null) requestData['wa_phone'] = event.waPhone;
+      if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
+      if (event.email != null) requestData['email'] = event.email;
+      if (event.description != null) requestData['description'] = event.description;
+
+      final result = await apiService.createLeadWithData(requestData);
+
+      if (result['success']) {
+        emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
+      } else {
+        emit(LeadError(result['message']));
+      }
+    } catch (e) {
+      emit(LeadError(event.localizations.translate('lead_creation_error')));
     }
-  } catch (e) {
-    emit(LeadError(event.localizations.translate('lead_creation_error')));
   }
-}
+
+
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -315,6 +331,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
             'key': field.keys.first,
             'value': field.values.first,
           }).toList() ?? [],
+      'directory_values': event.directoryValues ?? [], // Добавляем справочные поля
     };
 
     // Обработка менеджера
@@ -340,7 +357,6 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     emit(LeadError(event.localizations.translate('error_update_lead')));
   }
 }
-
   Future<void> _createLeadStatus(
       CreateLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());

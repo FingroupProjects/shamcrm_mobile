@@ -1,7 +1,4 @@
-
-
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_event.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_state.dart';
@@ -9,12 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class TaskAddFromDealBloc extends Bloc<TaskAddFromDealEvent, TaskAddFromDealState> {
   final ApiService apiService;
-  
+
   TaskAddFromDealBloc({required this.apiService}) : super(const TaskAddFromDealInitial()) {
     on<CreateTaskFromDeal>(_createTaskFromDeal);
   }
 
-Future<bool> _checkInternetConnection() async {
+  Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
@@ -22,6 +19,7 @@ Future<bool> _checkInternetConnection() async {
       return false;
     }
   }
+
   Future<void> _createTaskFromDeal(
     CreateTaskFromDeal event,
     Emitter<TaskAddFromDealState> emit,
@@ -47,6 +45,7 @@ Future<bool> _checkInternetConnection() async {
         description: event.description,
         customFields: event.customFields,
         filePaths: event.filePaths,
+        directoryValues: event.directoryValues, // Added for directory support
       );
 
       if (result['success']) {

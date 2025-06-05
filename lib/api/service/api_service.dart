@@ -23,6 +23,8 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_tas
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/department.dart';
+import 'package:crm_task_manager/models/directory_link_model.dart';
+import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
@@ -30,6 +32,7 @@ import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
@@ -697,7 +700,7 @@ class ApiService {
   }
 
   // Метод для получения списка Лидов с пагинацией
-  Future<List<Lead>> getLeads(
+ Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
@@ -716,8 +719,9 @@ class ApiService {
     bool? hasChat,
     bool? hasDeal,
     int? daysWithoutActivity,
-    bool? hasNoReplies, // Новый параметр
-    bool? hasUnreadMessages, // Новый параметр
+    bool? hasNoReplies,
+    bool? hasUnreadMessages,
+    List<Map<String, dynamic>>? directoryValues, // Новый параметр
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
@@ -736,10 +740,11 @@ class ApiService {
         (hasContact == true) ||
         (hasChat == true) ||
         (hasDeal == true) ||
-        (hasNoReplies == true) || // Новый параметр
-        (hasUnreadMessages == true) || // Новый параметр
+        (hasNoReplies == true) ||
+        (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
-        (statuses != null);
+        (statuses != null) ||
+        (directoryValues != null && directoryValues.isNotEmpty); // Добавляем проверку
 
     if (leadStatusId != null && !hasFilters) {
       path += '&lead_status_id=$leadStatusId';
@@ -756,7 +761,7 @@ class ApiService {
     }
     if (regions != null && regions.isNotEmpty) {
       for (int i = 0; i < regions.length; i++) {
-        path += '&regions[$i]=${regions[i]}';
+        path += '&regions[$i]=${regions[i]}'; // Исправляем опечатку: было "®ions"
       }
     }
     if (sources != null && sources.isNotEmpty) {
@@ -765,18 +770,14 @@ class ApiService {
       }
     }
     if (hasNoReplies == true) {
-      // Новый параметр
       path += '&hasNoReplies=1';
     }
-
     if (hasUnreadMessages == true) {
-      // Новый параметр
       path += '&hasUnreadMessages=1';
     }
     if (statuses != null) {
       path += '&lead_status_id=$statuses';
     }
-
     if (fromDate != null && toDate != null) {
       final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
       final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
@@ -806,6 +807,14 @@ class ApiService {
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
     }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        final directoryId = directoryValues[i]['directory_id'];
+        final entryId = directoryValues[i]['entry_id'];
+        path += '&directory_values[$i][directory_id]=$directoryId';
+        path += '&directory_values[$i][entry_id]=$entryId';
+      }
+    }
 
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -821,7 +830,6 @@ class ApiService {
       throw Exception('Ошибка загрузки лидов!');
     }
   }
-
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1264,7 +1272,7 @@ class ApiService {
   }
 
   // Метод для Обновления Лида
-  Future<Map<String, dynamic>> updateLead({
+ Future<Map<String, dynamic>> updateLead({
     required int leadId,
     required String name,
     required int leadStatusId,
@@ -1280,10 +1288,13 @@ class ApiService {
     String? description,
     String? waPhone,
     List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+    List<Map<String, int>>? directoryValues, // Новое поле для справочников
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final Map<String, dynamic> requestData = {
+  final response = await _patchRequest(
+    '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
       'name': name,
       'lead_status_id': leadStatusId,
       'phone': phone,
@@ -1304,24 +1315,21 @@ class ApiService {
                   })
               .toList() ??
           [],
-    };
+      'directory_values': directoryValues ?? [], // Отправляем справочные поля
+    },
+  );
 
-    final response = await _patchRequest(
-      '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestData,
-    );
-
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'lead_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else {
-      return {'success': false, 'message': 'error_update_lead'};
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
     }
+    return {'success': false, 'message': 'unknown_error'};
+  } else {
+    return {'success': false, 'message': 'error_update_lead'};
   }
+}
 
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
@@ -1864,6 +1872,7 @@ class ApiService {
     DateTime? toDate,
     int? daysWithoutActivity,
     bool? hasTasks,
+    List<Map<String, dynamic>>? directoryValues,
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
@@ -1876,7 +1885,8 @@ class ApiService {
         (toDate != null) ||
         (daysWithoutActivity != null) ||
         (hasTasks == true) ||
-        (statuses != null);
+        (statuses != null) ||
+        (directoryValues != null && directoryValues.isNotEmpty);
 
     if (dealStatusId != null && !hasFilters) {
       path += '&deal_status_id=$dealStatusId';
@@ -1907,9 +1917,16 @@ class ApiService {
     }
 
     if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      final formattedFromDate = "${fromDate!.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
+      final formattedToDate = "${toDate!.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
       path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+    }
+
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+        path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+      }
     }
 
     final response = await _getRequest(path);
@@ -2106,22 +2123,122 @@ class ApiService {
   }
 
 // Метод для создания Сделки
-  Future<Map<String, dynamic>> createDeal({
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final requestBody = {
+ Future<Map<String, dynamic>> createDeal({
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  int? leadId,
+  List<Map<String, String>>? customFields,
+  List<Map<String, int>>? directoryValues, // Новое поле
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/deal${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['deal_status_id'] = dealStatusId.toString();
+    request.fields['position'] = '1';
+    if (managerId != null) {
+      request.fields['manager_id'] = managerId.toString();
+    }
+    if (startDate != null) {
+      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
+      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
+    request.fields['sum'] = sum;
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+    if (dealtypeId != null) {
+      request.fields['deal_type_id'] = dealtypeId.toString();
+    }
+    if (leadId != null) {
+      request.fields['lead_id'] = leadId.toString();
+    }
+
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['deal_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['deal_custom_fields[$i][value]'] = field.values.first;
+      }
+    }
+
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'deal_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      }
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'error_directory_values'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'error_deal_create_successfully'};
+    }
+  } catch (e) {
+    return {'success': false, 'message': 'error_deal_create_successfully'};
+  }
+}
+
+  // Метод для обновления сделки
+ Future<Map<String, dynamic>> updateDeal({
+  required int dealId,
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  required int? leadId,
+  List<Map<String, String>>? customFields,
+  List<Map<String, int>>? directoryValues, // Новое поле для справочников
+}) async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _patchRequest(
+    '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
       'name': name,
       'deal_status_id': dealStatusId,
-      'position': 1,
       if (managerId != null) 'manager_id': managerId,
       if (startDate != null) 'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate.toIso8601String(),
@@ -2129,90 +2246,29 @@ class ApiService {
       if (description != null) 'description': description,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
-      // Здесь добавляем deal_custom_fields
       'deal_custom_fields': customFields?.map((field) {
-            // Изменяем структуру для соответствия новому формату
-            return {
-              'key': field.keys.first,
-              'value': field.values.first,
-            };
-          }).toList() ??
-          [],
-    };
-    final organizationId = await getSelectedOrganization();
+        return {
+          'key': field.keys.first,
+          'value': field.values.first,
+        };
+      }).toList() ?? [],
+      'directory_values': directoryValues ?? [], // Отправляем справочные поля
+    },
+  );
 
-    final response = await _postRequest(
-        '/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'deal_create_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      // Другие проверки на ошибки...
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_create_successfully'};
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'deal_update_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
+      return {'success': false, 'message': 'invalid_name_length'};
     }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_deal_update_successfully'};
   }
-
-  // Метод для обновления сделки
-  Future<Map<String, dynamic>> updateDeal({
-    required int dealId,
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _patchRequest(
-        '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'name': name,
-          'deal_status_id': dealStatusId,
-          if (managerId != null) 'manager_id': managerId,
-          if (startDate != null) 'start_date': startDate.toIso8601String(),
-          if (endDate != null) 'end_date': endDate.toIso8601String(),
-          'sum': sum,
-          if (description != null) 'description': description,
-          if (dealtypeId != null) 'deal_type_id': dealtypeId,
-          if (leadId != null) 'lead_id': leadId,
-          'deal_custom_fields': customFields?.map((field) {
-                return {
-                  'key': field.keys.first,
-                  'value': field.values.first,
-                };
-              }).toList() ??
-              [],
-        });
-
-    // Обработка ответа
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'deal_update_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('"name"')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      // Дополнительные проверки на другие поля могут быть добавлены здесь...
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_update_successfully'};
-    }
-  }
-
+}
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
     final organizationId = await getSelectedOrganization();
@@ -2340,105 +2396,115 @@ class ApiService {
   }
 
   // API Service
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1,
-      int perPage = 20,
-      String? search,
-      List<int>? users,
-      int? statuses,
-      DateTime? fromDate,
-      DateTime? toDate,
-      bool? overdue,
-      bool? hasFile,
-      bool? hasDeal,
-      bool? urgent,
-      DateTime? deadlinefromDate,
-      DateTime? deadlinetoDate,
-      String? project,
-      final List<String>? authors,
-      String? department}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/task?page=$page&per_page=$perPage';
-    path += '&organization_id=$organizationId';
-    bool hasFilters = (search != null && search.isNotEmpty) ||
-        (users != null && users.isNotEmpty) ||
-        (fromDate != null) ||
-        (toDate != null) ||
-        (statuses != null) ||
-        overdue == true ||
-        hasFile == true ||
-        hasDeal == true ||
-        urgent == true ||
-        (deadlinefromDate != null) ||
-        (deadlinetoDate != null) ||
-        (project != null && project.isNotEmpty) ||
-        (authors != null && authors.isNotEmpty) ||
-        (department != null && department.isNotEmpty);
-    if (taskStatusId != null && !hasFilters) {
-      path += '&task_status_id=$taskStatusId';
-    }
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-    if (users != null && users.isNotEmpty) {
-      for (int i = 0; i < users.length; i++) {
-        path += '&users[$i]=${users[i]}';
-      }
-    }
-    if (statuses != null) {
-      path += '&task_status_id=$statuses';
-    }
-    if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-      path += '&from=$formattedFromDate&to=$formattedToDate';
-    }
-    if (overdue == true) {
-      path += '&overdue=1';
-    }
-    if (hasFile == true) {
-      path += '&hasFile=1';
-    }
-    if (hasDeal == true) {
-      path += '&hasDeal=1';
-    }
-    if (urgent == true) {
-      path += '&urgent=1';
-    }
-    if (deadlinefromDate != null && deadlinetoDate != null) {
-      final formattedFromDate =
-          DateFormat('yyyy-MM-dd').format(deadlinefromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
-      path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
-    }
-    if (project != null && project.isNotEmpty) {
-      path += '&project=$project';
-    }
-    if (authors != null && authors.isNotEmpty) {
-      for (int i = 0; i < authors.length; i++) {
-        path += '&authors[$i]=${authors[i]}';
-      }
-    }
-    if (department != null && department.isNotEmpty) {
-      path += '&department_id=$department';
-    }
+ Future<List<Task>> getTasks(
+  int? taskStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? users,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? overdue,
+  bool? hasFile,
+  bool? hasDeal,
+  bool? urgent,
+  DateTime? deadlinefromDate,
+  DateTime? deadlinetoDate,
+  String? project,
+  List<String>? authors,
+  String? department,
+  List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/task?page=$page&per_page=$perPage';
+  path += '&organization_id=$organizationId';
 
-    final response = await _getRequest(path);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      print('Error response! - ${response.body}');
-      throw Exception('Ошибка загрузки задач!');
+  bool hasFilters = (search != null && search.isNotEmpty) ||
+      (users != null && users.isNotEmpty) ||
+      (fromDate != null) ||
+      (toDate != null) ||
+      (statuses != null) ||
+      overdue == true ||
+      hasFile == true ||
+      hasDeal == true ||
+      urgent == true ||
+      (deadlinefromDate != null) ||
+      (deadlinetoDate != null) ||
+      (project != null && project.isNotEmpty) ||
+      (authors != null && authors.isNotEmpty) ||
+      (department != null && department.isNotEmpty) ||
+      (directoryValues != null && directoryValues.isNotEmpty); // Проверяем directoryValues
+
+  if (taskStatusId != null && !hasFilters) {
+    path += '&task_status_id=$taskStatusId';
+  }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+  if (users != null && users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      path += '&users[$i]=${users[i]}';
+    }
+  }
+  if (statuses != null) {
+    path += '&task_status_id=$statuses';
+  }
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+    path += '&from=$formattedFromDate&to=$formattedToDate';
+  }
+  if (overdue == true) {
+    path += '&overdue=1';
+  }
+  if (hasFile == true) {
+    path += '&hasFile=1';
+  }
+  if (hasDeal == true) {
+    path += '&hasDeal=1';
+  }
+  if (urgent == true) {
+    path += '&urgent=1';
+  }
+  if (deadlinefromDate != null && deadlinetoDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+  }
+  if (project != null && project.isNotEmpty) {
+    path += '&project=$project';
+  }
+  if (authors != null && authors.isNotEmpty) {
+    for (int i = 0; i < authors.length; i++) {
+      path += '&authors[$i]=${authors[i]}';
+    }
+  }
+  if (department != null && department.isNotEmpty) {
+    path += '&department_id=$department';
+  }
+  if (directoryValues != null && directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+      path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
     }
   }
 
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    print('Error response! - ${response.body}');
+    throw Exception('Ошибка загрузки задач!');
+  }
+}
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -2693,131 +2759,146 @@ class ApiService {
   }
 
 // Метод для создание задачи из сделки
-  Future<Map<String, dynamic>> createTaskFromDeal({
-    required int dealId,
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, String>>? customFields,
-    List<String>? filePaths, // Список путей к файлам
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<Map<String, dynamic>> createTaskFromDeal({
+  required int dealId,
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, String>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues, // Added for directory support
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toIso8601String();
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
+    }
 
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['task_custom_fields[$i][value]'] = field.values.first;
       }
+    }
 
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
+    // Добавляем directory_values
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
       }
+    }
 
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_deal_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.statusCode == 500) {
-          return {'success': false, 'message': 'error_server_text'};
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_deal_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.statusCode == 500) {
+        return {'success': false, 'message': 'error_server_text'};
+      }
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
   }
+}
 
 /*
 // Метод для создание задачи
@@ -2965,141 +3046,150 @@ class ApiService {
     }
   }*/
 // Метод для создание задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, String>>? customFields,
-    List<String>? filePaths, // Список путей к файлам
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken(); // Получаем токен
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, String>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues, // Новое поле
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['status_id'] = statusId.toString();
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
+    request.fields['organization_id'] = organizationId.toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toString().split(' ')[0];
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toString().split(' ')[0];
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toString().split(' ')[0];
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toString().split(' ')[0];
-      }
+    }
 
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['task_custom_fields[$i][value]'] = field.values.first;
       }
-      if (description != null) {
-        request.fields['description'] = description;
+    }
+
+    // Добавляем directory_values
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
       }
+    }
 
-      // Добавляем пользователей
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
-      }
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        // Обработка ошибок валидации
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
   }
+}
 
   //Метод для обновление задачи
   Future<Map<String, dynamic>> updateTask({
@@ -3116,6 +3206,7 @@ class ApiService {
     List<Map<String, String>>? customFields,
     List<TaskFiles>?
         existingFiles, // Добавляем параметр для существующих файлов
+        List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -3177,7 +3268,12 @@ class ApiService {
           request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
         }
       }
-
+if (directoryValues != null && directoryValues.isNotEmpty) {
+      directoryValues.asMap().forEach((i, value) {
+        request.fields['directory_values[$i][entry_id]'] = value['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] = value['directory_id'].toString();
+      });
+    }
       // Добавляем новые файлы
       if (filePaths != null && filePaths.isNotEmpty) {
         for (var filePath in filePaths) {
@@ -3592,6 +3688,152 @@ class ApiService {
       throw Exception('Ошибка загрузки отделов');
     }
   }
+
+
+  Future<DirectoryDataResponse> getDirectory() async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _getRequest(
+      '/directory${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+  late DirectoryDataResponse dataDirectory;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataDirectory = DirectoryDataResponse.fromJson(data);
+    } else {
+      throw ('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw ('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw ('Внутренняя ошибка сервера');
+  } else {
+    throw ('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {
+    print('getAll directory!');
+  }
+
+  return dataDirectory;
+}
+
+Future<MainFieldResponse> getMainFields(int directoryId) async {
+    final organizationId = await getSelectedOrganization();
+    print('Вызов getMainFields для directoryId: $directoryId');
+    final response = await _getRequest(
+        '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Ответ getMainFields для directoryId $directoryId: $data');
+        if (data['result'] != null) {
+            return MainFieldResponse.fromJson(data);
+        } else {
+            throw Exception('Результат отсутствует в ответе');
+        }
+    } else if (response.statusCode == 404) {
+        throw Exception('Ресурс не найден');
+    } else if (response.statusCode == 500) {
+        throw Exception('Внутренняя ошибка сервера');
+    } else {
+        throw Exception('Ошибка при получении данных справочника!');
+    }
+}
+Future<void> linkDirectory({
+  required int directoryId,
+  required String modelType,
+  required String organizationId,
+}) async {
+  final response = await _postRequest(
+    '/directoryLink?organization_id=$organizationId',
+    {
+      'directory_id': directoryId,
+      'model_type': modelType,
+      'organization_id': organizationId,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw ('Ошибка при связывании справочника: ${response.statusCode}');
+  }
+
+  if (kDebugMode) {
+    print('Directory linked successfully!');
+  }
+}
+
+Future<DirectoryLinkResponse> getTaskDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
+
+// Для лидов
+Future<DirectoryLinkResponse> getLeadDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
+
+// Для сделок
+Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/directoryLink/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
@@ -4268,7 +4510,7 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse(
-          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+          '$baseUrl/department/get/users${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -6313,7 +6555,7 @@ Future<List<Goods>> getGoods({
     }
     
     if (filters.containsKey('discount_percent')) {
-      path += '&discount_percent=${filters['discount_percent']}';
+      path += '&discount=${filters['discount_percent']}';
     }
   }
   
@@ -6896,73 +7138,73 @@ Future<List<Goods>> getGoods({
     }
   }
 
-  Future<Map<String, dynamic>> updateOrder({
-    required int orderId,
-    required String phone,
-    required int leadId,
-    required bool delivery,
-    String? deliveryAddress,
-    int? deliveryAddressId, // Новое поле
-    required List<Map<String, dynamic>> goods,
-    required int organizationId,
-    int? branchId,
-    String? commentToCourier,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
+ Future<Map<String, dynamic>> updateOrder({
+  required int orderId,
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  String? deliveryAddress,
+  int? deliveryAddressId,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+  int? branchId,
+  String? commentToCourier,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
 
-      final uri =
-          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-      final body = {
-        'phone': phone,
-        'lead_id': leadId,
-        'deliveryType': delivery ? 'delivery' : 'pickup',
-        'goods': goods,
-        'organization_id': organizationId.toString(),
-        'comment_to_courier': commentToCourier,
-      };
+    final uri =
+        Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
+    final body = {
+      'phone': phone,
+      'lead_id': leadId,
+      'deliveryType': delivery ? 'pickup' : 'delivery',
+      'goods': goods,
+      'organization_id': organizationId.toString(),
+      'comment_to_courier': commentToCourier,
+    };
 
-      if (delivery) {
-        body['delivery_address'] = deliveryAddress;
-        body['delivery_address_id'] = deliveryAddressId?.toString();
-      } else {
-        body['delivery_address'] = null;
-        body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId.toString();
-        }
+    if (!delivery) {
+      body['delivery_address'] = deliveryAddress;
+      body['delivery_address_id'] = deliveryAddressId?.toString();
+    } else {
+      body['delivery_address'] = null;
+      body['delivery_address_id'] = null;
+      if (branchId != null) {
+        body['branch_id'] = branchId.toString();
       }
-
-      print(
-          'ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
-
-      final response = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final jsonResponse = jsonDecode(response.body);
-        return {
-          'success': true,
-          'order': jsonResponse['result'],
-        };
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
-      }
-    } catch (e) {
-      print('ApiService: Ошибка обновления заказа: $e');
-      return {'success': false, 'error': e.toString()};
     }
+
+    print(
+        'ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final jsonResponse = jsonDecode(response.body);
+      return {
+        'success': true,
+        'order': jsonResponse['result'],
+      };
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+    }
+  } catch (e) {
+    print('ApiService: Ошибка обновления заказа: $e');
+    return {'success': false, 'error': e.toString()};
+  }
   }
 
   Future<DeliveryAddressResponse> getDeliveryAddresses({
