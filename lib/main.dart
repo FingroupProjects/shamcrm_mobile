@@ -23,7 +23,7 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/use
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
-import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
+// import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
@@ -102,6 +102,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/// Initializes the necessary services and dependencies for the application.
+///
+/// This function performs several asynchronous operations to prepare the app
+/// for startup, including:
+/// - Ensuring Flutter's widget binding is initialized.
+/// - Creating instances of `ApiService` and `AuthService`.
+/// - Checking if the domain is valid and initializing the API service if it is.
+/// - Retrieving the authentication token and PIN from the API and auth services.
+/// - Requesting app tracking authorization and initializing Firebase.
+/// - Requesting Firebase Cloud Messaging permissions and retrieving FCM tokens.
+/// - Initializing the Firebase API and handling any initial remote messages.
+/// - Setting the system UI overlay style for consistent app appearance.
+/// - Retrieving the saved language preference and setting the locale accordingly.
+/// - Launching the main `MyApp` widget with the initialized services and settings.
+
+/*******  35549f10-949e-48c7-8d27-f091a3ac4d6b  *******/
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final apiService = ApiService();
@@ -283,7 +300,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
-        BlocProvider(create: (context) => GetDirectoryBloc()),
+        // BlocProvider(create: (context) => GetDirectoryBloc()),
 
       ],
       child: MaterialApp(
@@ -340,3 +357,4 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+//sdfdffddfdfdfflkmfdmkvdfvkmdflkvdfkvlkdfvmdkvdfkvdvmddvdvkdkm
