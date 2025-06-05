@@ -205,9 +205,27 @@ void _onScroll() {
     }
   }
 }
+// //kelrmkfmwoefnrgt
+//   void _scrollToActiveTab() {
+//     if (_tabKeys.isNotEmpty && _currentTabIndex < _tabKeys.length) {
+//       final tabKey = _tabKeys[_currentTabIndex];
+//       if (tabKey.currentContext != null) {
+//         final tabOffset = tabKey.currentContext!.findRenderObject()!.getTransformTo(null).getTranslation();
+//         _scrollController.animateTo(
+//           tabOffset.x,
+//           duration: Duration(milliseconds: 300),
+//           curve: Curves.easeInOut,
+//         );
+//       }
+//     }
+//   }
 Future<void> _saveFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance() ;
     await prefs.setString('task_selected_users', jsonEncode(_selectedUsers.map((u) => u.toJson()).toList()));
+    
+    //rktenmsekof3nm
+    //khbhjbhuygyjhbk;jihihkjhjgklrfklew
+    //oiuhuig78g8
     await prefs.setInt('task_selected_statuses', _selectedStatuses ?? 0);
     await prefs.setString('task_from_date', _fromDate?.toIso8601String() ?? '');
     await prefs.setString('task_to_date', _toDate?.toIso8601String() ?? '');
