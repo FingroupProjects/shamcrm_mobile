@@ -404,135 +404,126 @@ Widget build(BuildContext context) {
           ),
         ],
         title: Transform.translate(
-          offset: const Offset(-12, 0),
-          child: _isSearching
-              ? TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!
-                        .translate('search_appbar'),
-                    border: InputBorder.none,
-                    hintStyle:
-                        TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-                  ),
-                  onChanged: _onSearchChanged,
-                )
-              : GestureDetector(
-                  onTap: isSupportChat
-                      ? null // Игнорируем нажатие для support
-                      : () async {
-                          print('Navigating to profile, chatId: ${widget.chatId}');
-                          if (_isRequestInProgress) return;
-                          setState(() {
-                            _isRequestInProgress = true;
-                          });
-                          try {
-                            if (widget.endPointInTab == 'lead') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      UserProfileScreen(chatId: widget.chatId),
-                                ),
-                              );
-                            } else if (widget.endPointInTab == 'task') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      TaskByIdScreen(chatId: widget.chatId),
-                                ),
-                              );
-                            } else if (widget.endPointInTab == 'corporate') {
-                              final getChatById =
-                                  await ApiService().getChatById(widget.chatId);
-                              if (getChatById.chatUsers.length == 2 &&
-                                  getChatById.group == null) {
-                                String userIdCheck = '';
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                userIdCheck = prefs.getString('userID') ?? '';
-                                final participant = getChatById.chatUsers
-                                    .firstWhere((user) =>
-                                        user.participant.id.toString() !=
-                                        userIdCheck)
-                                    .participant;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ParticipantProfileScreen(
-                                      userId: participant.id.toString(),
-                                      image: participant.image,
-                                      name: participant.name,
-                                      email: participant.email,
-                                      phone: participant.phone,
-                                      login: participant.login,
-                                      lastSeen: participant.lastSeen.toString(),
-                                      buttonChat: false,
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CorporateProfileScreen(
-                                      chatId: widget.chatId,
-                                      chatItem: widget.chatItem,
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'ОШИБКА!',
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                  duration: Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          } finally {
-                            setState(() {
-                              _isRequestInProgress = false;
-                            });
-                          }
-                        },
-                  child: Row(
-                    children: [
-                      _buildAvatar(widget.chatItem.avatar),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.chatItem.name.isEmpty
-                              ? AppLocalizations.of(context)!
-                                  .translate('no_name')
-                              : widget.chatItem.name,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: isSupportChat
-                                ? ChatSmsStyles.appBarTitleColor // Серый для support
-                                : ChatSmsStyles.appBarTitleColor,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+  offset: const Offset(-12, 0),
+  child: _isSearching
+      ? TextField(
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
           ),
+          onChanged: _onSearchChanged,
+        )
+      : GestureDetector(
+          onTap: isSupportChat
+              ? null
+              : () async {
+                  print('Navigating to profile, chatId: ${widget.chatId}');
+                  if (_isRequestInProgress) return;
+                  setState(() {
+                    _isRequestInProgress = true;
+                  });
+                  try {
+                    if (widget.endPointInTab == 'lead') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'task') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'corporate') {
+                      final getChatById = await ApiService().getChatById(widget.chatId);
+                      if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                        String userIdCheck = '';
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        userIdCheck = prefs.getString('userID') ?? '';
+                        final participant = getChatById.chatUsers
+                            .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                            .participant;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ParticipantProfileScreen(
+                              userId: participant.id.toString(),
+                              image: participant.image,
+                              name: participant.name,
+                              email: participant.email,
+                              phone: participant.phone,
+                              login: participant.login,
+                              lastSeen: participant.lastSeen.toString(),
+                              buttonChat: false,
+                            ),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CorporateProfileScreen(
+                              chatId: widget.chatId,
+                              chatItem: widget.chatItem,
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'ОШИБКА!',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  } finally {
+                    setState(() {
+                      _isRequestInProgress = false;
+                    });
+                  }
+                },
+          child: Row(
+            children: [
+              _buildAvatar(widget.chatItem.avatar),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isSupportChat
+                      ? AppLocalizations.of(context)!.translate('support_chat_name')
+                      : widget.chatItem.name.isEmpty
+                          ? AppLocalizations.of(context)!.translate('no_name')
+                          : widget.chatItem.name,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: isSupportChat
+                        ? ChatSmsStyles.appBarTitleColor
+                        : ChatSmsStyles.appBarTitleColor,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+),
       ),
       backgroundColor: const Color(0xffF4F7FD),
       body: Column(
