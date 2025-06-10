@@ -1,48 +1,36 @@
 part of 'chats_bloc.dart';
 
-sealed class ChatsEvent extends Equatable {
+abstract class ChatsEvent extends Equatable {
   const ChatsEvent();
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
-
 
 class FetchChats extends ChatsEvent {
   final String endPoint;
-  final String? query; 
+  final String? query;
 
   const FetchChats({required this.endPoint, this.query});
 
   @override
-  List<Object?> get props => [endPoint, query];
+  List<Object> get props => [endPoint, if (query != null) query!];
 }
 
+class RefreshChats extends ChatsEvent {}
 
-class ClearChats extends ChatsEvent {
-  const ClearChats();
-}
+class GetNextPageChats extends ChatsEvent {}
 
-
-class GetNextPageChats extends ChatsEvent {
-  const GetNextPageChats();
-}
-
-class RefreshChats extends ChatsEvent {
-  const RefreshChats();
-}
-
-class UpdateChatsFromSocket extends ChatsEvent {
-  const UpdateChatsFromSocket();
-}
+class UpdateChatsFromSocket extends ChatsEvent {}
 
 class DeleteChat extends ChatsEvent {
-    final int chatId;
-    final AppLocalizations localizations;  
+  final int chatId;
+  final AppLocalizations localizations;
 
-  const DeleteChat(
-    this.chatId,
-    this.localizations,
-    );
+  const DeleteChat(this.chatId, this.localizations);
+
+  @override
+  List<Object> get props => [chatId, localizations];
 }
 
+class ClearChats extends ChatsEvent {}
