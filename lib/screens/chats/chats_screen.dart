@@ -47,7 +47,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
 
-  Map<String, dynamic>? tutorialProgress; 
+  Map<String, dynamic>? tutorialProgress;
 
   bool _showCorporateChat = false;
   bool _showLeadChat = false;
@@ -64,6 +64,13 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   bool _isTabControllerInitialized = false;
 
+  // Создаём отдельные PagingController для каждой вкладки
+  final Map<String, PagingController<int, Chats>> _pagingControllers = {
+    'lead': PagingController(firstPageKey: 0),
+    'task': PagingController(firstPageKey: 0),
+    'corporate': PagingController(firstPageKey: 0),
+  };
+
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
@@ -74,15 +81,19 @@ class _ChatsScreenState extends State<ChatsScreen>
 
       if (!_showLeadChat && !_showCorporateChat) {
         selectTabIndex = 1;
+        endPointInTab = 'task';
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
       } else if (!_showLeadChat) {
         selectTabIndex = 1;
+        endPointInTab = 'task';
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
       } else if (!_showCorporateChat) {
         selectTabIndex = 0;
+        endPointInTab = 'lead';
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
       } else {
         selectTabIndex = 0;
+        endPointInTab = 'lead';
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
       }
       _isPermissionsChecked = true;
@@ -109,6 +120,19 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initTutorialTargets();
+    });
+
+    // Инициализируем слушатели для каждого PagingController
+    _pagingControllers.forEach((endPoint, controller) {
+      controller.addPageRequestListener((pageKey) {
+        print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+        if (pageKey == 0) {
+          controller.refresh();
+        }
+        if (endPointInTab == endPoint) {
+          context.read<ChatsBloc>().add(GetNextPageChats());
+        }
+      });
     });
   }
 
@@ -139,7 +163,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       if (tutorialProgress != null &&
           tutorialProgress!['chat']?['index'] == false &&
           !isTutorialShown &&
-          !_isTutorialShown && 
+          !_isTutorialShown &&
           mounted) {
         showTutorial();
       }
@@ -155,13 +179,13 @@ class _ChatsScreenState extends State<ChatsScreen>
         if (isTutorialShown) {
           setState(() {
             _isTaskScreenTutorialCompleted = true;
-            _isTutorialShown = true; 
+            _isTutorialShown = true;
           });
         }
         if (tutorialProgress != null &&
             tutorialProgress!['chat']?['index'] == false &&
             !isTutorialShown &&
-            !_isTutorialShown && 
+            !_isTutorialShown &&
             mounted) {
           showTutorial();
         }
@@ -202,7 +226,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void showTutorial() async {
-    if (_isTutorialShown) return; 
+    if (_isTutorialShown) return;
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
@@ -367,10 +391,10 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool isClickAvatarIcon = false;
   int selectTabIndex = 0;
 
-@override
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    
+
     _tabTitles = _getTabTitles(context);
 
     if (_isTabControllerInitialized && _tabController.length != _tabTitles.length) {
@@ -503,30 +527,37 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     return GestureDetector(
       onTap: () {
+        print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
         setState(() {
           selectTabIndex = index;
         });
         _tabController.animateTo(index);
 
-        if (index == 0) {
-          endPointInTab = 'lead';
-          context.read<ChatsBloc>().add(ClearChats());
-        }
-        if (index == 1) {
-          endPointInTab = 'task';
-          context.read<ChatsBloc>().add(ClearChats());
-        }
-        if (index == 2) {
-          endPointInTab = 'corporate';
-          context.read<ChatsBloc>().add(ClearChats());
+        String newEndPoint = index == 0
+            ? 'lead'
+            : index == 1
+                ? 'task'
+                : 'corporate';
+        endPointInTab = newEndPoint;
+
+        // Очищаем данные перед загрузкой новых
+        print('ChatsScreen._buildTabButton: Triggering ClearChats for endpoint $endPointInTab');
+        final chatsBloc = context.read<ChatsBloc>();
+        chatsBloc.add(ClearChats());
+
+        // Очищаем PagingController для новой вкладки
+        _pagingControllers[newEndPoint]!.itemList = null;
+        _pagingControllers[newEndPoint]!.refresh();
+
+        // Отменяем предыдущий таймер, если он активен
+        if (_debounce?.isActive ?? false) {
+          print('ChatsScreen._buildTabButton: Canceling previous debounce timer');
+          _debounce?.cancel();
         }
 
-        if (_debounce?.isActive ?? false) _debounce?.cancel();
-
-        _debounce = Timer(const Duration(seconds: 2), () {
-          final chatsBloc = context.read<ChatsBloc>();
-          chatsBloc.add(ClearChats());
-
+        // Задержка для загрузки новых чатов
+        _debounce = Timer(const Duration(milliseconds: 200), () {
+          print('ChatsScreen._buildTabButton: Fetching chats for endpoint $endPointInTab');
           chatsBloc.add(FetchChats(endPoint: endPointInTab));
         });
       },
@@ -552,11 +583,20 @@ class _ChatsScreenState extends State<ChatsScreen>
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(
-          _tabTitles.length,
-          (index) => _ChatItemsWidget(
-                updateChats: updateChats,
-                endPointInTab: index == 1 ? 'task' : endPointInTab,
-              )),
+        _tabTitles.length,
+        (index) {
+          String endPoint = index == 0
+              ? 'lead'
+              : index == 1
+                  ? 'task'
+                  : 'corporate';
+          return _ChatItemsWidget(
+            updateChats: updateChats,
+            endPointInTab: endPoint,
+            pagingController: _pagingControllers[endPoint]!,
+          );
+        },
+      ),
     );
   }
 
@@ -565,6 +605,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     _tabController.dispose();
     chatSubscribtion.cancel();
     socketClient.dispose();
+    _pagingControllers.forEach((_, controller) => controller.dispose());
     super.dispose();
   }
 }
@@ -572,32 +613,28 @@ class _ChatsScreenState extends State<ChatsScreen>
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
   final String endPointInTab;
+  final PagingController<int, Chats> pagingController;
 
-  const _ChatItemsWidget(
-      {required this.updateChats, required this.endPointInTab});
+  const _ChatItemsWidget({
+    required this.updateChats,
+    required this.endPointInTab,
+    required this.pagingController,
+  });
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
 }
 
 class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
-  final PagingController<int, Chats> _pagingController =
-      PagingController(firstPageKey: 0);
-
   @override
   void initState() {
     super.initState();
-    _pagingController.addPageRequestListener((pageKey) {
-      if (pageKey == 0) {
-        _pagingController.refresh();
-      }
-      context.read<ChatsBloc>().add(GetNextPageChats());
-    });
+    // Слушатели инициализируются в ChatsScreen
   }
 
   @override
   void dispose() {
-    _pagingController.dispose();
+    // PagingController очищается в ChatsScreen
     super.dispose();
   }
 
@@ -643,20 +680,42 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {
         if (state is ChatsInitial) {
-          _pagingController.refresh();
+          print('_ChatItemsWidget: ChatsInitial - Refreshing PagingController and clearing itemList for endpoint ${widget.endPointInTab}');
+          widget.pagingController.itemList = null;
+          widget.pagingController.refresh();
         }
         if (state is ChatsLoaded) {
-          if (state.chatsPagination.currentPage ==
-              state.chatsPagination.totalPage) {
-            _pagingController.appendLastPage(state.chatsPagination.data);
+          print('_ChatItemsWidget: ChatsLoaded - Received ${state.chatsPagination.data.length} chats for page ${state.chatsPagination.currentPage}, endpoint: ${widget.endPointInTab}');
+          print('_ChatItemsWidget: Chat IDs: ${state.chatsPagination.data.map((chat) => chat.id).toList()}');
+
+          // Фильтруем уникальные чаты по id
+          final uniqueChats = state.chatsPagination.data
+              .asMap()
+              .entries
+              .fold<Map<int, Chats>>({}, (map, entry) {
+                map[entry.value.id] = entry.value;
+                return map;
+              })
+              .values
+              .toList();
+
+          print('_ChatItemsWidget: Unique chats after filtering: ${uniqueChats.length}');
+          print('_ChatItemsWidget: Unique chat IDs: ${uniqueChats.map((chat) => chat.id).toList()}');
+
+          // Очищаем перед добавлением новой страницы
+          widget.pagingController.itemList = null;
+
+          if (state.chatsPagination.currentPage == state.chatsPagination.totalPage) {
+            print('_ChatItemsWidget: Appending last page with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
+            widget.pagingController.appendLastPage(uniqueChats);
           } else {
-            _pagingController.appendPage(state.chatsPagination.data,
-                state.chatsPagination.currentPage + 1);
+            print('_ChatItemsWidget: Appending page ${state.chatsPagination.currentPage} with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
+            widget.pagingController.appendPage(uniqueChats, state.chatsPagination.currentPage + 1);
           }
         }
         if (state is ChatsError) {
-          if (state.message.contains(AppLocalizations.of(context)!
-              .translate('no_internet_connection'))) {
+          print('_ChatItemsWidget: ChatsError - ${state.message}');
+          if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -683,7 +742,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       },
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
-        pagingController: _pagingController,
+        pagingController: widget.pagingController,
         builderDelegate: PagedChildBuilderDelegate<Chats>(
           noItemsFoundIndicatorBuilder: (context) {
             return Center(
@@ -691,10 +750,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!
-                        .translate('nothing_found_chat'),
-                    style:
-                        TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                    AppLocalizations.of(context)!.translate('nothing_found_chat'),
+                    style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -706,6 +763,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           firstPageProgressIndicatorBuilder: (context) {
+            print('_ChatItemsWidget: Showing first page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -714,6 +772,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           newPageProgressIndicatorBuilder: (context) {
+            print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -722,6 +781,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           itemBuilder: (context, item, index) {
+            print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}');
             return InkWell(
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),
@@ -735,5 +795,4 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         ),
       ),
     );
-  }
-}
+}}
