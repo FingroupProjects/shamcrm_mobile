@@ -50,6 +50,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   bool isPermissionsLoaded = false;
   Map<String, dynamic>? tutorialProgress;
   final ApiService _apiService = ApiService();
+  final FirebaseApi _firebaseApi = FirebaseApi(); // Добавляем экземпляр FirebaseApi
 
   @override
   void initState() {
@@ -111,7 +112,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     }
   }
 
-  
   Future<void> _fetchSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -344,7 +344,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
           await _fetchTutorialProgress();
         }
         if (widget.initialMessage != null) {
-          handleMessage(widget.initialMessage!);
+          await _firebaseApi.handleMessage(widget.initialMessage!); // Исправляем вызов
         }
       });
     });
@@ -360,7 +360,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       _pin = '';
     });
 
-  _animationController.forward();
+    _animationController.forward();
 
     await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
@@ -535,82 +535,82 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   Future<void> _showNoInternetDialog(BuildContext context) async {
-  final localizations = AppLocalizations.of(context);
-  return showDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black54,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, 
-            children: [
-              Icon(
-                Icons.wifi_off_rounded,
-                size: 48.0,
-                color: Colors.redAccent,
-              ),
-              const SizedBox(height: 16.0),
-              Text(
-                localizations?.translate('no_internet') ?? 'No Internet',
-                style: const TextStyle(
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Gilroy',
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8.0),
-              Text( localizations?.translate('please_check_internet') ??
-                    'Please check your internet connection.',
-                style: const TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.black54,
-                  fontFamily: 'Gilroy',
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24.0),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); 
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent, 
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32.0,
-                    vertical: 12.0,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  elevation: 2.0,
-                ),
-                child: Text(
-                  localizations?.translate('retry') ?? 'Retry',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Gilroy',
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+    final localizations = AppLocalizations.of(context);
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
           ),
-        ),
-      );
-    },
-  );
-}
-
+          elevation: 0,
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.wifi_off_rounded,
+                  size: 48.0,
+                  color: Colors.redAccent,
+                ),
+                const SizedBox(height: 16.0),
+                Text(
+                  localizations?.translate('no_internet') ?? 'No Internet',
+                  style: const TextStyle(
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Gilroy',
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  localizations?.translate('please_check_internet') ??
+                      'Please check your internet connection.',
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.black54,
+                    fontFamily: 'Gilroy',
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24.0),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0,
+                      vertical: 12.0,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    elevation: 2.0,
+                  ),
+                  child: Text(
+                    localizations?.translate('retry') ?? 'Retry',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class LeadEvent {}
@@ -100,7 +101,8 @@ class CreateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
-  final List<Map<String, int>>? directoryValues; // Новое поле для справочников
+  final List<Map<String, int>>? directoryValues;
+  final List<String>? filePaths; // Новое поле для файлов
   final AppLocalizations localizations;
   final bool isSystemManager;
 
@@ -120,11 +122,11 @@ class CreateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
+    this.filePaths, // Добавлено
     this.isSystemManager = false,
     required this.localizations,
   });
 }
-
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -141,9 +143,11 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
-  final List<Map<String, int>>? directoryValues; // Новое поле
+  final List<Map<String, int>>? directoryValues;
+  final List<String>? filePaths; // Новое поле для файлов
   final bool isSystemManager;
   final AppLocalizations localizations;
+  final List<LeadFiles> existingFiles; // Existing server files
 
   UpdateLead({
     required this.leadId,
@@ -161,9 +165,11 @@ class UpdateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
-    this.directoryValues, // Добавляем в конструктор
+    this.directoryValues,
+    this.filePaths, // Добавлено
     required this.localizations,
     this.isSystemManager = false,
+    required this.existingFiles,
   });
 }
 

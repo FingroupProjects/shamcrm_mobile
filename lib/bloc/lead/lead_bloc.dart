@@ -235,65 +235,65 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   }
 
 Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
-    emit(LeadLoading());
+  emit(LeadLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(LeadError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      Map<String, dynamic> requestData = {
-        'name': event.name,
-        'lead_status_id': event.leadStatusId,
-        'phone': event.phone,
-        'position': 1,
-      };
-
-      // Добавляем lead_custom_fields только если они не пустые
-      if (event.customFields != null && event.customFields!.isNotEmpty) {
-        requestData['lead_custom_fields'] = event.customFields!.map((field) => {
-              'key': field.keys.first,
-              'value': field.values.first,
-            }).toList();
-      }
-
-      // Добавляем directory_values только если они не пустые
-      if (event.directoryValues != null && event.directoryValues!.isNotEmpty) {
-        requestData['directory_values'] = event.directoryValues!.map((dir) => {
-              'directory_id': dir['directory_id'],
-              'entry_id': dir['entry_id'],
-            }).toList();
-      }
-
-      if (event.isSystemManager) {
-        requestData['manager'] = 'system';
-      } else if (event.managerId != null) {
-        requestData['manager_id'] = event.managerId;
-      }
-
-      if (event.regionId != null) requestData['region_id'] = event.regionId;
-      if (event.sourceId != null) requestData['source_id'] = event.sourceId;
-      if (event.instaLogin != null) requestData['insta_login'] = event.instaLogin;
-      if (event.facebookLogin != null) requestData['facebook_login'] = event.facebookLogin;
-      if (event.tgNick != null) requestData['tg_nick'] = event.tgNick;
-      if (event.waPhone != null) requestData['wa_phone'] = event.waPhone;
-      if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
-      if (event.email != null) requestData['email'] = event.email;
-      if (event.description != null) requestData['description'] = event.description;
-
-      final result = await apiService.createLeadWithData(requestData);
-
-      if (result['success']) {
-        emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
-      } else {
-        emit(LeadError(result['message']));
-      }
-    } catch (e) {
-      emit(LeadError(event.localizations.translate('lead_creation_error')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(LeadError(event.localizations.translate('no_internet_connection')));
+    return;
   }
 
+  try {
+    Map<String, dynamic> requestData = {
+      'name': event.name,
+      'lead_status_id': event.leadStatusId,
+      'phone': event.phone,
+      'position': 1,
+    };
+
+    if (event.customFields != null && event.customFields!.isNotEmpty) {
+      requestData['lead_custom_fields'] = event.customFields!.map((field) => {
+            'key': field.keys.first,
+            'value': field.values.first,
+          }).toList();
+    }
+
+    if (event.directoryValues != null && event.directoryValues!.isNotEmpty) {
+      requestData['directory_values'] = event.directoryValues!.map((dir) => {
+            'directory_id': dir['directory_id'],
+            'entry_id': dir['entry_id'],
+          }).toList();
+    }
+
+    if (event.isSystemManager) {
+      requestData['manager'] = 'system';
+    } else if (event.managerId != null) {
+      requestData['manager_id'] = event.managerId;
+    }
+
+    if (event.regionId != null) requestData['region_id'] = event.regionId;
+    if (event.sourceId != null) requestData['source_id'] = event.sourceId;
+    if (event.instaLogin != null) requestData['insta_login'] = event.instaLogin;
+    if (event.facebookLogin != null) requestData['facebook_login'] = event.facebookLogin;
+    if (event.tgNick != null) requestData['tg_nick'] = event.tgNick;
+    if (event.waPhone != null) requestData['wa_phone'] = event.waPhone;
+    if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
+    if (event.email != null) requestData['email'] = event.email;
+    if (event.description != null) requestData['description'] = event.description;
+
+    final result = await apiService.createLeadWithData(
+      requestData,
+      filePaths: event.filePaths, // Передаем файлы
+    );
+
+    if (result['success']) {
+      emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
+    } else {
+      emit(LeadError(result['message']));
+    }
+  } catch (e) {
+    emit(LeadError(event.localizations.translate('lead_creation_error')));
+  }
+}
 
   Future<bool> _checkInternetConnection() async {
     try {
@@ -306,14 +306,12 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
 Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
   emit(LeadLoading());
 
-  // Проверка подключения к интернету
   if (!await _checkInternetConnection()) {
     emit(LeadError(event.localizations.translate('no_internet_connection')));
     return;
   }
 
   try {
-    // Формируем данные для отправки
     final Map<String, dynamic> requestData = {
       'name': event.name,
       'lead_status_id': event.leadStatusId,
@@ -331,23 +329,22 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
             'key': field.keys.first,
             'value': field.values.first,
           }).toList() ?? [],
-      'directory_values': event.directoryValues ?? [], // Добавляем справочные поля
+      'directory_values': event.directoryValues ?? [],
+          'existing_file_ids': event.existingFiles.map((file) => file.id).toList(),
     };
 
-    // Обработка менеджера
     if (event.isSystemManager) {
-      requestData['manager_id'] = 0; // Для "Системы" отправляем manager_id = 0
+      requestData['manager_id'] = 0;
     } else if (event.managerId != null) {
       requestData['manager_id'] = event.managerId;
     }
 
-    // Вызов метода обновления лида
     final result = await apiService.updateLeadWithData(
       leadId: event.leadId,
       data: requestData,
+      filePaths: event.filePaths, // Передаем файлы
     );
 
-    // Если успешно, то обновляем состояние
     if (result['success']) {
       emit(LeadSuccess(event.localizations.translate('lead_updated_successfully')));
     } else {

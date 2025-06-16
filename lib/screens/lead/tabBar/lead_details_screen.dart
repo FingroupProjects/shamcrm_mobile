@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -32,6 +33,9 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -74,6 +78,86 @@ class LeadDetailsScreen extends StatefulWidget {
   _LeadDetailsScreenState createState() => _LeadDetailsScreenState();
 }
 
+class FileCacheManager {
+  static final FileCacheManager _instance = FileCacheManager._internal();
+  factory FileCacheManager() => _instance;
+  FileCacheManager._internal();
+
+  static const String CACHE_INFO_KEY = 'file_cache_info';
+  late SharedPreferences _prefs;
+  final Map<int, String> _cachedFiles = {};
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
+    _prefs = await SharedPreferences.getInstance();
+    await _loadCacheInfo();
+    _initialized = true;
+  }
+
+  Future<void> _loadCacheInfo() async {
+    final String? cacheInfo = _prefs.getString(CACHE_INFO_KEY);
+    if (cacheInfo != null) {
+      final Map<String, dynamic> cacheMap = json.decode(cacheInfo);
+      cacheMap.forEach((key, value) {
+        _cachedFiles[int.parse(key)] = value.toString();
+      });
+    }
+  }
+
+  Future<void> _saveCacheInfo() async {
+    final Map<String, dynamic> cacheMap = {};
+    _cachedFiles.forEach((key, value) {
+      cacheMap[key.toString()] = value;
+    });
+    await _prefs.setString(CACHE_INFO_KEY, json.encode(cacheMap));
+  }
+
+  Future<String?> getCachedFilePath(int fileId) async {
+    await init();
+    if (_cachedFiles.containsKey(fileId)) {
+      final file = File(_cachedFiles[fileId]!);
+      if (await file.exists()) {
+        return _cachedFiles[fileId];
+      } else {
+        _cachedFiles.remove(fileId);
+        await _saveCacheInfo();
+      }
+    }
+    return null;
+  }
+
+  Future<void> cacheFile(int fileId, String filePath) async {
+    await init();
+    _cachedFiles[fileId] = filePath;
+    await _saveCacheInfo();
+  }
+
+  Future<void> clearCache() async {
+    await init();
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+    _cachedFiles.clear();
+    await _saveCacheInfo();
+  }
+
+  Future<int> getCacheSize() async {
+    await init();
+    int totalSize = 0;
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        totalSize += await file.length();
+      }
+    }
+    return totalSize;
+  }
+}
+
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
   LeadById? currentLead;
@@ -83,6 +167,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canReadDeal = false;
   bool _canExportContact = false;
   bool _isExportContactEnabled = false;
+  bool _isDownloading = false;
+  Map<int, double> _downloadProgress = {};
 
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
@@ -115,11 +201,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       context
           .read<LeadByIdBloc>()
           .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-          _loadContactsToCache();
+      _loadContactsToCache();
     });
     _fetchTutorialProgress();
-    _listenToPrefsChanges(); 
+    _listenToPrefsChanges();
   }
+
   Future<void> _loadContactsToCache() async {
     try {
       if (!await FlutterContacts.requestPermission()) {
@@ -171,6 +258,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
     }
   }
+
   Future<void> _listenToPrefsChanges() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _prefsSubscription =
@@ -380,14 +468,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     ).show(context: context);
   }
 
-   Future<void> _checkPermissions() async {
+  Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
-    
+
     setState(() {
       _canEditLead = canEdit;
       _canDeleteLead = canDelete;
@@ -398,24 +486,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-     void _updateDetails(LeadById lead) {
+  void _updateDetails(LeadById lead) {
     currentLead = lead;
     details = [
       {
-        'label': AppLocalizations.of(context)!.translate('lead_name'), 
+        'label': AppLocalizations.of(context)!.translate('lead_name'),
         'value': lead.name
       },
       {
-        'label': AppLocalizations.of(context)!.translate('phone_use'), 
+        'label': AppLocalizations.of(context)!.translate('phone_use'),
         'value': lead.phone ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('region_details')}', 
+        'label': '${AppLocalizations.of(context)!.translate('region_details')}',
         'value': lead.region?.name ?? ''
       },
       if (lead.manager != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('manager_details')}', 
+          'label': '${AppLocalizations.of(context)!.translate('manager_details')}',
           'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
         }
       else
@@ -424,27 +512,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           'value': 'become_manager'
         },
       {
-        'label': '${AppLocalizations.of(context)!.translate('source_details')}', 
+        'label': '${AppLocalizations.of(context)!.translate('source_details')}',
         'value': lead.source?.name ?? ''
       },
-      {'label': 'Instagram:', 'value': lead.instagram ?? ''}, 
-      {'label': 'Facebook:', 'value': lead.facebook ?? ''}, 
-      {'label': 'Telegram:', 'value': lead.telegram ?? ''}, 
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''}, 
+      {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+      {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+      {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
       {
         'label': '${AppLocalizations.of(context)!.translate('email_details')}',
         'value': lead.email ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('birthday_details')}', 
+        'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
         'value': formatDate(lead.birthday)
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('description_details_lead')}', 
+        'label': '${AppLocalizations.of(context)!.translate('description_details_lead')}',
         'value': lead.description ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('author_details')}', 
+        'label': '${AppLocalizations.of(context)!.translate('author_details')}',
         'value': lead.author?.name ?? ''
       },
       {
@@ -455,10 +543,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'label': '${AppLocalizations.of(context)!.translate('status_details')}',
         'value': lead.leadStatus?.title ?? ''
       },
+      if (lead.files != null && lead.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+        },
     ];
     for (var field in lead.leadCustomFields) {
       print('LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
-      details.add({'label': '${field.key}:', 'value': field.value}); 
+      details.add({'label': '${field.key}:', 'value': field.value});
     }
     for (var dirValue in lead.directoryValues) {
       final directoryName = dirValue.entry.directory.name;
@@ -466,6 +559,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       details.add({'label': '$directoryName:', 'value': value});
     }
   }
+
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
       fontSize: 16,
@@ -504,8 +598,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       backgroundColor: Colors.white,
       body: BlocListener<LeadByIdBloc, LeadByIdState>(
         listener: (context, state) {
-          if (state is LeadByIdLoaded) {
-          } else if (state is LeadByIdError) {
+          if (state is LeadByIdError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               showCustomSnackBar(
                 context: context,
@@ -523,9 +616,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             } else if (state is LeadByIdLoaded) {
               LeadById lead = state.lead;
               _updateDetails(lead);
+              print('LeadDetailsScreen: Lead chats: ${lead.chats}');
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   controller: _scrollController,
                   children: [
@@ -535,6 +628,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       key: keyLeadNavigateChat,
                       leadId: int.parse(widget.leadId),
                       leadName: widget.leadName,
+                      chats: state.lead.chats
+                          .map((chat) => {
+                                'id': chat.id,
+                                'integration': chat.integration != null
+                                    ? {
+                                        'id': chat.integration!.id,
+                                        'name': chat.integration!.name,
+                                        'username': chat.integration!.username,
+                                      }
+                                    : null,
+                              })
+                          .toList(),
                     ),
                     const SizedBox(height: 8),
                     if (selectedOrganization != null)
@@ -687,6 +792,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
                             directoryValues: currentLead!.directoryValues,
+                            files: currentLead!.files, // Ensure files are passed
                           ),
                         ),
                       );
@@ -742,13 +848,89 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: currentLead?.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = currentLead!.files![index];
+                    final fileExtension = file.name.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            _showFile(file.path, file.id);
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
+                                    width: 60,
+                                    height: 60,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
+                                  ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor: Colors.grey.withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains( AppLocalizations.of(context)!.translate('lead')) ||
+              child: (label.contains(AppLocalizations.of(context)!.translate('lead')) ||
                       label.contains(AppLocalizations.of(context)!.translate('description_details_lead')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value, label),
@@ -756,6 +938,96 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _showFile(String fileUrl, int fileId) async {
+    try {
+      if (_isDownloading) return;
+
+      final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
+      if (cachedFilePath != null) {
+        final result = await OpenFile.open(cachedFilePath);
+        if (result.type == ResultType.error) {
+          _showErrorSnackBar(
+              AppLocalizations.of(context)!.translate('failed_to_open_file'));
+        }
+        return;
+      }
+
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress[fileId] = 0;
+      });
+
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/cached_files');
+      if (!await cacheDir.exists()) {
+        await cacheDir.create(recursive: true);
+      }
+
+      final fileName = '${fileId}_${fileUrl.split('/').last}';
+      final filePath = '${cacheDir.path}/$fileName';
+
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath,
+          onReceiveProgress: (received, total) {
+        if (total != -1) {
+          setState(() {
+            _downloadProgress[fileId] = received / total;
+          });
+        }
+      });
+
+      await FileCacheManager().cacheFile(fileId, filePath);
+
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      final result = await OpenFile.open(filePath);
+      if (result.type == ResultType.error) {
+        _showErrorSnackBar(
+            AppLocalizations.of(context)!.translate('failed_to_open_file'));
+      }
+    } catch (e) {
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 
@@ -771,26 +1043,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Widget _buildLabel(String label) {
-
     return Text(
       label,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xfff99A4BA),
+        color: Color(0xff99A4BA),
       ),
     );
   }
 
-Widget _buildValue(String value, String label) {
+  Widget _buildValue(String value, String label) {
     if (value.isEmpty) {
       return Container();
     }
 
-
-  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
-
+    if (label == AppLocalizations.of(context)!.translate('phone_use')) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -848,7 +1117,7 @@ Widget _buildValue(String value, String label) {
 
     if (label == '' && value == 'become_manager') {
       return Padding(
-        padding: EdgeInsets.only(left: 0,),
+        padding: EdgeInsets.only(left: 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
@@ -858,7 +1127,7 @@ Widget _buildValue(String value, String label) {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xfff99A4BA),
+                color: Color(0xff99A4BA),
               ),
             ),
             GestureDetector(
@@ -910,6 +1179,7 @@ Widget _buildValue(String value, String label) {
       overflow: TextOverflow.ellipsis,
     );
   }
+
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
@@ -1117,6 +1387,7 @@ Widget _buildValue(String value, String label) {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
+        existingFiles: currentLead!.files ?? [], // Change `existingFiles` to `files ?? []`
       ));
 
       await completer.future;

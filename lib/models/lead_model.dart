@@ -17,7 +17,8 @@ class Lead {
   final int? successefullyDealsCount;
   final int? failedDealsCount;
   final int? lastUpdate;
-  final String? messageStatus; // Новое поле для messageStatus
+  final String? messageStatus;
+  final List<Map<String, dynamic>>? chats; // Добавляем поле chats
 
   Lead({
     required this.id,
@@ -35,6 +36,7 @@ class Lead {
     this.failedDealsCount,
     this.lastUpdate,
     this.messageStatus,
+    this.chats,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -60,7 +62,12 @@ class Lead {
       successefullyDealsCount: json['successful_deals_count'],
       failedDealsCount: json['failed_deals_count'],
       lastUpdate: json['last_update'],
-      messageStatus: json['messageStatus']?.toString(), // Парсим messageStatus как строку
+      messageStatus: json['messageStatus']?.toString(),
+      chats: json['chats'] != null
+          ? (json['chats'] as List<dynamic>)
+              .map((chat) => chat as Map<String, dynamic>)
+              .toList()
+          : null,
     );
   }
 
@@ -81,9 +88,11 @@ class Lead {
       'failed_deals_count': failedDealsCount,
       'last_update': lastUpdate,
       'messageStatus': messageStatus,
+      'chats': chats,
     };
   }
 }
+
 class Author {
   final int id;
   final String name;
@@ -163,6 +172,7 @@ class LeadStatus {
   final bool isSuccess;
   final int position;
   final bool isFailure;
+
   LeadStatus({
     required this.id,
     required this.title,
@@ -184,7 +194,7 @@ class LeadStatus {
       leadsCount: json['leads_count'] ?? 0,
       isSuccess: json['is_success'] == true || json['is_success'] == 1,
       position: json['position'] ?? 0,
-      isFailure: json['isx`_failure'] == true || json['is_failure'] == 1,
+      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
       leads: (json['leads'] as List<dynamic>?)
               ?.map((lead) => Lead.fromJson(lead, json['id']))
               .toList() ??
@@ -224,6 +234,7 @@ class LeadCustomField {
       value: json['value'] ?? '',
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -67,7 +67,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Для сканирования QR-кодов</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Это приложение требует доступа к вашим контактам.</string>
+	<string>Мы используем ваши контакты, чтобы вы могли легко выбрать номер клиента и быстро добавить его как лида. Мы загружаем на сервер только данные выбранного контакта — ваша полная адресная книга никогда не загружается автоматически.</string>
 	<key>NSDocumentsUsageDescription</key>
 	<string>Это приложение требует доступ к документам для управления файлами.</string>
 	<key>NSFaceIDUsageDescription</key>
