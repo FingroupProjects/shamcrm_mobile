@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
@@ -21,12 +22,43 @@ class FirebaseApi {
   RemoteMessage? _initialMessage;
 
   Future<void> initNotifications() async {
-    await _firebaseMessaging.requestPermission();
-    final fcmToken = await _firebaseMessaging.getToken();
-    print('FCM Token: $fcmToken');
+    try {
+      // Запрашиваем разрешение на уведомления
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    await initPushNotification();
+      // Проверяем, предоставлено ли разрешение
+      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+        print('User declined or has not accepted notification permission');
+        return; // Прерываем, если пользователь не дал разрешение
+      }
+
+      // Проверяем APNS-токен (только для iOS/iPadOS)
+      if (Platform.isIOS) {
+        String? apnsToken = await _firebaseMessaging.getAPNSToken();
+        if (apnsToken == null) {
+          print('APNS token is not available yet. Skipping FCM token retrieval.');
+          return; // Прерываем, если APNS-токен недоступен
+        }
+      }
+
+      // Получаем FCM-токен
+      final fcmToken = await _firebaseMessaging.getToken();
+      if (fcmToken != null) {
+        print('FCM Token: $fcmToken');
+      } else {
+        print('Failed to get FCM token');
+      }
+
+      // Инициализируем обработчики уведомлений
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      await initPushNotification();
+    } catch (e) {
+      print('Error initializing notifications: $e');
+    }
   }
 
   Future<void> initPushNotification() async {
@@ -50,9 +82,6 @@ class FirebaseApi {
   RemoteMessage? getInitialMessage() {
     return _initialMessage;
   }
-}
-
-
 
   void _printCustomData(RemoteMessage? message) {
     if (message != null && message.data.isNotEmpty) {
@@ -87,38 +116,34 @@ class FirebaseApi {
       case 'message':
         print('Переход на экран чата с ID: $id');
 
-    bool hasDealRead = await _apiService.hasPermission('deal.read');
-    bool hasDashboard = await _apiService.hasPermission('section.dashboard');
-    bool hasLeadRead = await _apiService.hasPermission('lead.read');
-    bool hasTaskRead = await _apiService.hasPermission('task.read');
+        bool hasDealRead = await _apiService.hasPermission('deal.read');
+        bool hasDashboard = await _apiService.hasPermission('section.dashboard');
+        bool hasLeadRead = await _apiService.hasPermission('lead.read');
+        bool hasTaskRead = await _apiService.hasPermission('task.read');
 
- int permissionCount = 0;
-    if (hasDealRead) permissionCount++;
-    if (hasDashboard) permissionCount++;
-    if (hasLeadRead) permissionCount++;
-    if (hasTaskRead) permissionCount++;
+        int permissionCount = 0;
+        if (hasDealRead) permissionCount++;
+        if (hasDashboard) permissionCount++;
+        if (hasLeadRead) permissionCount++;
+        if (hasTaskRead) permissionCount++;
 
-    if (permissionCount == 0) {
-      screenIndex = 0;
-      await navigateToScreen(screenIndex, id, 'message', message);
-    }
-    else if (permissionCount == 2) {
-      screenIndex = 2; 
-      await navigateToScreen(screenIndex, id, 'message', message);
-    }
-    else if (permissionCount == 3) {
-      screenIndex = 3; 
-      await navigateToScreen(screenIndex, id, 'message', message);
-    }
-    else if (permissionCount == 4) {
-      screenIndex = 4;
-      await navigateToScreen(screenIndex, id, 'message', message);
-    }
-    else {
-      screenIndex = 1;
-      await navigateToScreen(screenIndex, id, 'message', message);
-    }
-    break;
+        if (permissionCount == 0) {
+          screenIndex = 0;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else if (permissionCount == 2) {
+          screenIndex = 2;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else if (permissionCount == 3) {
+          screenIndex = 3;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else if (permissionCount == 4) {
+          screenIndex = 4;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else {
+          screenIndex = 1;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        }
+        break;
 
       case 'task':
       case 'taskFinished':
@@ -137,8 +162,7 @@ class FirebaseApi {
       case 'dealDeadLineNotification':
         print('Переход на экран сделки с ID: $id');
         screenIndex = 3;
-        await navigateToScreen(
-            screenIndex, id, 'dealDeadLineNotification', message);
+        await navigateToScreen(screenIndex, id, 'dealDeadLineNotification', message);
         break;
 
       case 'lead':
@@ -159,7 +183,7 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'eventId', message);
         break;
-      
+
       case 'orders':
         print('Переход на экран заказов с ID: $id');
         screenIndex = 3;
@@ -170,55 +194,60 @@ class FirebaseApi {
     }
   }
 
-Future<void> navigateToScreen(
-    int screenIndex, String id, String type, RemoteMessage message) async {
-  SharedPreferences.getInstance().then((prefs) {
-    prefs.setBool('hasNewNotification', false);
-  });
+  Future<void> navigateToScreen(
+      int screenIndex, String id, String type, RemoteMessage message) async {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('hasNewNotification', false);
+    });
 
-  int group = 1;
-  if (type == 'message' || type == 'task' || type == 'lead' || type == 'dealDeadLineNotification' || type == 'eventId' || type == 'myTask') {
-    group = 1;
-  } else {
-    group = 2;
+    int group = 1;
+    if (type == 'message' ||
+        type == 'task' ||
+        type == 'lead' ||
+        type == 'dealDeadLineNotification' ||
+        type == 'eventId' ||
+        type == 'myTask') {
+      group = 1;
+    } else {
+      group = 2;
+    }
+
+    navigatorKey.currentState?.pushReplacementNamed(
+      '/home',
+      arguments: {'id': id, 'screenIndex': screenIndex, 'group': group},
+    );
+
+    switch (type) {
+      case 'message':
+        await navigateToChatScreen(id, message);
+        break;
+
+      case 'task':
+        await navigateToTaskScreen(id, message);
+        break;
+
+      case 'lead':
+        await navigateToLeadScreen(id, message);
+        break;
+      case 'myTask':
+        await navigateToMyTaskScreen(id, message);
+        break;
+      case 'eventId':
+        await navigateToEventScreen(id, message);
+        break;
+
+      case 'dealDeadLineNotification':
+        await navigateToDealScreen(id, message);
+        break;
+
+      case 'orders':
+        await navigateToOrdersScreen(id, message);
+        break;
+
+      default:
+        print('Не удалось перейти на экран: $type');
+    }
   }
-
-  navigatorKey.currentState?.pushReplacementNamed(
-    '/home',
-    arguments: {'id': id, 'screenIndex': screenIndex, 'group': group},
-  );
-
-  switch (type) {
-    case 'message':
-      await navigateToChatScreen(id, message);
-      break;
-
-    case 'task':
-      await navigateToTaskScreen(id, message);
-      break;
-
-    case 'lead':
-      await navigateToLeadScreen(id, message);
-      break;
-    case 'myTask':
-      await navigateToMyTaskScreen(id, message);
-      break;
-    case 'eventId':
-      await navigateToEventScreen(id, message);
-      break;
-
-    case 'dealDeadLineNotification':
-      await navigateToDealScreen(id, message);
-      break;
-
-    case 'orders':
-      await navigateToOrdersScreen(id, message);
-      break;
-
-    default:
-      print('Не удалось перейти на экран: $type');
-  }
-}
 
   Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
     final chatId = int.tryParse(id) ?? 0;
@@ -295,7 +324,7 @@ Future<void> navigateToScreen(
     print('Received push notification data: ${message.data}');
 
     final taskId = message.data['id'];
-    final taskNumber = int.tryParse(message.data['taskNumber'] ?? ''); 
+    final taskNumber = int.tryParse(message.data['taskNumber'] ?? '');
 
     print('taskId: $taskId');
     print('taskNumber: $taskNumber');
@@ -308,7 +337,7 @@ Future<void> navigateToScreen(
             taskName: '',
             taskStatus: '',
             statusId: 1,
-            taskNumber: taskNumber, 
+            taskNumber: taskNumber,
             taskCustomFields: [],
           ),
         ),
@@ -333,10 +362,9 @@ Future<void> navigateToScreen(
   }
 
   Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
-
     final myTaskId = message.data['id'];
     final taskNumber = int.tryParse(message.data['task_number'] ?? '');
-    
+
     if (myTaskId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
@@ -345,7 +373,7 @@ Future<void> navigateToScreen(
             taskName: '',
             taskStatus: '',
             statusId: 1,
-            taskNumber: taskNumber, 
+            taskNumber: taskNumber,
           ),
         ),
       );
@@ -384,41 +412,41 @@ Future<void> navigateToScreen(
         ),
       );
     }
-    
+  }
 
-  
-}
-
- Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
-  final orderId = int.tryParse(message.data['id'] ?? '');
-  if (orderId != null) {
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (context) => OrderDetailsScreen(
-          orderId: orderId,
-          order: Order(id: orderId,phone: '',orderNumber: '', delivery: false,
-            lead: OrderLead( id: 0, name: '', phone: '', channels: [] ),
-            orderStatus: OrderStatusName(id: 0, name: ''),
-            goods: [],
+  Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
+    final orderId = int.tryParse(message.data['id'] ?? '');
+    if (orderId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => OrderDetailsScreen(
+            orderId: orderId,
+            order: Order(
+                id: orderId,
+                phone: '',
+                orderNumber: '',
+                delivery: false,
+                lead: OrderLead(id: 0, name: '', phone: '', channels: []),
+                orderStatus: OrderStatusName(id: 0, name: ''),
+                goods: []),
+            categoryName: '',
           ),
-          categoryName: '',
         ),
-      ),
-    );
+      );
+    }
+  }
+
+  // Фоновый обработчик сообщений
+  Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+    print('Фоновое уведомление: ${message.messageId}');
+    if (message.data.isNotEmpty) {
+      message.data.forEach((key, value) {
+        print('Custom Data - Key: $key, Value: $value');
+      });
+    } else {
+      print('Нет кастомных данных в уведомлении в фоне');
+    }
+    print('Заголовок: ${message.notification?.title}');
+    print('Сообщение: ${message.notification?.body}');
   }
 }
-
-// Фоновый обработчик сообщений
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Фоновое уведомление: ${message.messageId}');
-  if (message.data.isNotEmpty) {
-    message.data.forEach((key, value) {
-      print('Custom Data - Key: $key, Value: $value');
-    });
-  } else {
-    print('Нет кастомных данных в уведомлении в фоне');
-  }
-  print('Заголовок: ${message.notification?.title}');
-  print('Сообщение: ${message.notification?.body}');
-}
-

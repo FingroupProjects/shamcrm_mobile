@@ -294,6 +294,8 @@ class UserProfileScreen extends StatelessWidget {
                                                  managerId: parsedUserId,
                                                  leadStatusId: profile.leadStatus?.id ?? 0,
                                                  localizations: localizations,
+                                                //  files: profile.files ?? [],
+                                                  existingFiles: [], // Changed from existingFiles
                                                ));
 
                                                await completer.future;

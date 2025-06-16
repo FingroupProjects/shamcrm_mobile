@@ -1,3 +1,4 @@
+import 'dart:io'; // Добавляем для проверки платформы
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
@@ -47,9 +48,26 @@ class LoginScreen extends StatelessWidget {
                 await prefs.setString('userAllRoles', 'No role assigned');
               }
 
-              String? fcmToken = await FirebaseMessaging.instance.getToken();
-              if (fcmToken != null) {
-                await apiService.sendDeviceToken(fcmToken);
+              // Получение и отправка FCM-токена с проверкой APNS
+              try {
+                String? fcmToken;
+                if (Platform.isIOS) {
+                  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+                  if (apnsToken == null) {
+                    print('APNS token is not available yet. Skipping FCM token retrieval.');
+                  } else {
+                    fcmToken = await FirebaseMessaging.instance.getToken();
+                  }
+                } else {
+                  fcmToken = await FirebaseMessaging.instance.getToken();
+                }
+                if (fcmToken != null) {
+                  await apiService.sendDeviceToken(fcmToken);
+                } else {
+                  print('Failed to get FCM token');
+                }
+              } catch (e) {
+                print('Error getting FCM token: $e');
               }
 
               final savedOrganization =
