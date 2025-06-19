@@ -776,6 +776,9 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               focusColor: Colors.black87,
               child: ChatListItem(
                 chatItem: item.toChatItem(),
+                 endPointInTab: widget.endPointInTab,
+
+
               ),
             );
           },

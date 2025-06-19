@@ -1061,5 +1061,9 @@
   "no_photos": "Доступ к галерее не предоставлен!",
   "open_settings": "Открыть настройки",
   "version_mobile": "Версия приложения",
-  "select_integration": "Выберите чат"
+  "select_integration": "Выберите чат",
+  "file_already_exists": "Файл уже существует",
+  "file_not_found": "Файл не найден",
+"error_picking_file": "Ошибка при выборе файла"
+
 }

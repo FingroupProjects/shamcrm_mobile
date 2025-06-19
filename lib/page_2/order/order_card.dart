@@ -21,6 +21,7 @@ class OrderCard extends StatefulWidget {
     required this.onStatusUpdated,
     required this.onStatusId,
     required this.onTabChange,
+    super.key,
   });
 
   @override
@@ -52,6 +53,11 @@ class _OrderCardState extends State<OrderCard> {
   String _formatDate(DateTime? date) {
     if (date == null) return AppLocalizations.of(context)!.translate('no_date');
     return DateFormat('dd.MM.yyyy').format(date);
+  }
+
+  String _formatSum(double? sum) {
+    if (sum == null) return '0 сом';
+    return NumberFormat('#,##0 сом', 'ru_RU').format(sum);
   }
 
   @override
@@ -88,11 +94,12 @@ class _OrderCardState extends State<OrderCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Номер заказа и дата
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '№${widget.order.orderNumber}',
+                  'Заказ №${widget.order.orderNumber}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -111,9 +118,10 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 12),
+            // Статус и сумма
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
                   onTap: () {
@@ -149,7 +157,7 @@ class _OrderCardState extends State<OrderCard> {
                     child: Row(
                       children: [
                         Container(
-                          constraints: const BoxConstraints(maxWidth: 200),
+                          constraints: const BoxConstraints(maxWidth: 150),
                           child: Text(
                             dropdownValue,
                             style: const TextStyle(
@@ -171,49 +179,106 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                   ),
                 ),
+                Text(
+                  _formatSum(widget.order.sum),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 18),
+            // Менеджер и способ оплаты
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.person,
-                  color: Color(0xff99A4BA),
-                  size: 24,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Наличными',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EDF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Система',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                
+              ],
+            ),
+            const SizedBox(height: 18),
+            // Клиент и номер лида
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      const Icon(
+                        Icons.person,
+                        color: Color(0xff99A4BA),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           widget.order.lead.name,
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.w500,
                             color: Color(0xff1E2E52),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        widget.order.phone.isNotEmpty
-                            ? widget.order.phone
-                            : AppLocalizations.of(context)!.translate('no_phone'),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
                     ],
                   ),
                 ),
+                Text(
+              widget.order.phone.isNotEmpty
+                  ? widget.order.phone
+                  : AppLocalizations.of(context)!.translate('no_phone'),
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+            ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Телефон
+          
           ],
         ),
       ),

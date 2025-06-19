@@ -14,6 +14,7 @@ class Notice {
   final bool canFinish;
   final String? conclusion;
   final Call? call;
+  final List<NoticeFiles>? files; // Новое поле для файлов
 
   Notice({
     required this.id,
@@ -28,7 +29,8 @@ class Notice {
     required this.createdAt,
     required this.canFinish,
     this.conclusion,
-    this.call, 
+    this.call,
+    this.files, // Добавляем в конструктор
   });
 
   factory Notice.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,12 @@ class Notice {
     }
 
     try {
+      final files = (json['files'] as List<dynamic>?)
+              ?.map((item) => NoticeFiles.fromJson(item))
+              .toList() ??
+          []; // Парсим файлы
+      print('Notice: Parsed files: $files');
+
       return Notice(
         id: json['id'] as int? ?? 0,
         isFinished: json['is_finished'] as bool? ?? false,
@@ -69,6 +77,7 @@ class Notice {
         call: json['call'] != null
             ? Call.fromJson(json['call'] as Map<String, dynamic>)
             : null,
+        files: files, // Добавляем файлы
       );
     } catch (e) {
       print('Error parsing Notice: $e');
@@ -183,5 +192,27 @@ class UserEvent {
       online: json['online'],
       fullName: json['full_name'],
     );
+  }
+}
+class NoticeFiles {
+  final int id;
+  final String name;
+  final String path;
+
+  NoticeFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory NoticeFiles.fromJson(Map<String, dynamic> json) {
+    print('NoticeFiles: Parsing JSON for file ID: ${json['id']}');
+    final file = NoticeFiles(
+      id: json['id'] is int ? json['id'] : 0,
+      name: json['name'] is String ? json['name'] : '',
+      path: json['path'] is String ? json['path'] : '',
+    );
+    print('NoticeFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
+    return file;
   }
 }

@@ -1030,42 +1030,74 @@ class ApiService {
     }
   }
 
-  // Метод для Создания Заметки Лида
-  Future<Map<String, dynamic>> createNotes({
-    required String title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required List<int> users,
-  }) async {
+ Future<Map<String, dynamic>> createNotes({
+  required String title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required List<int> users,
+  List<String>? filePaths, // Новое поле для файлов
+}) async {
+  try {
+    final token = await getToken();
     final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/notices${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    final response = await _postRequest(
-        '/notices${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'body': body,
-          'lead_id': leadId,
-          'date': date?.toIso8601String(),
-          'users': users,
-        });
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем поля в запрос
+    request.fields['title'] = title;
+    request.fields['body'] = body;
+    request.fields['lead_id'] = leadId.toString();
+    if (date != null) {
+      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    }
+    request.fields['organization_id'] = organizationId?.toString() ?? '2';
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
+    }
+
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
+        return {'success': false, 'message': 'invalid_title_length'};
       } else if (response.body.contains('body')) {
         return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'error_valid_date'};
+      } else if (response.body.contains('users')) {
+        return {'success': false, 'message': 'error_users'};
       } else {
-        return {'success': false, 'message': 'unknown_error'};
+        return {'success': false, 'message': 'validation_error'};
       }
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
     } else {
       return {'success': false, 'message': 'error_create_note'};
     }
+  } catch (e) {
+    return {'success': false, 'message': 'error_create_note'};
   }
+}
 
   // Метод для Редактирование Заметки Лида
   Future<Map<String, dynamic>> updateNotes({
@@ -2239,7 +2271,8 @@ Future<Map<String, dynamic>> updateLeadWithData({
   int? dealtypeId,
   int? leadId,
   List<Map<String, String>>? customFields,
-  List<Map<String, int>>? directoryValues, // Новое поле
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths, // Новое поле для файлов
 }) async {
   try {
     final token = await getToken();
@@ -2296,6 +2329,14 @@ Future<Map<String, dynamic>> updateLeadWithData({
       }
     }
 
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
+
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
@@ -2321,9 +2362,8 @@ Future<Map<String, dynamic>> updateLeadWithData({
     return {'success': false, 'message': 'error_deal_create_successfully'};
   }
 }
-
   // Метод для обновления сделки
- Future<Map<String, dynamic>> updateDeal({
+Future<Map<String, dynamic>> updateDeal({
   required int dealId,
   required String name,
   required int dealStatusId,
@@ -2335,34 +2375,87 @@ Future<Map<String, dynamic>> updateLeadWithData({
   int? dealtypeId,
   required int? leadId,
   List<Map<String, String>>? customFields,
-  List<Map<String, int>>? directoryValues, // Новое поле для справочников
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths, // Новое поле для файлов
+  List<DealFiles>? existingFiles, // Существующие файлы
 }) async {
   final organizationId = await getSelectedOrganization();
-
-  final response = await _patchRequest(
-    '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {
-      'name': name,
-      'deal_status_id': dealStatusId,
-      if (managerId != null) 'manager_id': managerId,
-      if (startDate != null) 'start_date': startDate.toIso8601String(),
-      if (endDate != null) 'end_date': endDate.toIso8601String(),
-      'sum': sum,
-      if (description != null) 'description': description,
-      if (dealtypeId != null) 'deal_type_id': dealtypeId,
-      if (leadId != null) 'lead_id': leadId,
-      'deal_custom_fields': customFields?.map((field) {
-        return {
-          'key': field.keys.first,
-          'value': field.values.first,
-        };
-      }).toList() ?? [],
-      'directory_values': directoryValues ?? [], // Отправляем справочные поля
-    },
+  var uri = Uri.parse(
+    '${baseUrl}/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
   );
 
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'deal_update_successfully'};
+  // Создаем multipart request с методом POST
+  var request = http.MultipartRequest('POST', uri);
+
+  // Добавляем заголовки
+  final token = await getToken();
+  request.headers.addAll({
+    'Authorization': 'Bearer $token',
+    'Accept': 'application/json',
+    'Device': 'mobile',
+  });
+
+  // Добавляем поля явно
+  request.fields['name'] = name;
+  request.fields['deal_status_id'] = dealStatusId.toString();
+  if (managerId != null) request.fields['manager_id'] = managerId.toString();
+  if (startDate != null) request.fields['start_date'] = startDate.toIso8601String();
+  if (endDate != null) request.fields['end_date'] = endDate.toIso8601String();
+  request.fields['sum'] = sum;
+  if (description != null) request.fields['description'] = description;
+  if (dealtypeId != null) request.fields['deal_type_id'] = dealtypeId.toString();
+  if (leadId != null) request.fields['lead_id'] = leadId.toString();
+  if (organizationId != null) {
+    request.fields['organization_id'] = organizationId.toString();
+  }
+
+  // Добавляем кастомные поля
+  final customFieldsList = customFields?.map((field) {
+    return {
+      'key': field.keys.first,
+      'value': field.values.first,
+    };
+  }).toList() ?? [];
+  if (customFieldsList.isNotEmpty) {
+    for (int i = 0; i < customFieldsList.length; i++) {
+      var field = customFieldsList[i];
+      request.fields['deal_custom_fields[$i][key]'] = field['key']!;
+      request.fields['deal_custom_fields[$i][value]'] = field['value']!;
+    }
+  }
+
+  // Добавляем справочные значения
+  final directoryValuesList = directoryValues ?? [];
+  if (directoryValuesList.isNotEmpty) {
+    for (int i = 0; i < directoryValuesList.length; i++) {
+      var value = directoryValuesList[i];
+      request.fields['directory_values[$i][directory_id]'] = value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] = value['entry_id'].toString();
+    }
+  }
+
+  // Добавляем ID существующих файлов
+  if (existingFiles != null && existingFiles.isNotEmpty) {
+    final existingFileIds = existingFiles.map((file) => file.id).toList();
+    for (int i = 0; i < existingFileIds.length; i++) {
+      request.fields['existing_file_ids[$i]'] = existingFileIds[i].toString();
+    }
+  }
+
+  // Добавляем новые файлы, если они есть
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  // Отправляем запрос
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'deal_updated_successfully'};
   } else if (response.statusCode == 422) {
     if (response.body.contains('"name"')) {
       return {'success': false, 'message': 'invalid_name_length'};
@@ -6158,76 +6251,151 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> createNotice({
-    String? title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required int sendNotification,
-    required List<int> users,
-  }) async {
+ Future<Map<String, dynamic>> createNotice({
+  String? title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required int sendNotification,
+  required List<int> users,
+  List<String>? filePaths, // Новое поле для файлов
+}) async {
+  try {
+    final token = await getToken();
     final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/notices${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    final requestBody = {
-      'title': title ?? '', // Используем пустую строку, если title == null
-      'body': body,
-      'lead_id': leadId,
-      'date': date != null ? DateFormat('yyyy-MM-dd HH:mm').format(date) : null,
-      'send_notification': sendNotification,
-      'users': users,
-      'organization_id': organizationId ?? '2'
-    };
+    var request = http.MultipartRequest('POST', uri);
 
-    final response = await _postRequest(
-        '/notices?organization_id=${organizationId ?? ""}', requestBody);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем поля в запрос
+    if (title != null && title.isNotEmpty) {
+      request.fields['title'] = title;
+    }
+    request.fields['body'] = body;
+    request.fields['lead_id'] = leadId.toString();
+    if (date != null) {
+      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    }
+    request.fields['send_notification'] = sendNotification.toString();
+    request.fields['organization_id'] = organizationId?.toString() ?? '2';
+
+    // Добавляем массив users
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
+    }
+
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'notice_create_successfully'};
+      return {
+        'success': true,
+        'message': 'notice_create_successfully',
+      };
     } else if (response.statusCode == 422) {
+      if (response.body.contains('title')) {
+        return {'success': false, 'message': 'invalid_title_length'};
+      }
+      if (response.body.contains('users')) {
+        return {'success': false, 'message': 'error_users'};
+      }
       return {'success': false, 'message': 'validation_error'};
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
       return {'success': false, 'message': 'error_notice_create'};
     }
+  } catch (e) {
+    return {'success': false, 'message': 'error_notice_create'};
   }
+}
+Future<Map<String, dynamic>> updateNotice({
+  required int noticeId,
+  String? title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required int sendNotification,
+  required List<int> users,
+  List<String>? filePaths, // Новое поле для файлов
+  List<NoticeFiles>? existingFiles, // Существующие файлы
+}) async {
+  final organizationId = await getSelectedOrganization();
+  var uri = Uri.parse(
+    '${baseUrl}/notices/$noticeId?organization_id=${organizationId ?? "2"}',
+  );
 
-  Future<Map<String, dynamic>> updateNotice({
-    required int noticeId,
-    String? title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required int sendNotification,
-    required List<int> users,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  // Создаем multipart request с методом POST
+  var request = http.MultipartRequest('POST', uri);
 
-    final requestBody = {
-      'title': title,
-      'body': body,
-      'lead_id': leadId,
-      'date': date != null ? DateFormat('yyyy-MM-dd HH:mm').format(date) : null,
-      'send_notification': sendNotification,
-      'users': users,
-      'organization_id': organizationId ?? '2'
-    };
+  // Добавляем заголовки
+  final token = await getToken();
+  request.headers.addAll({
+    'Authorization': 'Bearer $token',
+    'Accept': 'application/json',
+    'Device': 'mobile',
+  });
 
-    final response = await _patchRequest(
-      '/notices/$noticeId?organization_id=${organizationId ?? "2"}',
-      requestBody,
-    );
+  // Добавляем поля явно
+  if (title != null) request.fields['title'] = title;
+  request.fields['body'] = body;
+  request.fields['lead_id'] = leadId.toString();
+  if (date != null) request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+  request.fields['send_notification'] = sendNotification.toString();
+  request.fields['organization_id'] = organizationId?.toString() ?? '2';
 
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': '111'};
-    } else if (response.statusCode == 422) {
-      return {'success': false, 'message': 'validation_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_notice_update'};
+  // Добавляем пользователей
+  if (users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
     }
   }
+
+  // Добавляем ID существующих файлов
+  if (existingFiles != null && existingFiles.isNotEmpty) {
+    final existingFileIds = existingFiles.map((file) => file.id).toList();
+    for (int i = 0; i < existingFileIds.length; i++) {
+      request.fields['existing_file_ids[$i]'] = existingFileIds[i].toString();
+    }
+  }
+
+  // Добавляем новые файлы, если они есть
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  // Отправляем запрос
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'notice_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    return {'success': false, 'message': 'validation_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_notice_update'};
+  }
+}
 
   Future<Map<String, dynamic>> deleteNotice(int noticeId) async {
     final organizationId = await getSelectedOrganization();

@@ -1054,6 +1054,11 @@
 "no_photos": "Gallery access not granted!",
 "open_settings": "Open settings",
 "support_chat_name": "Support",
-"version_mobilе": "Mobile version"
+"version_mobilе": "Mobile version",
+"file_already_exists": "File already exists",
+"file_not_found": "File not found",
+"error_picking_file": "Error picking file"
+
+
 
 }

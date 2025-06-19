@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -22,6 +24,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,7 +47,7 @@ class DealEditScreen extends StatefulWidget {
   final int statusId;
   final List<DealCustomFieldsById> dealCustomFields;
   final List<DirectoryValue>? directoryValues;
-
+final List<DealFiles>? files; // Добавляем поле для файлов
   DealEditScreen({
     required this.dealId,
     required this.dealName,
@@ -59,6 +62,7 @@ class DealEditScreen extends StatefulWidget {
     this.sum,
     required this.dealCustomFields,
     this.directoryValues,
+    this.files, // Добавляем в конструктор
   });
 
   @override
@@ -79,6 +83,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
   String? selectedLead;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+    List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
+  List<DealFiles> existingFiles = []; // Для хранения файлов с сервера
+  List<String> newFiles = []; // Новый список для хранения путей к новым файлам
 
   @override
   void initState() {
@@ -86,7 +95,18 @@ class _DealEditScreenState extends State<DealEditScreen> {
     _initializeControllers();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
+    // Инициализация файлов
+    if (widget.files != null) {
+      existingFiles = widget.files!;
+      setState(() {
+        fileNames.addAll(existingFiles.map((file) => file.name));
+        fileSizes.addAll(existingFiles.map(
+            (file) => '${(file.path.length / 1024).toStringAsFixed(3)}KB'));
+        selectedFiles.addAll(existingFiles.map((file) => file.path));
+      });
+    }
   }
+  
 
   void _initializeControllers() {
     titleController.text = widget.dealName;
@@ -258,7 +278,342 @@ class _DealEditScreenState extends State<DealEditScreen> {
       ),
     );
   }
+Future<void> _pickFile() async {
+  try {
+    print('DealEditScreen: Starting file picker');
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      for (var file in result.files) {
+        if (file.path != null && file.name != null) {
+          final filePath = file.path!;
+          print('DealEditScreen: Picked file path: $filePath');
+          final fileObject = File(filePath);
+          if (await fileObject.exists()) {
+            final fileName = file.name;
+            // Проверяем, не существует ли файл уже в existingFiles или newFiles
+            if (!existingFiles.any((f) => f.name == fileName) &&
+                !newFiles.contains(filePath)) {
+              final fileSize = await fileObject.length();
+              print(
+                  'DealEditScreen: Adding new file, name: $fileName, size: $fileSize bytes');
+              setState(() {
+                newFiles.add(filePath); // Добавляем в newFiles
+                fileNames.add(fileName);
+                fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
+                selectedFiles.add(filePath); // Для отображения в UI
+              });
+            } else {
+              print('DealEditScreen: File $fileName already exists, skipping');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('file_already_exists'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          } else {
+            print('DealEditScreen: File does not exist at path: $filePath');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate('file_not_found'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          print(
+              'DealEditScreen: File path or name is null for file: ${file.name}');
+        }
+      }
+    } else {
+      print('DealEditScreen: File picker cancelled or no files selected');
+    }
+  } catch (e, stackTrace) {
+    print('DealEditScreen: Error picking file: $e');
+    print('Stack trace: $stackTrace');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+Widget _buildFileSelection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppLocalizations.of(context)!.translate('file'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+      ),
+      SizedBox(height: 16),
+      Container(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+          itemBuilder: (context, index) {
+            if (fileNames.isEmpty || index == fileNames.length) {
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: _pickFile,
+                  child: Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/icons/files/add.png',
+                          width: 60,
+                          height: 60,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.translate('add_file'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
 
+            final fileName = fileNames[index];
+            final fileExtension = fileName.split('.').last.toLowerCase();
+            final isExistingFile = index < existingFiles.length;
+
+            return Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/icons/files/$fileExtension.png',
+                          width: 60,
+                          height: 60,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/icons/files/file.png',
+                              width: 60,
+                              height: 60,
+                            );
+                          },
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          fileName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: -2,
+                    top: -6,
+                    child: GestureDetector(
+                      onTap: () async {
+                        bool? confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              backgroundColor: Colors.white,
+                              title: Center(
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('delete_file'),
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                              content: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('confirm_delete_file'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                              actions: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: CustomButton(
+                                        buttonText: AppLocalizations.of(context)!
+                                            .translate('cancel'),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                        buttonColor: Colors.red,
+                                        textColor: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: CustomButton(
+                                        buttonText: AppLocalizations.of(context)!
+                                            .translate('unpin'),
+                                        onPressed: () async {
+                                          if (isExistingFile) {
+                                            try {
+                                              final result = await _apiService
+                                                  .deleteTaskFile(
+                                                      existingFiles[index].id);
+                                              if (result['result'] ==
+                                                  'Success') {
+                                                setState(() {
+                                                  existingFiles.removeAt(index);
+                                                  fileNames.removeAt(index);
+                                                  selectedFiles.remove(
+                                                      existingFiles[index].path);
+                                                });
+                                                Navigator.of(context).pop(true);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate(
+                                                              'file_deleted_successfully'),
+                                                      style: TextStyle(
+                                                        fontFamily: 'Gilroy',
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              Navigator.of(context).pop(false);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    AppLocalizations.of(context)!
+                                                        .translate(
+                                                            'failed_to_delete_file'),
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            setState(() {
+                                              final newFileIndex =
+                                                  index - existingFiles.length;
+                                              newFiles.removeAt(newFileIndex);
+                                              fileNames.removeAt(index);
+                                              fileSizes.removeAt(newFileIndex);
+                                              selectedFiles.removeAt(index);
+                                            });
+                                            Navigator.of(context).pop(true);
+                                          }
+                                        },
+                                        buttonColor: Color(0xff1E2E52),
+                                        textColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirmed != true) return;
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ],
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -430,6 +785,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
+                          const SizedBox(height: 8),
+      _buildFileSelection(), // Добавляем выбор файлов
                           const SizedBox(height: 20),
                           ListView.builder(
                             shrinkWrap: true,
@@ -598,6 +955,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           customFields: customFieldList,
                                           directoryValues: directoryValues,
                                           localizations: localizations,
+                                          filePaths: newFiles, // Передаем новые файлы
+                                          existingFiles: existingFiles, // Передаем существующие файлы
                                         ));
                                   } else {
                                     _showErrorSnackBar(
