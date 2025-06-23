@@ -187,6 +187,7 @@ class Chats {
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/facebook.png',
+      'email': 'assets/icons/leads/email.png',
     };
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
   }

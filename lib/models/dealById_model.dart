@@ -16,6 +16,7 @@ class DealById {
   final List<DealCustomFieldsById> dealCustomFields;
   final DealStatusById? dealStatus;
   final List<DirectoryValue>? directoryValues;
+  final List<DealFiles>? files; // Добавляем поле для файлов
 
   DealById({
     required this.id,
@@ -32,6 +33,7 @@ class DealById {
     required this.dealCustomFields,
     this.dealStatus,
     this.directoryValues,
+    this.files,
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
@@ -50,6 +52,27 @@ class DealById {
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)?.map((field) => DealCustomFieldsById.fromJson(field)).toList() ?? [],
       dealStatus: json['deal_status'] != null ? DealStatusById.fromJson(json['deal_status']) : null,
       directoryValues: (json['directory_values'] as List<dynamic>?)?.map((dirValue) => DirectoryValue.fromJson(dirValue)).toList(),
+      files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [], // Парсим файлы
+    );
+  }
+}
+
+class DealFiles {
+  final int id;
+  final String name;
+  final String path;
+
+  DealFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory DealFiles.fromJson(Map<String, dynamic> json) {
+    return DealFiles(
+      id: json['id'] is int ? json['id'] : 0,
+      name: json['name'] is String ? json['name'] : '',
+      path: json['path'] is String ? json['path'] : '',
     );
   }
 }
@@ -136,7 +159,7 @@ class DirectoryValue {
 
 class Entry {
   final int id;
-  final Directory directory;
+  final DirectoryByDeal directory;
   final Map<String, dynamic> values;
 
   Entry({
@@ -148,23 +171,23 @@ class Entry {
   factory Entry.fromJson(Map<String, dynamic> json) {
     return Entry(
       id: json['id'] ?? 0,
-      directory: Directory.fromJson(json['directory']),
+      directory: DirectoryByDeal.fromJson(json['directory']),
       values: json['values'] ?? {},
     );
   }
 }
 
-class Directory {
+class DirectoryByDeal {
   final int id;
   final String name;
 
-  Directory({
+  DirectoryByDeal({
     required this.id,
     required this.name,
   });
 
-  factory Directory.fromJson(Map<String, dynamic> json) {
-    return Directory(
+  factory DirectoryByDeal.fromJson(Map<String, dynamic> json) {
+    return DirectoryByDeal(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
     );

@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -38,31 +39,36 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final ApiService _apiService = ApiService();
-  bool _canEditNotice = false; 
-  bool _canDeleteNotice = false; 
+  bool _canEditNotice = false;
+  bool _canDeleteNotice = false;
   final TextEditingController conclusionController = TextEditingController();
   final GlobalKey keyNoticeEdit = GlobalKey();
   final GlobalKey keyNoticeFinish = GlobalKey();
-  final GlobalKey keyNoticeDelete = GlobalKey(); 
+  final GlobalKey keyNoticeDelete = GlobalKey();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false; 
-  Duration _duration = Duration.zero; 
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
-  final ApiService apiService = ApiService(); 
+  final ApiService apiService = ApiService();
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false; 
-  Map<String, dynamic>? tutorialProgress; 
+  bool _isTutorialInProgress = false;
+  Map<String, dynamic>? tutorialProgress;
+  bool _isDownloading = false; // Флаг загрузки
+  Map<int, double> _downloadProgress =
+      {}; // Прогресс загрузки для каждого файла
 
   @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
-      context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
-      _setupAudioPlayer(); 
+      context
+          .read<NoticeBloc>()
+          .add(FetchNoticeEvent(noticeId: widget.noticeId));
+      _setupAudioPlayer();
     });
-   _fetchTutorialProgress();
+    _fetchTutorialProgress();
   }
 
   void _setupAudioPlayer() {
@@ -94,7 +100,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   void _initTargets() {
-    targets.clear(); 
+    targets.clear();
     double screenHeight = MediaQuery.of(context).size.height;
     double boxHeight = screenHeight * 0.1;
 
@@ -103,8 +109,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeEdit',
           keyTarget: keyNoticeEdit,
-          title: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -112,8 +120,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeDelete',
           keyTarget: keyNoticeDelete,
-          title: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -142,7 +152,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Padding(
                     padding: EdgeInsets.zero,
                     child: Text(
-                      AppLocalizations.of(context)!.translate('tutorial_Notice_Finish_description'),
+                      AppLocalizations.of(context)!
+                          .translate('tutorial_Notice_Finish_description'),
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -158,8 +169,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       createTarget(
         identify: 'keyDealHistory',
         keyTarget: keyDealHistory,
-        title: AppLocalizations.of(context)!.translate('tutorial_Notice_history_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_Notice_history_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_description'),
         align: ContentAlign.top,
         context: context,
       ),
@@ -504,9 +517,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 Future.delayed(const Duration(milliseconds: 1),
                                     () {
                                   if (mounted) {
-                                 context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                  widget.initialDate?.month ?? DateTime.now().month,
-                                  widget.initialDate?.year ?? DateTime.now().year));
+                                    context.read<CalendarBloc>().add(
+                                        FetchCalendarEvents(
+                                            widget.initialDate?.month ??
+                                                DateTime.now().month,
+                                            widget.initialDate?.year ??
+                                                DateTime.now().year));
                                     context
                                         .read<EventBloc>()
                                         .add(FetchEvents());
@@ -646,11 +662,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildFinishButton(Notice notice, {Key? key}) {
-  if (notice.isFinished || notice.date == null) {
+    if (notice.isFinished || notice.date == null) {
       return const SizedBox.shrink();
     }
     return Padding(
-      key: key, 
+      key: key,
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: CustomButton(
         buttonText: AppLocalizations.of(context)!.translate('finish_event'),
@@ -869,6 +885,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   sendNotification:
                                       false, // or true, depending on the logic
                                   canFinish: false, // or true
+                                  files:
+                                      notice.files, // Ensure files are passed
                                 ),
                               ),
                             ),
@@ -883,9 +901,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 .read<HistoryLeadsBloc>()
                                 .add(FetchNoticeHistory(notice.lead!.id));
 
-                          context.read<CalendarBloc>().add(FetchCalendarEvents(
-                         widget.initialDate?.month ?? DateTime.now().month,
-                         widget.initialDate?.year ?? DateTime.now().year));
+                            context.read<CalendarBloc>().add(
+                                FetchCalendarEvents(
+                                    widget.initialDate?.month ??
+                                        DateTime.now().month,
+                                    widget.initialDate?.year ??
+                                        DateTime.now().year));
                           }
                         },
                       );
@@ -931,37 +952,42 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final List<Map<String, String>> details = [
       {
         'label': AppLocalizations.of(context)!.translate('title'),
-        'value': notice.title
+        'value': notice.title,
       },
       {
         'label': AppLocalizations.of(context)!.translate('lead_name'),
         'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('body'),
-        'value': notice.body
+        'label': AppLocalizations.of(context)!
+            .translate('body'), // Исправлено: убраны лишние кавычки
+        'value': notice.body,
       },
       {
         'label': AppLocalizations.of(context)!.translate('date'),
         'value': notice.date != null
             ? formatDate(notice.date.toString())
-            : AppLocalizations.of(context)!.translate('call_recording'),
+            : AppLocalizations.of(context)!.translate(
+                'not_specified'), // Заменено 'call_recording' на более подходящий ключ
       },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': notice.users
-            .map((user) => '${user.name} ${user.lastname ?? ''}')
+            .map((user) =>
+                '${user.name} ${user.lastname ?? ''}') // Исправлено: заменено toList на map
             .join(', '),
       },
       {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'label': AppLocalizations.of(context)!
+            .translate('author_details'), // Исправлено: убраны лишние кавычки
         'value': notice.author != null
-            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('call_recording'),
+            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}' // Исправлено: добавлено корректное форматирование
+            : AppLocalizations.of(context)!
+                .translate('not_specified'), // Заменено 'call_recording'
       },
       {
         'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': formatDate(notice.createdAt.toString())
+        'value': formatDate(notice.createdAt.toString()),
       },
       {
         'label': AppLocalizations.of(context)!.translate('is_finished'),
@@ -969,35 +995,43 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ? AppLocalizations.of(context)!.translate('finished')
             : AppLocalizations.of(context)!.translate('in_progress'),
       },
+      if (notice.files != null && notice.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value':
+              '${notice.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+        },
     ];
 
     if (notice.call != null) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('caller'),
-        'value': notice.call!.caller,
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('internal_number'),
-        'value': notice.call!.internalNumber ??
-            AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_duration'),
-        'value': notice.call!.callDuration != null
-            ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label':
-            AppLocalizations.of(context)!.translate('call_ringing_duration'),
-        'value': notice.call!.callRingingDuration != null
-            ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_recording'),
-        'value': '',
-      });
+      details.addAll([
+        {
+          'label': AppLocalizations.of(context)!.translate('caller'),
+          'value': notice.call!.caller,
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('internal_number'),
+          'value': notice.call!.internalNumber ??
+              AppLocalizations.of(context)!.translate('not_specified'),
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('call_duration'),
+          'value': notice.call!.callDuration != null
+              ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+              : AppLocalizations.of(context)!.translate('not_specified'),
+        },
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('call_ringing_duration'),
+          'value': notice.call!.callRingingDuration != null
+              ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+              : AppLocalizations.of(context)!.translate('not_specified'),
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('call_recording'),
+          'value': '',
+        },
+      ]);
     }
 
     if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
@@ -1015,9 +1049,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: details.length,
           itemBuilder: (context, index) {
-            // Устанавливаем одинаковый отступ для всех элементов, кроме блока звонка
             if (notice.call != null && index >= details.length - 5) {
-              // Предполагаем, что последние 5 элементов — это поля звонка
               return _buildDetailItem(
                 details[index]['label']!,
                 details[index]['value']!,
@@ -1038,7 +1070,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             );
           },
         ),
-        const SizedBox(height: 0), // Убираем лишнее пространство после списка
       ],
     );
   }
@@ -1457,6 +1488,93 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
               ],
             ),
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: notice.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = notice.files![index];
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
+                                    width: 60,
+                                    height: 60,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
+                                  ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         }
 

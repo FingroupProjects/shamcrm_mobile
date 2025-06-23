@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -8,6 +9,7 @@ import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
@@ -18,9 +20,13 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -76,12 +82,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   bool _isTutorialShown = false;
   bool _isTutorialInProgress = false;
   Map<String, dynamic>? tutorialProgress;
+  bool _isDownloading = false; // Флаг загрузки
+  Map<int, double> _downloadProgress =
+      {}; // Прогресс загрузки для каждого файла
 
   @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
-      context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
+      context
+          .read<DealByIdBloc>()
+          .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
     });
     _fetchTutorialProgress();
   }
@@ -92,8 +103,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       createTarget(
         identify: 'keyDealEdit',
         keyTarget: keyDealEdit,
-        title: AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_deal_edit_description'),
+        title:
+            AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_edit_description'),
         align: ContentAlign.bottom,
         contentPosition: ContentPosition.above,
         context: context,
@@ -101,8 +114,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       createTarget(
         identify: 'keyDealDelete',
         keyTarget: keyDealDelete,
-        title: AppLocalizations.of(context)!.translate('tutorial_deal_delete_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_deal_delete_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_deal_delete_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_delete_description'),
         align: ContentAlign.bottom,
         contentPosition: ContentPosition.above,
         context: context,
@@ -110,8 +125,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       createTarget(
         identify: 'keyDealHistory',
         keyTarget: keyDealHistory,
-        title: AppLocalizations.of(context)!.translate('tutorial_deal_history_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_deal_history_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_deal_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_history_description'),
         align: ContentAlign.top,
         contentPosition: ContentPosition.above,
         extraPadding: EdgeInsets.only(bottom: 70),
@@ -120,8 +137,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       createTarget(
         identify: 'keyDealTasks',
         keyTarget: keyDealTasks,
-        title: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_deal_tasks_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_tasks_description'),
         align: ContentAlign.top,
         contentPosition: ContentPosition.above,
         extraPadding: EdgeInsets.only(bottom: 50),
@@ -144,7 +163,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
 
-    if (tutorialProgress == null || tutorialProgress!['deals']?['view'] == true || isTutorialShown || _isTutorialShown) {
+    if (tutorialProgress == null ||
+        tutorialProgress!['deals']?['view'] == true ||
+        isTutorialShown ||
+        _isTutorialShown) {
       print('Tutorial conditions not met');
       return;
     }
@@ -200,7 +222,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -255,16 +278,23 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
 
-      bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownDealDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
 
       _initTargets();
 
-      if (tutorialProgress != null && tutorialProgress!['deals']?['view'] == false && !isTutorialShown && !_isTutorialInProgress && targets.isNotEmpty && mounted) {
+      if (tutorialProgress != null &&
+          tutorialProgress!['deals']?['view'] == false &&
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty &&
+          mounted) {
         showTutorial();
       }
     } catch (e) {
@@ -275,14 +305,20 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+        bool isTutorialShown =
+            prefs.getBool('isTutorialShownDealDetails') ?? false;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
 
         _initTargets();
 
-        if (tutorialProgress != null && tutorialProgress!['deals']?['view'] == false && !isTutorialShown && !_isTutorialInProgress && targets.isNotEmpty && mounted) {
+        if (tutorialProgress != null &&
+            tutorialProgress!['deals']?['view'] == false &&
+            !isTutorialShown &&
+            !_isTutorialInProgress &&
+            targets.isNotEmpty &&
+            mounted) {
           showTutorial();
         }
       }
@@ -314,16 +350,53 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   void _updateDetails(DealById deal) {
     currentDeal = deal;
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': deal.name},
-      {'label': AppLocalizations.of(context)!.translate('lead_deal_card'), 'value': deal.lead?.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': deal.manager?.name ?? 'Система'},
-      {'label': AppLocalizations.of(context)!.translate('start_date_details'), 'value': formatDate(deal.startDate)},
-      {'label': AppLocalizations.of(context)!.translate('end_date_details'), 'value': formatDate(deal.endDate)},
-      {'label': AppLocalizations.of(context)!.translate('summa_details'), 'value': deal.sum.toString()},
-      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': deal.description ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': deal.author?.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(deal.createdAt)},
-      {'label': AppLocalizations.of(context)!.translate('status_history'), 'value': deal.dealStatus?.title ?? ''},
+      {
+        'label': AppLocalizations.of(context)!.translate('name_deal_details'),
+        'value': deal.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('lead_deal_card'),
+        'value': deal.lead?.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('manager_details'),
+        'value': deal.manager?.name ?? 'Система'
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('start_date_details'),
+        'value': formatDate(deal.startDate)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('end_date_details'),
+        'value': formatDate(deal.endDate)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('summa_details'),
+        'value': deal.sum.toString()
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('description_details'),
+        'value': deal.description ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': deal.author?.name ?? ''
+      },
+      {
+        'label':
+            AppLocalizations.of(context)!.translate('creation_date_details'),
+        'value': formatDate(deal.createdAt)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('status_history'),
+        'value': deal.dealStatus?.title ?? ''
+      },
+      if (deal.files != null && deal.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value':
+              '${deal.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+        }, // Добавляем файлы
     ];
 
     for (var field in deal.dealCustomFields) {
@@ -373,7 +446,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_deal')),
+      appBar: _buildAppBar(
+          context, AppLocalizations.of(context)!.translate('view_deal')),
       backgroundColor: Colors.white,
       body: BlocListener<DealByIdBloc, DealByIdState>(
         listener: (context, state) {
@@ -392,7 +466,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ),
                   behavior: SnackBarBehavior.floating,
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   backgroundColor: Colors.red,
                   elevation: 3,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -405,25 +480,32 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         child: BlocBuilder<DealByIdBloc, DealByIdState>(
           builder: (context, state) {
             if (state is DealByIdLoading) {
-              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              return Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is DealByIdLoaded) {
               DealById deal = state.deal;
               _updateDetails(deal);
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: ListView(
                   children: [
                     _buildDetailsList(),
                     const SizedBox(height: 8),
-                    ActionHistoryWidget(dealId: int.parse(widget.dealId), key: keyDealHistory),
+                    ActionHistoryWidget(
+                        dealId: int.parse(widget.dealId), key: keyDealHistory),
                     const SizedBox(height: 16),
                     if (_canReadTasks)
-                      Container(key: keyDealTasks, child: TasksWidget(dealId: int.parse(widget.dealId))),
+                      Container(
+                          key: keyDealTasks,
+                          child: TasksWidget(dealId: int.parse(widget.dealId))),
                   ],
                 ),
               );
             } else if (state is DealByIdError) {
-              return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
+              return Center(
+                  child: Text(
+                      AppLocalizations.of(context)!.translate('error_text')));
             }
             return Center(child: Text(''));
           },
@@ -480,14 +562,20 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             ),
             onPressed: () async {
               if (currentDeal != null) {
-                final startDateString = currentDeal!.startDate != null && currentDeal!.startDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy').format(DateTime.parse(currentDeal!.startDate!))
+                final startDateString = currentDeal!.startDate != null &&
+                        currentDeal!.startDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.startDate!))
                     : null;
-                final endDateString = currentDeal!.endDate != null && currentDeal!.endDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy').format(DateTime.parse(currentDeal!.endDate!))
+                final endDateString = currentDeal!.endDate != null &&
+                        currentDeal!.endDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.endDate!))
                     : null;
-                final createdAtDateString = currentDeal!.createdAt != null && currentDeal!.createdAt!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy').format(DateTime.parse(currentDeal!.createdAt!))
+                final createdAtDateString = currentDeal!.createdAt != null &&
+                        currentDeal!.createdAt!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.createdAt!))
                     : null;
 
                 final shouldUpdate = await Navigator.push(
@@ -497,8 +585,12 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       dealId: currentDeal!.id,
                       dealName: currentDeal!.name,
                       statusId: currentDeal!.statusId,
-                      manager: currentDeal!.manager != null ? currentDeal!.manager!.id.toString() : '',
-                      lead: currentDeal!.lead != null ? currentDeal!.lead!.id.toString() : '',
+                      manager: currentDeal!.manager != null
+                          ? currentDeal!.manager!.id.toString()
+                          : '',
+                      lead: currentDeal!.lead != null
+                          ? currentDeal!.lead!.id.toString()
+                          : '',
                       startDate: startDateString,
                       endDate: endDateString,
                       createdAt: createdAtDateString,
@@ -506,12 +598,16 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       description: currentDeal!.description ?? '',
                       dealCustomFields: currentDeal!.dealCustomFields,
                       directoryValues: currentDeal!.directoryValues,
+                        files:
+                                currentDeal!.files, // Ensure files are passed
                     ),
                   ),
                 );
 
                 if (shouldUpdate == true) {
-                  context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                  context
+                      .read<DealByIdBloc>()
+                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
                   context.read<DealBloc>().add(FetchDealStatuses());
                 }
               }
@@ -558,11 +654,101 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
+
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (label.contains(AppLocalizations.of(context)!.translate('name_deal_details')) ||
-            label.contains(AppLocalizations.of(context)!.translate('description_details'))) {
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: currentDeal?.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = currentDeal!.files![index];
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
+                                    width: 60,
+                                    height: 60,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
+                                  ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+
+        if (label.contains(
+                AppLocalizations.of(context)!.translate('name_deal_details')) ||
+            label.contains(AppLocalizations.of(context)!
+                .translate('description_details'))) {
           return GestureDetector(
             onTap: () {
               if (value.isNotEmpty) {
@@ -582,7 +768,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
-                      decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                      decoration:
+                          value.isNotEmpty ? TextDecoration.underline : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -593,7 +780,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           );
         }
 
-        if (label == AppLocalizations.of(context)!.translate('lead_deal_card') && value.isNotEmpty) {
+        if (label ==
+                AppLocalizations.of(context)!.translate('lead_deal_card') &&
+            value.isNotEmpty) {
           return GestureDetector(
             onTap: () {
               if (currentDeal?.lead?.id != null) {

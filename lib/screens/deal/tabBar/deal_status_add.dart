@@ -39,7 +39,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           Row(
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('name_list'),
+                AppLocalizations.of(context)!.translate('event_name'),
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

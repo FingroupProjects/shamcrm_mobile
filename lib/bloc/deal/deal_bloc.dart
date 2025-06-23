@@ -234,7 +234,8 @@ Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
       dealtypeId: event.dealtypeId,
       leadId: event.leadId,
       customFields: event.customFields,
-      directoryValues: event.directoryValues, // Передаем справочные данные
+      directoryValues: event.directoryValues,
+      filePaths: event.filePaths, // Передаем файлы
     );
     if (result['success']) {
       emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
@@ -267,6 +268,8 @@ Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
       leadId: event.leadId,
       customFields: event.customFields,
       directoryValues: event.directoryValues, // Передаем справочные поля
+      filePaths: event.filePaths, // Передаем новые файлы
+      existingFiles: event.existingFiles, // Передаем существующие файлы
     );
 
     if (result['success']) {

@@ -10,6 +10,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
@@ -949,7 +950,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 onPressed: () async {
                   print(
                       'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
-                      print('Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
+                  print(
+                      'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
                   final createdAtString = currentTask?.createdAt != null &&
                           currentTask!.createdAt!.isNotEmpty
                       ? DateFormat('dd/MM/yyyy')
@@ -1132,7 +1134,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   child: GestureDetector(
                     onTap: () {
                       if (!_isDownloading) {
-                        _showFile(file.path, file.id);
+                        FileUtils.showFile(
+                          context: context,
+                          fileUrl: file.path,
+                          fileId: file.id,
+                          setState: setState,
+                          downloadProgress: _downloadProgress,
+                          isDownloading: _isDownloading,
+                          apiService: _apiService,
+                        );
                       }
                     },
                     child: Container(
@@ -1307,96 +1317,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
-  Future<void> _showFile(String fileUrl, int fileId) async {
-    try {
-      if (_isDownloading) return;
-      final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
-      if (cachedFilePath != null) {
-        final result = await OpenFile.open(cachedFilePath);
-        if (result.type == ResultType.error) {
-          _showErrorSnackBar(
-              AppLocalizations.of(context)!.translate('failed_to_open_file'));
-        }
-        return;
-      }
-
-      setState(() {
-        _isDownloading = true;
-        _downloadProgress[fileId] = 0;
-      });
-
-      final enteredDomainMap = await ApiService().getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      final fullUrl = Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
-
-      final appDir = await getApplicationDocumentsDirectory();
-      final cacheDir = Directory('${appDir.path}/cached_files');
-      if (!await cacheDir.exists()) {
-        await cacheDir.create(recursive: true);
-      }
-
-      final fileName = '${fileId}_${fileUrl.split('/').last}';
-      final filePath = '${cacheDir.path}/$fileName';
-
-      final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath,
-          onReceiveProgress: (received, total) {
-        if (total != -1) {
-          setState(() {
-            _downloadProgress[fileId] = received / total;
-          });
-        }
-      });
-
-      await FileCacheManager().cacheFile(fileId, filePath);
-
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      final result = await OpenFile.open(filePath);
-      if (result.type == ResultType.error) {
-        _showErrorSnackBar(
-            AppLocalizations.of(context)!.translate('failed_to_open_file'));
-      }
-    } catch (e) {
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      _showErrorSnackBar(AppLocalizations.of(context)!
-          .translate('file_download_or_open_error'));
-    }
-  }
-
-// Функция для показа ошибки
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
-
+ 
   void _showUsersDialog(String users) {
     List<String> userList =
         users.split(',').map((user) => user.trim()).toList();

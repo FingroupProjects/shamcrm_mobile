@@ -26,6 +26,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:io'; // Добавляем для File
+import 'package:file_picker/file_picker.dart'; // Добавляем для FilePicker
 
 import '../../lead/tabBar/lead_details/custom_field_model.dart';
 
@@ -50,8 +52,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
-  bool isManagerInvalid = false; // Новая переменная для ошибки менеджера
+  bool isManagerInvalid = false;
   bool _showAdditionalFields = false;
+  // Переменные для файлов
+  List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
 
   @override
   void initState() {
@@ -59,6 +65,187 @@ class _DealAddScreenState extends State<DealAddScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     _fetchAndAddCustomFields();
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
+
+      if (result != null) {
+        double totalSize = selectedFiles.fold<double>(
+          0.0,
+          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024), // MB
+        );
+
+        double newFilesSize = result.files.fold<double>(
+          0.0,
+          (sum, file) => sum + file.size / (1024 * 1024), // MB
+        );
+
+        if (totalSize + newFilesSize > 50) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('file_size_too_large'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
+        setState(() {
+          for (var file in result.files) {
+            selectedFiles.add(file.path!);
+            fileNames.add(file.name);
+            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
+          }
+        });
+      }
+    } catch (e) {
+      print('Ошибка при выборе файла: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Ошибка при выборе файла!"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
+                            width: 60,
+                            height: 60,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   void _fetchAndAddCustomFields() async {
@@ -291,10 +478,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
                                 selectedManager = selectedManagerData.id.toString();
-                                isManagerInvalid = false; 
+                                isManagerInvalid = false;
                               });
                             },
-                            hasError: isManagerInvalid, 
+                            hasError: isManagerInvalid,
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
@@ -340,6 +527,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                               },
                             )
                           else ...[
+                            // Прикрепление файлов
+                            _buildFileSelection(),
+                            const SizedBox(height: 15),
                             ListView.builder(
                               shrinkWrap: true,
                               physics: NeverScrollableScrollPhysics(),
@@ -449,7 +639,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void _submitForm() {
     setState(() {
       isTitleInvalid = titleController.text.isEmpty;
-      isManagerInvalid = selectedManager == null; 
+      isManagerInvalid = selectedManager == null;
     });
 
     if (_formKey.currentState!.validate() &&
@@ -559,18 +749,19 @@ class _DealAddScreenState extends State<DealAddScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     context.read<DealBloc>().add(CreateDeal(
-          name: name,
-          dealStatusId: widget.statusId,
-          managerId: int.parse(selectedManager!),
-          leadId: int.parse(selectedLead!),
-          dealtypeId: 1,
-          startDate: startDate,
-          endDate: endDate,
-          sum: sum,
-          description: description,
-          customFields: customFieldMap,
-          directoryValues: directoryValues,
-          localizations: localizations,
-        ));
+      name: name,
+      dealStatusId: widget.statusId,
+      managerId: int.parse(selectedManager!),
+      leadId: int.parse(selectedLead!),
+      dealtypeId: 1,
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum,
+      description: description,
+      customFields: customFieldMap,
+      directoryValues: directoryValues,
+      filePaths: selectedFiles, // Передаем файлы
+      localizations: localizations,
+    ));
   }
 }

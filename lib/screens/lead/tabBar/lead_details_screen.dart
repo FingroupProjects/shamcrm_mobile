@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
@@ -216,12 +217,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return;
       }
 
-      List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
+      List<Contact> contacts =
+          await FlutterContacts.getContacts(withProperties: true);
 
       Set<String> normalizedPhones = {};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
-          String normalizedPhone = phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+          String normalizedPhone =
+              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
           normalizedPhones.add(normalizedPhone);
         }
       }
@@ -279,8 +282,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownLeadDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
@@ -300,7 +305,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+        bool isTutorialShown =
+            prefs.getBool('isTutorialShownLeadDetails') ?? false;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
@@ -330,8 +336,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       createTarget(
         identify: "LeadHistory",
         keyTarget: keyLeadHistory,
-        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_history_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -340,8 +348,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadEdit",
           keyTarget: keyLeadEdit,
-          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_edit_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_edit_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -350,8 +360,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         createTarget(
           identify: "LeadDelete",
           keyTarget: keyLeadDelete,
-          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_delete_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_delete_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -359,39 +371,51 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       createTarget(
         identify: "keyNavigateChat",
         keyTarget: keyLeadNavigateChat,
-        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_chat_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_chat_description'),
         align: ContentAlign.top,
-        extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+        extraSpacing:
+            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
         context: context,
       ),
       if (_canReadNotes)
         createTarget(
           identify: "keyLeadNotice",
           keyTarget: keyLeadNotice,
-          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_notice_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_notice_description'),
           align: ContentAlign.top,
-          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing:
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       if (_canReadDeal)
         createTarget(
           identify: "keyLeadDeal",
           keyTarget: keyLeadDeal,
-          title: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_deal_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_lead_details_deal_description'),
           align: ContentAlign.top,
-          extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          extraSpacing:
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       createTarget(
         identify: "keyLeadContactPerson",
         keyTarget: keyLeadContactPerson,
-        title: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_contact_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_details_contact_description'),
         align: ContentAlign.top,
-        extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        extraSpacing:
+            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
     ]);
@@ -448,8 +472,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
       onSkip: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
-        _apiService.markPageCompleted("leads", "view").catchError((e) {
-        });
+        _apiService.markPageCompleted("leads", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
@@ -458,8 +481,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
       onFinish: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
-        _apiService.markPageCompleted("leads", "view").catchError((e) {
-        });
+        _apiService.markPageCompleted("leads", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
@@ -497,38 +519,40 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('phone_use'),
         'value': lead.phone ?? ''
       },
+      if (lead.manager != null)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('manager_details')}',
+          'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+        }
+      else
+        {'label': '', 'value': 'become_manager'},
       {
         'label': '${AppLocalizations.of(context)!.translate('region_details')}',
         'value': lead.region?.name ?? ''
       },
-      if (lead.manager != null)
-        {
-          'label': '${AppLocalizations.of(context)!.translate('manager_details')}',
-          'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-        }
-      else
-        {
-          'label': '',
-          'value': 'become_manager'
-        },
+      
       {
         'label': '${AppLocalizations.of(context)!.translate('source_details')}',
         'value': lead.source?.name ?? ''
       },
+      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+      
       {
         'label': '${AppLocalizations.of(context)!.translate('email_details')}',
         'value': lead.email ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('birthday_details')}',
         'value': formatDate(lead.birthday)
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('description_details_lead')}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('description_details_lead')}',
         'value': lead.description ?? ''
       },
       {
@@ -536,7 +560,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'value': lead.author?.name ?? ''
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('created_at_details')}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('created_at_details')}',
         'value': formatDate(lead.createdAt)
       },
       {
@@ -546,11 +571,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (lead.files != null && lead.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+          'value':
+              '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
         },
     ];
     for (var field in lead.leadCustomFields) {
-      print('LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
+      print(
+          'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value});
     }
     for (var dirValue in lead.directoryValues) {
@@ -618,7 +645,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               _updateDetails(lead);
               print('LeadDetailsScreen: Lead chats: ${lead.chats}');
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   controller: _scrollController,
                   children: [
@@ -792,7 +820,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
                             directoryValues: currentLead!.directoryValues,
-                            files: currentLead!.files, // Ensure files are passed
+                            files:
+                                currentLead!.files, // Ensure files are passed
                           ),
                         ),
                       );
@@ -861,14 +890,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   itemCount: currentLead?.files?.length ?? 0,
                   itemBuilder: (context, index) {
                     final file = currentLead!.files![index];
-                    final fileExtension = file.name.split('.').last.toLowerCase();
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
 
                     return Padding(
                       padding: EdgeInsets.only(right: 16),
                       child: GestureDetector(
                         onTap: () {
                           if (!_isDownloading) {
-                            _showFile(file.path, file.id);
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
                           }
                         },
                         child: Container(
@@ -894,7 +932,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                     CircularProgressIndicator(
                                       value: _downloadProgress[file.id],
                                       strokeWidth: 3,
-                                      backgroundColor: Colors.grey.withOpacity(0.3),
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.3),
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         Color(0xff1E2E52),
                                       ),
@@ -930,8 +969,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(AppLocalizations.of(context)!.translate('lead')) ||
-                      label.contains(AppLocalizations.of(context)!.translate('description_details_lead')))
+              child: (label.contains(
+                          AppLocalizations.of(context)!.translate('lead')) ||
+                      label.contains(AppLocalizations.of(context)!
+                          .translate('description_details_lead')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value, label),
             ),
@@ -941,95 +982,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  Future<void> _showFile(String fileUrl, int fileId) async {
-    try {
-      if (_isDownloading) return;
-
-      final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
-      if (cachedFilePath != null) {
-        final result = await OpenFile.open(cachedFilePath);
-        if (result.type == ResultType.error) {
-          _showErrorSnackBar(
-              AppLocalizations.of(context)!.translate('failed_to_open_file'));
-        }
-        return;
-      }
-
-      setState(() {
-        _isDownloading = true;
-        _downloadProgress[fileId] = 0;
-      });
-
-      final enteredDomainMap = await ApiService().getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      final fullUrl = Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
-
-      final appDir = await getApplicationDocumentsDirectory();
-      final cacheDir = Directory('${appDir.path}/cached_files');
-      if (!await cacheDir.exists()) {
-        await cacheDir.create(recursive: true);
-      }
-
-      final fileName = '${fileId}_${fileUrl.split('/').last}';
-      final filePath = '${cacheDir.path}/$fileName';
-
-      final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath,
-          onReceiveProgress: (received, total) {
-        if (total != -1) {
-          setState(() {
-            _downloadProgress[fileId] = received / total;
-          });
-        }
-      });
-
-      await FileCacheManager().cacheFile(fileId, filePath);
-
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      final result = await OpenFile.open(filePath);
-      if (result.type == ResultType.error) {
-        _showErrorSnackBar(
-            AppLocalizations.of(context)!.translate('failed_to_open_file'));
-      }
-    } catch (e) {
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      _showErrorSnackBar(AppLocalizations.of(context)!
-          .translate('file_download_or_open_error'));
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
 
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
@@ -1387,22 +1339,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles: currentLead!.files ?? [], // Change `existingFiles` to `files ?? []`
+        existingFiles:
+            currentLead!.files ?? [], // Change `existingFiles` to `files ?? []`
       ));
 
       await completer.future;
       listener.cancel();
-      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: currentLead!.id));
+      context
+          .read<LeadByIdBloc>()
+          .add(FetchLeadByIdEvent(leadId: currentLead!.id));
       context.read<LeadBloc>().add(FetchLeadStatuses());
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
+        message:
+            AppLocalizations.of(context)!.translate('manager_assigned_success'),
         isSuccess: true,
       );
     } catch (e) {
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
+        message:
+            AppLocalizations.of(context)!.translate('manager_assign_failed'),
         isSuccess: false,
       );
     }

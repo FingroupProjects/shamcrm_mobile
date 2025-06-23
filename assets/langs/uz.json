@@ -1068,6 +1068,11 @@
   "no_photos": "Galereyaga ruxsat berilmagan!",
   "open_settings": "Sozlamalarni ochish",
   "support_chat_name": "Texnik yordam",
-  "version_mobile": "Mobil versiyasi"
+  "version_mobile": "Mobil versiyasi",
+  "file_already_exists": "Fayl allaqachon mavjud",
+  "file_not_found": "Fayl topilmadi",
+"error_picking_file": "Fayl tanlashda xatolik yuz berdi"
+
+
 
 }
