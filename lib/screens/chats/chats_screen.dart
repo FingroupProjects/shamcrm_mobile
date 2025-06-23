@@ -329,31 +329,34 @@ class _ChatsScreenState extends State<ChatsScreen>
     );
 
     socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {},
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
-    String userId = prefs.getString('userID').toString();
-    print('userID : $userId');
-
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
+  options: customOptions,
+  connectionErrorHandler: (exception, trace, refresh) {},
+);
+String userId = prefs.getString('unique_id').toString();
+final myPresenceChannel = socketClient.presenceChannel(
+  'presence-user.$userId',
+  authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate
+      .forPresenceChannel(
+    authorizationEndpoint: Uri.parse(
+        'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'X-Tenant': '$enteredDomain-back'
+    },
+  ),
+);
+socketClient.onConnectionEstablished.listen((_) {
+  myPresenceChannel.subscribeIfNotUnsubscribed();
+  chatSubscribtion = myPresenceChannel.bind('chat.created').listen((event) {
+    print(event.data);
+    updateFromSocket();
+  });
+  chatSubscribtion = myPresenceChannel.bind('chat.updated').listen((event) {
+    print(event.data);
+    updateFromSocket();
+  });
+});
+await socketClient.connect();
 
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();

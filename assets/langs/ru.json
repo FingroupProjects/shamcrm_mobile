@@ -995,7 +995,7 @@
   "order_status": "Статус заказа:",
   "order_address": "Адрес доставки:",
   "order_title": "Заказ ",
-  "no_comment": "Нет комментария",
+  "no_comment": "Не указано",
   "delete_deal_dialog": "Удалить сделку?",
   "add_deal_screen": "Экран добавления сделки",
   "cash": "Наличные",

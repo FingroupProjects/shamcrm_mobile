@@ -745,7 +745,7 @@ class _OrderScreenState extends State<OrderScreen>
                 style: TextStyle(
                   fontSize: 24,
                   fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w400,
                   color: Color(0xff1E2E52),
                 ),
               ),

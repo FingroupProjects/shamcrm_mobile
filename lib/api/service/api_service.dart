@@ -5248,28 +5248,40 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
   //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID
   Future<UserByIdProfile> getUserById(int userId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+  try {
+    final organizationId = await getSelectedOrganization();
 
-      final response = await _getRequest(
-          '/user/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/user/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonUser = decodedJson['result'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonUser = decodedJson['result'];
 
-        if (jsonUser == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        return UserByIdProfile.fromJson(jsonUser);
-      } else {
-        throw Exception('Ошибка загрузки User ID!');
+      if (jsonUser == null) {
+        throw Exception('Некорректные данные от API');
       }
-    } catch (e) {
-      throw Exception('Ошибка загрузки User ID!');
+
+      final userProfile = UserByIdProfile.fromJson(jsonUser);
+
+      // Сохраняем unique_id в SharedPreferences
+      if (userProfile.uniqueId != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('unique_id', userProfile.uniqueId!);
+        print('unique_id сохранён: ${userProfile.uniqueId}');
+      } else {
+        print('unique_id не получен от сервера');
+      }
+
+      return userProfile;
+    } else {
+      throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Ошибка загрузки User ID: $e');
+    throw Exception('Ошибка загрузки User ID: $e');
   }
+}
 
   // Метод для Редактирование профиля
   Future<Map<String, dynamic>> updateProfile({
@@ -7508,24 +7520,25 @@ Future<List<Goods>> getGoods({
   }
 
 // In api_service.dart (you should implement this based on your API client)
-  Future<http.Response> createOrderStatus({
-    required String title,
-    required String notificationMessage,
-    required bool isSuccess,
-    required bool isFailed,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-      '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'title': title,
-        'notification_message': notificationMessage,
-        'is_success': isSuccess,
-        'is_failed': isFailed,
-      },
-    );
-    return response;
-  }
+ Future<http.Response> createOrderStatus({
+  required String title,
+  required String notificationMessage,
+  required bool isSuccess,
+  required bool isFailed,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'title': title,
+      'notification_message': notificationMessage,
+      'is_success': isSuccess,
+      'is_failed': isFailed,
+      'color': '#FFFFF', // Добавляем параметр color
+    },
+  );
+  return response;
+}
 
   Future<http.Response> updateOrderStatus({
     required int statusId,
