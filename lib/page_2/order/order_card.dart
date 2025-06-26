@@ -42,7 +42,7 @@ class _OrderCardState extends State<OrderCard> {
   Color _getStatusTextColor(int statusId) {
     switch (statusId) {
       case 1:
-        return Colors.green[800]!;
+        return const Color.fromARGB(255, 58, 217, 66)!;
       case 2:
         return Colors.amber[900]!;
       default:
@@ -102,13 +102,13 @@ class _OrderCardState extends State<OrderCard> {
                   'Заказ №${widget.order.orderNumber}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 16,
+                    fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff1E2E52),
                   ),
                 ),
                 Text(
-                  _formatDate(widget.order.lead.createdAt),
+                'Создан: ${_formatDate(widget.order.lead.createdAt)}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -198,7 +198,7 @@ class _OrderCardState extends State<OrderCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: const Color.fromARGB(255, 23, 178, 36),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -207,7 +207,7 @@ class _OrderCardState extends State<OrderCard> {
                       fontSize: 12,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                      color: Color.fromARGB(255, 242, 242, 242),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

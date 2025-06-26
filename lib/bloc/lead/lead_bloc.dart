@@ -252,8 +252,9 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
 
     if (event.customFields != null && event.customFields!.isNotEmpty) {
       requestData['lead_custom_fields'] = event.customFields!.map((field) => {
-            'key': field.keys.first,
-            'value': field.values.first,
+            'key': field['key'],
+            'value': field['value'],
+            'type': field['type'],
           }).toList();
     }
 
@@ -282,7 +283,7 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
 
     final result = await apiService.createLeadWithData(
       requestData,
-      filePaths: event.filePaths, // Передаем файлы
+      filePaths: event.filePaths,
     );
 
     if (result['success']) {
@@ -294,7 +295,6 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     emit(LeadError(event.localizations.translate('lead_creation_error')));
   }
 }
-
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -303,6 +303,7 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
       return false;
     }
   }
+
 Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
   emit(LeadLoading());
 
@@ -325,12 +326,9 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
       if (event.email != null) 'email': event.email,
       if (event.description != null) 'description': event.description,
       if (event.waPhone != null) 'wa_phone': event.waPhone,
-      'lead_custom_fields': event.customFields?.map((field) => {
-            'key': field.keys.first,
-            'value': field.values.first,
-          }).toList() ?? [],
+      'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
-          'existing_file_ids': event.existingFiles.map((file) => file.id).toList(),
+      'existing_file_ids': event.existingFiles.map((file) => file.id).toList(),
     };
 
     if (event.isSystemManager) {
@@ -342,7 +340,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     final result = await apiService.updateLeadWithData(
       leadId: event.leadId,
       data: requestData,
-      filePaths: event.filePaths, // Передаем файлы
+      filePaths: event.filePaths,
     );
 
     if (result['success']) {
@@ -354,6 +352,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     emit(LeadError(event.localizations.translate('error_update_lead')));
   }
 }
+
   Future<void> _createLeadStatus(
       CreateLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());

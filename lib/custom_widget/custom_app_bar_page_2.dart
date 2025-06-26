@@ -178,7 +178,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
-    String userId = prefs.getString('userID') ?? '';
+    String userId = prefs.getString('unique_id') ?? '';
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',

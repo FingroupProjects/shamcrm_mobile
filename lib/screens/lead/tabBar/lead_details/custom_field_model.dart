@@ -8,6 +8,7 @@ class CustomField {
   final int? directoryId;
   final int? entryId;
   final String uniqueId; // Уникальный идентификатор
+  final String? type; // Новое поле для типа
 
   CustomField({
     required this.fieldName,
@@ -15,6 +16,7 @@ class CustomField {
     this.isDirectoryField = false,
     this.directoryId,
     this.entryId,
+    this.type, // Добавляем type
     String? uniqueId, // Опционально, если не передан, генерируем новый
   }) : uniqueId = uniqueId ?? Uuid().v4();
 
@@ -25,6 +27,7 @@ class CustomField {
     int? directoryId,
     int? entryId,
     String? uniqueId,
+    String? type,
   }) {
     return CustomField(
       fieldName: fieldName ?? this.fieldName,
@@ -33,6 +36,7 @@ class CustomField {
       directoryId: directoryId ?? this.directoryId,
       entryId: entryId ?? this.entryId,
       uniqueId: uniqueId ?? this.uniqueId,
+      type: type ?? this.type,
     );
   }
 }

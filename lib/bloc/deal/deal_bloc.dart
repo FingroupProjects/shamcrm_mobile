@@ -217,36 +217,37 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
 Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
-  emit(DealLoading());
-  if (!await _checkInternetConnection()) {
-    emit(DealError(event.localizations.translate('no_internet_connection')));
-    return;
-  }
-  try {
-    final result = await apiService.createDeal(
-      name: event.name,
-      dealStatusId: event.dealStatusId,
-      managerId: event.managerId,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      sum: event.sum,
-      description: event.description,
-      dealtypeId: event.dealtypeId,
-      leadId: event.leadId,
-      customFields: event.customFields,
-      directoryValues: event.directoryValues,
-      filePaths: event.filePaths, // Передаем файлы
-    );
-    if (result['success']) {
-      emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
-    } else {
-      emit(DealError(result['message']));
+    emit(DealLoading());
+    if (!await _checkInternetConnection()) {
+      emit(DealError(event.localizations.translate('no_internet_connection')));
+      return;
     }
-  } catch (e) {
-    emit(DealError(event.localizations.translate('error_deal_create_successfully')));
+    try {
+      final result = await apiService.createDeal(
+        name: event.name,
+        dealStatusId: event.dealStatusId,
+        managerId: event.managerId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        sum: event.sum,
+        description: event.description,
+        dealtypeId: event.dealtypeId,
+        leadId: event.leadId,
+        customFields: event.customFields,
+        directoryValues: event.directoryValues,
+        filePaths: event.filePaths,
+      );
+      if (result['success']) {
+        emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
+      } else {
+        emit(DealError(event.localizations.translate(result['message'])));
+      }
+    } catch (e) {
+      emit(DealError(event.localizations.translate('error_deal_create_successfully')));
+    }
   }
-}
-  Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+
+Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
   emit(DealLoading());
 
   if (!await _checkInternetConnection()) {
@@ -262,23 +263,23 @@ Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
       managerId: event.managerId,
       startDate: event.startDate,
       endDate: event.endDate,
-      sum: event.sum,
+      sum: event.sum ?? '',
       description: event.description,
       dealtypeId: event.dealtypeId,
       leadId: event.leadId,
       customFields: event.customFields,
-      directoryValues: event.directoryValues, // Передаем справочные поля
-      filePaths: event.filePaths, // Передаем новые файлы
-      existingFiles: event.existingFiles, // Передаем существующие файлы
+      directoryValues: event.directoryValues,
+      filePaths: event.filePaths,
+      existingFiles: event.existingFiles,
     );
 
     if (result['success']) {
-      emit(DealSuccess(event.localizations.translate('deal_update_successfully')));
+      emit(DealSuccess(event.localizations.translate('deal_updated_successfully')));
     } else {
       emit(DealError(result['message']));
     }
   } catch (e) {
-    emit(DealError(event.localizations.translate('error_deal_update_successfully')));
+    emit(DealError(event.localizations.translate('error_deal_update')));
   }
 }
 

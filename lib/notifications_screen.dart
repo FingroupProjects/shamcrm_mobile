@@ -61,6 +61,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .clear();
       }
     });
+    SharedPreferences.getInstance().then((prefs) {
+    prefs.setBool('hasNewNotification', false); // Сбрасываем флаг
+  });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

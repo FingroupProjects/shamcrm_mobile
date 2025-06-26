@@ -245,7 +245,7 @@ class _DealCardState extends State<DealCard> {
                           width: 17,
                           height: 17,
                         ),
-                        const SizedBox(width: 4),
+                        // const SizedBox(width: 4),
                         Text(
                           ' ${formatDate(
                             widget.deal.createdAt ?? AppLocalizations.of(context)!.translate('unknow'),

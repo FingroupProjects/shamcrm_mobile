@@ -4,14 +4,17 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.da
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final int orderId;
@@ -32,6 +35,24 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
+      );
+      return;
+    }
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.translate('call_failed'))),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -263,8 +284,83 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    if (label == AppLocalizations.of(context)!.translate('order_address') ||
-        label == AppLocalizations.of(context)!.translate('comment_client')) {
+    final String clientLabel = AppLocalizations.of(context)!.translate('client');
+    final String phoneLabel = AppLocalizations.of(context)!.translate('client_phone');
+    final String addressLabel = AppLocalizations.of(context)!.translate('order_address');
+    final String commentLabel = AppLocalizations.of(context)!.translate('comment_client');
+
+    if (label == clientLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          if (widget.order.lead?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: widget.order.lead!.id.toString(),
+                  leadName: value,
+                  leadStatus: "",
+                  statusId: 0,
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.translate('lead_not_found'))),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == phoneLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () => _makePhoneCall(value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == addressLabel || label == commentLabel) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty &&
@@ -300,6 +396,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       );
     }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

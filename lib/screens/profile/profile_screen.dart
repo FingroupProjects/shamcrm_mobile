@@ -545,104 +545,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BlocBuilder<OrganizationBloc, OrganizationState>(
-                builder: (context, state) {
-                  if (state is OrganizationLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: PlayStoreImageLoading(
-                            size: 80.0, duration: Duration(milliseconds: 1000)),
-                      ),
-                    );
-                  } else if (state is OrganizationLoaded) {
-                    final selectedOrg = _selectedOrganization != null
-                        ? state.organizations.firstWhere(
-                            (org) => org.id.toString() == _selectedOrganization,
-                            orElse: () => state.organizations.first,
-                          )
-                        : state.organizations.first;
+ @override
+Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  return Scaffold(
+    body: SafeArea( // SafeArea обеспечивает отступы от системных элементов
+      child: Stack(
+        children: [
+          // Основной контент
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 80), // Место для версии
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BlocBuilder<OrganizationBloc, OrganizationState>(
+                    builder: (context, state) {
+                      if (state is OrganizationLoading) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: PlayStoreImageLoading(
+                                size: 80.0, duration: Duration(milliseconds: 1000)),
+                          ),
+                        );
+                      } else if (state is OrganizationLoaded) {
+                        final selectedOrg = _selectedOrganization != null
+                            ? state.organizations.firstWhere(
+                                (org) => org.id.toString() == _selectedOrganization,
+                                orElse: () => state.organizations.first,
+                              )
+                            : state.organizations.first;
 
-                    return Column(
-                      children: [
-                        OrganizationWidget(
-                          key: keyOrganizationWidget,
-                          selectedOrganization: _selectedOrganization,
-                          onChanged: _onOrganizationChanged,
-                        ),
-                        ProfileEdit(key: keyProfileEdit),
-                        LanguageButtonWidget(key: keyLanguageButton),
-                        PinChangeWidget(key: keyPinChange),
-                        LogoutButtonWidget(key: keyLogoutButton),
-                        if (_hasPermissionToAddLeadAndSwitch)
-                          ToggleFeatureButton(key: keyToggleFeature),
-                        if (_hasPermissionForOneC)
-                          UpdateWidget1C(organization: selectedOrg),
-                        SizedBox(height: 156),
-                        Center(
-                          child: Text(
-                            '${AppLocalizations.of(context)!.translate('version_mobile')}: 1.0.0',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color.fromARGB(
-                                  255, 102, 102, 102), // Немного серый цвет
+                        return Column(
+                          children: [
+                            OrganizationWidget(
+                              key: keyOrganizationWidget,
+                              selectedOrganization: _selectedOrganization,
+                              onChanged: _onOrganizationChanged,
+                            ),
+                            ProfileEdit(key: keyProfileEdit),
+                            LanguageButtonWidget(key: keyLanguageButton),
+                            PinChangeWidget(key: keyPinChange),
+                            LogoutButtonWidget(key: keyLogoutButton),
+                            if (_hasPermissionToAddLeadAndSwitch)
+                              ToggleFeatureButton(key: keyToggleFeature),
+                            if (_hasPermissionForOneC)
+                              UpdateWidget1C(organization: selectedOrg),
+                          ],
+                        );
+                      } else if (state is OrganizationError) {
+                        if (state.message.contains(
+                            localizations.translate("unauthorized_access"))) {
+                          ApiService().logout().then((_) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => LoginScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          });
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Center(
+                            child: Text(
+                              '${state.message}',
+                              style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  } else if (state is OrganizationError) {
-                    if (state.message.contains(
-                        localizations.translate("unauthorized_access"))) {
-                      ApiService().logout().then((_) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => LoginScreen()),
-                          (Route<dynamic> route) => false,
                         );
-                      });
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Center(
-                        child: Text(
-                          '${state.message}',
-                          style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black),
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          
+          // Версия прикреплена к низу SafeArea
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '${AppLocalizations.of(context)!.translate('version_mobile')}: 1.0.0',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color.fromARGB(255, 6, 44, 231),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   key: keySupportChat,
-      //   onPressed: _openSupportChat,
-      //   backgroundColor: Color(0xff1E2E52),
-      //   child: Image.asset('assets/icons/Profile/support_chat.png',
-      //       width: 36, height: 36),
-      // ),
-    );
-  }
+    ),
+  );
+}
 }

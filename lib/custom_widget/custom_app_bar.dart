@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
@@ -12,6 +13,7 @@ import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -279,6 +281,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _loadNotificationState();
     _setUpSocketForNotifications();
+    _setupFirebaseMessaging(); // Новый метод
 
     _blinkController = AnimationController(
       vsync: this,
@@ -301,6 +304,32 @@ class _CustomAppBarState extends State<CustomAppBar>
       setState(() {
         _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
       });
+    });
+  }
+  void _setupFirebaseMessaging() async {
+    final prefs = await SharedPreferences.getInstance();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Получено push-уведомление: ${message.data}');
+      if (message.data['type'] == 'message') {
+        setState(() {
+          _hasNewNotification = true;
+        });
+        prefs.setBool('hasNewNotification', true);
+        _playSound();
+      }
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('Push-уведомление открыто: ${message.data}');
+      if (message.data['type'] == 'message') {
+        setState(() {
+          _hasNewNotification = true;
+        });
+        prefs.setBool('hasNewNotification', true);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => NotificationsScreen()),
+        );
+      }
     });
   }
 
@@ -368,7 +397,9 @@ class _CustomAppBarState extends State<CustomAppBar>
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
-    String userId = prefs.getString('userID') ?? '';
+    String userId = prefs.getString('unique_id') ?? '';
+    print('userID--------------------------------------------------popopop-p : $userId');
+      print(userId);
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -390,13 +421,20 @@ class _CustomAppBarState extends State<CustomAppBar>
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
-          myPresenceChannel.bind('notification.created').listen((event) {
-        debugPrint('Received notification: ${event.data}');
-        setState(() {
-          _hasNewNotification = true;
-        });
-        prefs.setBool('hasNewNotification', true);
-      });
+    myPresenceChannel.bind('notification.created').listen((event) {
+  debugPrint('Получено уведомление через сокет: ${event.data}');
+  try {
+    final data = jsonDecode(event.data);
+    debugPrint('Данные уведомления: $data');
+    setState(() {
+      _hasNewNotification = true;
+    });
+    prefs.setBool('hasNewNotification', true);
+    _playSound();
+  } catch (e) {
+    debugPrint('Ошибка парсинга данных уведомления: $e');
+  }
+});
     });
 
     try {
@@ -499,6 +537,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     Future.delayed(Duration(milliseconds: 1), () {
       if (mounted) {
         _loadUserProfile();
+        _loadNotificationState(); // Перезагружаем состояние уведомлений
       }
     });
   }

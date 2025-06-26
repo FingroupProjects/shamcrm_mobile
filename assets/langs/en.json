@@ -1057,7 +1057,23 @@
 "version_mobilе": "Mobile version",
 "file_already_exists": "File already exists",
 "file_not_found": "File not found",
-"error_picking_file": "Error picking file"
+"error_picking_file": "Error picking file",
+"enter_textfield_text": "Maydon qiymatini kiriting",
+"enter_valid_number": "To‘g‘ri raqamni kiriting",
+"enter_valid_date": "To‘g‘ri sanani kiriting",
+"enter_valid_datetime": "To‘g‘ri sana va vaqtni kiriting",
+"enter_number": "Raqam kiriting",
+"enter_date": "Sanani kiriting",
+"enter_datetime": "Sana va vaqtni kiriting",
+"error_picking_file": "Error picking file",
+"field_type_text": "Text",
+"field_type_number": "Number",
+"field_type_date": "Date",
+"field_type": "Field type",
+"select_field_type": "Enter field type"
+
+
+
 
 
 

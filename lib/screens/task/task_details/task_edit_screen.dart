@@ -21,9 +21,8 @@ import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
@@ -192,6 +191,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         fieldName: customField.key,
         controller: controller,
         uniqueId: Uuid().v4(),
+        type: customField.type ?? 'string', // Инициализация с типом
       ));
     }
 
@@ -229,7 +229,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _addCustomField(String fieldName,
-      {bool isDirectory = false, int? directoryId}) {
+      {bool isDirectory = false, int? directoryId, String? type}) {
     print(
         'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
     if (isDirectory && directoryId != null) {
@@ -249,6 +249,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         isDirectoryField: isDirectory,
         directoryId: directoryId,
         uniqueId: Uuid().v4(),
+        type: type ?? 'string',
       ));
     });
   }
@@ -294,8 +295,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           context: context,
           builder: (BuildContext context) {
             return AddCustomFieldDialog(
-              onAddField: (fieldName) {
-                _addCustomField(fieldName);
+              onAddField: (fieldName, {String? type}) {
+                _addCustomField(fieldName, type: type);
               },
             );
           },
@@ -930,6 +931,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                               _checkAdditionalFields();
                                             });
                                           },
+                                          type: field.type, // Передаём тип поля
                                         ),
                                 );
                               },
@@ -1006,7 +1008,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                         return;
                                       }
 
-                                      List<Map<String, String>>
+                                      List<Map<String, dynamic>>
                                           customFieldList = [];
                                       List<Map<String, int>> directoryValues =
                                           [];
@@ -1016,6 +1018,49 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             field.fieldName.trim();
                                         String fieldValue =
                                             field.controller.text.trim();
+                                        String? fieldType = field.type;
+
+                                        // Валидация для number
+                                        if (fieldType == 'number' &&
+                                            fieldValue.isNotEmpty) {
+                                          if (!RegExp(r'^\d+$')
+                                              .hasMatch(fieldValue)) {
+                                            _showErrorSnackBar(
+                                                AppLocalizations.of(context)!
+                                                    .translate(
+                                                        'enter_valid_number'));
+                                            return;
+                                          }
+                                        }
+
+                                       // Валидация и форматирование для date и datetime
+       if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
+        try {
+          if (fieldType == 'date') {
+            DateFormat('dd/MM/yyyy').parse(fieldValue);
+          } else {
+            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
 
                                         if (field.isDirectoryField &&
                                             field.directoryId != null &&
@@ -1026,8 +1071,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           });
                                         } else if (fieldName.isNotEmpty &&
                                             fieldValue.isNotEmpty) {
-                                          customFieldList
-                                              .add({fieldName: fieldValue});
+                                          customFieldList.add({
+                                            'key': fieldName,
+                                            'value': fieldValue,
+                                            'type': fieldType ?? 'string',
+                                          });
                                         }
                                       }
 
@@ -1090,6 +1138,46 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller;
+  final bool isDirectoryField;
+  final int? directoryId;
+  final int? entryId;
+  final String uniqueId;
+  final String? type; // Добавлено поле type
+
+  CustomField({
+    required this.fieldName,
+    TextEditingController? controller,
+    this.isDirectoryField = false,
+    this.directoryId,
+    this.entryId,
+    required this.uniqueId,
+    this.type,
+  }) : controller = controller ?? TextEditingController();
+
+  CustomField copyWith({
+    String? fieldName,
+    TextEditingController? controller,
+    bool? isDirectoryField,
+    int? directoryId,
+    int? entryId,
+    String? uniqueId,
+    String? type,
+  }) {
+    return CustomField(
+      fieldName: fieldName ?? this.fieldName,
+      controller: controller ?? this.controller,
+      isDirectoryField: isDirectoryField ?? this.isDirectoryField,
+      directoryId: directoryId ?? this.directoryId,
+      entryId: entryId ?? this.entryId,
+      uniqueId: uniqueId ?? this.uniqueId,
+      type: type ?? this.type,
     );
   }
 }

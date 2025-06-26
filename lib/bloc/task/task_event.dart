@@ -97,9 +97,9 @@ class CreateTask extends TaskEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<String>? filePaths;
-  final List<Map<String, int>>? directoryValues; // Новое поле для directory_values
+  final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
 
   CreateTask({
@@ -114,10 +114,10 @@ class CreateTask extends TaskEvent {
     this.description,
     this.customFields,
     this.filePaths,
-    this.directoryValues, // Добавляем в конструктор
+    this.directoryValues,
     required this.localizations,
   });
-}
+} 
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
@@ -129,7 +129,8 @@ class UpdateTask extends TaskEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
-  final List<Map<String, String>>? customFields;
+    final List<Map<String, dynamic>>? customFields; // Изменяем тип
+
   final List<String>? filePaths;
   final List<TaskFiles>? existingFiles;
   final List<Map<String, int>>? directoryValues; // Add for consistency

@@ -66,7 +66,7 @@ class CreateDeal extends DealEvent {
   final String? description;
   final int? dealtypeId;
   final int? leadId;
-  final List<Map<String, String>>? customFields;
+    final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<Map<String, int>>? directoryValues;
   final List<String>? filePaths; // Новое поле для файлов
   final AppLocalizations localizations;
@@ -95,15 +95,15 @@ class UpdateDeal extends DealEvent {
   final int? managerId;
   final DateTime? startDate;
   final DateTime? endDate;
-  final String sum;
+  final String? sum;
   final String? description;
   final int? dealtypeId;
   final int? leadId;
-  final List<Map<String, String>>? customFields;
-  final List<Map<String, int>>? directoryValues; // Новое поле
+  final List<Map<String, dynamic>>? customFields; // Изменён тип
+  final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
-  final List<String>? filePaths; // Новое поле для новых файлов
-  final List<DealFiles> existingFiles; // Существующие файлы
+  final List<String>? filePaths;
+  final List<DealFiles> existingFiles;
 
   UpdateDeal({
     required this.dealId,
@@ -112,15 +112,15 @@ class UpdateDeal extends DealEvent {
     this.managerId,
     this.startDate,
     this.endDate,
-    required this.sum,
+    this.sum,
     this.description,
     this.dealtypeId,
     this.leadId,
     this.customFields,
-    this.directoryValues, // Добавляем в конструктор
+    this.directoryValues,
     required this.localizations,
-    this.filePaths, // Добавляем
-    required this.existingFiles, // Добавляем
+    this.filePaths,
+    required this.existingFiles,
   });
 }
 
