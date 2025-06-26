@@ -252,34 +252,33 @@ class TaskFileById {
 
 class TaskStatusById {
   final int id;
-  final TaskStatusNameById taskStatus;
+  final TaskStatusNameById? taskStatus; // Make taskStatus nullable
   final String color;
 
   TaskStatusById({
     required this.id,
-    required this.taskStatus,
+    this.taskStatus, // Allow null
     required this.color,
   });
 
-  // Метод для создания объекта из JSON
   factory TaskStatusById.fromJson(Map<String, dynamic> json) {
     return TaskStatusById(
-      id: json['id'],
-      taskStatus: TaskStatusNameById.fromJson(json['taskStatus']),
-      color: json['color'],
+      id: json['id'] ?? 0,
+      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+          ? TaskStatusNameById.fromJson(json['taskStatus'])
+          : null, // Handle null case
+      color: json['color'] ?? '',
     );
   }
 
-  // Метод для преобразования объекта в JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'taskStatus': taskStatus.toJson(),
+      'taskStatus': taskStatus?.toJson(),
       'color': color,
     };
   }
 }
-
 class TaskStatusNameById {
   final int id;
   final String name;

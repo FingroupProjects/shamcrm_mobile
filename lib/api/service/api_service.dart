@@ -1170,105 +1170,102 @@ class ApiService {
   }
 
 // Обновленный метод createLead
-  Future<Map<String, dynamic>> createLead({
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? managerId,
-    int? sourceId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, String>>? customFields,
-    String? manager, // Добавляем параметр для "system"
-  }) async {
-    final organizationId = await getSelectedOrganization();
+ Future<Map<String, dynamic>> createLead({
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? managerId,
+  int? sourceId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, dynamic>>? customFields,
+  String? manager,
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    final Map<String, dynamic> requestData = {
-      'name': name,
-      'lead_status_id': leadStatusId,
-      'phone': phone,
-      'position': 1,
-      if (regionId != null) 'region_id': regionId,
-      if (managerId != null) 'manager_id': managerId,
-      if (manager != null)
-        'manager': manager, // Добавляем "manager" если он есть
-      if (sourceId != null) 'source_id': sourceId,
-      if (instaLogin != null) 'insta_login': instaLogin,
-      if (facebookLogin != null) 'facebook_login': facebookLogin,
-      if (tgNick != null) 'tg_nick': tgNick,
-      if (birthday != null) 'birthday': birthday.toIso8601String(),
-      if (email != null) 'email': email,
-      if (description != null) 'description': description,
-      if (waPhone != null) 'wa_phone': waPhone,
-      'lead_custom_fields': customFields?.map((field) {
-            return {
-              'key': field.keys.first,
-              'value': field.values.first,
-            };
-          }).toList() ??
-          [],
-    };
+  final Map<String, dynamic> requestData = {
+    'name': name,
+    'lead_status_id': leadStatusId,
+    'phone': phone,
+    'position': 1,
+    if (regionId != null) 'region_id': regionId,
+    if (managerId != null) 'manager_id': managerId,
+    if (manager != null) 'manager': manager,
+    if (sourceId != null) 'source_id': sourceId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(),
+    if (email != null) 'email': email,
+    if (description != null) 'description': description,
+    if (waPhone != null) 'wa_phone': waPhone,
+    if (customFields != null && customFields.isNotEmpty)
+      'lead_custom_fields': customFields,
+  };
 
-    final response = await _postRequest(
-      '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestData,
-    );
+  final response = await _postRequest(
+    '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    requestData,
+  );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      } else if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      } else if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      } else if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      } else if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      } else if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      } else {
-        return {'success': false, 'message': 'unknown_error'};
-      }
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
     }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body.contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
   }
+}
 
-// Новый метод для работы с динамическими данными
 Future<Map<String, dynamic>> createLeadWithData(
   Map<String, dynamic> data, {
-  List<String>? filePaths, // Добавляем параметр для файлов
+  List<String>? filePaths,
 }) async {
   final organizationId = await getSelectedOrganization();
   var uri = Uri.parse(
     '${baseUrl}/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
   );
 
-  // Создаем multipart request
   var request = http.MultipartRequest('POST', uri);
 
-  // Добавляем заголовки
   final token = await getToken();
   request.headers.addAll({
     'Authorization': 'Bearer $token',
@@ -1276,16 +1273,33 @@ Future<Map<String, dynamic>> createLeadWithData(
     'Device': 'mobile',
   });
 
-  // Добавляем поля
+  // Добавляем поля, кроме lead_custom_fields
   data.forEach((key, value) {
-    if (value is List) {
-      request.fields[key] = json.encode(value);
-    } else {
-      request.fields[key] = value.toString();
+    if (key != 'lead_custom_fields') {
+      if (value is List) {
+        request.fields[key] = json.encode(value);
+      } else if (value != null) {
+        request.fields[key] = value.toString();
+      }
     }
   });
 
-  // Добавляем файлы, если они есть
+  // Обрабатываем lead_custom_fields как массив объектов
+  if (data['lead_custom_fields'] != null &&
+      data['lead_custom_fields'] is List &&
+      data['lead_custom_fields'].isNotEmpty) {
+    List<Map<String, dynamic>> customFields =
+        data['lead_custom_fields'] as List<Map<String, dynamic>>;
+    for (int i = 0; i < customFields.length; i++) {
+      request.fields['lead_custom_fields[$i][key]'] = customFields[i]['key'] ?? '';
+      request.fields['lead_custom_fields[$i][value]'] =
+          customFields[i]['value'] ?? '';
+      request.fields['lead_custom_fields[$i][type]'] =
+          customFields[i]['type'] ?? 'string';
+    }
+  }
+
+  // Добавляем файлы
   if (filePaths != null && filePaths.isNotEmpty) {
     for (var filePath in filePaths) {
       final file = await http.MultipartFile.fromPath('files[]', filePath);
@@ -1293,7 +1307,6 @@ Future<Map<String, dynamic>> createLeadWithData(
     }
   }
 
-  // Отправляем запрос
   final streamedResponse = await request.send();
   final response = await http.Response.fromStream(streamedResponse);
 
@@ -1311,44 +1324,53 @@ Future<Map<String, dynamic>> createLeadWithData(
     }
     if (response.body.contains('name')) {
       return {'success': false, 'message': 'invalid_name_length'};
-    } else if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    } else if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    } else if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    } else if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    } else if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
-    } else {
-      return {'success': false, 'message': 'unknown_error'};
     }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
   } else if (response.statusCode == 500) {
     return {'success': false, 'message': 'error_server_text'};
   } else {
     return {'success': false, 'message': 'lead_creation_error'};
   }
 }
-
   // Метод для Обновления Лида
- Future<Map<String, dynamic>> updateLead({
-    required int leadId,
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? sourceId,
-    int? managerId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, String>>? customFields,
-    List<Map<String, int>>? directoryValues, // Новое поле для справочников
+Future<Map<String, dynamic>> updateLead({
+  required int leadId,
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? sourceId,
+  int? managerId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, dynamic>>? customFields, // Изменён тип
+  List<Map<String, int>>? directoryValues,
 }) async {
   final organizationId = await getSelectedOrganization();
 
@@ -1368,14 +1390,8 @@ Future<Map<String, dynamic>> createLeadWithData(
       if (email != null) 'email': email,
       if (description != null) 'description': description,
       if (waPhone != null) 'wa_phone': waPhone,
-      'lead_custom_fields': customFields
-              ?.map((field) => {
-                    'key': field.keys.first,
-                    'value': field.values.first,
-                  })
-              .toList() ??
-          [],
-      'directory_values': directoryValues ?? [], // Отправляем справочные поля
+      'lead_custom_fields': customFields ?? [],
+      'directory_values': directoryValues ?? [],
     },
   );
 
@@ -1385,9 +1401,39 @@ Future<Map<String, dynamic>> createLeadWithData(
     if (response.body.contains('The phone has already been taken.')) {
       return {'success': false, 'message': 'phone_already_exists'};
     }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body.contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday remont_nullable')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_fields'};
+    }
     return {'success': false, 'message': 'unknown_error'};
   } else {
-    return {'success': false, 'message': 'error_update_lead'};
+    return {'success': false, 'message': 'error_updated_lead'};
   }
 }
 
@@ -1401,10 +1447,8 @@ Future<Map<String, dynamic>> updateLeadWithData({
     '${baseUrl}/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
   );
 
-  // Создаем multipart request с методом POST
   var request = http.MultipartRequest('POST', uri);
 
-  // Добавляем заголовки
   final token = await getToken();
   request.headers.addAll({
     'Authorization': 'Bearer $token',
@@ -1412,33 +1456,55 @@ Future<Map<String, dynamic>> updateLeadWithData({
     'Device': 'mobile',
   });
 
-  // Добавляем поля явно
   request.fields['name'] = data['name']?.toString() ?? '';
   request.fields['lead_status_id'] = data['lead_status_id']?.toString() ?? '';
   request.fields['phone'] = data['phone']?.toString() ?? '';
-  request.fields['source_id'] = data['source_id']?.toString() ?? '';
-  request.fields['insta_login'] = data['insta_login']?.toString() ?? '';
-  request.fields['facebook_login'] = data['facebook_login']?.toString() ?? '';
-  request.fields['tg_nick'] = data['tg_nick']?.toString() ?? '';
-  request.fields['email'] = data['email']?.toString() ?? '';
-  request.fields['description'] = data['description']?.toString() ?? '';
-  request.fields['wa_phone'] = data['wa_phone']?.toString() ?? '';
-  request.fields['manager_id'] = data['manager_id']?.toString() ?? '';
-  if (organizationId != null) {
-    request.fields['organization_id'] = organizationId.toString();
+  if (data['region_id'] != null) {
+    request.fields['region_id'] = data['region_id'].toString();
+  }
+  if (data['source_id'] != null) {
+    request.fields['source_id'] = data['source_id'].toString();
+  }
+  if (data['manager_id'] != null) {
+    request.fields['manager_id'] = data['manager_id'].toString();
+  }
+  if (data['insta_login'] != null) {
+    request.fields['insta_login'] = data['insta_login'].toString();
+  }
+  if (data['facebook_login'] != null) {
+    request.fields['facebook_login'] = data['facebook_login'].toString();
+  }
+  if (data['tg_nick'] != null) {
+    request.fields['tg_nick'] = data['tg_nick'].toString();
+  }
+  if (data['birthday'] != null) {
+    request.fields['birthday'] = data['birthday'].toString();
+  }
+  if (data['email'] != null) {
+    request.fields['email'] = data['email'].toString();
+  }
+  if (data['description'] != null) {
+    request.fields['description'] = data['description'].toString();
+  }
+  if (data['wa_phone'] != null) {
+    request.fields['wa_phone'] = data['wa_phone'].toString();
+  }
+  if (data['existing_file_ids'] != null) {
+    request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
   }
 
-  // Добавляем кастомные поля
+  // Обрабатываем lead_custom_fields
   final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
   if (customFields.isNotEmpty) {
     for (int i = 0; i < customFields.length; i++) {
       var field = customFields[i] as Map<String, dynamic>;
-      request.fields['lead_custom_fields[$i][key]'] = field.keys.first.toString();
-      request.fields['lead_custom_fields[$i][value]'] = field.values.first.toString();
+      request.fields['lead_custom_fields[$i][key]'] = field['key']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][value]'] = field['value']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][type]'] = field['type']?.toString() ?? 'string';
     }
   }
 
-  // Добавляем справочные значения
+  // Обрабатываем directory_values
   final directoryValues = data['directory_values'] as List<dynamic>? ?? [];
   if (directoryValues.isNotEmpty) {
     for (int i = 0; i < directoryValues.length; i++) {
@@ -1448,7 +1514,6 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
   }
 
-  // Добавляем файлы, если они есть
   if (filePaths != null && filePaths.isNotEmpty) {
     for (var filePath in filePaths) {
       final file = await http.MultipartFile.fromPath('files[]', filePath);
@@ -1456,7 +1521,6 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
   }
 
-  // Отправляем запрос
   final streamedResponse = await request.send();
   final response = await http.Response.fromStream(streamedResponse);
 
@@ -1474,26 +1538,35 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
     if (response.body.contains('name')) {
       return {'success': false, 'message': 'invalid_name_length'};
-    } else if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    } else if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    } else if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    } else if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    } else if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
-    } else {
-      return {'success': false, 'message': 'unknown_error'};
     }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
   } else if (response.statusCode == 500) {
     return {'success': false, 'message': 'error_server_text'};
   } else {
     return {'success': false, 'message': 'error_update_lead'};
   }
 }
-
 // Api Service
   Future<DealNameDataResponse> getAllDealNames() async {
     final organizationId = await getSelectedOrganization();
@@ -2260,109 +2333,117 @@ Future<Map<String, dynamic>> updateLeadWithData({
   }
 
 // Метод для создания Сделки
- Future<Map<String, dynamic>> createDeal({
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? dealtypeId,
-  int? leadId,
-  List<Map<String, String>>? customFields,
-  List<Map<String, int>>? directoryValues,
-  List<String>? filePaths, // Новое поле для файлов
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse(
-        '${baseUrl}/deal${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  Future<Map<String, dynamic>> createDeal({
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? dealtypeId,
+    int? leadId,
+    List<Map<String, dynamic>>? customFields, // Изменяем тип
+    List<Map<String, int>>? directoryValues,
+    List<String>? filePaths,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+        '${baseUrl}/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
 
-    var request = http.MultipartRequest('POST', uri);
+      var request = http.MultipartRequest('POST', uri);
 
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      });
 
-    request.fields['name'] = name;
-    request.fields['deal_status_id'] = dealStatusId.toString();
-    request.fields['position'] = '1';
-    if (managerId != null) {
-      request.fields['manager_id'] = managerId.toString();
-    }
-    if (startDate != null) {
-      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    }
-    if (endDate != null) {
-      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    }
-    request.fields['sum'] = sum;
-    if (description != null) {
-      request.fields['description'] = description;
-    }
-    if (dealtypeId != null) {
-      request.fields['deal_type_id'] = dealtypeId.toString();
-    }
-    if (leadId != null) {
-      request.fields['lead_id'] = leadId.toString();
-    }
-
-    if (customFields != null && customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i];
-        request.fields['deal_custom_fields[$i][key]'] = field.keys.first;
-        request.fields['deal_custom_fields[$i][value]'] = field.values.first;
+      request.fields['name'] = name;
+      request.fields['deal_status_id'] = dealStatusId.toString();
+      request.fields['position'] = '1';
+      if (managerId != null) {
+        request.fields['manager_id'] = managerId.toString();
       }
-    }
-
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var directoryValue = directoryValues[i];
-        request.fields['directory_values[$i][entry_id]'] =
-            directoryValue['entry_id'].toString();
-        request.fields['directory_values[$i][directory_id]'] =
-            directoryValue['directory_id'].toString();
+      if (startDate != null) {
+        request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
       }
-    }
-
-    // Добавляем файлы, если они есть
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+      if (endDate != null) {
+        request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
       }
-    }
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'deal_create_successfully',
-      };
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
+      request.fields['sum'] = sum;
+      if (description != null) {
+        request.fields['description'] = description;
       }
-      if (response.body.contains('directory_values')) {
-        return {'success': false, 'message': 'error_directory_values'};
+      if (dealtypeId != null) {
+        request.fields['deal_type_id'] = dealtypeId.toString();
       }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
+      if (leadId != null) {
+        request.fields['lead_id'] = leadId.toString();
+      }
+
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['deal_custom_fields[$i][value]'] = field['value'] ?? '';
+          request.fields['deal_custom_fields[$i][type]'] = field['type'] ?? 'string';
+        }
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          var directoryValue = directoryValues[i];
+          request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+          request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
+        }
+      }
+
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath('files[]', filePath);
+          request.files.add(file);
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'deal_created_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {'success': false, 'message': 'invalid_name_length'};
+        }
+        if (response.body.contains('directory_values')) {
+          return {'success': false, 'message': 'error_directory_values'};
+        }
+        if (response.body.contains('type')) {
+          return {'success': false, 'message': 'invalid_field_type'};
+        }
+        if (response.body.contains('deal_custom_fields')) {
+          return {'success': false, 'message': 'invalid_deal_custom_fields'};
+        }
+        return {'success': false, 'message': 'unknown_error'};
+      } else if (response.statusCode == 500) {
+        return {'success': false, 'message': 'error_server_text'};
+      } else {
+        return {'success': false, 'message': 'error_deal_create_successfully'};
+      }
+    } catch (e) {
       return {'success': false, 'message': 'error_deal_create_successfully'};
     }
-  } catch (e) {
-    return {'success': false, 'message': 'error_deal_create_successfully'};
   }
-}
+
   // Метод для обновления сделки
+
+
 Future<Map<String, dynamic>> updateDeal({
   required int dealId,
   required String name,
@@ -2374,20 +2455,18 @@ Future<Map<String, dynamic>> updateDeal({
   String? description,
   int? dealtypeId,
   required int? leadId,
-  List<Map<String, String>>? customFields,
+  List<Map<String, dynamic>>? customFields, // Изменён тип
   List<Map<String, int>>? directoryValues,
-  List<String>? filePaths, // Новое поле для файлов
-  List<DealFiles>? existingFiles, // Существующие файлы
+  List<String>? filePaths,
+  List<DealFiles>? existingFiles,
 }) async {
   final organizationId = await getSelectedOrganization();
   var uri = Uri.parse(
     '${baseUrl}/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
   );
 
-  // Создаем multipart request с методом POST
   var request = http.MultipartRequest('POST', uri);
 
-  // Добавляем заголовки
   final token = await getToken();
   request.headers.addAll({
     'Authorization': 'Bearer $token',
@@ -2395,54 +2474,49 @@ Future<Map<String, dynamic>> updateDeal({
     'Device': 'mobile',
   });
 
-  // Добавляем поля явно
   request.fields['name'] = name;
   request.fields['deal_status_id'] = dealStatusId.toString();
   if (managerId != null) request.fields['manager_id'] = managerId.toString();
-  if (startDate != null) request.fields['start_date'] = startDate.toIso8601String();
+  if (startDate != null)
+    request.fields['start_date'] = startDate.toIso8601String();
   if (endDate != null) request.fields['end_date'] = endDate.toIso8601String();
-  request.fields['sum'] = sum;
+  if (sum.isNotEmpty) request.fields['sum'] = sum;
   if (description != null) request.fields['description'] = description;
-  if (dealtypeId != null) request.fields['deal_type_id'] = dealtypeId.toString();
+  if (dealtypeId != null)
+    request.fields['deal_type_id'] = dealtypeId.toString();
   if (leadId != null) request.fields['lead_id'] = leadId.toString();
   if (organizationId != null) {
     request.fields['organization_id'] = organizationId.toString();
   }
 
-  // Добавляем кастомные поля
-  final customFieldsList = customFields?.map((field) {
-    return {
-      'key': field.keys.first,
-      'value': field.values.first,
-    };
-  }).toList() ?? [];
+  final customFieldsList = customFields ?? [];
   if (customFieldsList.isNotEmpty) {
     for (int i = 0; i < customFieldsList.length; i++) {
       var field = customFieldsList[i];
-      request.fields['deal_custom_fields[$i][key]'] = field['key']!;
-      request.fields['deal_custom_fields[$i][value]'] = field['value']!;
+      request.fields['deal_custom_fields[$i][key]'] = field['key']!.toString();
+      request.fields['deal_custom_fields[$i][value]'] =
+          field['value']!.toString();
+      request.fields['deal_custom_fields[$i][type]'] =
+          field['type']?.toString() ?? 'string';
     }
   }
 
-  // Добавляем справочные значения
   final directoryValuesList = directoryValues ?? [];
   if (directoryValuesList.isNotEmpty) {
     for (int i = 0; i < directoryValuesList.length; i++) {
       var value = directoryValuesList[i];
-      request.fields['directory_values[$i][directory_id]'] = value['directory_id'].toString();
-      request.fields['directory_values[$i][entry_id]'] = value['entry_id'].toString();
+      request.fields['directory_values[$i][directory_id]'] =
+          value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          value['entry_id'].toString();
     }
   }
 
-  // Добавляем ID существующих файлов
   if (existingFiles != null && existingFiles.isNotEmpty) {
     final existingFileIds = existingFiles.map((file) => file.id).toList();
-    for (int i = 0; i < existingFileIds.length; i++) {
-      request.fields['existing_file_ids[$i]'] = existingFileIds[i].toString();
-    }
+    request.fields['existing_files'] = jsonEncode(existingFileIds);
   }
 
-  // Добавляем новые файлы, если они есть
   if (filePaths != null && filePaths.isNotEmpty) {
     for (var filePath in filePaths) {
       final file = await http.MultipartFile.fromPath('files[]', filePath);
@@ -2450,7 +2524,6 @@ Future<Map<String, dynamic>> updateDeal({
     }
   }
 
-  // Отправляем запрос
   final streamedResponse = await request.send();
   final response = await http.Response.fromStream(streamedResponse);
 
@@ -2460,11 +2533,20 @@ Future<Map<String, dynamic>> updateDeal({
     if (response.body.contains('"name"')) {
       return {'success': false, 'message': 'invalid_name_length'};
     }
+    if (response.body.contains('sum')) {
+      return {'success': false, 'message': 'invalid_sum_format'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('deal_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
     return {'success': false, 'message': 'unknown_error'};
   } else if (response.statusCode == 500) {
     return {'success': false, 'message': 'error_server_text'};
   } else {
-    return {'success': false, 'message': 'error_deal_update_successfully'};
+    return {'success': false, 'message': 'error_deal_update'};
   }
 }
   // Метод для Удаления Статуса Лида
@@ -2958,145 +3040,158 @@ Future<Map<String, dynamic>> updateDeal({
 
 // Метод для создание задачи из сделки
 Future<Map<String, dynamic>> createTaskFromDeal({
-  required int dealId,
-  required String name,
-  required int? statusId,
-  required int? taskStatusId,
-  int? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  List<int>? userId,
-  String? description,
-  List<Map<String, String>>? customFields,
-  List<String>? filePaths,
-  List<Map<String, int>>? directoryValues, // Added for directory support
-  int position = 1,
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse(
-        '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    required int dealId,
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    List<int>? userId,
+    String? description,
+    List<Map<String, dynamic>>? customFields, // Изменяем тип
+    List<String>? filePaths,
+    List<Map<String, int>>? directoryValues,
+    int position = 1,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    var request = http.MultipartRequest('POST', uri);
+      var request = http.MultipartRequest('POST', uri);
 
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-    request.fields['name'] = name;
-    request.fields['task_status_id'] = taskStatusId.toString();
-    request.fields['position'] = position.toString();
+      request.fields['name'] = name;
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
 
-    if (priority != null) {
-      request.fields['priority_level'] = priority.toString();
-    }
-    if (startDate != null) {
-      request.fields['from'] = startDate.toIso8601String();
-    }
-    if (endDate != null) {
-      request.fields['to'] = endDate.toIso8601String();
-    }
-    if (projectId != null) {
-      request.fields['project_id'] = projectId.toString();
-    }
-    if (description != null) {
-      request.fields['description'] = description;
-    }
-
-    if (userId != null && userId.isNotEmpty) {
-      for (int i = 0; i < userId.length; i++) {
-        request.fields['users[$i][user_id]'] = userId[i].toString();
+      if (priority != null) {
+        request.fields['priority_level'] = priority.toString();
       }
-    }
-
-    if (customFields != null && customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i];
-        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-        request.fields['task_custom_fields[$i][value]'] = field.values.first;
+      if (startDate != null) {
+        request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
       }
-    }
-
-    // Добавляем directory_values
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var directoryValue = directoryValues[i];
-        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
-        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
+      if (endDate != null) {
+        request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
       }
-    }
-
-    // Добавляем файлы, если они есть
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+      if (projectId != null) {
+        request.fields['project_id'] = projectId.toString();
       }
-    }
+      if (description != null) {
+        request.fields['description'] = description;
+      }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      if (userId != null && userId.isNotEmpty) {
+        for (int i = 0; i < userId.length; i++) {
+          request.fields['users[$i][user_id]'] = userId[i].toString();
+        }
+      }
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'task_deal_create_successfully',
-      };
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['task_custom_fields[$i][value]'] = field['value'] ?? '';
+          request.fields['task_custom_fields[$i][type]'] = field['type'] ?? 'string';
+        }
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          var directoryValue = directoryValues[i];
+          request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+          request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
+        }
+      }
+
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath('files[]', filePath);
+          request.files.add(file);
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'task_deal_create_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'invalid_name_length',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'error_start_date_task',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'error_end_date_task',
+          };
+        }
+        if (response.body.contains('priority_level')) {
+          return {
+            'success': false,
+            'message': 'error_priority_level',
+          };
+        }
+        if (response.body.contains('directory_values')) {
+          return {
+            'success': false,
+            'message': 'error_directory_values',
+          };
+        }
+        if (response.body.contains('type')) {
+          return {
+            'success': false,
+            'message': 'invalid_field_type',
+          };
+        }
+        if (response.body.contains('task_custom_fields')) {
+          return {
+            'success': false,
+            'message': 'invalid_task_custom_fields',
+          };
+        }
         return {
           'success': false,
-          'message': 'invalid_name_length',
+          'message': 'unknown_error',
         };
-      }
-      if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      }
-      if (response.body.contains('from')) {
+      } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'error_start_date_task',
+          'message': 'error_server_text',
         };
-      }
-      if (response.body.contains('to')) {
+      } else {
         return {
           'success': false,
-          'message': 'error_end_date_task',
+          'message': 'error_create_task',
         };
       }
-      if (response.body.contains('priority_level')) {
-        return {
-          'success': false,
-          'message': 'error_priority_level',
-        };
-      }
-      if (response.body.contains('directory_values')) {
-        return {
-          'success': false,
-          'message': 'error_directory_values',
-        };
-      }
-      return {
-        'success': false,
-        'message': 'unknown_error',
-      };
-    } else {
+    } catch (e) {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'error_create_task',
-    };
   }
-}
 
 /*
 // Метод для создание задачи
@@ -3244,150 +3339,160 @@ Future<Map<String, dynamic>> createTaskFromDeal({
     }
   }*/
 // Метод для создание задачи
-Future<Map<String, dynamic>> createTask({
-  required String name,
-  required int? statusId,
-  required int? taskStatusId,
-  int? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  List<int>? userId,
-  String? description,
-  List<Map<String, String>>? customFields,
-  List<String>? filePaths,
-  List<Map<String, int>>? directoryValues, // Новое поле
-  int position = 1,
-}) async {
-  try {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse(
-        '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  Future<Map<String, dynamic>> createTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    List<int>? userId,
+    String? description,
+    List<Map<String, dynamic>>? customFields, // Изменяем тип
+    List<String>? filePaths,
+    List<Map<String, int>>? directoryValues,
+    int position = 1,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    var request = http.MultipartRequest('POST', uri);
+      var request = http.MultipartRequest('POST', uri);
 
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Device': 'mobile'
-    });
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-    request.fields['name'] = name;
-    request.fields['status_id'] = statusId.toString();
-    request.fields['task_status_id'] = taskStatusId.toString();
-    request.fields['position'] = position.toString();
-    request.fields['organization_id'] = organizationId.toString();
+      request.fields['name'] = name;
+      request.fields['status_id'] = statusId.toString();
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+      request.fields['organization_id'] = organizationId.toString();
 
-    if (priority != null) {
-      request.fields['priority_level'] = priority.toString();
-    }
-    if (startDate != null) {
-      request.fields['from'] = startDate.toString().split(' ')[0];
-    }
-    if (endDate != null) {
-      request.fields['to'] = endDate.toString().split(' ')[0];
-    }
-    if (projectId != null) {
-      request.fields['project_id'] = projectId.toString();
-    }
-    if (description != null) {
-      request.fields['description'] = description;
-    }
-
-    if (userId != null && userId.isNotEmpty) {
-      for (int i = 0; i < userId.length; i++) {
-        request.fields['users[$i][user_id]'] = userId[i].toString();
+      if (priority != null) {
+        request.fields['priority_level'] = priority.toString();
       }
-    }
-
-    if (customFields != null && customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i];
-        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-        request.fields['task_custom_fields[$i][value]'] = field.values.first;
+      if (startDate != null) {
+        request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
       }
-    }
-
-    // Добавляем directory_values
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var directoryValue = directoryValues[i];
-        request.fields['directory_values[$i][entry_id]'] =
-            directoryValue['entry_id'].toString();
-        request.fields['directory_values[$i][directory_id]'] =
-            directoryValue['directory_id'].toString();
+      if (endDate != null) {
+        request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
       }
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+      if (projectId != null) {
+        request.fields['project_id'] = projectId.toString();
       }
-    }
+      if (description != null) {
+        request.fields['description'] = description;
+      }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      if (userId != null && userId.isNotEmpty) {
+        for (int i = 0; i < userId.length; i++) {
+          request.fields['users[$i][user_id]'] = userId[i].toString();
+        }
+      }
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'task_create_successfully',
-      };
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['task_custom_fields[$i][value]'] = field['value'] ?? '';
+          request.fields['task_custom_fields[$i][type]'] = field['type'] ?? 'string';
+        }
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          var directoryValue = directoryValues[i];
+          request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+          request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
+        }
+      }
+
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath('files[]', filePath);
+          request.files.add(file);
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'task_create_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'invalid_name_length',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'error_start_date_task',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'error_end_date_task',
+          };
+        }
+        if (response.body.contains('priority_level')) {
+          return {
+            'success': false,
+            'message': 'error_priority_level',
+          };
+        }
+        if (response.body.contains('directory_values')) {
+          return {
+            'success': false,
+            'message': 'error_directory_values',
+          };
+        }
+        if (response.body.contains('type')) {
+          return {
+            'success': false,
+            'message': 'invalid_field_type',
+          };
+        }
+        if (response.body.contains('task_custom_fields')) {
+          return {
+            'success': false,
+            'message': 'invalid_task_custom_fields',
+          };
+        }
         return {
           'success': false,
-          'message': 'invalid_name_length',
+          'message': 'unknown_error',
         };
-      }
-      if (response.body.contains('from')) {
+      } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'error_start_date_task',
+          'message': 'error_server_text',
         };
-      }
-      if (response.body.contains('to')) {
+      } else {
         return {
           'success': false,
-          'message': 'error_end_date_task',
+          'message': 'error_create_task',
         };
       }
-      if (response.body.contains('priority_level')) {
-        return {
-          'success': false,
-          'message': 'error_priority_level',
-        };
-      }
-      if (response.body.contains('directory_values')) {
-        return {
-          'success': false,
-          'message': 'error_directory_values',
-        };
-      }
-      return {
-        'success': false,
-        'message': 'unknown_error',
-      };
-    } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'error_server_text',
-      };
-    } else {
+    } catch (e) {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'error_create_task',
-    };
   }
-}
 
   //Метод для обновление задачи
   Future<Map<String, dynamic>> updateTask({
@@ -3401,7 +3506,7 @@ Future<Map<String, dynamic>> createTask({
     List<int>? userId,
     String? description,
     List<String>? filePaths, // Список путей к файлам
-    List<Map<String, String>>? customFields,
+    List<Map<String, dynamic>>? customFields, // Обновлённый тип
     List<TaskFiles>?
         existingFiles, // Добавляем параметр для существующих файлов
         List<Map<String, int>>? directoryValues,
@@ -3452,13 +3557,14 @@ Future<Map<String, dynamic>> createTask({
       }
 
       // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
-      }
+     if (customFields != null && customFields.isNotEmpty) {
+    for (int i = 0; i < customFields.length; i++) {
+      var field = customFields[i];
+      request.fields['task_custom_fields[$i][key]'] = field['key']!.toString();
+      request.fields['task_custom_fields[$i][value]'] = field['value']!.toString();
+      request.fields['task_custom_fields[$i][type]'] = field['type']?.toString() ?? 'string';
+    }
+  }
 
       // Добавляем ID существующих файлов
       if (existingFiles != null && existingFiles.isNotEmpty) {

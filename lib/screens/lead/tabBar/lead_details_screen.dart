@@ -686,7 +686,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       ),
                     if (_canReadDeal)
                       DealsWidget(
-                          leadId: int.parse(widget.leadId), key: keyLeadDeal),
+                          leadId: int.parse(widget.leadId), key: keyLeadDeal,),
                     ContactPersonWidget(
                         leadId: int.parse(widget.leadId),
                         key: keyLeadContactPerson),

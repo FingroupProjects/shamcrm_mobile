@@ -998,7 +998,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
         if (state is TaskLoaded) {
           await TaskCache.cacheTaskStatuses(state.taskStatuses
               .map((status) =>
-                  {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+                  {'id': status.id, 'title': status.taskStatus?.name ?? ""})
               .toList());
           setState(() {
             _tabTitles = state.taskStatuses

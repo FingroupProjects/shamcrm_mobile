@@ -17,10 +17,10 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -47,7 +47,8 @@ class DealEditScreen extends StatefulWidget {
   final int statusId;
   final List<DealCustomFieldsById> dealCustomFields;
   final List<DirectoryValue>? directoryValues;
-final List<DealFiles>? files; // Добавляем поле для файлов
+  final List<DealFiles>? files;
+
   DealEditScreen({
     required this.dealId,
     required this.dealName,
@@ -62,7 +63,7 @@ final List<DealFiles>? files; // Добавляем поле для файлов
     this.sum,
     required this.dealCustomFields,
     this.directoryValues,
-    this.files, // Добавляем в конструктор
+    this.files,
   });
 
   @override
@@ -83,11 +84,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
   String? selectedLead;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-    List<String> selectedFiles = [];
+  List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
-  List<DealFiles> existingFiles = []; // Для хранения файлов с сервера
-  List<String> newFiles = []; // Новый список для хранения путей к новым файлам
+  List<DealFiles> existingFiles = [];
+  List<String> newFiles = [];
 
   @override
   void initState() {
@@ -95,7 +96,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
     _initializeControllers();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
-    // Инициализация файлов
     if (widget.files != null) {
       existingFiles = widget.files!;
       setState(() {
@@ -106,7 +106,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
       });
     }
   }
-  
 
   void _initializeControllers() {
     titleController.text = widget.dealName;
@@ -117,14 +116,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
-    print('SELECTEED LEAD _____________');
-    print(selectedLead);
 
     for (var customField in widget.dealCustomFields) {
       customFields.add(CustomField(
         fieldName: customField.key,
         controller: TextEditingController(text: customField.value),
         uniqueId: Uuid().v4(),
+        type: customField.type ?? 'string', // Инициализация с типом
       ));
     }
 
@@ -138,7 +136,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
       for (var dirValue in uniqueDirectoryValues) {
         customFields.add(CustomField(
           fieldName: dirValue.entry.directory.name,
-          controller: TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+          controller:
+              TextEditingController(text: dirValue.entry.values['value'] ?? ''),
           isDirectoryField: true,
           directoryId: dirValue.entry.directory.id,
           entryId: dirValue.entry.id,
@@ -153,19 +152,24 @@ class _DealEditScreenState extends State<DealEditScreen> {
       final directoryLinkData = await _apiService.getDealDirectoryLinks();
       if (directoryLinkData.data != null) {
         setState(() {
-          customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-            return CustomField(
-              fieldName: link.directory.name,
-              controller: TextEditingController(),
-              isDirectoryField: true,
-              directoryId: link.directory.id,
-              uniqueId: Uuid().v4(),
-            );
-          }).toList());
+          for (var link in directoryLinkData.data!) {
+            bool directoryExists = customFields.any((field) =>
+                field.isDirectoryField && field.directoryId == link.directory.id);
+            if (!directoryExists) {
+              customFields.add(CustomField(
+                fieldName: link.directory.name,
+                controller: TextEditingController(),
+                isDirectoryField: true,
+                directoryId: link.directory.id,
+                uniqueId: Uuid().v4(),
+              ));
+            }
+          }
         });
       }
     } catch (e) {
-      print('Ошибка при получении данных справочников: $e');
+      _showErrorSnackBar(
+          AppLocalizations.of(context)!.translate('error_fetching_directories'));
     }
   }
 
@@ -174,14 +178,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
 
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
-    print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
+  void _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) {
     if (isDirectory && directoryId != null) {
-      // Проверяем, существует ли уже поле с таким directoryId
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
-        return; // Игнорируем добавление, если справочник уже существует
+        return;
       }
     }
     setState(() {
@@ -191,6 +194,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         isDirectoryField: isDirectory,
         directoryId: directoryId,
         uniqueId: Uuid().v4(),
+        type: type ?? 'string',
       ));
     });
   }
@@ -236,8 +240,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
           context: context,
           builder: (BuildContext context) {
             return AddCustomFieldDialog(
-              onAddField: (fieldName) {
-                _addCustomField(fieldName);
+              onAddField: (fieldName, {String? type}) {
+                _addCustomField(fieldName, type: type);
               },
             );
           },
@@ -248,7 +252,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory_model.Directory directory) {
-                _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
+                _addCustomField(directory.name,
+                    isDirectory: true, directoryId: directory.id);
               },
             );
           },
@@ -278,342 +283,274 @@ class _DealEditScreenState extends State<DealEditScreen> {
       ),
     );
   }
-Future<void> _pickFile() async {
-  try {
-    print('DealEditScreen: Starting file picker');
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      for (var file in result.files) {
-        if (file.path != null && file.name != null) {
-          final filePath = file.path!;
-          print('DealEditScreen: Picked file path: $filePath');
-          final fileObject = File(filePath);
-          if (await fileObject.exists()) {
-            final fileName = file.name;
-            // Проверяем, не существует ли файл уже в existingFiles или newFiles
-            if (!existingFiles.any((f) => f.name == fileName) &&
-                !newFiles.contains(filePath)) {
-              final fileSize = await fileObject.length();
-              print(
-                  'DealEditScreen: Adding new file, name: $fileName, size: $fileSize bytes');
-              setState(() {
-                newFiles.add(filePath); // Добавляем в newFiles
-                fileNames.add(fileName);
-                fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
-                selectedFiles.add(filePath); // Для отображения в UI
-              });
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        for (var file in result.files) {
+          if (file.path != null && file.name != null) {
+            final filePath = file.path!;
+            final fileObject = File(filePath);
+            if (await fileObject.exists()) {
+              final fileName = file.name;
+              if (!existingFiles.any((f) => f.name == fileName) &&
+                  !newFiles.contains(filePath)) {
+                final fileSize = await fileObject.length();
+                setState(() {
+                  newFiles.add(filePath);
+                  fileNames.add(fileName);
+                  fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
+                  selectedFiles.add(filePath);
+                });
+              } else {
+                _showErrorSnackBar(AppLocalizations.of(context)!
+                    .translate('file_already_exists'));
+              }
             } else {
-              print('DealEditScreen: File $fileName already exists, skipping');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate('file_already_exists'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              _showErrorSnackBar(
+                  AppLocalizations.of(context)!.translate('file_not_found'));
             }
-          } else {
-            print('DealEditScreen: File does not exist at path: $filePath');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate('file_not_found'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
           }
-        } else {
-          print(
-              'DealEditScreen: File path or name is null for file: ${file.name}');
         }
       }
-    } else {
-      print('DealEditScreen: File picker cancelled or no files selected');
+    } catch (e) {
+      _showErrorSnackBar(
+          AppLocalizations.of(context)!.translate('error_picking_file'));
     }
-  } catch (e, stackTrace) {
-    print('DealEditScreen: Error picking file: $e');
-    print('Stack trace: $stackTrace');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.translate('error_picking_file'),
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
-Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
+
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
         ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
-            if (fileNames.isEmpty || index == fileNames.length) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: GestureDetector(
-                  onTap: _pickFile,
-                  child: Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/icons/files/add.png',
-                          width: 60,
-                          height: 60,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_file'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            final fileName = fileNames[index];
-            final fileExtension = fileName.split('.').last.toLowerCase();
-            final isExistingFile = index < existingFiles.length;
-
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/icons/files/$fileExtension.png',
-                          width: 60,
-                          height: 60,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/icons/files/file.png',
-                              width: 60,
-                              height: 60,
-                            );
-                          },
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          fileName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    right: -2,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () async {
-                        bool? confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: Center(
-                                child: Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('delete_file'),
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                              ),
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('confirm_delete_file'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              actions: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: CustomButton(
-                                        buttonText: AppLocalizations.of(context)!
-                                            .translate('cancel'),
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(false),
-                                        buttonColor: Colors.red,
-                                        textColor: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: CustomButton(
-                                        buttonText: AppLocalizations.of(context)!
-                                            .translate('unpin'),
-                                        onPressed: () async {
-                                          if (isExistingFile) {
-                                            try {
-                                              final result = await _apiService
-                                                  .deleteTaskFile(
-                                                      existingFiles[index].id);
-                                              if (result['result'] ==
-                                                  'Success') {
-                                                setState(() {
-                                                  existingFiles.removeAt(index);
-                                                  fileNames.removeAt(index);
-                                                  selectedFiles.remove(
-                                                      existingFiles[index].path);
-                                                });
-                                                Navigator.of(context).pop(true);
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      AppLocalizations.of(
-                                                              context)!
-                                                          .translate(
-                                                              'file_deleted_successfully'),
-                                                      style: TextStyle(
-                                                        fontFamily: 'Gilroy',
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
-                                                );
-                                              }
-                                            } catch (e) {
-                                              Navigator.of(context).pop(false);
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    AppLocalizations.of(context)!
-                                                        .translate(
-                                                            'failed_to_delete_file'),
-                                                    style: TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          } else {
-                                            setState(() {
-                                              final newFileIndex =
-                                                  index - existingFiles.length;
-                                              newFiles.removeAt(newFileIndex);
-                                              fileNames.removeAt(index);
-                                              fileSizes.removeAt(newFileIndex);
-                                              selectedFiles.removeAt(index);
-                                            });
-                                            Navigator.of(context).pop(true);
-                                          }
-                                        },
-                                        buttonColor: Color(0xff1E2E52),
-                                        textColor: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        );
-
-                        if (confirmed != true) return;
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Color(0xff1E2E52),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
+                );
+              }
+
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+              final isExistingFile = index < existingFiles.length;
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
+                            width: 60,
+                            height: 60,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () async {
+                          bool? confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: Colors.white,
+                                title: Center(
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('delete_file'),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ),
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('confirm_delete_file'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                                actions: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: CustomButton(
+                                          buttonText: AppLocalizations.of(context)!
+                                              .translate('cancel'),
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          buttonColor: Colors.red,
+                                          textColor: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: CustomButton(
+                                          buttonText: AppLocalizations.of(context)!
+                                              .translate('unpin'),
+                                          onPressed: () async {
+                                            if (isExistingFile) {
+                                              try {
+                                                final result = await _apiService
+                                                    .deleteTaskFile(
+                                                        existingFiles[index].id);
+                                                if (result['result'] ==
+                                                    'Success') {
+                                                  setState(() {
+                                                    existingFiles.removeAt(index);
+                                                    fileNames.removeAt(index);
+                                                    selectedFiles.removeAt(index);
+                                                  });
+                                                  Navigator.of(context).pop(true);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'file_deleted_successfully'),
+                                                        style: TextStyle(
+                                                          fontFamily: 'Gilroy',
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                Navigator.of(context).pop(false);
+                                                _showErrorSnackBar(
+                                                    AppLocalizations.of(context)!
+                                                        .translate(
+                                                            'failed_to_delete_file'));
+                                              }
+                                            } else {
+                                              setState(() {
+                                                final newFileIndex =
+                                                    index - existingFiles.length;
+                                                newFiles.removeAt(newFileIndex);
+                                                fileNames.removeAt(index);
+                                                fileSizes.removeAt(newFileIndex);
+                                                selectedFiles.removeAt(index);
+                                              });
+                                              Navigator.of(context).pop(true);
+                                            }
+                                          },
+                                          buttonColor: Color(0xff1E2E52),
+                                          textColor: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirmed != true) return;
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -658,33 +595,14 @@ Widget _buildFileSelection() {
         child: BlocListener<DealBloc, DealState>(
           listener: (context, state) {
             if (state is DealError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              _showErrorSnackBar(
+                  AppLocalizations.of(context)!.translate(state.message));
             } else if (state is DealSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('deal_updated_successfully'),
+                    AppLocalizations.of(context)!
+                        .translate('deal_updated_successfully'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -692,15 +610,12 @@ Widget _buildFileSelection() {
                       color: Colors.white,
                     ),
                   ),
+                  backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: Colors.green,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
                 ),
               );
               Navigator.pop(context, true);
@@ -751,42 +666,50 @@ Widget _buildFileSelection() {
                             selectedManager: selectedManager,
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
-                                selectedManager = selectedManagerData.id.toString();
+                                selectedManager =
+                                    selectedManagerData.id.toString();
                               });
                             },
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
                             controller: startDateController,
-                            label: AppLocalizations.of(context)!.translate('start_date'),
+                            label: AppLocalizations.of(context)!
+                                .translate('start_date'),
                             withTime: false,
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
                             controller: endDateController,
-                            label: AppLocalizations.of(context)!.translate('end_date'),
+                            label:
+                                AppLocalizations.of(context)!.translate('end_date'),
                             hasError: isEndDateInvalid,
                             withTime: false,
                           ),
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: sumController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_summ'),
-                            label: AppLocalizations.of(context)!.translate('summ'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_summ'),
+                            label:
+                                AppLocalizations.of(context)!.translate('summ'),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]')),
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9\.,]')),
                             ],
                           ),
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                            label: AppLocalizations.of(context)!.translate('description_list'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_description'),
+                            label: AppLocalizations.of(context)!
+                                .translate('description_list'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
                           const SizedBox(height: 8),
-      _buildFileSelection(), // Добавляем выбор файлов
+                          _buildFileSelection(),
                           const SizedBox(height: 20),
                           ListView.builder(
                             shrinkWrap: true,
@@ -796,23 +719,32 @@ Widget _buildFileSelection() {
                               final field = customFields[index];
                               return Container(
                                 key: ValueKey(field.uniqueId),
-                                child: field.isDirectoryField && field.directoryId != null
+                                child: field.isDirectoryField &&
+                                        field.directoryId != null
                                     ? MainFieldDropdownWidget(
                                         directoryId: field.directoryId!,
                                         directoryName: field.fieldName,
-                                        selectedField: null,
-                                        onSelectField: (MainField selectedField) {
+                                        selectedField: field.entryId != null
+                                            ? MainField(
+                                                id: field.entryId!,
+                                                value: field.controller.text)
+                                            : null,
+                                        onSelectField:
+                                            (MainField selectedField) {
                                           setState(() {
-                                            customFields[index] = field.copyWith(
+                                            customFields[index] =
+                                                field.copyWith(
                                               entryId: selectedField.id,
-                                              controller: TextEditingController(text: selectedField.value),
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
                                             );
                                           });
                                         },
                                         controller: field.controller,
                                         onSelectEntryId: (int entryId) {
                                           setState(() {
-                                            customFields[index] = field.copyWith(
+                                            customFields[index] =
+                                                field.copyWith(
                                               entryId: entryId,
                                             );
                                           });
@@ -832,12 +764,14 @@ Widget _buildFileSelection() {
                                             customFields.removeAt(index);
                                           });
                                         },
+                                        type: field.type,
                                       ),
                               );
                             },
                           ),
                           CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('add_field'),
                             buttonColor: Color(0xff1E2E52),
                             textColor: Colors.white,
                             onPressed: _showAddFieldMenu,
@@ -848,12 +782,14 @@ Widget _buildFileSelection() {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                   child: Row(
                     children: [
                       Expanded(
                         child: CustomButton(
-                          buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('cancel'),
                           buttonColor: const Color(0xffF4F7FD),
                           textColor: Colors.black,
                           onPressed: () => Navigator.pop(context, null),
@@ -871,7 +807,8 @@ Widget _buildFileSelection() {
                               );
                             } else {
                               return CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('save'),
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('save'),
                                 buttonColor: const Color(0xff4759FF),
                                 textColor: Colors.white,
                                 onPressed: () {
@@ -884,11 +821,12 @@ Widget _buildFileSelection() {
                                     if (startDateController.text.isNotEmpty) {
                                       try {
                                         parsedStartDate = DateFormat('dd/MM/yyyy')
-                                            .parseStrict(startDateController.text);
+                                            .parseStrict(
+                                                startDateController.text);
                                       } catch (e) {
                                         _showErrorSnackBar(
-                                          AppLocalizations.of(context)!.translate('error_parsing_date'),
-                                        );
+                                            AppLocalizations.of(context)!
+                                                .translate('error_parsing_date'));
                                         return;
                                       }
                                     }
@@ -898,8 +836,8 @@ Widget _buildFileSelection() {
                                             .parseStrict(endDateController.text);
                                       } catch (e) {
                                         _showErrorSnackBar(
-                                          AppLocalizations.of(context)!.translate('error_parsing_date'),
-                                        );
+                                            AppLocalizations.of(context)!
+                                                .translate('error_parsing_date'));
                                         return;
                                       }
                                     }
@@ -911,18 +849,62 @@ Widget _buildFileSelection() {
                                         isEndDateInvalid = true;
                                       });
                                       _showErrorSnackBar(
-                                        AppLocalizations.of(context)!
-                                            .translate('start_date_after_end_date'),
-                                      );
+                                          AppLocalizations.of(context)!.translate(
+                                              'start_date_after_end_date'));
                                       return;
                                     }
 
-                                    List<Map<String, String>> customFieldList = [];
+                                    List<Map<String, dynamic>> customFieldList =
+                                        [];
                                     List<Map<String, int>> directoryValues = [];
 
                                     for (var field in customFields) {
                                       String fieldName = field.fieldName.trim();
-                                      String fieldValue = field.controller.text.trim();
+                                      String fieldValue =
+                                          field.controller.text.trim();
+                                      String? fieldType = field.type;
+
+                                      // Валидация для number
+                                      if (fieldType == 'number' &&
+                                          fieldValue.isNotEmpty) {
+                                        if (!RegExp(r'^\d+$')
+                                            .hasMatch(fieldValue)) {
+                                          _showErrorSnackBar(
+                                              AppLocalizations.of(context)!
+                                                  .translate(
+                                                      'enter_valid_number'));
+                                          return;
+                                        }
+                                      }
+
+                                      // Валидация и форматирование для date и datetime
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
+        try {
+          if (fieldType == 'date') {
+            DateFormat('dd/MM/yyyy').parse(fieldValue);
+          } else {
+            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
 
                                       if (field.isDirectoryField &&
                                           field.directoryId != null &&
@@ -931,37 +913,49 @@ Widget _buildFileSelection() {
                                           'directory_id': field.directoryId!,
                                           'entry_id': field.entryId!,
                                         });
-                                      } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-                                        customFieldList.add({fieldName: fieldValue});
+                                      } else if (fieldName.isNotEmpty &&
+                                          fieldValue.isNotEmpty) {
+                                        customFieldList.add({
+                                          'key': fieldName,
+                                          'value': fieldValue,
+                                          'type': fieldType ?? 'string',
+                                        });
                                       }
                                     }
 
-                                    final localizations = AppLocalizations.of(context)!;
+                                    final localizations =
+                                        AppLocalizations.of(context)!;
                                     context.read<DealBloc>().add(UpdateDeal(
                                           dealId: widget.dealId,
                                           name: titleController.text,
-                                          dealStatusId: _selectedStatuses!.toInt(),
+                                          dealStatusId:
+                                              _selectedStatuses!.toInt(),
                                           managerId: selectedManager != null
                                               ? int.parse(selectedManager!)
                                               : null,
                                           leadId: selectedLead != null
                                               ? int.parse(selectedLead!)
                                               : null,
-                                          description: descriptionController.text,
+                                          description:
+                                              descriptionController.text.isEmpty
+                                                  ? null
+                                                  : descriptionController.text,
                                           startDate: parsedStartDate,
                                           endDate: parsedEndDate,
-                                          sum: sumController.text,
+                                          sum: sumController.text.isEmpty
+                                              ? null
+                                              : sumController.text,
                                           dealtypeId: 1,
                                           customFields: customFieldList,
                                           directoryValues: directoryValues,
                                           localizations: localizations,
-                                          filePaths: newFiles, // Передаем новые файлы
-                                          existingFiles: existingFiles, // Передаем существующие файлы
+                                          filePaths: newFiles,
+                                          existingFiles: existingFiles,
                                         ));
                                   } else {
                                     _showErrorSnackBar(
-                                      AppLocalizations.of(context)!.translate('fill_required_fields'),
-                                    );
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'));
                                   }
                                 },
                               );
@@ -988,6 +982,7 @@ class CustomField {
   final int? directoryId;
   final int? entryId;
   final String uniqueId;
+  final String? type; // Добавлено поле type
 
   CustomField({
     required this.fieldName,
@@ -996,6 +991,7 @@ class CustomField {
     this.directoryId,
     this.entryId,
     required this.uniqueId,
+    this.type,
   }) : controller = controller ?? TextEditingController();
 
   CustomField copyWith({
@@ -1005,6 +1001,7 @@ class CustomField {
     int? directoryId,
     int? entryId,
     String? uniqueId,
+    String? type,
   }) {
     return CustomField(
       fieldName: fieldName ?? this.fieldName,
@@ -1013,6 +1010,7 @@ class CustomField {
       directoryId: directoryId ?? this.directoryId,
       entryId: entryId ?? this.entryId,
       uniqueId: uniqueId ?? this.uniqueId,
+      type: type ?? this.type,
     );
   }
 }

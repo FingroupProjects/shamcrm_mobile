@@ -1064,6 +1064,16 @@
   "select_integration": "Выберите чат",
   "file_already_exists": "Файл уже существует",
   "file_not_found": "Файл не найден",
-"error_picking_file": "Ошибка при выборе файла"
+"error_picking_file": "Ошибка при выборе файла",
+"field_type_text":"Текст",
+"field_type_number":"Число",
+"field_type_date":"Дата",
+"field_type_datetime":"Дата и время",
+"enter_valid_number": "Введите корректное число",
+"enter_number": "Введите число",
+"enter_datetime": "Введите дату и время",
+"field_type": "Тип поля",
+"select_field_type": "Выберите тип поля"
+
 
 }

@@ -431,7 +431,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': task.taskStatus?.taskStatus.name ?? '',
+       'value': task.taskStatus?.taskStatus?.name ?? '', // Safe access
       },
       {
         'label': AppLocalizations.of(context)!.translate('author_details'),

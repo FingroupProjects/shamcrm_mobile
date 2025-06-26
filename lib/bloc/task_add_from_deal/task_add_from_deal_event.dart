@@ -15,9 +15,9 @@ class CreateTaskFromDeal extends TaskAddFromDealEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<String>? filePaths;
-  final List<Map<String, String>>? customFields;
-  final List<Map<String, int>>? directoryValues; // Added for directory support
+  final List<Map<String, int>>? directoryValues;
 
   CreateTaskFromDeal({
     required this.dealId,
@@ -32,6 +32,6 @@ class CreateTaskFromDeal extends TaskAddFromDealEvent {
     this.description,
     this.customFields,
     this.filePaths,
-    this.directoryValues, // Added to constructor
+    this.directoryValues,
   });
 }

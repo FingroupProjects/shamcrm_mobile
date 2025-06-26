@@ -223,11 +223,13 @@
     final int id;
     final String key;
     final String value;
+    final String? type; // Добавлено поле type
 
     LeadCustomFieldsById({
       required this.id,
       required this.key,
       required this.value,
+      this.type,
     });
 
     factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
@@ -236,6 +238,7 @@
         id: json['id'] ?? 0,
         key: json['key'] ?? '',
         value: json['value'] ?? '',
+        type: json['type'],
       );
       print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
       return field;

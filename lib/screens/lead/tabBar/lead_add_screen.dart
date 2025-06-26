@@ -12,8 +12,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
@@ -170,24 +171,26 @@ Future<void> _pickFile() async {
     }
   }
 
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId}) {
-    print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
-    if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
-      if (directoryExists) {
-        print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
-        return;
-      }
+void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
+  print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+  if (isDirectory && directoryId != null) {
+    bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+    if (directoryExists) {
+      print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+      return;
     }
-    setState(() {
-      customFields.add(CustomField(
-        fieldName: fieldName,
-        uniqueId: Uuid().v4(),
-        isDirectoryField: isDirectory,
-        directoryId: directoryId, controller: TextEditingController(),
-      ));
-    });
   }
+  setState(() {
+    customFields.add(CustomField(
+      fieldName: fieldName,
+      uniqueId: Uuid().v4(),
+      isDirectoryField: isDirectory,
+      directoryId: directoryId,
+      type: type, // Сохраняем тип
+      controller: TextEditingController(),
+    ));
+  });
+}
 
   void _showAddFieldMenu() {
     print('Открытие меню добавления поля');
@@ -229,15 +232,15 @@ Future<void> _pickFile() async {
       print('Выбрано значение в меню: $value');
       if (value == 'manual') {
         showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AddCustomFieldDialog(
-              onAddField: (fieldName) {
-                _addCustomField(fieldName);
-              },
-            );
-          },
-        );
+  context: context,
+  builder: (BuildContext context) {
+    return AddCustomFieldDialog(
+      onAddField: (fieldName, {String? type}) { // Добавляем type как именованный параметр
+        _addCustomField(fieldName, type: type);
+      },
+    );
+  },
+);
       } else if (value == 'directory') {
         showDialog(
           context: context,
@@ -618,53 +621,55 @@ Widget build(BuildContext context) {
                           _buildFileSelection(),
                           const SizedBox(height: 15),
                           // Кастомные поля и справочники
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: customFields.length,
-                            itemBuilder: (context, index) {
-                              final field = customFields[index];
-                              return Container(
-                                key: ValueKey(field.uniqueId),
-                                child: field.isDirectoryField && field.directoryId != null
-                                    ? MainFieldDropdownWidget(
-                                        directoryId: field.directoryId!,
-                                        directoryName: field.fieldName,
-                                        selectedField: null,
-                                        onSelectField: (MainField selectedField) {
-                                          setState(() {
-                                            customFields[index] = field.copyWith(
-                                              entryId: selectedField.id,
-                                              controller: TextEditingController(text: selectedField.value),
-                                            );
-                                          });
-                                        },
-                                        controller: field.controller,
-                                        onSelectEntryId: (int entryId) {
-                                          setState(() {
-                                            customFields[index] = field.copyWith(
-                                              entryId: entryId,
-                                            );
-                                          });
-                                        },
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.removeAt(index);
-                                          });
-                                        },
-                                      )
-                                    : CustomFieldWidget(
-                                        fieldName: field.fieldName,
-                                        valueController: field.controller,
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.removeAt(index);
-                                          });
-                                        },
-                                      ),
-                              );
-                            },
-                          ),
+                         // В методе build, в ListView.builder для customFields
+ListView.builder(
+  shrinkWrap: true,
+  physics: NeverScrollableScrollPhysics(),
+  itemCount: customFields.length,
+  itemBuilder: (context, index) {
+    final field = customFields[index];
+    return Container(
+      key: ValueKey(field.uniqueId),
+      child: field.isDirectoryField && field.directoryId != null
+          ? MainFieldDropdownWidget(
+              directoryId: field.directoryId!,
+              directoryName: field.fieldName,
+              selectedField: null,
+              onSelectField: (MainField selectedField) {
+                setState(() {
+                  customFields[index] = field.copyWith(
+                    entryId: selectedField.id,
+                    controller: TextEditingController(text: selectedField.value),
+                  );
+                });
+              },
+              controller: field.controller,
+              onSelectEntryId: (int entryId) {
+                setState(() {
+                  customFields[index] = field.copyWith(
+                    entryId: entryId,
+                  );
+                });
+              },
+              onRemove: () {
+                setState(() {
+                  customFields.removeAt(index);
+                });
+              },
+            )
+          : CustomFieldWidget(
+              fieldName: field.fieldName,
+              valueController: field.controller,
+              onRemove: () {
+                setState(() {
+                  customFields.removeAt(index);
+                });
+              },
+              type: field.type, // Передаём тип поля
+            ),
+    );
+  },
+),
                           const SizedBox(height: 15),
                           CustomButton(
                             buttonText: AppLocalizations.of(context)!.translate('add_field'),
@@ -755,7 +760,8 @@ Widget build(BuildContext context) {
     }
   }
 
-  void _createLead() {
+ void _createLead() {
+  if (_formKey.currentState!.validate()) {
     final String name = titleController.text;
     final String phone = selectedDialCode;
     final String? instaLogin =
@@ -807,20 +813,78 @@ Widget build(BuildContext context) {
       }
     }
 
-    List<Map<String, String>> customFieldMap = [];
+    List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
       String fieldValue = field.controller.text.trim();
+      String? fieldType = field.type;
 
-      if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+      // Валидация для number
+      if (fieldType == 'number' && fieldValue.isNotEmpty) {
+        if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_number'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Валидация для date и datetime
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
+        try {
+          if (fieldType == 'date') {
+            DateFormat('dd/MM/yyyy').parse(fieldValue);
+          } else {
+            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (field.isDirectoryField &&
+          field.directoryId != null &&
+          field.entryId != null) {
         directoryValues.add({
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
         });
       } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-        customFieldMap.add({fieldName: fieldValue});
+        customFieldMap.add({
+          'key': fieldName,
+          'value': fieldValue,
+          'type': fieldType ?? 'string',
+        });
       }
     }
 
@@ -849,8 +913,9 @@ Widget build(BuildContext context) {
       customFields: customFieldMap,
       directoryValues: directoryValues,
       localizations: localizations,
-      filePaths: selectedFiles, // Передаем файлы
+      filePaths: selectedFiles,
       isSystemManager: isSystemManager,
     ));
   }
+}
 }

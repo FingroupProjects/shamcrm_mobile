@@ -98,11 +98,13 @@ class DealCustomFieldsById {
   final int id;
   final String key;
   final String value;
+  final String? type; // Добавлено поле type
 
   DealCustomFieldsById({
     required this.id,
     required this.key,
     required this.value,
+    this.type,
   });
 
   factory DealCustomFieldsById.fromJson(Map<String, dynamic> json) {
@@ -110,10 +112,19 @@ class DealCustomFieldsById {
       id: json['id'] ?? 0,
       key: json['key'] ?? '',
       value: json['value'] ?? '',
+      type: json['type'],
     );
   }
-}
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'key': key,
+      'value': value,
+      'type': type,
+    };
+  }
+}
 class DealStatusById {
   final int id;
   final String title;

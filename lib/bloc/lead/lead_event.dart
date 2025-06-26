@@ -100,9 +100,9 @@ class CreateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths; // Новое поле для файлов
+  final List<String>? filePaths;
   final AppLocalizations localizations;
   final bool isSystemManager;
 
@@ -122,7 +122,7 @@ class CreateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
-    this.filePaths, // Добавлено
+    this.filePaths,
     this.isSystemManager = false,
     required this.localizations,
   });
@@ -142,12 +142,12 @@ class UpdateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields; // Изменён тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths; // Новое поле для файлов
+  final List<String>? filePaths;
   final bool isSystemManager;
   final AppLocalizations localizations;
-  final List<LeadFiles> existingFiles; // Existing server files
+  final List<LeadFiles> existingFiles;
 
   UpdateLead({
     required this.leadId,
@@ -166,12 +166,13 @@ class UpdateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
-    this.filePaths, // Добавлено
+    this.filePaths,
     required this.localizations,
     this.isSystemManager = false,
     required this.existingFiles,
   });
 }
+
 
 class DeleteLead extends LeadEvent {
   final int leadId;

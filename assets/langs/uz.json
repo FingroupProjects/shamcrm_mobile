@@ -1071,7 +1071,23 @@
   "version_mobile": "Mobil versiyasi",
   "file_already_exists": "Fayl allaqachon mavjud",
   "file_not_found": "Fayl topilmadi",
-"error_picking_file": "Fayl tanlashda xatolik yuz berdi"
+"error_picking_file": "Fayl tanlashda xatolik yuz berdi",
+"enter_textfield_text": "Maydon qiymatini kiriting",
+"enter_valid_number": "To‘g‘ri raqamni kiriting",
+"enter_valid_date": "To‘g‘ri sanani kiriting",
+"enter_valid_datetime": "To‘g‘ri sana va vaqtni kiriting",
+"enter_number": "Raqam kiriting",
+"enter_date": "Sanani kiriting",
+"enter_datetime": "Sana va vaqtni kiriting",
+"error_picking_file": "Fayl tanlashda xatolik yuz berdi",
+"field_type_text": "Matn",
+"field_type_number": "Raqam",
+"field_type_date": "Sana",
+"field_type": "Maydon turi",
+"select_field_type": "Maydon turini kiriting"
+
+
+
 
 
 
