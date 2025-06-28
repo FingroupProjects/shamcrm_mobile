@@ -1070,7 +1070,9 @@
 "field_type_number": "Number",
 "field_type_date": "Date",
 "field_type": "Field type",
-"select_field_type": "Enter field type"
+"select_field_type": "Enter field type",
+"name_too_short": "The name field must not be shorter than three characters"
+
 
 
 

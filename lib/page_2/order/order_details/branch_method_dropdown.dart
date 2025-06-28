@@ -5,14 +5,14 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 class BranchesDropdown extends StatefulWidget {
   final String label;
-  final List<Branch> branches;
+  final List<Branch>? branches;
   final Branch? selectedBranch;
   final Function(Branch) onSelectBranch;
 
   const BranchesDropdown({
     Key? key,
     required this.label,
-    required this.branches,
+    this.branches,
     this.selectedBranch,
     required this.onSelectBranch,
   }) : super(key: key);
@@ -97,12 +97,12 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
             ),
             excludeSelected: false,
             initialItem: widget.selectedBranch,
-            validator: (value) {
-              if (value == null) {
-                return '    ${AppLocalizations.of(context)!.translate('field_required')}';
-              }
-              return null;
-            },
+            // validator: (value) {
+            //   if (value == null) {
+            //     return '    ${AppLocalizations.of(context)!.translate('field_required')}';
+            //   }
+            //   return null;
+            // },
             onChanged: (value) {
               if (value != null) {
                 widget.onSelectBranch(value);

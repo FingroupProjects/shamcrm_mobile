@@ -1,3 +1,4 @@
+
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -22,8 +23,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Goods goods;
+  final List<GoodsFile> sortedFiles;
+  final int? initialMainImageIndex;
 
-  GoodsEditScreen({required this.goods});
+  GoodsEditScreen({
+    required this.goods,
+    required this.sortedFiles,
+    this.initialMainImageIndex,
+  });
 
   @override
   _GoodsEditScreenState createState() => _GoodsEditScreenState();
@@ -35,7 +42,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController goodsDescriptionController;
   late TextEditingController discountPriceController;
   late TextEditingController stockQuantityController;
-
+  final TextEditingController commentsController = TextEditingController();
   subCatAttr.SubCategoryAttributesData? selectedCategory;
   Branch? selectedBranch;
   bool isBranchValid = true;
@@ -51,6 +58,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   Map<String, TextEditingController> attributeControllers = {};
   List<Map<String, dynamic>> tableAttributes = [];
   final ImagePicker _picker = ImagePicker();
+  int? mainImageIndex;
 
   @override
   void initState() {
@@ -90,15 +98,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           ? ''
           : (widget.goods.description ?? ''),
     );
-    discountPriceController = TextEditingController(
-        text: widget.goods.discountPrice?.toString() ?? '');
+    discountPriceController =
+        TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    commentsController.text = widget.goods.comments ?? '';
     isActive = widget.goods.isActive ?? false;
-    // Инициализируем selectedBranch как null, выбор будет после загрузки branches
     selectedBranch = null;
+    _imagePaths = widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
+    mainImageIndex = widget.initialMainImageIndex ?? 0;
     print(
-        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}');
+        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, comments: ${commentsController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -119,9 +129,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     print('GoodsEditScreen: Loading all data sequentially...');
     try {
       await _initializeBaseUrl();
-      if (mounted && widget.goods.files.isNotEmpty) {
+      if (mounted && widget.sortedFiles.isNotEmpty) {
         setState(() {
-          _imagePaths = widget.goods.files
+          _imagePaths = widget.sortedFiles
               .map((file) => '$baseUrl/${file.path}')
               .toList();
           print('GoodsEditScreen: Initialized _imagePaths: $_imagePaths');
@@ -130,12 +140,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       await fetchSubCategories();
       await fetchBranches();
 
-      // Синхронизируем selectedBranch с branches
       if (widget.goods.branches != null && widget.goods.branches!.isNotEmpty) {
         final goodsBranchId = widget.goods.branches![0].id;
         selectedBranch = branches.firstWhere(
           (branch) => branch.id == goodsBranchId,
-          // orElse: () => null,
         );
         print(
             'GoodsEditScreen: Synchronized selectedBranch: ${selectedBranch?.name}');
@@ -410,6 +418,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
       isBranchValid = selectedBranch != null;
+      if (_imagePaths.isNotEmpty && mainImageIndex == null) {
+        isImagesValid = false;
+        print('GoodsEditScreen: Validation failed - mainImageIndex is null');
+      }
       print(
           'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid, isBranchValid: $isBranchValid');
     });
@@ -455,6 +467,115 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       context: context,
       builder: (context) => ImageListPopup(imagePaths: images),
     );
+  }
+
+  Future<void> _showImagePickerOptions() async {
+    print('GoodsEditScreen: Showing image picker options');
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text(
+                  AppLocalizations.of(context)!.translate('make_photo'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text(
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMultipleImages();
+                },
+              ),
+              SizedBox(height: 0),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    print('GoodsEditScreen: Picking image from source: $source');
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _imagePaths.add(pickedFile.path);
+        if (mainImageIndex == null && _imagePaths.isNotEmpty) {
+          mainImageIndex = _imagePaths.length - 1; // Set the new image as main
+        }
+        isImagesValid = true;
+        print(
+            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
+      });
+    } else {
+      print('GoodsEditScreen: No image picked');
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    print('GoodsEditScreen: Picking multiple images');
+    final pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        _imagePaths.addAll(pickedFiles.map((file) => file.path));
+        if (mainImageIndex == null && _imagePaths.isNotEmpty) {
+          mainImageIndex = _imagePaths.length - pickedFiles.length; // Set the first new image as main
+        }
+        isImagesValid = true;
+        print(
+            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
+      });
+    } else {
+      print('GoodsEditScreen: No images picked');
+    }
+  }
+
+  void _removeImage(String imagePath) {
+    setState(() {
+      final removedIndex = _imagePaths.indexOf(imagePath);
+      _imagePaths.remove(imagePath);
+      if (mainImageIndex == removedIndex) {
+        mainImageIndex = _imagePaths.isNotEmpty ? 0 : null;
+      } else if (mainImageIndex != null && removedIndex < mainImageIndex!) {
+        mainImageIndex = mainImageIndex! - 1;
+      }
+      isImagesValid = _imagePaths.isNotEmpty;
+      print(
+          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex, isImagesValid: $isImagesValid');
+    });
+  }
+
+  void _setMainImage(int index) {
+    setState(() {
+      mainImageIndex = index;
+      print('GoodsEditScreen: Set main image index to: $mainImageIndex');
+    });
   }
 
   void _showImagePickerOptionsForRow(int rowIndex) async {
@@ -549,7 +670,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-        AppLocalizations.of(context)!.translate('edit_goods'),
+          AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -593,26 +714,24 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    controller: commentsController,
+                    hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
+                    label: AppLocalizations.of(context)!.translate('comment_client'),
+                    maxLines: 3,
+                    keyboardType: TextInputType.multiline,
+                  ),
                   if (selectedCategory != null &&
                       !selectedCategory!.hasPriceCharacteristics)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // const SizedBox(height: 8),
-                        // Text(
-                        //   'Цена',
-                        //   style: TextStyle(
-                        //     fontSize: 16,
-                        //     fontWeight: FontWeight.w500,
-                        //     fontFamily: 'Gilroy',
-                        //     color: Color(0xff1E2E52),
-                        //   ),
-                        // ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         CustomTextField(
                           controller: discountPriceController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                    label: AppLocalizations.of(context)!.translate('goods_price_details'),
+                          hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                          label: AppLocalizations.of(context)!.translate('goods_price_details'),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -638,7 +757,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       : BranchesDropdown(
                           label: AppLocalizations.of(context)!.translate('branch'),
                           selectedBranch: selectedBranch,
-                          branches: branches, // Передаём branches, даже если он пуст
+                          branches: branches,
                           onSelectBranch: (Branch branch) {
                             setState(() {
                               selectedBranch = branch;
@@ -720,7 +839,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         Divider(color: Color(0xff1E2E52)),
                         Center(
                           child: Text(
-                             AppLocalizations.of(context)!.translate('product_characteristic'),
+                            AppLocalizations.of(context)!.translate('product_characteristic'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -811,7 +930,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         DataColumn(
                                           label: Text(
-                                              AppLocalizations.of(context)!.translate('image_message'),
+                                            AppLocalizations.of(context)!.translate('image_message'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -822,7 +941,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                         DataColumn(
                                           label: Text(
-                                              AppLocalizations.of(context)!.translate('status_lead_profile'),
+                                            AppLocalizations.of(context)!.translate('status_lead_profile'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -1134,47 +1253,82 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   runSpacing: 10,
                                   padding: const EdgeInsets.all(8),
                                   children: [
-                                    ..._imagePaths.map((imagePath) {
-                                      return Container(
-                                        key: ValueKey(imagePath),
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          image: DecorationImage(
-                                            image: imagePath.startsWith('http')
-                                                ? NetworkImage(imagePath)
-                                                    as ImageProvider
-                                                : FileImage(File(imagePath)),
-                                            fit: BoxFit.cover,
+                                    ..._imagePaths
+                                        .asMap()
+                                        .entries
+                                        .map((entry) {
+                                      final index = entry.key;
+                                      final imagePath = entry.value;
+                                      return GestureDetector(
+                                        onTap: () => _setMainImage(index),
+                                        child: Container(
+                                          key: ValueKey(imagePath),
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: mainImageIndex == index
+                                                ? Border.all(
+                                                    color: Colors.blue,
+                                                    width: 2)
+                                                : null,
+                                            image: DecorationImage(
+                                              image: imagePath.startsWith('http')
+                                                  ? NetworkImage(imagePath)
+                                                      as ImageProvider
+                                                  : FileImage(File(imagePath)),
+                                              fit: BoxFit.cover,
+                                            ),
                                           ),
-                                        ),
-                                        child: Stack(
-                                          children: [
-                                            Positioned(
-                                              top: 4,
-                                              right: 4,
-                                              child: GestureDetector(
-                                                onTap: () =>
-                                                    _removeImage(imagePath),
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.5),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                    size: 16,
+                                          child: Stack(
+                                            children: [
+                                              Positioned(
+                                                top: 4,
+                                                right: 4,
+                                                child: GestureDetector(
+                                                  onTap: () =>
+                                                      _removeImage(imagePath),
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black
+                                                          .withOpacity(0.5),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.close,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                              Positioned(
+                                                bottom: 4,
+                                                right: 4,
+                                                child: mainImageIndex == index
+                                                    ? Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.blue,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.check,
+                                                          color: Colors.white,
+                                                          size: 16,
+                                                        ),
+                                                      )
+                                                    : SizedBox.shrink(),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       );
                                     }).toList(),
@@ -1199,7 +1353,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                               AppLocalizations.of(context)!.translate('add_image'),
+                                              AppLocalizations.of(context)!.translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1212,11 +1366,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item =
-                                          _imagePaths.removeAt(oldIndex);
+                                      final item = _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
+                                      if (mainImageIndex != null) {
+                                        if (mainImageIndex == oldIndex) {
+                                          mainImageIndex = newIndex;
+                                        } else if (oldIndex < mainImageIndex! &&
+                                            newIndex >= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! - 1;
+                                        } else if (oldIndex > mainImageIndex! &&
+                                            newIndex <= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! + 1;
+                                        }
+                                      } else if (_imagePaths.isNotEmpty) {
+                                        mainImageIndex = 0;
+                                      }
                                       print(
-                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths');
+                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
                                     });
                                   },
                                 ),
@@ -1312,7 +1478,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
+                                      isActive
+                                          ? AppLocalizations.of(context)!.translate('active_swtich')
+                                          : AppLocalizations.of(context)!.translate('inactive_swtich'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1363,7 +1531,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('save'),
+                      buttonText: AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
@@ -1387,96 +1555,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _showImagePickerOptions() async {
-    print('GoodsEditScreen: Showing image picker options');
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.camera_alt),
-                title: Text(
-                  AppLocalizations.of(context)!.translate('make_photo'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library),
-                title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickMultipleImages();
-                },
-              ),
-              SizedBox(height: 0),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    print('GoodsEditScreen: Picking image from source: $source');
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _imagePaths.add(pickedFile.path);
-        isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
-      });
-    } else {
-      print('GoodsEditScreen: No image picked');
-    }
-  }
-
-  Future<void> _pickMultipleImages() async {
-    print('GoodsEditScreen: Picking multiple images');
-    final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _imagePaths.addAll(pickedFiles.map((file) => file.path));
-        isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
-      });
-    } else {
-      print('GoodsEditScreen: No images picked');
-    }
-  }
-
-  void _removeImage(String imagePath) {
-    setState(() {
-      _imagePaths.remove(imagePath);
-      isImagesValid = _imagePaths.isNotEmpty;
-      print(
-          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
-    });
   }
 
   void _updateProduct() async {
@@ -1515,9 +1593,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           if (row['id'] != null && row['id'] != 0) {
             variant['id'] = row['id'];
             print('GoodsEditScreen: Added variant id: ${row['id']}');
-          } else {
-            print(
-                'GoodsEditScreen: Variant id is null or 0, treating as new variant');
           }
 
           List<String> variantImagePaths = row['images']?.cast<String>() ?? [];
@@ -1529,8 +1604,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantImages.add(file);
                 print('GoodsEditScreen: Added variant image: $path');
               } else {
-                print(
-                    'GoodsEditScreen: Variant file not found, skipping: $path');
+                print('GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
@@ -1549,9 +1623,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantAttribute['id'] = row['attribute_ids'][attr.name];
                 print(
                     'GoodsEditScreen: Added variant attribute id: ${variantAttribute['id']} for attribute ${attr.name}');
-              } else {
-                print(
-                    'GoodsEditScreen: No id found for attribute ${attr.name}, treating as new attribute');
               }
 
               variant['variant_attributes'].add(variantAttribute);
@@ -1569,16 +1640,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print(
-                  'GoodsEditScreen: Added variant price: ${variant['price']}');
+              print('GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
               print('GoodsEditScreen: Set default variant price: 0.0');
             }
           } else {
             variant['price'] = 0.0;
-            print(
-                'GoodsEditScreen: Set variant price to 0.0 (has_price_characteristics: false)');
           }
 
           if (variantImages.isNotEmpty) {
@@ -1627,6 +1695,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
             ? null
             : double.tryParse(discountPriceController.text),
         branch: selectedBranch!.id,
+        comments: commentsController.text.trim(),
+        mainImageIndex: mainImageIndex ?? 0,
       );
 
       print('GoodsEditScreen: Update response: $response');
@@ -1642,7 +1712,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ??  AppLocalizations.of(context)!.translate('error_update_product'),
+          message: response['message'] ?? AppLocalizations.of(context)!.translate('error_update_product'),
           isSuccess: false,
         );
       }
@@ -1664,6 +1734,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     goodsDescriptionController.dispose();
     discountPriceController.dispose();
     stockQuantityController.dispose();
+    commentsController.dispose();
     attributeControllers.values.forEach((controller) => controller.dispose());
     for (var row in tableAttributes) {
       for (var attr in row.values) {
@@ -1676,3 +1747,4 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     super.dispose();
   }
 }
+

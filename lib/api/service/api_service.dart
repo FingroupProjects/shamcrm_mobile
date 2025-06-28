@@ -7021,304 +7021,245 @@ Future<List<Goods>> getGoods({
     }
   }
 
-  Future<Map<String, dynamic>> createGoods({
-    required String name,
-    required int parentId,
-    required String description,
-    required int quantity,
-    required List<Map<String, dynamic>> attributes,
-    required List<Map<String, dynamic>> variants,
-    required List<File> images,
-    required bool isActive,
-    double? discountPrice,
-    required int branch,
-    double? price, // Добавляем параметр price
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
+ Future<Map<String, dynamic>> createGoods({
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<Map<String, dynamic>> attributes,
+  required List<Map<String, dynamic>> variants,
+  required List<File> images,
+  required bool isActive,
+  double? discountPrice,
+  int? branch, // Параметр уже опциональный
+  double? price,
+  int? mainImageIndex,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+      'Content-Type': 'multipart/form-data; charset=utf-8',
+    });
 
-      print('Sending createGoods request:');
-      print('name: $name, parentId: $parentId, description: $description');
-      print(
-          'quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, price: $price');
-      print('attributes: $attributes');
-      print('variants: $variants');
-      print('images: ${images.map((file) => file.path).toList()}');
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive ? '1' : '0';
 
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
+    if (price != null) {
+      request.fields['price'] = price.toString();
+    }
 
-      // Добавляем price в корень, если оно передано
-      if (price != null) {
-        request.fields['price'] = price.toString();
-        print('ApiService: Added price: $price');
-      }
+    if (discountPrice != null) {
+      request.fields['discount_price'] = discountPrice.toString();
+    }
 
-      // Добавляем discount_price, если оно передано
-      if (discountPrice != null) {
-        request.fields['discount_price'] = discountPrice.toString();
-        print('ApiService: Added discount_price: $discountPrice');
-      }
-
-      // Исправляем отправку branch в формате branches[0][branch_id]
+    // Условно добавляем branches только если branch не null
+    if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
-      print('ApiService: Added branches[0][branch_id]: $branch');
+    }
 
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-        print(
-            'ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
+      request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
+    }
+
+    for (int i = 0; i < variants.length; i++) {
+      request.fields['variants[$i][is_active]'] = variants[i]['is_active'] ? '1' : '0';
+      final variantPrice = variants[i]['price'] ?? 0.0;
+      request.fields['variants[$i][price]'] = variantPrice.toString();
+
+      List<dynamic> variantAttributes = variants[i]['variant_attributes'] ?? [];
+      for (int j = 0; j < variantAttributes.length; j++) {
+        request.fields['variants[$i][variant_attributes][$j][category_attribute_id]'] = variantAttributes[j]['category_attribute_id'].toString();
+        request.fields['variants[$i][variant_attributes][$j][value]'] = variantAttributes[j]['value'].toString();
       }
 
-      for (int i = 0; i < variants.length; i++) {
-        // Добавляем is_active для каждого варианта
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        print(
-            'ApiService: Added variant $i is_active: ${variants[i]['is_active']}');
-
-        // Добавляем price для варианта
-        final variantPrice = variants[i]['price'] ?? 0.0;
-        request.fields['variants[$i][price]'] = variantPrice.toString();
-        print('ApiService: Added variant price $i: $variantPrice');
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
-          print(
-              'ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
-        }
-
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
-            print('ApiService: Added variant file $i-$j: ${file.path}');
-          } else {
-            print('ApiService: Variant file not found, skipping: ${file.path}');
-          }
-        }
-      }
-
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
+      List<File> variantFiles = variants[i]['files'] ?? [];
+      for (int j = 0; j < variantFiles.length; j++) {
+        File file = variantFiles[j];
         if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i]', file.path);
+          final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', file.path);
           request.files.add(imageFile);
-          print('ApiService: Added general image $i: ${file.path}');
-        } else {
-          print('ApiService: General image not found, skipping: ${file.path}');
         }
       }
+    }
 
-      print('ApiService: Full request fields: ${request.fields}');
-      print(
-          'ApiService: Full request files: ${request.files.map((file) => file.field).toList()}');
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      print('ApiService: Response status: ${response.statusCode}');
-      print('ApiService: Response body: $responseBody');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Товар успешно создан',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Не удалось создать товар',
-          'error': responseBody,
-        };
+    for (int i = 0; i < images.length; i++) {
+      File file = images[i];
+      if (await file.exists()) {
+        final imageFile = await http.MultipartFile.fromPath('files[$i][file]', file.path);
+        request.files.add(imageFile);
+        request.fields['files[$i][is_main]'] = (i == (mainImageIndex ?? 0)) ? '1' : '0';
       }
-    } catch (e, stackTrace) {
-      print('ApiService: Error in createGoods: $e');
-      print('ApiService: Stack trace: $stackTrace');
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Товар успешно создан',
+        'data': responseBody,
+      };
+    } else {
       return {
         'success': false,
-        'message': 'Произошла ошибка: $e',
+        'message': responseBody['message'] ?? 'Не удалось создать товар',
+        'error': responseBody,
       };
     }
+  } catch (e, stackTrace) {
+    print('ApiService: Error in createGoods: $e');
+    print('ApiService: Stack trace: $stackTrace');
+    return {
+      'success': false,
+      'message': 'Произошла ошибка: $e',
+    };
   }
-
+}
   // Метод для обновления товара
-  Future<Map<String, dynamic>> updateGoods({
-    required int goodId,
-    required String name,
-    required int parentId,
-    required String description,
-    required int quantity,
-    required List<Map<String, dynamic>> attributes,
-    required List<Map<String, dynamic>> variants,
-    required List<File> images,
-    required bool isActive,
-    double? discountPrice,
-    required int branch,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '$baseUrl/good/$goodId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
+ Future<Map<String, dynamic>> updateGoods({
+  required int goodId,
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<Map<String, dynamic>> attributes,
+  required List<Map<String, dynamic>> variants,
+  required List<File> images,
+  required bool isActive,
+  double? discountPrice,
+  int? branch,
+  String? comments,
+  int? mainImageIndex,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl/good/$goodId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+      'Content-Type': 'multipart/form-data; charset=utf-8',
+    });
 
-      print('ApiService: Sending updateGoods request:');
-      print(
-          'ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-      print(
-          'ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch');
-      print('ApiService: attributes: $attributes');
-      print('ApiService: variants: $variants');
-      print('ApiService: images: ${images.map((file) => file.path).toList()}');
+    print('ApiService: Sending updateGoods request:');
+    print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
+    print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
+    print('ApiService: attributes: $attributes');
+    print('ApiService: variants: $variants');
+    print('ApiService: images: ${images.map((file) => file.path).toList()}');
 
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-
-      // Исправляем отправку branch в формате branches[0][branch_id]
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive ? '1' : '0';
+    if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
-      print('ApiService: Added branches[0][branch_id]: $branch');
+      print('ApiService: Added branch: $branch');
+    }
+    if (comments != null && comments.isNotEmpty) {
+      request.fields['comments'] = comments;
+      print('ApiService: Added comments: $comments');
+    }
+    if (discountPrice != null) {
+      request.fields['discount_price'] = discountPrice.toString();
+      print('ApiService: Added discount_price: $discountPrice');
+    }
 
-      if (discountPrice != null) {
-        request.fields['discount_price'] = discountPrice.toString();
-        print('ApiService: Added discount_price: $discountPrice');
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
+      request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
+      print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
+    }
+
+    for (int i = 0; i < variants.length; i++) {
+      if (variants[i].containsKey('id')) {
+        request.fields['variants[$i][id]'] = variants[i]['id'].toString();
+        print('ApiService: Added variant ID $i: ${variants[i]['id']}');
+      }
+      request.fields['variants[$i][is_active]'] = variants[i]['is_active'] ? '1' : '0';
+      request.fields['variants[$i][price]'] = (variants[i]['price'] ?? 0.0).toString();
+      print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
+
+      List<dynamic> variantAttributes = variants[i]['variant_attributes'] ?? [];
+      for (int j = 0; j < variantAttributes.length; j++) {
+        if (variantAttributes[j].containsKey('id')) {
+          request.fields['variants[$i][variant_attributes][$j][id]'] = variantAttributes[j]['id'].toString();
+          print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
+        }
+        request.fields['variants[$i][variant_attributes][$j][category_attribute_id]'] = variantAttributes[j]['category_attribute_id'].toString();
+        request.fields['variants[$i][variant_attributes][$j][value]'] = variantAttributes[j]['value'].toString();
+        print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
       }
 
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-        print(
-            'ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
-      }
-
-      for (int i = 0; i < variants.length; i++) {
-        if (variants[i].containsKey('id')) {
-          request.fields['variants[$i][id]'] = variants[i]['id'].toString();
-          print('ApiService: Added variant ID $i: ${variants[i]['id']}');
-        }
-        // Добавляем is_active для каждого варианта
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        print(
-            'ApiService: Added variant $i is_active: ${variants[i]['is_active']}');
-
-        request.fields['variants[$i][price]'] =
-            (variants[i]['price'] ?? 0.0).toString();
-        print('ApiService: Added variant price $i: ${variants[i]['price']}');
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          if (variantAttributes[j].containsKey('id')) {
-            request.fields['variants[$i][variant_attributes][$j][id]'] =
-                variantAttributes[j]['id'].toString();
-            print(
-                'ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
-          }
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
-          print(
-              'ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
-        }
-
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
-            print('ApiService: Added variant file $i-$j: ${file.path}');
-          } else {
-            print('ApiService: Variant file not found, skipping: ${file.path}');
-          }
-        }
-      }
-
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
+      List<File> variantFiles = variants[i]['files'] ?? [];
+      for (int j = 0; j < variantFiles.length; j++) {
+        File file = variantFiles[j];
         if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i]', file.path);
+          final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', file.path);
           request.files.add(imageFile);
-          print('ApiService: Added general image $i: ${file.path}');
+          print('ApiService: Added variant file $i-$j: ${file.path}');
         } else {
-          print('ApiService: General image not found, skipping: ${file.path}');
+          print('ApiService: Variant file not found, skipping: ${file.path}');
         }
       }
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      print('ApiService: Response status: ${response.statusCode}');
-      print('ApiService: Response body: $responseBody');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'goods_updated_successfully',
-          'data': responseBody,
-        };
+    for (int i = 0; i < images.length; i++) {
+      File file = images[i];
+      if (await file.exists()) {
+        final imageFile = await http.MultipartFile.fromPath('files[$i][file]', file.path);
+        request.files.add(imageFile);
+        request.fields['files[$i][is_main]'] = i == (mainImageIndex ?? 0) ? '1' : '0';
+        print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
       } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to update goods',
-          'error': responseBody,
-        };
+        print('ApiService: General image not found, skipping: ${file.path}');
       }
-    } catch (e, stackTrace) {
-      print('ApiService: Error in updateGoods: $e');
-      print('ApiService: Stack trace: $stackTrace');
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    print('ApiService: Response status: ${response.statusCode}');
+    print('ApiService: Response body: $responseBody');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'goods_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': responseBody['message'] ?? 'Failed to update goods',
+        'error': responseBody,
       };
     }
+  } catch (e, stackTrace) {
+    print('ApiService: Error in updateGoods: $e');
+    print('ApiService: Stack trace: $stackTrace');
+    return {
+      'success': false,
+      'message': 'An error occurred: $e',
+    };
   }
-
+}
   Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
     try {
       final token = await getToken();

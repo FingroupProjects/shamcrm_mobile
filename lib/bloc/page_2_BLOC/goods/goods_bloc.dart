@@ -312,6 +312,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           isActive: event.isActive,
           discountPrice: event.discountPrice,
           branch: event.branch,
+          mainImageIndex: event.mainImageIndex, // Передаём mainImageIndex
         );
 
         if (response['success'] == true) {
@@ -340,53 +341,55 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     }
   }
 
-  Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
-    emit(GoodsLoading());
-    if (kDebugMode) {
-      print('GoodsBloc: Обновление товара: ${event.name}');
-    }
-
-    if (await _checkInternetConnection()) {
-      try {
-        final response = await apiService.updateGoods(
-          goodId: event.goodId,
-          name: event.name,
-          parentId: event.parentId,
-          description: event.description,
-          quantity: event.quantity,
-          attributes: event.attributes,
-          variants: event.variants,
-          images: event.images ?? [],
-          isActive: event.isActive,
-          discountPrice: event.discountPrice,
-          branch: event.branch,
-        );
-
-        if (response['success'] == true) {
-          if (kDebugMode) {
-            print('GoodsBloc: Товар успешно обновлен');
-          }
-          emit(GoodsSuccess("Товар успешно обновлен"));
-          add(FetchGoods(page: 1));
-        } else {
-          if (kDebugMode) {
-            print('GoodsBloc: Ошибка обновления товара: ${response['message']}');
-          }
-          emit(GoodsError(response['message'] ?? 'Не удалось обновить товар'));
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('GoodsBloc: Ошибка при обновлении товара: $e');
-        }
-        emit(GoodsError('Ошибка при обновлении товара: ${e.toString()}'));
-      }
-    } else {
-      if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при обновлении товара');
-      }
-      emit(GoodsError('Нет подключения к интернету'));
-    }
+ Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
+  emit(GoodsLoading());
+  if (kDebugMode) {
+    print('GoodsBloc: Updating goods: ${event.name}');
   }
+
+  if (await _checkInternetConnection()) {
+    try {
+      final response = await apiService.updateGoods(
+        goodId: event.goodId,
+        name: event.name,
+        parentId: event.parentId,
+        description: event.description,
+        quantity: event.quantity,
+        attributes: event.attributes,
+        variants: event.variants,
+        images: event.images ?? [],
+        isActive: event.isActive,
+        discountPrice: event.discountPrice,
+        branch: event.branch,
+        comments: event.comments, // Передаём комментарии
+        mainImageIndex: event.mainImageIndex, // Передаём индекс главного изображения
+      );
+
+      if (response['success'] == true) {
+        if (kDebugMode) {
+          print('GoodsBloc: Goods successfully updated');
+        }
+        emit(GoodsSuccess("Goods successfully updated"));
+        add(FetchGoods(page: 1));
+      } else {
+        if (kDebugMode) {
+          print('GoodsBloc: Error updating goods: ${response['message']}');
+        }
+        emit(GoodsError(response['message'] ?? 'Failed to update goods'));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('GoodsBloc: Error updating goods: $e');
+      }
+      emit(GoodsError('Error updating goods: ${e.toString()}'));
+    }
+  } else {
+    if (kDebugMode) {
+      print('GoodsBloc: No internet connection while updating goods');
+    }
+    emit(GoodsError('No internet connection'));
+  }
+}
 
   Future<bool> _checkInternetConnection() async {
     try {

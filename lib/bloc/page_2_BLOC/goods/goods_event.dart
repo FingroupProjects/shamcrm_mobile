@@ -46,7 +46,8 @@ class CreateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch;
+  final int? branch;
+  final int? mainImageIndex; // Добавляем поле
 
   CreateGoods({
     required this.name,
@@ -60,6 +61,7 @@ class CreateGoods extends GoodsEvent {
     required this.isActive,
     this.discountPrice,
     required this.branch,
+    this.mainImageIndex,  
   });
 }
 
@@ -75,7 +77,9 @@ class UpdateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch;
+  final int? branch;
+  final String? comments; // Добавляем поле comments
+  final int? mainImageIndex; // Добавляем поле mainImageIndex
 
   UpdateGoods({
     required this.goodId,
@@ -90,5 +94,7 @@ class UpdateGoods extends GoodsEvent {
     required this.isActive,
     this.discountPrice,
     required this.branch,
+    this.comments,
+    this.mainImageIndex,
   });
 }
