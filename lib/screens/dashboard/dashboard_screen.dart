@@ -213,7 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _initTutorialTargets() {
     targets.clear();
-    if (userRoles.contains('admin')) {
+    if (userRoles.contains('user')) {
       _initAdminTutorialTargets();
     } else if (userRoles.contains('manager')) {
       _initTutorialTargetsManagers();
@@ -665,14 +665,18 @@ void _initAdminTutorialTargets() {
   }
 
   List<Widget> _buildDashboardContent() {
-    if (userRoles.contains('admin')) {
+    if (userRoles.contains('user')) {
       return [
-        LeadConversionChart(key: keyAdminLeadConversion),
-        Divider(thickness: 1, color: Colors.grey[300]),
-        TaskCompletionChart(key: keyAdminTaskComplietion),
+        
+        GoalCompletionChart(key: keyManagerGoalComplietion),
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidget(key: keyAdminTaskChart),
         Divider(thickness: 1, color: Colors.grey[300]),
+        TaskCompletionChart(key: keyAdminTaskComplietion),
+        Divider(thickness: 1, color: Colors.grey[300]),
+      LeadConversionChart(key: keyAdminLeadConversion),
+        Divider(thickness: 1, color: Colors.grey[300]),
+        
         GraphicsDashboard(lineChartKey: keyAdminGraphics),
         Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(key: keyAdminProcessSpeed),

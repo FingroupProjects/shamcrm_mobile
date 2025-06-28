@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Лиды
-    if (await _apiService.hasPermission('lead.read')) {
+    if (await _apiService.hasPermission('task.read')) {
       widgetsGroup1.add(LeadScreen());
       titleKeysGroup1.add('appbar_leads');
       navBarTitleKeysGroup1.add('appbar_leads');
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Сделки
-    if (await _apiService.hasPermission('deal.read')) {
+    if (await _apiService.hasPermission('task.read')) {
       widgetsGroup1.add(DealScreen());
       titleKeysGroup1.add('appbar_deals');
       navBarTitleKeysGroup1.add('appbar_deals');
