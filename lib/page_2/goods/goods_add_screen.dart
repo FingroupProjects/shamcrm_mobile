@@ -29,19 +29,21 @@ class GoodsAddScreen extends StatefulWidget {
 class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController goodsNameController = TextEditingController();
-  final TextEditingController goodsDescriptionController = TextEditingController();
+  final TextEditingController goodsDescriptionController =
+      TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
   SubCategoryAttributesData? selectedCategory;
   Branch? selectedBranch;
   bool isActive = true;
-  List<Branch> branches = [];
+  List<Branch>? branches = [];
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
   bool isImagesValid = true;
   bool isBranchValid = true;
+  int? mainImageIndex; // Индекс главного изображения
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -56,6 +58,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     fetchSubCategories();
     // Запрашиваем филиалы через BLoC
     context.read<BranchBloc>().add(FetchBranches());
+    mainImageIndex = 0; // По умолчанию первое изображение главное
   }
 
   Future<void> fetchSubCategories() async {
@@ -76,7 +79,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      isBranchValid = selectedBranch != null;
+      // isBranchValid = selectedBranch != null;
     });
   }
 
@@ -86,7 +89,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       Map<String, dynamic> newRow = {
         'is_active': true,
       };
-      for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+      for (var attr
+          in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
       }
       if (selectedCategory!.hasPriceCharacteristics) {
@@ -139,7 +143,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -174,7 +179,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        tableAttributes[rowIndex]['images'].addAll(pickedFiles.map((file) => file.path));
+        tableAttributes[rowIndex]['images']
+            .addAll(pickedFiles.map((file) => file.path));
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     }
@@ -211,19 +217,23 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           if (state is BranchLoaded) {
             setState(() {
               branches = state.branches;
-              print('GoodsAddScreen: Branches loaded: ${branches.map((b) => b.name).toList()}');
+              // print(
+              //     'GoodsAddScreen: Branches loaded: ${branches.map((b) => b.name).toList()}');
             });
           } else if (state is BranchError) {
             print('GoodsAddScreen: Error loading branches: ${state.message}');
             showCustomSnackBar(
               context: context,
-              message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
+              message: AppLocalizations.of(context)!
+                      .translate('error_loading_branches') +
+                  ': ${state.message}',
               isSuccess: false,
             );
           }
         },
         child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
           child: GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
@@ -236,36 +246,46 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   children: [
                     CustomTextField(
                       controller: goodsNameController,
-                      hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
-                      label: AppLocalizations.of(context)!.translate('goods_name'),
+                      hintText: AppLocalizations.of(context)!
+                          .translate('enter_goods_name'),
+                      label:
+                          AppLocalizations.of(context)!.translate('goods_name'),
                       validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context)!.translate('field_required')
+                          ? AppLocalizations.of(context)!
+                              .translate('field_required')
                           : null,
                     ),
                     const SizedBox(height: 8),
                     CustomTextField(
                       controller: goodsDescriptionController,
-                      hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
-                      label: AppLocalizations.of(context)!.translate('goods_description'),
+                      hintText: AppLocalizations.of(context)!
+                          .translate('enter_goods_description'),
+                      label: AppLocalizations.of(context)!
+                          .translate('goods_description'),
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
-                    if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
+                    if (selectedCategory != null &&
+                        !selectedCategory!.hasPriceCharacteristics)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: discountPriceController,
-                            label: AppLocalizations.of(context)!.translate('price'),
-                            hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                            label: AppLocalizations.of(context)!
+                                .translate('price'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_price'),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               if (double.tryParse(value) == null) {
-                                return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                return AppLocalizations.of(context)!
+                                    .translate('enter_correct_number');
                               }
                               return null;
                             },
@@ -304,9 +324,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           selectedCategory = category;
                           attributeControllers.clear();
                           tableAttributes.clear();
-                          if (category != null && category.attributes.isNotEmpty) {
-                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
-                              attributeControllers[attribute.name] = TextEditingController();
+                          if (category != null &&
+                              category.attributes.isNotEmpty) {
+                            for (var attribute in category.attributes
+                                .where((a) => !a.isIndividual)) {
+                              attributeControllers[attribute.name] =
+                                  TextEditingController();
                             }
                           }
                         });
@@ -326,14 +349,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     //       ),
                     //     ),
                     //   ),
-                    if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                    if (selectedCategory != null &&
+                        selectedCategory!.attributes.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Divider(color: Color(0xff1E2E52)),
                           Center(
                             child: Text(
-                              AppLocalizations.of(context)!.translate('characteristic'),
+                              AppLocalizations.of(context)!
+                                  .translate('characteristic'),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -343,7 +368,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                             ),
                           ),
                           Divider(color: Color(0xff1E2E52)),
-                          ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
+                          ...selectedCategory!.attributes
+                              .where((attr) => !attr.isIndividual)
+                              .map((attribute) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -359,13 +386,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 CustomCharacteristicField(
-                                  controller: attributeControllers[attribute.name]!,
-                                  hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
+                                  controller:
+                                      attributeControllers[attribute.name]!,
+                                  hintText:
+                                      '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
                                 ),
                               ],
                             );
                           }).toList(),
-                          if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
+                          if (selectedCategory!.attributes
+                              .any((attr) => attr.isIndividual))
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -381,23 +411,28 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         dividerThickness: 0,
                                         columns: [
                                           ...selectedCategory!.attributes
-                                              .where((attr) => attr.isIndividual)
+                                              .where(
+                                                  (attr) => attr.isIndividual)
                                               .map((attr) => DataColumn(
                                                     label: Text(
                                                       attr.name,
                                                       style: TextStyle(
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
+                                                        color:
+                                                            Color(0xff1E2E52),
                                                       ),
                                                     ),
                                                   ))
                                               .toList(),
-                                          if (selectedCategory!.hasPriceCharacteristics)
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
                                             DataColumn(
                                               label: Text(
-                                                AppLocalizations.of(context)!.translate('price'),
+                                                AppLocalizations.of(context)!
+                                                    .translate('price'),
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w500,
@@ -408,7 +443,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('image_message'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('image_message'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -419,7 +455,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           ),
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('status'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('status'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -440,69 +477,116 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           ),
                                         ],
-                                        rows: tableAttributes.asMap().entries.map((entry) {
+                                        rows: tableAttributes
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
                                           int index = entry.key;
-                                          Map<String, dynamic> row = entry.value;
+                                          Map<String, dynamic> row =
+                                              entry.value;
                                           return DataRow(
                                             cells: [
                                               ...selectedCategory!.attributes
-                                                  .where((attr) => attr.isIndividual)
+                                                  .where((attr) =>
+                                                      attr.isIndividual)
                                                   .map((attr) => DataCell(
                                                         SizedBox(
                                                           width: 150,
                                                           child: TextField(
-                                                            controller: row[attr.name],
-                                                            decoration: InputDecoration(
-                                                              hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                              hintStyle: TextStyle(
+                                                            controller:
+                                                                row[attr.name],
+                                                            decoration:
+                                                                InputDecoration(
+                                                              hintText:
+                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                              hintStyle:
+                                                                  TextStyle(
                                                                 fontSize: 12,
-                                                                fontWeight: FontWeight.w500,
-                                                                fontFamily: 'Gilroy',
-                                                                color: Color(0xff99A4BA),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                                fontFamily:
+                                                                    'Gilroy',
+                                                                color: Color(
+                                                                    0xff99A4BA),
                                                               ),
-                                                              border: OutlineInputBorder(
-                                                                borderRadius: BorderRadius.circular(12),
+                                                              border:
+                                                                  OutlineInputBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
                                                               ),
-                                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                              contentPadding:
+                                                                  EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          16),
                                                             ),
                                                           ),
                                                         ),
                                                       ))
                                                   .toList(),
-                                              if (selectedCategory!.hasPriceCharacteristics)
+                                              if (selectedCategory!
+                                                  .hasPriceCharacteristics)
                                                 DataCell(
                                                   SizedBox(
                                                     width: 150,
                                                     child: TextField(
                                                       controller: row['price'],
-                                                      decoration: InputDecoration(
-                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                                                      decoration:
+                                                          InputDecoration(
+                                                        hintText: AppLocalizations
+                                                                .of(context)!
+                                                            .translate(
+                                                                'enter_price'),
                                                         hintStyle: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                           fontFamily: 'Gilroy',
-                                                          color: Color(0xff99A4BA),
+                                                          color:
+                                                              Color(0xff99A4BA),
                                                         ),
-                                                        border: OutlineInputBorder(
-                                                          borderRadius: BorderRadius.circular(12),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
                                                         ),
-                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                        contentPadding:
+                                                            EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical:
+                                                                        16),
                                                       ),
-                                                      keyboardType: TextInputType.number,
+                                                      keyboardType:
+                                                          TextInputType.number,
                                                     ),
                                                   ),
                                                 ),
                                               DataCell(
                                                 Row(
                                                   children: [
-                                                    if (row['images'].isNotEmpty)
+                                                    if (row['images']
+                                                        .isNotEmpty)
                                                       Container(
                                                         width: 40,
                                                         height: 40,
-                                                        decoration: BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(8),
-                                                          image: DecorationImage(
-                                                            image: FileImage(File(row['images'].first)),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          image:
+                                                              DecorationImage(
+                                                            image: FileImage(
+                                                                File(row[
+                                                                        'images']
+                                                                    .first)),
                                                             fit: BoxFit.cover,
                                                           ),
                                                         ),
@@ -511,25 +595,41 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     Stack(
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                                                          onPressed: () => _showImagePickerOptionsForRow(index),
+                                                          icon: Icon(
+                                                              Icons.add_circle,
+                                                              color:
+                                                                  Colors.blue,
+                                                              size: 20),
+                                                          onPressed: () =>
+                                                              _showImagePickerOptionsForRow(
+                                                                  index),
                                                         ),
-                                                        if (row['images'].isNotEmpty)
+                                                        if (row['images']
+                                                            .isNotEmpty)
                                                           Positioned(
                                                             top: 4,
                                                             right: 4,
                                                             child: Container(
-                                                              padding: EdgeInsets.all(4),
-                                                              decoration: BoxDecoration(
-                                                                color: Colors.red,
-                                                                shape: BoxShape.circle,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .all(4),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color:
+                                                                    Colors.red,
+                                                                shape: BoxShape
+                                                                    .circle,
                                                               ),
                                                               child: Text(
                                                                 '${row['images'].length}',
-                                                                style: TextStyle(
-                                                                  color: Colors.white,
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
                                                                   fontSize: 10,
-                                                                  fontWeight: FontWeight.bold,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
                                                                 ),
                                                               ),
                                                             ),
@@ -537,9 +637,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       ],
                                                     ),
                                                     IconButton(
-                                                      icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                                                      onPressed: row['images'].isNotEmpty
-                                                          ? () => _showImageListPopup(row['images'])
+                                                      icon: Icon(
+                                                          Icons.visibility,
+                                                          color: Colors.grey,
+                                                          size: 20),
+                                                      onPressed: row['images']
+                                                              .isNotEmpty
+                                                          ? () =>
+                                                              _showImageListPopup(
+                                                                  row['images'])
                                                           : null,
                                                     ),
                                                   ],
@@ -553,25 +659,40 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       row['is_active'] = value;
                                                     });
                                                   },
-                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                                  activeColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
+                                                  inactiveTrackColor:
+                                                      const Color.fromARGB(255,
+                                                              179, 179, 179)
+                                                          .withOpacity(0.5),
+                                                  activeTrackColor: ChatSmsStyles
+                                                      .messageBubbleSenderColor,
+                                                  inactiveThumbColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
                                                 ),
                                               ),
                                               DataCell(
                                                 IconButton(
-                                                  icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                                                  onPressed: () => removeTableRow(index),
+                                                  icon: Icon(Icons.delete,
+                                                      color: Colors.red,
+                                                      size: 20),
+                                                  onPressed: () =>
+                                                      removeTableRow(index),
                                                 ),
                                               ),
                                             ],
                                           );
                                         }).toList(),
                                       ),
-                                      ...tableAttributes.asMap().entries.map((entry) {
+                                      ...tableAttributes
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
                                         int index = entry.key;
-                                        if (index < tableAttributes.length - 1) {
+                                        if (index <
+                                            tableAttributes.length - 1) {
                                           return Divider(
                                             color: Color(0xffE0E6F5),
                                             thickness: 1,
@@ -608,7 +729,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           color: const Color(0xffF4F7FD),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                            color: isImagesValid
+                                ? const Color(0xffF4F7FD)
+                                : Colors.red,
                             width: 1.5,
                           ),
                         ),
@@ -617,10 +740,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                    Icon(Icons.camera_alt,
+                                        color: Color(0xff99A4BA), size: 40),
                                     const SizedBox(height: 8),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('pick_image'),
+                                      AppLocalizations.of(context)!
+                                          .translate('pick_image'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -638,40 +763,86 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     runSpacing: 10,
                                     padding: const EdgeInsets.all(8),
                                     children: [
-                                      ..._imagePaths.map((imagePath) {
-                                        return Container(
-                                          key: ValueKey(imagePath),
-                                          width: 100,
-                                          height: 100,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(12),
-                                            image: DecorationImage(
-                                              image: FileImage(File(imagePath)),
-                                              fit: BoxFit.cover,
+                                      ..._imagePaths
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        int index = entry.key;
+                                        String imagePath = entry.value;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              mainImageIndex =
+                                                  index; // Устанавливаем новое главное изображение
+                                            });
+                                          },
+                                          child: Container(
+                                            key: ValueKey(imagePath),
+                                            width: 100,
+                                            height: 100,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              image: DecorationImage(
+                                                image:
+                                                    FileImage(File(imagePath)),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              // Добавляем рамку для главного изображения
+                                              border: mainImageIndex == index
+                                                  ? Border.all(
+                                                      color: Colors.blue,
+                                                      width: 2)
+                                                  : null,
                                             ),
-                                          ),
-                                          child: Stack(
-                                            children: [
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: GestureDetector(
-                                                  onTap: () => _removeImage(imagePath),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.all(4),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black.withOpacity(0.5),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      color: Colors.white,
-                                                      size: 16,
+                                            child: Stack(
+                                              children: [
+                                                // Кнопка удаления
+                                                Positioned(
+                                                  top: 4,
+                                                  right: 4,
+                                                  child: GestureDetector(
+                                                    onTap: () =>
+                                                        _removeImage(imagePath),
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(0.5),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.close,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
+                                                // Галочка для главного изображения
+                                                if (mainImageIndex == index)
+                                                  Positioned(
+                                                    bottom: 4,
+                                                    right: 4,
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.check,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
                                         );
                                       }).toList(),
@@ -682,16 +853,22 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           height: 100,
                                           decoration: BoxDecoration(
                                             color: Color(0xffF4F7FD),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: Color(0xffF4F7FD)),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                                color: Color(0xffF4F7FD)),
                                           ),
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                              Icon(Icons.add_a_photo,
+                                                  color: Color(0xff99A4BA),
+                                                  size: 40),
                                               SizedBox(height: 4),
                                               Text(
-                                                AppLocalizations.of(context)!.translate('add'),
+                                                AppLocalizations.of(context)!
+                                                    .translate('add'),
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   color: Color(0xff99A4BA),
@@ -704,8 +881,22 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     ],
                                     onReorder: (int oldIndex, int newIndex) {
                                       setState(() {
-                                        final item = _imagePaths.removeAt(oldIndex);
+                                        // Перемещаем изображение
+                                        final item =
+                                            _imagePaths.removeAt(oldIndex);
                                         _imagePaths.insert(newIndex, item);
+                                        // Обновляем mainImageIndex
+                                        if (mainImageIndex == oldIndex) {
+                                          mainImageIndex = newIndex;
+                                        } else if (mainImageIndex != null &&
+                                            oldIndex < mainImageIndex! &&
+                                            newIndex >= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! - 1;
+                                        } else if (mainImageIndex != null &&
+                                            oldIndex > mainImageIndex! &&
+                                            newIndex <= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! + 1;
+                                        }
                                       });
                                     },
                                   ),
@@ -713,7 +904,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     top: 8,
                                     left: 8,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.5),
                                         borderRadius: BorderRadius.circular(12),
@@ -736,7 +928,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     if (!isImagesValid)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('    ${AppLocalizations.of(context)!.translate('please_select_image')}',
+                        child: Text(
+                          '    ${AppLocalizations.of(context)!.translate('please_select_image')}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.red,
@@ -752,7 +945,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.translate('status_goods'),
+                                AppLocalizations.of(context)!
+                                    .translate('status_goods'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -768,7 +962,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 12),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF4F7FD),
                                     borderRadius: BorderRadius.circular(12),
@@ -782,16 +977,25 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             isActive = value;
                                           });
                                         },
-                                        activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                        inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                        activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                        inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                        activeColor: const Color.fromARGB(
+                                            255, 255, 255, 255),
+                                        inactiveTrackColor:
+                                            const Color.fromARGB(
+                                                    255, 179, 179, 179)
+                                                .withOpacity(0.5),
+                                        activeTrackColor: ChatSmsStyles
+                                            .messageBubbleSenderColor,
+                                        inactiveThumbColor:
+                                            const Color.fromARGB(
+                                                255, 255, 255, 255),
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
                                         isActive
-                                            ? AppLocalizations.of(context)!.translate('active')
-                                            : AppLocalizations.of(context)!.translate('inactive'),
+                                            ? AppLocalizations.of(context)!
+                                                .translate('active')
+                                            : AppLocalizations.of(context)!
+                                                .translate('inactive'),
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
@@ -837,21 +1041,26 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       height: 48,
                       child: Align(
                         alignment: Alignment.center,
-                        child: CircularProgressIndicator(color: const Color(0xff4759FF)),
+                        child: CircularProgressIndicator(
+                            color: const Color(0xff4759FF)),
                       ),
                     )
                   : CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('add'),
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('add'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
+                        if (formKey.currentState!.validate() &&
+                            isCategoryValid &&
+                            isImagesValid ) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+                            message: AppLocalizations.of(context)!
+                                .translate('fill_all_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -893,7 +1102,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -936,21 +1146,28 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   void _removeImage(String imagePath) {
     setState(() {
+      int removedIndex = _imagePaths.indexOf(imagePath);
       _imagePaths.remove(imagePath);
       isImagesValid = _imagePaths.isNotEmpty;
+      if (_imagePaths.isEmpty) {
+        mainImageIndex = null;
+      } else if (mainImageIndex != null && removedIndex <= mainImageIndex!) {
+        mainImageIndex = (mainImageIndex! - 1).clamp(0, _imagePaths.length - 1);
+      }
     });
   }
 
-void _createProduct() async {
+  void _createProduct() async {
   validateForm();
-  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
+  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
     bool isPriceValid = true;
     if (selectedCategory!.hasPriceCharacteristics) {
       for (var row in tableAttributes) {
         final priceController = row['price'] as TextEditingController?;
-        if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
+        if (priceController == null ||
+            priceController.text.trim().isEmpty ||
+            double.tryParse(priceController.text.trim()) == null) {
           isPriceValid = false;
-          print('Validation failed: priceController is $priceController, text is "${priceController?.text}"');
           break;
         }
       }
@@ -1013,18 +1230,14 @@ void _createProduct() async {
             final price = double.tryParse(priceController.text.trim());
             if (price != null) {
               variant['price'] = price;
-              print('Variant price set to: $price');
             } else {
               variant['price'] = 0.0;
-              print('Invalid price format: "${priceController.text}", set to 0.0');
             }
           } else {
             variant['price'] = 0.0;
-            print('Price is empty or null, set to 0.0');
           }
         } else {
           variant['price'] = 0.0;
-          print('hasPriceCharacteristics is false, price set to 0.0');
         }
 
         if (variantImages.isNotEmpty) {
@@ -1036,12 +1249,21 @@ void _createProduct() async {
         }
       }
 
-      List<File> generalImages = [];
-      for (var path in _imagePaths) {
-        File file = File(path);
+      List<Map<String, dynamic>> files = [];
+      for (int i = 0; i < _imagePaths.length; i++) {
+        File file = File(_imagePaths[i]);
         if (await file.exists()) {
-          generalImages.add(file);
+          files.add({
+            'is_main': i == (mainImageIndex ?? 0) ? '1' : '0',
+            'file': file,
+          });
         }
+      }
+
+      // Формируем данные для branches
+      List<Map<String, dynamic>> branches = [];
+      if (selectedBranch != null) {
+        branches.add({'branch_id': selectedBranch!.id.toString()});
       }
 
       final response = await _apiService.createGoods(
@@ -1051,15 +1273,21 @@ void _createProduct() async {
         quantity: int.tryParse(stockQuantityController.text) ?? 0,
         attributes: attributes,
         variants: variants,
-        images: generalImages,
+        images: files.map((e) => e['file'] as File).toList(),
         isActive: isActive,
         discountPrice: selectedCategory!.hasPriceCharacteristics
             ? null
             : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-        branch: selectedBranch!.id,
+        branch: null, // Убираем параметр branch
+        // branches: branches, // Добавляем параметр branches
         price: selectedCategory!.hasPriceCharacteristics
-            ? (double.tryParse((tableAttributes.isNotEmpty ? tableAttributes[0]['price']?.text : null) ?? '') ?? 0.0)
-            : null, // Добавляем price для корня объекта
+            ? (double.tryParse((tableAttributes.isNotEmpty
+                        ? tableAttributes[0]['price']?.text
+                        : null) ??
+                    '') ??
+                0.0)
+            : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+        mainImageIndex: mainImageIndex,
       );
 
       if (response['success'] == true) {
@@ -1074,7 +1302,8 @@ void _createProduct() async {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? AppLocalizations.of(context)!.translate('error_adding_goods'),
+          message: response['message'] ??
+              AppLocalizations.of(context)!.translate('error_adding_goods'),
           isSuccess: false,
         );
       }
@@ -1084,7 +1313,8 @@ void _createProduct() async {
       print(stackTrace);
       showCustomSnackBar(
         context: context,
-        message: '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
+        message:
+            '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
         isSuccess: false,
       );
     }

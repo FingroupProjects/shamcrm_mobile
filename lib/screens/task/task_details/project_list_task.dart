@@ -1,13 +1,13 @@
-  import 'package:animated_custom_dropdown/custom_dropdown.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
-  import 'package:crm_task_manager/models/project_task_model.dart';
-  import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-  import 'package:flutter/material.dart';
-  import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
- class ProjectTaskGroupWidget extends StatefulWidget {
+class ProjectTaskGroupWidget extends StatefulWidget {
   final String? selectedProject;
   final Function(ProjectTask) onSelectProject;
 
@@ -64,45 +64,28 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError 
-                      ? Colors.red 
-                      :  Colors.white,
+                  color: field.hasError ? Colors.red : Colors.white,
                 ),
               ),
               child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-                    if (widget.selectedProject != null && projectsList.isNotEmpty) {
+
+                    // Автоматический выбор, если только один проект
+                    if (projectsList.length == 1 && selectedProjectData == null) {
+                      selectedProjectData = projectsList.first;
+                      widget.onSelectProject(selectedProjectData!);
+                      field.didChange(selectedProjectData);
+                    } else if (widget.selectedProject != null && projectsList.isNotEmpty) {
                       try {
                         selectedProjectData = projectsList.firstWhere(
-                          (projectTask) =>
-                              projectTask.id.toString() == widget.selectedProject,
+                          (projectTask) => projectTask.id.toString() == widget.selectedProject,
                         );
                       } catch (e) {
                         selectedProjectData = null;
                       }
                     }
-                  // } else if (state is GetTaskProjectError) {
-                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-                  //     ScaffoldMessenger.of(context).showSnackBar(
-                  //       SnackBar(
-                  //         content: Text(
-                  //           AppLocalizations.of(context)!.translate(state.message),
-                  //           style: projectTextStyle.copyWith(color: Colors.white),
-                  //         ),
-                  //         behavior: SnackBarBehavior.floating,
-                  //         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  //         shape: RoundedRectangleBorder(
-                  //           borderRadius: BorderRadius.circular(12),
-                  //         ),
-                  //         backgroundColor: Colors.red,
-                  //         elevation: 3,
-                  //         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  //         duration: const Duration(seconds: 2),
-                  //       ),
-                  //     );
-                  //   });
                   }
 
                   return CustomDropdown<ProjectTask>.search(
@@ -138,7 +121,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     },
                     headerBuilder: (context, selectedItem, enabled) {
                       return Text(
-                        selectedItem?.name ?? 
+                        selectedItem?.name ??
                             AppLocalizations.of(context)!.translate('select_project'),
                         style: projectTextStyle,
                       );

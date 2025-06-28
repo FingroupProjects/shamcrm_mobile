@@ -354,7 +354,7 @@
   "lead_updated_successfully": "Лид успешно обновлен!",
   "phone_already_exists": "Этот номер телефона уже существует.",
   "invalid_phone_format": "Неправильный номер телефона. Проверьте формат и количество цифр.",
-  "invalid_name_length": "Введите хотя бы 3 символа!",
+  "invalid_name_length": "Введите хотя бы 3 символа в поле Имя!",
   "instagram_login_exists": "Этот логин Instagram уже используется.",
   "facebook_login_exists": "Этот логин Facebook уже используется.",
   "telegram_nick_exists": "Этот логин Telegram уже используется.",
@@ -1073,7 +1073,8 @@
 "enter_number": "Введите число",
 "enter_datetime": "Введите дату и время",
 "field_type": "Тип поля",
-"select_field_type": "Выберите тип поля"
+"select_field_type": "Выберите тип поля",
+"name_too_short":"Поле название не должно быть короче трех символов"
 
 
 }

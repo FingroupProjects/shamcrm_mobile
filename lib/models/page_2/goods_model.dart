@@ -125,11 +125,13 @@ class GoodsFile {
   final int id;
   final String name;
   final String path;
+  final bool isMain; // Добавляем поле
 
   GoodsFile({
     required this.id,
     required this.name,
     required this.path,
+    required this.isMain,
   });
 
   factory GoodsFile.fromJson(Map<String, dynamic> json) {
@@ -137,10 +139,10 @@ class GoodsFile {
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
       path: json['path'] as String? ?? '',
+      isMain: json['is_main'] as bool? ?? false,
     );
   }
 }
-
 class GoodsAttribute {
   final int id;
   final String name;
@@ -249,7 +251,9 @@ class AttributeValue {
         'GoodsModel: Parsing AttributeValue - category_attribute_id: ${json['category_attribute_id']}, value: ${json['value']}');
     if (json['category_attribute'] == null) {
       print(
+        
           'GoodsModel: Warning: category_attribute is null for value ${json['value']}');
+          
     }
     return AttributeValue(
       id: json['id'] as int? ?? 0,

@@ -175,65 +175,81 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildImageSlider(List<GoodsFile> files) {
-    if (baseUrl == null) {
-      print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    print(
-        'GoodsDetailsScreen: Building image slider with ${files.length} files');
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          height: 250,
-          child: PageView.builder(
-            itemCount: files.length,
-            onPageChanged: (index) => setState(() {
-              _currentPage = index;
-              print('GoodsDetailsScreen: Image page changed to $index');
-            }),
-            itemBuilder: (context, index) {
-              final imageUrl = '$baseUrl/${files[index].path}';
-              print('GoodsDetailsScreen: Loading image $imageUrl');
-              if (files[index].path.isEmpty) {
-                print('GoodsDetailsScreen: Empty image path at index $index');
-                return _buildPlaceholder();
-              }
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    print(
-                        'GoodsDetailsScreen: Image load error for $imageUrl: $error');
-                    return _buildPlaceholder();
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Text(
-            '${_currentPage + 1}/${files.length}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
+  if (baseUrl == null) {
+    print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
+    return const Center(child: CircularProgressIndicator());
   }
+
+  // Сортируем список: изображение с isMain == true идёт первым
+  final sortedFiles = List<GoodsFile>.from(files);
+  final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
+  if (mainImageIndex != -1) {
+    final mainImage = sortedFiles.removeAt(mainImageIndex);
+    sortedFiles.insert(0, mainImage);
+    print('GoodsDetailsScreen: Main image (ID: ${mainImage.id}) moved to index 0');
+  } else {
+    print('GoodsDetailsScreen: No main image found, using original order');
+  }
+
+  // Проверка на случай нескольких isMain == true (хотя сервер должен это контролировать)
+  final multipleMainImages = sortedFiles.where((file) => file.isMain).length > 1;
+  if (multipleMainImages) {
+    print('GoodsDetailsScreen: Warning: Multiple images with isMain == true detected');
+  }
+
+  print('GoodsDetailsScreen: Building image slider with ${sortedFiles.length} files');
+  return Column(
+    children: [
+      Container(
+        margin: const EdgeInsets.only(top: 8),
+        height: 250,
+        child: PageView.builder(
+          itemCount: sortedFiles.length,
+          onPageChanged: (index) => setState(() {
+            _currentPage = index;
+            print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id})');
+          }),
+          itemBuilder: (context, index) {
+            final imageUrl = '$baseUrl/${sortedFiles[index].path}';
+            print('GoodsDetailsScreen: Loading image $imageUrl');
+            if (sortedFiles[index].path.isEmpty) {
+              print('GoodsDetailsScreen: Empty image path at index $index');
+              return _buildPlaceholder();
+            }
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+                  return _buildPlaceholder();
+                },
+              ),
+            );
+          },
+        ),
+      ),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          '${_currentPage + 1}/${sortedFiles.length}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 
   Widget _buildPlaceholder() {
     print('GoodsDetailsScreen: Displaying image placeholder');
@@ -289,31 +305,36 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/edit.png',
-                            width: 24, height: 24),
-                        onPressed: state is GoodsByIdLoaded
-                            ? () async {
-                                print(
-                                    'GoodsDetailsScreen: Edit button pressed');
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        GoodsEditScreen(goods: state.goods),
-                                  ),
-                                );
-                                if (result == true) {
-                                  print(
-                                      'GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
-                                  context
-                                      .read<GoodsByIdBloc>()
-                                      .add(FetchGoodsById(widget.id));
-                                }
-                              }
-                            : null,
-                      ),
+  padding: EdgeInsets.zero,
+  constraints: const BoxConstraints(),
+  icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
+  onPressed: state is GoodsByIdLoaded
+      ? () async {
+          print('GoodsDetailsScreen: Edit button pressed');
+          // Сортируем изображения для передачи
+          final sortedFiles = List<GoodsFile>.from(state.goods.files);
+          final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
+          if (mainImageIndex != -1) {
+            final mainImage = sortedFiles.removeAt(mainImageIndex);
+            sortedFiles.insert(0, mainImage);
+          }
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GoodsEditScreen(
+                goods: state.goods,
+                sortedFiles: sortedFiles, // Передаём отсортированный список
+                initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
+              ),
+            ),
+          );
+          if (result == true) {
+            print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
+            context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+          }
+        }
+      : null,
+),
                       IconButton(
                         padding: const EdgeInsets.only(right: 8),
                         constraints: const BoxConstraints(),
@@ -404,8 +425,7 @@ Widget _buildDetailsList(Goods goods) {
       'value': goods.name ?? '',
     },
     {
-      'label': AppLocalizations.of(context)!
-          .translate('goods_description_details'),
+      'label': AppLocalizations.of(context)!.translate('goods_description_details'),
       'value': goods.description ?? '',
     },
     {
@@ -420,8 +440,7 @@ Widget _buildDetailsList(Goods goods) {
     },
     if (goods.discountPrice != null && goods.discountPrice != 0)
       {
-        'label': AppLocalizations.of(context)!
-            .translate('discount_price_details'),
+        'label': AppLocalizations.of(context)!.translate('discount_price_details'),
         'value': goods.discountPrice.toString(),
       },
     if (goods.discountPercent != null && goods.discountPercent != 0)
@@ -432,8 +451,7 @@ Widget _buildDetailsList(Goods goods) {
     ...goods.attributes
         .where((attr) =>
             attr.name.isNotEmpty &&
-            attr.name !=
-                AppLocalizations.of(context)!.translate('unknown_characteristic'))
+            attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
         .map((attr) => {
               'label': attr.name,
               'value': attr.value,
@@ -444,7 +462,7 @@ Widget _buildDetailsList(Goods goods) {
           ? AppLocalizations.of(context)!.translate('active_swtich')
           : AppLocalizations.of(context)!.translate('inactive_swtich'),
     },
-    // Комментарии клиента (уже добавлены)
+    // Комментарии клиента как расширяемое поле
     if (goods.comments != null && goods.comments!.isNotEmpty)
       {
         'label': AppLocalizations.of(context)!.translate('client_comments'),
@@ -452,8 +470,7 @@ Widget _buildDetailsList(Goods goods) {
       },
   ];
 
-  print(
-      'GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
+  print('GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -468,21 +485,18 @@ Widget _buildDetailsList(Goods goods) {
             .toList(),
       ),
       const SizedBox(height: 16),
-      // Цены и процент скидки
       if (goods.discountPrice != null && goods.discountPrice != 0)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel(AppLocalizations.of(context)!
-                  .translate('price_details')),
+              _buildLabel(AppLocalizations.of(context)!.translate('price_details')),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Исходная цена (с зачеркиванием, если есть скидка)
                     Text(
                       goods.discountedPrice != null
                           ? goods.discountPrice.toString()
@@ -499,7 +513,6 @@ Widget _buildDetailsList(Goods goods) {
                             : TextDecoration.none,
                       ),
                     ),
-                    // Цена со скидкой
                     if (goods.discountedPrice != null)
                       Text(
                         goods.discountedPrice!.toStringAsFixed(2),
@@ -507,7 +520,7 @@ Widget _buildDetailsList(Goods goods) {
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E2E52),
+                            color: Color(0xFF1E2E52),
                         ),
                       ),
                   ],
@@ -724,41 +737,40 @@ Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    final expandableFields = [
-      AppLocalizations.of(context)!.translate('goods_name_details'),
-      AppLocalizations.of(context)!.translate('goods_description_details'),
-      AppLocalizations.of(context)!.translate('category_details'),
-    ];
+ Widget _buildDetailItem(String label, String value) {
+  final expandableFields = [
+    AppLocalizations.of(context)!.translate('goods_name_details'),
+    AppLocalizations.of(context)!.translate('goods_description_details'),
+    AppLocalizations.of(context)!.translate('category_details'),
+    AppLocalizations.of(context)!.translate('client_comments'), // Добавляем
+  ];
 
-    bool isExpandable = expandableFields.contains(label) ||
-        details.any((detail) =>
-            detail['label'] == label &&
-            detail['value'] == value &&
-            !expandableFields.contains(label));
+  bool isExpandable = expandableFields.contains(label) ||
+      details.any((detail) =>
+          detail['label'] == label &&
+          detail['value'] == value &&
+          !expandableFields.contains(label));
 
-    print(
-        'GoodsDetailsScreen: Building detail item - label: $label, value: $value');
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        const SizedBox(width: 8),
-        Expanded(
-          child: isExpandable
-              ? GestureDetector(
-                  onTap: () {
-                    print('GoodsDetailsScreen: Detail item tapped - $label');
-                    _showFullTextDialog(label.replaceAll(':', ''), value);
-                  },
-                  child: _buildValue(value, label, maxLines: 1),
-                )
-              : _buildValue(value, label, maxLines: 1),
-        ),
-      ],
-    );
-  }
-
+  print('GoodsDetailsScreen: Building detail item - label: $label, value: $value');
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildLabel(label),
+      const SizedBox(width: 8),
+      Expanded(
+        child: isExpandable
+            ? GestureDetector(
+                onTap: () {
+                  print('GoodsDetailsScreen: Detail item tapped - $label');
+                  _showFullTextDialog(label.replaceAll(':', ''), value);
+                },
+                child: _buildValue(value, label, maxLines: 1),
+              )
+            : _buildValue(value, label, maxLines: 1),
+      ),
+    ],
+  );
+}
   Widget _buildLabel(String label) {
     return Text(
       '$label:',

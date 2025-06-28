@@ -41,6 +41,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
@@ -131,108 +132,190 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
-  void _showDatePicker(BuildContext context, List<Message> messages) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
+
+
+
+
+
+Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
+  final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
+  DateTime? selectedDate;
+
+  // Преобразуем сообщения в карту дат
+  final Map<DateTime, List> events = {};
+  print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
+  for (var message in messages) {
+    print('Обработка сообщения: $message');
+    try {
+      final date = DateTime.parse(message.createMessateTime).toLocal();
+      print('Парсинг даты: ${message.createMessateTime} -> $date');
+      final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
+      print('Сформирована дата для события: $eventDate');
+      if (events[eventDate] == null) {
+        print('Добавление нового события для даты: $eventDate');
+        events[eventDate] = [true]; // Добавляем индикатор события
+      } else {
+        print('Событие для даты $eventDate уже существует');
+      }
+    } catch (e) {
+      print('Ошибка парсинга даты ${message.createMessateTime}: $e');
+    }
+  }
+  print('Карта событий после обработки: $events');
+
+  await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Container(
-          color: Colors.white,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey.shade200,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('go_to_date'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Gilroy',
+                height: 420,
+                width: double.maxFinite,
+                color: Colors.white,
+                child: TableCalendar(
+                  firstDay: DateTime(2020),
+                  lastDay: DateTime(2101),
+                  focusedDay: currentDate,
+                  calendarFormat: CalendarFormat.month,
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  locale: 'ru_RU',
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.blue,
+                        width: 2,
                       ),
+                      shape: BoxShape.circle,
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 400,
-                child: CalendarDatePicker(
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  onDateChanged: (date) {
-                    final index = _findMessageIndexByDate(messages, date);
+                    todayTextStyle: const TextStyle(color: Colors.blue),
+                    outsideDaysVisible: true,
+                    outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
+                  ),
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                    leftChevronVisible: true,
+                    rightChevronVisible: true,
+                    titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
+                  ),
+                  calendarBuilders: CalendarBuilders(
+                    markerBuilder: (context, date, events) {
+                      print('Проверка даты $date, события: $events');
+                      if (events.isNotEmpty) {
+                        print('Отображение точки для даты $date');
+                        return Positioned(
+                          right: 18,
+                          bottom: 0,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        );
+                      }
+                      print('Нет событий для даты $date');
+                      return null;
+                    },
+                  ),
+                  eventLoader: (day) {
+                    final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
+                    print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                    return events[normalizedDay] ?? [];
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    final index = _findMessageIndexByDate(messages, selectedDay);
+                    print('Выбрана дата $selectedDay, индекс сообщения: $index');
                     if (index != -1) {
                       Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToMessageIndex(date);
+                        _scrollToMessageIndex(selectedDay);
                       });
-                    } else {}
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Нет сообщений за ${formatDate(selectedDay)}',
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
-  int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-    int lastIndex = -1;
-    for (int i = 0; i < messages.length; i++) {
-      final messageDate = DateTime.parse(messages[i].createMessateTime);
-      if (isSameDay(messageDate, targetDate)) {
-        lastIndex = i;
-      }
-    }
-    return lastIndex;
-  }
 
-  void _scrollToMessageIndex(DateTime selectedDate) {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState || state is PinnedMessagesState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : (state as PinnedMessagesState).messages;
-
-      final messageIndex = messages.indexWhere((msg) {
-        final messageDate = DateTime.parse(msg.createMessateTime);
-        return isSameDay(messageDate, selectedDate);
-      });
-
-      if (messageIndex != -1) {
-        _scrollControllerMessage.scrollTo(
-          index: messageIndex,
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.easeInOut,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('No messages found for ${formatDate(selectedDate)}')),
-        );
-      }
+int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
+  for (int i = messages.length - 1; i >= 0; i--) {
+    final messageDate = DateTime.parse(messages[i].createMessateTime);
+    if (isSameDay(messageDate, targetDate)) {
+      return i; // Возвращаем индекс последнего сообщения за дату
     }
   }
+  return -1; // Если сообщений нет
+}
+
+void _scrollToMessageIndex(DateTime selectedDate) {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState || state is PinnedMessagesState) {
+    final messages = state is MessagesLoadedState
+        ? state.messages
+        : (state as PinnedMessagesState).messages;
+
+    final messageIndex = _findMessageIndexByDate(messages, selectedDate);
+
+    if (messageIndex != -1) {
+      debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
+      _scrollControllerMessage.scrollTo(
+        index: messageIndex,
+        alignment: 0.0, // Позиционируем сообщение вверху экрана
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Нет сообщений за ${formatDate(selectedDate)}',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+}
 
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
