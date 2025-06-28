@@ -1085,7 +1085,10 @@
 "field_type_date": "Sana",
 "field_type": "Maydon turi",
 "select_field_type": "Maydon turini kiriting",
-"name_too_short": "Nom maydoni uchta belgidan kam bo‘lmasligi kerak"
+"name_too_short": "Nom maydoni uchta belgidan kam bo‘lmasligi kerak",
+"select_parent_category": "Yuqori toifani tanlang",
+"parent_category_details": "Yuqori toifa"
+
 
 
 

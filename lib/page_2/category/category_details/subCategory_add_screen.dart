@@ -123,7 +123,7 @@ class SubCategoryAddBottomSheet {
                                   setState(() {
                                     selectedType = type;
                                   });
-                                },
+                                },isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
                               Text(

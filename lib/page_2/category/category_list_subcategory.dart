@@ -50,7 +50,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('category_details'),
+                AppLocalizations.of(context)!.translate('parent_category_details'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -85,7 +85,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
-                  AppLocalizations.of(context)!.translate('select_category'),
+                  AppLocalizations.of(context)!.translate('select_parent_category'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

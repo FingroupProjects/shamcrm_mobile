@@ -28,6 +28,7 @@ class SubCategoryEditBottomSheet {
     File? _image = initialImage;
     bool _isImageSelected = initialImage != null;
     bool _isImageChanged = false;
+    
     List<CustomField> customFields = initialAttributes
         .map((attr) => CustomField(
               name: attr.name,
@@ -139,7 +140,7 @@ class SubCategoryEditBottomSheet {
                                   setState(() {
                                     selectedType = type;
                                   });
-                                },
+                                }, isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
                               Text(
