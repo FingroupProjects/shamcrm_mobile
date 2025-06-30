@@ -286,14 +286,14 @@ class SubCategoryEditBottomSheet {
                                           color: Color(0x991E2E52),
                                         ),
                                       ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
-                                        onPressed: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                      ),
+                                      // trailing: IconButton(
+                                      //   icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       customFields.remove(field);
+                                      //     });
+                                      //   },
+                                      // ),
                                     ),
                                   );
                                 }).toList(),

@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,6 +45,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   bool isImagesValid = true;
   bool isBranchValid = true;
   int? mainImageIndex; // Индекс главного изображения
+  List<String> selectedLabels = []; // Store selected labels
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -292,6 +294,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                    // Add LabelMultiSelectWidget here
+                    LabelMultiSelectWidget(
+                      selectedLabels: selectedLabels,
+                      onSelectLabels: (List<String> labels) {
+                        setState(() {
+                          selectedLabels = labels;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 8),
                     BranchesDropdown(
                       label: AppLocalizations.of(context)!.translate('branch'),
@@ -349,25 +361,38 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     //       ),
                     //     ),
                     //   ),
-                    if (selectedCategory != null &&
-                        selectedCategory!.attributes.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Divider(color: Color(0xff1E2E52)),
-                          Center(
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('characteristic'),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                          ),
-                          Divider(color: Color(0xff1E2E52)),
+                     const SizedBox(height: 16),
+                if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                
+  Column(
+    
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0), // Отступы слева и справа
+        child: Container(
+         decoration: BoxDecoration(
+  border: Border.all(color: Color(0xff1E2E52), width: 1.0),
+  borderRadius: BorderRadius.circular(14.0),
+),
+
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                AppLocalizations.of(context)!.translate('characteristic'),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+
                           ...selectedCategory!.attributes
                               .where((attr) => !attr.isIndividual)
                               .map((attribute) {
@@ -405,287 +430,205 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   child: Column(
                                     children: [
                                       DataTable(
-                                        columnSpacing: 16,
-                                        dataRowHeight: 70,
-                                        headingRowHeight: 56,
-                                        dividerThickness: 0,
-                                        columns: [
-                                          ...selectedCategory!.attributes
-                                              .where(
-                                                  (attr) => attr.isIndividual)
-                                              .map((attr) => DataColumn(
-                                                    label: Text(
-                                                      attr.name,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff1E2E52),
-                                                      ),
-                                                    ),
-                                                  ))
-                                              .toList(),
-                                          if (selectedCategory!
-                                              .hasPriceCharacteristics)
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('price'),
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff1E2E52),
-                                                ),
-                                              ),
-                                            ),
-                                          DataColumn(
-                                            label: Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate('image_message'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate('status'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              '',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                        rows: tableAttributes
-                                            .asMap()
-                                            .entries
-                                            .map((entry) {
-                                          int index = entry.key;
-                                          Map<String, dynamic> row =
-                                              entry.value;
-                                          return DataRow(
-                                            cells: [
-                                              ...selectedCategory!.attributes
-                                                  .where((attr) =>
-                                                      attr.isIndividual)
-                                                  .map((attr) => DataCell(
-                                                        SizedBox(
-                                                          width: 150,
-                                                          child: TextField(
-                                                            controller:
-                                                                row[attr.name],
-                                                            decoration:
-                                                                InputDecoration(
-                                                              hintText:
-                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                              hintStyle:
-                                                                  TextStyle(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                fontFamily:
-                                                                    'Gilroy',
-                                                                color: Color(
-                                                                    0xff99A4BA),
-                                                              ),
-                                                              border:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          12,
-                                                                      vertical:
-                                                                          16),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ))
-                                                  .toList(),
-                                              if (selectedCategory!
-                                                  .hasPriceCharacteristics)
-                                                DataCell(
-                                                  SizedBox(
-                                                    width: 150,
-                                                    child: TextField(
-                                                      controller: row['price'],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        hintText: AppLocalizations
-                                                                .of(context)!
-                                                            .translate(
-                                                                'enter_price'),
-                                                        hintStyle: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          fontFamily: 'Gilroy',
-                                                          color:
-                                                              Color(0xff99A4BA),
-                                                        ),
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                        ),
-                                                        contentPadding:
-                                                            EdgeInsets
-                                                                .symmetric(
-                                                                    horizontal:
-                                                                        12,
-                                                                    vertical:
-                                                                        16),
-                                                      ),
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                    ),
-                                                  ),
-                                                ),
-                                              DataCell(
-                                                Row(
-                                                  children: [
-                                                    if (row['images']
-                                                        .isNotEmpty)
-                                                      Container(
-                                                        width: 40,
-                                                        height: 40,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
-                                                          image:
-                                                              DecorationImage(
-                                                            image: FileImage(
-                                                                File(row[
-                                                                        'images']
-                                                                    .first)),
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    const SizedBox(width: 8),
-                                                    Stack(
-                                                      children: [
-                                                        IconButton(
-                                                          icon: Icon(
-                                                              Icons.add_circle,
-                                                              color:
-                                                                  Colors.blue,
-                                                              size: 20),
-                                                          onPressed: () =>
-                                                              _showImagePickerOptionsForRow(
-                                                                  index),
-                                                        ),
-                                                        if (row['images']
-                                                            .isNotEmpty)
-                                                          Positioned(
-                                                            top: 4,
-                                                            right: 4,
-                                                            child: Container(
-                                                              padding:
-                                                                  EdgeInsets
-                                                                      .all(4),
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                color:
-                                                                    Colors.red,
-                                                                shape: BoxShape
-                                                                    .circle,
-                                                              ),
-                                                              child: Text(
-                                                                '${row['images'].length}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 10,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                    IconButton(
-                                                      icon: Icon(
-                                                          Icons.visibility,
-                                                          color: Colors.grey,
-                                                          size: 20),
-                                                      onPressed: row['images']
-                                                              .isNotEmpty
-                                                          ? () =>
-                                                              _showImageListPopup(
-                                                                  row['images'])
-                                                          : null,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              DataCell(
-                                                Switch(
-                                                  value: row['is_active'],
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      row['is_active'] = value;
-                                                    });
-                                                  },
-                                                  activeColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
-                                                  inactiveTrackColor:
-                                                      const Color.fromARGB(255,
-                                                              179, 179, 179)
-                                                          .withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles
-                                                      .messageBubbleSenderColor,
-                                                  inactiveThumbColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
-                                                ),
-                                              ),
-                                              DataCell(
-                                                IconButton(
-                                                  icon: Icon(Icons.delete,
-                                                      color: Colors.red,
-                                                      size: 20),
-                                                  onPressed: () =>
-                                                      removeTableRow(index),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        }).toList(),
-                                      ),
+  columnSpacing: 16,
+  dataRowHeight: 70,
+  headingRowHeight: 56,
+  dividerThickness: 0,
+  columns: [
+    DataColumn(
+      label: Text(
+        AppLocalizations.of(context)!.translate('image_message'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+      ),
+    ),
+    ...selectedCategory!.attributes
+        .where((attr) => attr.isIndividual)
+        .map((attr) => DataColumn(
+              label: Text(
+                attr.name,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ))
+        .toList(),
+    if (selectedCategory!.hasPriceCharacteristics)
+      DataColumn(
+        label: Text(
+          AppLocalizations.of(context)!.translate('price'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+    DataColumn(
+      label: Text(
+        AppLocalizations.of(context)!.translate('status'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+      ),
+    ),
+    DataColumn(
+      label: Text(
+        '',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+      ),
+    ),
+  ],
+  rows: tableAttributes.asMap().entries.map((entry) {
+    int index = entry.key;
+    Map<String, dynamic> row = entry.value;
+    return DataRow(
+      cells: [
+        DataCell(
+          Row(
+            children: [
+              if (row['images'].isNotEmpty)
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: FileImage(File(row['images'].first)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
+                    onPressed: () => _showImagePickerOptionsForRow(index),
+                  ),
+                  if (row['images'].isNotEmpty)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${row['images'].length}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              IconButton(
+                icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
+                onPressed: row['images'].isNotEmpty
+                    ? () => _showImageListPopup(row['images'])
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        ...selectedCategory!.attributes
+            .where((attr) => attr.isIndividual)
+            .map((attr) => DataCell(
+                  SizedBox(
+                    width: 150,
+                    child: TextField(
+                      controller: row[attr.name],
+                      decoration: InputDecoration(
+                        hintText:
+                            '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                        hintStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff99A4BA),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 16),
+                      ),
+                    ),
+                  ),
+                ))
+            .toList(),
+        if (selectedCategory!.hasPriceCharacteristics)
+          DataCell(
+            SizedBox(
+              width: 150,
+              child: TextField(
+                controller: row['price'],
+                decoration: InputDecoration(
+                  hintText:
+                      AppLocalizations.of(context)!.translate('enter_price'),
+                  hintStyle: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff99A4BA),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ),
+        DataCell(
+          Switch(
+            value: row['is_active'],
+            onChanged: (value) {
+              setState(() {
+                row['is_active'] = value;
+              });
+            },
+            activeColor: const Color.fromARGB(255, 255, 255, 255),
+            inactiveTrackColor:
+                const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+            activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+          ),
+        ),
+        DataCell(
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red, size: 20),
+            onPressed: () => removeTableRow(index),
+          ),
+        ),
+      ],
+    );
+  }).toList(),
+),
                                       ...tableAttributes
                                           .asMap()
                                           .entries
@@ -1157,175 +1100,153 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     });
   }
 
-  void _createProduct() async {
-  validateForm();
-  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
-    bool isPriceValid = true;
-    if (selectedCategory!.hasPriceCharacteristics) {
-      for (var row in tableAttributes) {
-        final priceController = row['price'] as TextEditingController?;
-        if (priceController == null ||
-            priceController.text.trim().isEmpty ||
-            double.tryParse(priceController.text.trim()) == null) {
-          isPriceValid = false;
-          break;
-        }
-      }
-    }
-    if (!isPriceValid) {
-      showCustomSnackBar(
-        context: context,
-        message: AppLocalizations.of(context)!.translate('fill_all_prices'),
-        isSuccess: false,
-      );
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      List<Map<String, dynamic>> attributes = [];
-      List<Map<String, dynamic>> variants = [];
-
-      for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
-        final controller = attributeControllers[attribute.name];
-        if (controller != null && controller.text.trim().isNotEmpty) {
-          attributes.add({
-            'category_attribute_id': attribute.id,
-            'value': controller.text.trim(),
-          });
-        }
-      }
-
-      for (var row in tableAttributes) {
-        Map<String, dynamic> variant = {
-          'is_active': row['is_active'],
-          'variant_attributes': [],
-        };
-
-        List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
-        List<File> variantImages = [];
-        for (var path in variantImagePaths) {
-          File file = File(path);
-          if (await file.exists()) {
-            variantImages.add(file);
-          } else {
-            print('File not found, skipping: $path');
+ void _createProduct() async {
+    validateForm();
+    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+      bool isPriceValid = true;
+      if (selectedCategory!.hasPriceCharacteristics) {
+        for (var row in tableAttributes) {
+          final priceController = row['price'] as TextEditingController?;
+          if (priceController == null ||
+              priceController.text.trim().isEmpty ||
+              double.tryParse(priceController.text.trim()) == null) {
+            isPriceValid = false;
+            break;
           }
         }
+      }
+      if (!isPriceValid) {
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('fill_all_prices'),
+          isSuccess: false,
+        );
+        return;
+      }
 
-        for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
-          final controller = row[attr.name] as TextEditingController?;
+      setState(() => isLoading = true);
+
+      try {
+        List<Map<String, dynamic>> attributes = [];
+        List<Map<String, dynamic>> variants = [];
+
+        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+          final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
-            variant['variant_attributes'].add({
-              'category_attribute_id': attr.id,
+            attributes.add({
+              'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
           }
         }
 
-        if (selectedCategory!.hasPriceCharacteristics) {
-          final priceController = row['price'] as TextEditingController?;
-          if (priceController != null && priceController.text.trim().isNotEmpty) {
-            final price = double.tryParse(priceController.text.trim());
-            if (price != null) {
-              variant['price'] = price;
+        for (var row in tableAttributes) {
+          Map<String, dynamic> variant = {
+            'is_active': row['is_active'],
+            'variant_attributes': [],
+          };
+
+          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+          List<File> variantImages = [];
+          for (var path in variantImagePaths) {
+            File file = File(path);
+            if (await file.exists()) {
+              variantImages.add(file);
+            } else {
+              print('File not found, skipping: $path');
+            }
+          }
+
+          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+            final controller = row[attr.name] as TextEditingController?;
+            if (controller != null && controller.text.trim().isNotEmpty) {
+              variant['variant_attributes'].add({
+                'category_attribute_id': attr.id,
+                'value': controller.text.trim(),
+              });
+            }
+          }
+
+          if (selectedCategory!.hasPriceCharacteristics) {
+            final priceController = row['price'] as TextEditingController?;
+            if (priceController != null && priceController.text.trim().isNotEmpty) {
+              final price = double.tryParse(priceController.text.trim());
+              if (price != null) {
+                variant['price'] = price;
+              } else {
+                variant['price'] = 0.0;
+              }
             } else {
               variant['price'] = 0.0;
             }
           } else {
             variant['price'] = 0.0;
           }
-        } else {
-          variant['price'] = 0.0;
+
+          if (variantImages.isNotEmpty) {
+            variant['files'] = variantImages;
+          }
+
+          if (variant['variant_attributes'].isNotEmpty) {
+            variants.add(variant);
+          }
         }
 
-        if (variantImages.isNotEmpty) {
-          variant['files'] = variantImages;
+        List<File> images = [];
+        for (var path in _imagePaths) {
+          File file = File(path);
+          if (await file.exists()) {
+            images.add(file);
+          }
         }
 
-        if (variant['variant_attributes'].isNotEmpty) {
-          variants.add(variant);
-        }
-      }
+        // Map selected labels to server format
+        bool isNew = selectedLabels.contains('newest');
+        bool isPopular = selectedLabels.contains('hit');
+        bool isSale = selectedLabels.contains('promotion');
 
-      List<Map<String, dynamic>> files = [];
-      for (int i = 0; i < _imagePaths.length; i++) {
-        File file = File(_imagePaths[i]);
-        if (await file.exists()) {
-          files.add({
-            'is_main': i == (mainImageIndex ?? 0) ? '1' : '0',
-            'file': file,
-          });
-        }
-      }
+        context.read<GoodsBloc>().add(
+              CreateGoods(
+                name: goodsNameController.text.trim(),
+                parentId: selectedCategory!.id,
+                description: goodsDescriptionController.text.trim(),
+                quantity: int.tryParse(stockQuantityController.text) ?? 0,
+                unitId: int.tryParse(unitIdController.text) ?? 0,
+                attributes: attributes,
+                variants: variants,
+                images: images,
+                isActive: isActive,
+                discountPrice: selectedCategory!.hasPriceCharacteristics
+                    ? null
+                    : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+                branch: selectedBranch?.id,
+                mainImageIndex: mainImageIndex,
+                isNew: isNew, // Add label fields
+                isPopular: isPopular,
+                isSale: isSale,
+              ),
+            );
 
-      // Формируем данные для branches
-      List<Map<String, dynamic>> branches = [];
-      if (selectedBranch != null) {
-        branches.add({'branch_id': selectedBranch!.id.toString()});
-      }
-
-      final response = await _apiService.createGoods(
-        name: goodsNameController.text.trim(),
-        parentId: selectedCategory!.id,
-        description: goodsDescriptionController.text.trim(),
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
-        attributes: attributes,
-        variants: variants,
-        images: files.map((e) => e['file'] as File).toList(),
-        isActive: isActive,
-        discountPrice: selectedCategory!.hasPriceCharacteristics
-            ? null
-            : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-        branch: null, // Убираем параметр branch
-        // branches: branches, // Добавляем параметр branches
-        price: selectedCategory!.hasPriceCharacteristics
-            ? (double.tryParse((tableAttributes.isNotEmpty
-                        ? tableAttributes[0]['price']?.text
-                        : null) ??
-                    '') ??
-                0.0)
-            : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-        mainImageIndex: mainImageIndex,
-      );
-
-      if (response['success'] == true) {
-        showCustomSnackBar(
-          context: context,
-          message: AppLocalizations.of(context)!.translate('product_updated'),
-          isSuccess: true,
-        );
-        Navigator.pop(context, true);
-        context.read<GoodsBloc>().add(FetchGoods());
-      } else {
         setState(() => isLoading = false);
+      } catch (e, stackTrace) {
+        setState(() => isLoading = false);
+        print('Error creating product: $e');
+        print(stackTrace);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ??
-              AppLocalizations.of(context)!.translate('error_adding_goods'),
+          message:
+              '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
           isSuccess: false,
         );
       }
-    } catch (e, stackTrace) {
-      setState(() => isLoading = false);
-      print('Error creating product: $e');
-      print(stackTrace);
+    } else {
       showCustomSnackBar(
         context: context,
-        message:
-            '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
+        message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
         isSuccess: false,
       );
     }
-  } else {
-    showCustomSnackBar(
-      context: context,
-      message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
-      isSuccess: false,
-    );
   }
-}
 
   @override
   void dispose() {

@@ -10,30 +10,45 @@ class GoodsLoading extends GoodsState {}
 class GoodsDataLoaded extends GoodsState {
   final List<Goods> goods;
   final Pagination pagination;
-  final int currentPage;
   final List<SubCategoryAttributesData> subCategories;
-  final List<SubCategoryAttributesData> selectedSubCategories; // Добавляем поле для выбранных подкатегорий
+  final List<SubCategoryAttributesData> selectedSubCategories;
+  final List<String> selectedLabels;
+  final int currentPage;
 
   GoodsDataLoaded(
     this.goods,
     this.pagination,
     this.subCategories, {
+    this.selectedSubCategories = const [],
+    this.selectedLabels = const [],
     this.currentPage = 1,
-    this.selectedSubCategories = const [], // По умолчанию пустой список
   });
 
   GoodsDataLoaded merge(
     List<Goods> newGoods,
     Pagination newPagination,
-    List<SubCategoryAttributesData> newSubCategories, [
-    List<SubCategoryAttributesData>? newSelectedSubCategories, // Опционально для сохранения текущих
-  ]) {
+    List<SubCategoryAttributesData> newSubCategories,
+    List<SubCategoryAttributesData> newSelectedSubCategories,
+    List<String> newSelectedLabels,
+  ) {
+    // Фильтруем только уникальные товары по id
+    final uniqueGoods = [...goods, ...newGoods].fold<List<Goods>>(
+      [],
+      (uniqueList, item) {
+        if (!uniqueList.any((existing) => existing.id == item.id)) {
+          uniqueList.add(item);
+        }
+        return uniqueList;
+      },
+    );
+
     return GoodsDataLoaded(
-      [...goods, ...newGoods],
+      uniqueGoods,
       newPagination,
       newSubCategories,
-      selectedSubCategories: newSelectedSubCategories ?? selectedSubCategories,
-      currentPage: currentPage + 1,
+      selectedSubCategories: newSelectedSubCategories,
+      selectedLabels: newSelectedLabels,
+      currentPage: newPagination.currentPage,
     );
   }
 }

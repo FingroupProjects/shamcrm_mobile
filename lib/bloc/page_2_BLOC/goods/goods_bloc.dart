@@ -11,6 +11,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
   List<Goods> allGoods = [];
   List<SubCategoryAttributesData> subCategories = [];
+  List<String> selectedLabels = []; // Added to store selected labels
   List<SubCategoryAttributesData> selectedSubCategories = []; // Храним выбранные подкатегории
   bool allGoodsFetched = false;
   final int _perPage = 20;
@@ -31,166 +32,194 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     }
   }
 
-  Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
-    emit(GoodsLoading());
-    if (kDebugMode) {
-      print('GoodsBloc: Загрузка товаров, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
-    }
-
-    if (await _checkInternetConnection()) {
-      try {
-        final goods = await apiService.getGoods(
-          page: event.page,
-          search: _currentQuery,
-          filters: _currentFilters,
-        );
-
-        allGoods = goods;
-        allGoodsFetched = goods.length < _perPage;
-
-        final pagination = Pagination(
-          total: goods.length,
-          count: goods.length,
-          perPage: _perPage,
-          currentPage: event.page,
-          totalPages: allGoodsFetched ? event.page : event.page + 1,
-        );
-
-        if (goods.isEmpty) {
-          if (kDebugMode) {
-            print('GoodsBloc: Товары не найдены');
-          }
-          emit(GoodsEmpty());
-        } else {
-          if (kDebugMode) {
-            print('GoodsBloc: Загружено ${goods.length} товаров');
-          }
-          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('GoodsBloc: Ошибка загрузки товаров: $e');
-        }
-        emit(GoodsError('Не удалось загрузить товары: $e'));
-      }
-    } else {
-      if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету');
-      }
-      emit(GoodsError('Нет подключения к интернету'));
-    }
+ Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
+  emit(GoodsLoading());
+  if (kDebugMode) {
+    print('GoodsBloc: Загрузка товаров, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
   }
 
-  Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
-    emit(GoodsLoading());
-    _currentQuery = event.query.isEmpty ? null : event.query;
-    if (kDebugMode) {
-      print('GoodsBloc: Поиск товаров с запросом: ${_currentQuery}, фильтры: $_currentFilters');
-    }
+  if (await _checkInternetConnection()) {
+    try {
+      allGoods = []; // Очищаем список перед новой загрузкой
+      final goods = await apiService.getGoods(
+        page: event.page,
+        search: _currentQuery,
+        filters: _currentFilters,
+      );
 
-    if (await _checkInternetConnection()) {
-      try {
-        final filters = _currentFilters != null
-            ? Map<String, dynamic>.from(_currentFilters!)
-            : {'organization_id': '1', 'search': null, 'category_id': []};
-        filters['search'] = _currentQuery;
+      allGoods = goods;
+      allGoodsFetched = goods.length < _perPage;
 
-        final goods = await apiService.getGoods(
-          page: 1,
-          search: _currentQuery,
-          filters: filters,
-        );
+      final pagination = Pagination(
+        total: goods.length,
+        count: goods.length,
+        perPage: _perPage,
+        currentPage: event.page,
+        totalPages: allGoodsFetched ? event.page : event.page + 1,
+      );
 
-        allGoods = goods;
-        allGoodsFetched = goods.length < _perPage;
-
-        final pagination = Pagination(
-          total: goods.length,
-          count: goods.length,
-          perPage: _perPage,
-          currentPage: 1,
-          totalPages: allGoodsFetched ? 1 : 2,
-        );
-
-        if (goods.isEmpty) {
-          if (kDebugMode) {
-            print('GoodsBloc: Товары не найдены при поиске');
-          }
-          emit(GoodsEmpty());
-        } else {
-          if (kDebugMode) {
-            print('GoodsBloc: Найдено ${goods.length} товаров при поиске');
-          }
-          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
-        }
-      } catch (e) {
+      if (goods.isEmpty) {
         if (kDebugMode) {
-          print('GoodsBloc: Ошибка поиска товаров: $e');
+          print('GoodsBloc: Товары не найдены');
         }
-        emit(GoodsError('Не удалось выполнить поиск товаров: $e'));
+        emit(GoodsEmpty());
+      } else {
+        if (kDebugMode) {
+          print('GoodsBloc: Загружено ${goods.length} товаров');
+        }
+        emit(GoodsDataLoaded(
+          goods,
+          pagination,
+          subCategories,
+          selectedSubCategories: selectedSubCategories,
+          selectedLabels: selectedLabels,
+        ));
       }
-    } else {
+    } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при поиске');
+        print('GoodsBloc: Ошибка загрузки товаров: $e');
       }
-      emit(GoodsError('Нет подключения к интернету'));
+      emit(GoodsError('Не удалось загрузить товары: $e'));
     }
+  } else {
+    if (kDebugMode) {
+      print('GoodsBloc: Нет подключения к интернету');
+    }
+    emit(GoodsError('Нет подключения к интернету'));
+  }
+}
+
+Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
+  emit(GoodsLoading());
+  _currentQuery = event.query.isEmpty ? null : event.query;
+  if (kDebugMode) {
+    print('GoodsBloc: Поиск товаров с запросом: ${_currentQuery}, фильтры: $_currentFilters');
   }
 
+  if (await _checkInternetConnection()) {
+    try {
+      final filters = _currentFilters != null
+          ? Map<String, dynamic>.from(_currentFilters!)
+          : {
+              'organization_id': '1',
+              'search': null,
+              'category_id': [],
+              'labels': selectedLabels,
+            };
+      filters['search'] = _currentQuery;
+
+      allGoods = []; // Очищаем список перед поиском
+      final goods = await apiService.getGoods(
+        page: 1,
+        search: _currentQuery,
+        filters: filters,
+      );
+
+      allGoods = goods;
+      allGoodsFetched = goods.length < _perPage;
+
+      final pagination = Pagination(
+        total: goods.length,
+        count: goods.length,
+        perPage: _perPage,
+        currentPage: 1,
+        totalPages: allGoodsFetched ? 1 : 2,
+      );
+
+      if (goods.isEmpty) {
+        if (kDebugMode) {
+          print('GoodsBloc: Товары не найдены при поиске');
+        }
+        emit(GoodsEmpty());
+      } else {
+        if (kDebugMode) {
+          print('GoodsBloc: Найдено ${goods.length} товаров при поиске');
+        }
+        emit(GoodsDataLoaded(
+          goods,
+          pagination,
+          subCategories,
+          selectedSubCategories: selectedSubCategories,
+          selectedLabels: selectedLabels,
+        ));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('GoodsBloc: Ошибка поиска товаров: $e');
+      }
+      emit(GoodsError('Не удалось выполнить поиск товаров: $e'));
+    }
+  } else {
+    if (kDebugMode) {
+      print('GoodsBloc: Нет подключения к интернету при поиске');
+    }
+    emit(GoodsError('Нет подключения к интернету'));
+  }
+}
   Future<void> _fetchMoreGoods(FetchMoreGoods event, Emitter<GoodsState> emit) async {
-    if (allGoodsFetched || state is! GoodsDataLoaded) {
-      if (kDebugMode) {
-        print('GoodsBloc: Загрузка дополнительных товаров прервана: все товары загружены или неверное состояние');
-      }
-      return;
+  if (allGoodsFetched || state is! GoodsDataLoaded) {
+    if (kDebugMode) {
+      print('GoodsBloc: Загрузка дополнительных товаров прервана: все товары загружены или неверное состояние');
     }
-
-    if (await _checkInternetConnection()) {
-      try {
-        if (kDebugMode) {
-          print('GoodsBloc: Загрузка дополнительных товаров, страница: ${event.currentPage + 1}, поиск: $_currentQuery, фильтры: $_currentFilters');
-        }
-        final newGoods = await apiService.getGoods(
-          page: event.currentPage + 1,
-          search: _currentQuery,
-          filters: _currentFilters,
-        );
-
-        allGoods.addAll(newGoods);
-        allGoodsFetched = newGoods.length < _perPage;
-
-        final currentState = state as GoodsDataLoaded;
-        final newPagination = Pagination(
-          total: allGoods.length,
-          count: newGoods.length,
-          perPage: _perPage,
-          currentPage: event.currentPage + 1,
-          totalPages: allGoodsFetched ? event.currentPage + 1 : event.currentPage + 2,
-        );
-
-        if (kDebugMode) {
-          print('GoodsBloc: Загружено ${newGoods.length} дополнительных товаров');
-        }
-        emit(currentState.merge(newGoods, newPagination, subCategories, selectedSubCategories));
-      } catch (e) {
-        if (kDebugMode) {
-          print('GoodsBloc: Ошибка загрузки дополнительных товаров: $e');
-        }
-        emit(GoodsError('Не удалось загрузить дополнительные товары: $e'));
-      }
-    } else {
-      if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при загрузке дополнительных товаров');
-      }
-      emit(GoodsError('Нет подключения к интернету'));
-    }
+    return;
   }
 
+  if (await _checkInternetConnection()) {
+    try {
+      if (kDebugMode) {
+        print('GoodsBloc: Загрузка дополнительных товаров, страница: ${event.currentPage + 1}, поиск: $_currentQuery, фильтры: $_currentFilters');
+      }
+      final newGoods = await apiService.getGoods(
+        page: event.currentPage + 1,
+        search: _currentQuery,
+        filters: _currentFilters,
+      );
+
+      // Проверяем, не содержатся ли новые товары уже в allGoods
+      final uniqueNewGoods = newGoods.where((newItem) => !allGoods.any((existingItem) => existingItem.id == newItem.id)).toList();
+      allGoods.addAll(uniqueNewGoods);
+      allGoodsFetched = uniqueNewGoods.length < _perPage;
+
+      final currentState = state as GoodsDataLoaded;
+      final newPagination = Pagination(
+        total: allGoods.length,
+        count: uniqueNewGoods.length,
+        perPage: _perPage,
+        currentPage: event.currentPage + 1,
+        totalPages: allGoodsFetched ? event.currentPage + 1 : event.currentPage + 2,
+      );
+
+      if (kDebugMode) {
+        print('GoodsBloc: Загружено ${uniqueNewGoods.length} новых товаров');
+      }
+      emit(currentState.merge(
+        uniqueNewGoods,
+        newPagination,
+        currentState.subCategories,
+        currentState.selectedSubCategories,
+        currentState.selectedLabels,
+      ));
+    } catch (e) {
+      if (kDebugMode) {
+        print('GoodsBloc: Ошибка загрузки дополнительных товаров: $e');
+      }
+      emit(GoodsError('Не удалось загрузить дополнительные товары: $e'));
+    }
+  } else {
+    if (kDebugMode) {
+      print('GoodsBloc: Нет подключения к интернету при загрузке дополнительных товаров');
+    }
+    emit(GoodsError('Нет подключения к интернету'));
+  }
+}
   Future<void> _filterGoods(FilterGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
     _currentFilters = event.filters.isEmpty ? null : Map.from(event.filters);
+    selectedLabels = _currentFilters != null && _currentFilters!['labels'] != null
+        ? List<String>.from(_currentFilters!['labels'])
+        : []; // Update selectedLabels
     if (kDebugMode) {
-      print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery');
+      print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery, метки: $selectedLabels');
     }
 
     if (await _checkInternetConnection()) {
@@ -221,7 +250,13 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           if (kDebugMode) {
             print('GoodsBloc: Найдено ${goods.length} товаров после применения фильтров');
           }
-          emit(GoodsDataLoaded(goods, pagination, subCategories, selectedSubCategories: selectedSubCategories));
+          emit(GoodsDataLoaded(
+            goods,
+            pagination,
+            subCategories,
+            selectedSubCategories: selectedSubCategories,
+            selectedLabels: selectedLabels, // Added
+          ));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -255,10 +290,17 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
             currentState.pagination,
             subCategories,
             selectedSubCategories: selectedSubCategories,
+            selectedLabels: selectedLabels, // Added
             currentPage: currentState.currentPage,
           ));
         } else {
-          emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories, selectedSubCategories: selectedSubCategories));
+          emit(GoodsDataLoaded(
+            [],
+            Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1),
+            subCategories,
+            selectedSubCategories: selectedSubCategories,
+            selectedLabels: selectedLabels, // Added
+          ));
         }
       } catch (e) {
         if (kDebugMode) {
@@ -276,9 +318,10 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
   Future<void> _resetSubCategories(ResetSubCategories event, Emitter<GoodsState> emit) async {
     if (kDebugMode) {
-      print('GoodsBloc: Сброс выбранных подкатегорий');
+      print('GoodsBloc: Сброс выбранных подкатегорий и меток');
     }
     selectedSubCategories = [];
+    selectedLabels = []; // Reset labels
     if (state is GoodsDataLoaded) {
       final currentState = state as GoodsDataLoaded;
       emit(GoodsDataLoaded(
@@ -286,60 +329,70 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         currentState.pagination,
         currentState.subCategories,
         selectedSubCategories: selectedSubCategories,
+        selectedLabels: selectedLabels, // Added
         currentPage: currentState.currentPage,
       ));
     } else {
-      emit(GoodsDataLoaded([], Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1), subCategories, selectedSubCategories: selectedSubCategories));
+      emit(GoodsDataLoaded(
+        [],
+        Pagination(total: 0, count: 0, perPage: _perPage, currentPage: 1, totalPages: 1),
+        subCategories,
+        selectedSubCategories: selectedSubCategories,
+        selectedLabels: selectedLabels, // Added
+      ));
     }
   }
 
-  Future<void> _createGoods(CreateGoods event, Emitter<GoodsState> emit) async {
-    emit(GoodsLoading());
-    if (kDebugMode) {
-      print('GoodsBloc: Создание товара: ${event.name}');
-    }
+ Future<void> _createGoods(CreateGoods event, Emitter<GoodsState> emit) async {
+  emit(GoodsLoading());
+  if (kDebugMode) {
+    print('GoodsBloc: Создание товара: ${event.name}');
+  }
 
-    if (await _checkInternetConnection()) {
-      try {
-        final response = await apiService.createGoods(
-          name: event.name,
-          parentId: event.parentId,
-          description: event.description,
-          quantity: event.quantity,
-          attributes: event.attributes,
-          variants: event.variants,
-          images: event.images ?? [],
-          isActive: event.isActive,
-          discountPrice: event.discountPrice,
-          branch: event.branch,
-          mainImageIndex: event.mainImageIndex, // Передаём mainImageIndex
-        );
+  if (await _checkInternetConnection()) {
+    try {
+      final response = await apiService.createGoods(
+        name: event.name,
+        parentId: event.parentId,
+        description: event.description,
+        quantity: event.quantity,
+        attributes: event.attributes,
+        variants: event.variants,
+        images: event.images ?? [],
+        isActive: event.isActive,
+        discountPrice: event.discountPrice,
+        branch: event.branch,
+        mainImageIndex: event.mainImageIndex,
+        isNew: event.isNew, // Add label fields
+        isPopular: event.isPopular,
+        isSale: event.isSale,
+      );
 
-        if (response['success'] == true) {
-          if (kDebugMode) {
-            print('GoodsBloc: Товар успешно создан');
-          }
-          emit(GoodsSuccess("Товар успешно создан"));
-          add(FetchGoods(page: 1));
-        } else {
-          if (kDebugMode) {
-            print('GoodsBloc: Ошибка создания товара: ${response['message']}');
-          }
-          emit(GoodsError(response['message'] ?? 'Не удалось создать товар'));
-        }
-      } catch (e) {
+      if (response['success'] == true) {
         if (kDebugMode) {
-          print('GoodsBloc: Ошибка при создании товара: $e');
+          print('GoodsBloc: Товар успешно создан');
         }
-        emit(GoodsError('Ошибка при создании товара: ${e.toString()}'));
+        emit(GoodsSuccess("Товар успешно создан"));
+        add(FetchGoods(page: 1));
+      } else {
+        if (kDebugMode) {
+          print('GoodsBloc: Ошибка создания товара: ${response['message']}');
+        }
+        emit(GoodsError(response['message'] ?? 'Не удалось создать товар'));
       }
-    } else {
+    } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при создании товара');
+        print('GoodsBloc: Ошибка при создании товара: $e');
       }
-      emit(GoodsError('Нет подключения к интернету'));
+      emit(GoodsError('Ошибка при создании товара: ${e.toString()}'));
     }
+  } else {
+    if (kDebugMode) {
+      print('GoodsBloc: Нет подключения к интернету при создании товара');
+    }
+    emit(GoodsError('Нет подключения к интернету'));
   }
+}
 
  Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
   emit(GoodsLoading());
@@ -363,6 +416,9 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         branch: event.branch,
         comments: event.comments, // Передаём комментарии
         mainImageIndex: event.mainImageIndex, // Передаём индекс главного изображения
+        isNew: event.isNew, // Added
+        isPopular: event.isPopular, // Added
+        isSale: event.isSale, // Added
       );
 
       if (response['success'] == true) {

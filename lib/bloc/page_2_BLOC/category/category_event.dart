@@ -78,3 +78,12 @@ class DeleteCategory extends CategoryEvent {
   @override
   List<Object?> get props => [catgeoryId];
 }
+
+class FetchSubCategoryById extends CategoryEvent {
+  final int categoryId;
+
+  FetchSubCategoryById(this.categoryId);
+
+  @override
+  List<Object> get props => [categoryId];
+}

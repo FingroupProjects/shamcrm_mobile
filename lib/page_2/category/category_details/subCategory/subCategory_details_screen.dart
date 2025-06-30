@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_edit_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_delete.dart';
+import 'package:crm_task_manager/page_2/category/category_details/subCategory_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
@@ -217,8 +218,8 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                               ),
                       ),
                     ),
-                  _buildDetailsList(),
                   if (_currentCategory.attributes.isNotEmpty) _buildAttributesSection(),
+    _buildSubCategoryList(_currentCategory.subcategories),
                 ],
               ),
             );
@@ -228,6 +229,228 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
     );
   }
 
+Widget _buildSubCategoryList(List<CategoryDataById> categories) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildTitleRow(AppLocalizations.of(context)!.translate('subcategories')),
+      SizedBox(height: 8),
+      if (categories.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Color(0xffF4F7FD),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('empty'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        )
+      else
+        Container(
+          height: MediaQuery.of(context).size.height * 0.4, // Уменьшим высоту, чтобы не перегружать экран
+          child: ListView.builder(
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              return _buildSubCategoryItem(categories[index]);
+            },
+          ),
+        ),
+    ],
+  );
+}
+
+Widget _buildSubCategoryItem(CategoryDataById category) {
+  return GestureDetector(
+    onTap: () => _navigateToSubCategoryDetails(category),
+    child: Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Color(0xffF4F7FD),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+              ),
+              child: category.image != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        '$baseUrl/${category.image}',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildNoPhotoPlaceholder(),
+                      ),
+                    )
+                  : _buildNoPhotoPlaceholder(),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    category.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
+                  if (category.attributes.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('characteristics'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            ...category.attributes.take(4).map((attr) => 
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (category.attributes.length > 3)
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '+${category.attributes.length - 3}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildNoPhotoPlaceholder() {
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Icon(Icons.photo_camera, size: 30, color: Color(0xff99A4BA)),
+      SizedBox(height: 4),
+      Text(
+        AppLocalizations.of(context)!.translate("no_photo"),
+        style: TextStyle(
+          fontSize: 12,
+          color: Color(0xff99A4BA),
+          fontFamily: 'Gilroy',
+        ),
+      ),
+    ],
+  );
+}
+
+void _navigateToSubCategoryDetails(CategoryDataById category) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => SubCategoryDetailsScreen(
+        ctgId: widget.ctgId,
+        category: category,
+      ),
+    ),
+  );
+}
+
+Row _buildTitleRow(String title) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Color(0xff1E2E52),
+        ),
+      ),
+      TextButton(
+        onPressed: () {
+          SubCategoryAddBottomSheet.show(context, _currentCategory.id);
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          backgroundColor: Color(0xff1E2E52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.translate('add'),
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ],
+  );
+}
   Widget _buildAttributesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

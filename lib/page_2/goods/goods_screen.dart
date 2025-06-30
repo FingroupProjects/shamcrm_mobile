@@ -152,7 +152,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           },
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
-          currentFilters: _currentFilters, // Pass current filters
+          currentFilters: _currentFilters,
         ),
       ),
       body: isClickAvatarIcon
@@ -224,6 +224,9 @@ class _GoodsScreenState extends State<GoodsScreen> {
                           goodsCategory: goods.category.name,
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
+                          isNew: goods.isNew, // Added
+                          isPopular: goods.isPopular, // Added
+                          isSale: goods.isSale, // Added
                         ),
                       );
                     },

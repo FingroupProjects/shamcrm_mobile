@@ -1076,7 +1076,12 @@
 "select_field_type": "Выберите тип поля",
 "name_too_short":"Поле название не должно быть короче трех символов",
 "select_parent_category":"Выберите родительскую категорию",
-"parent_category_details":"Родительская категория"
+"parent_category_details":"Родительская категория",
+"label": "Метка",
+  "hit": "Хит",
+  "promotion": "Акция",
+  "newest": "Новинка",
+  "select_label": "Выберите метку"
 
 
 }

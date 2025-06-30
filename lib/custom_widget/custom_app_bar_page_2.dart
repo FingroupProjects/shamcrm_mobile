@@ -23,6 +23,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final VoidCallback? onGoodsResetFilters;
   final Map<String, dynamic> currentFilters; // Added to receive filter data
+  final List<String>? initialLabels; // Added
 
   CustomAppBarPage2({
     super.key,
@@ -35,6 +36,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
+    this.initialLabels, // Added
     this.showFilterOrderIcon = true,
     this.onFilterGoodsSelected,
     this.onGoodsResetFilters,
@@ -538,58 +540,66 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     );
   }
 
-  void navigateToGoodsFilterScreen(BuildContext context) {
-    if (kDebugMode) {
-      print('CustomAppBarPage2: Переход к экрану фильтров товаров');
-      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
-    }
-    // Extract initial filter data
-    List<int>? initialCategoryIds;
-    double? initialDiscountPercent;
-    
-    if (widget.currentFilters.containsKey('category_id') &&
-        widget.currentFilters['category_id'] is List &&
-        widget.currentFilters['category_id'].isNotEmpty) {
-      initialCategoryIds = (widget.currentFilters['category_id'] as List)
-          .map((id) => int.tryParse(id.toString()) ?? 0)
-          .where((id) => id != 0)
-          .toList();
-    }
-    
-    if (widget.currentFilters.containsKey('discount_percent')) {
-      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
-          ? widget.currentFilters['discount_percent']
-          : double.tryParse(widget.currentFilters['discount_percent'].toString());
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GoodsFilterScreen(
-          onSelectedDataFilter: (filters) {
-            if (kDebugMode) {
-              print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
-            }
-            setState(() {
-              _isGoodsFiltering = filters.isNotEmpty;
-            });
-            widget.onFilterGoodsSelected?.call(filters);
-          },
-          onResetFilters: () {
-            if (kDebugMode) {
-              print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
-            }
-            setState(() {
-              _isGoodsFiltering = false;
-            });
-            widget.onGoodsResetFilters?.call();
-          },
-          initialCategoryIds: initialCategoryIds,
-          initialDiscountPercent: initialDiscountPercent,
-        ),
-      ),
-    );
+ void navigateToGoodsFilterScreen(BuildContext context) {
+  if (kDebugMode) {
+    print('CustomAppBarPage2: Переход к экрану фильтров товаров');
+    print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
   }
+  // Extract initial filter data
+  List<int>? initialCategoryIds;
+  double? initialDiscountPercent;
+  List<String>? initialLabels;
+
+  if (widget.currentFilters.containsKey('category_id') &&
+      widget.currentFilters['category_id'] is List &&
+      widget.currentFilters['category_id'].isNotEmpty) {
+    initialCategoryIds = (widget.currentFilters['category_id'] as List)
+        .map((id) => int.tryParse(id.toString()) ?? 0)
+        .where((id) => id != 0)
+        .toList();
+  }
+
+  if (widget.currentFilters.containsKey('discount_percent')) {
+    initialDiscountPercent = widget.currentFilters['discount_percent'] is double
+        ? widget.currentFilters['discount_percent']
+        : double.tryParse(widget.currentFilters['discount_percent'].toString());
+  }
+
+  if (widget.currentFilters.containsKey('labels') &&
+      widget.currentFilters['labels'] is List &&
+      widget.currentFilters['labels'].isNotEmpty) {
+    initialLabels = List<String>.from(widget.currentFilters['labels']);
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => GoodsFilterScreen(
+        onSelectedDataFilter: (filters) {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
+          }
+          setState(() {
+            _isGoodsFiltering = filters.isNotEmpty;
+          });
+          widget.onFilterGoodsSelected?.call(filters);
+        },
+        onResetFilters: () {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
+          }
+          setState(() {
+            _isGoodsFiltering = false;
+          });
+          widget.onGoodsResetFilters?.call();
+        },
+        initialCategoryIds: initialCategoryIds,
+        initialDiscountPercent: initialDiscountPercent,
+        initialLabels: initialLabels, // Pass initial labels
+      ),
+    ),
+  );
+}
 
   void navigateToOrderFilterScreen(BuildContext context) {
     if (kDebugMode) {

@@ -171,7 +171,11 @@ class _AttributesHandlerState extends State<AttributesHandler> {
               ),
               const SizedBox(height: 4),
               CustomCharacteristicField(
-                controller: attributeControllers[attribute.name]!,
+               controller: attributeControllers.putIfAbsent(
+  attribute.name,
+  () => TextEditingController(),
+),
+
                 hintText:
                     '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
               ),

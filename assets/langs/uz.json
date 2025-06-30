@@ -1087,7 +1087,13 @@
 "select_field_type": "Maydon turini kiriting",
 "name_too_short": "Nom maydoni uchta belgidan kam bo‘lmasligi kerak",
 "select_parent_category": "Yuqori toifani tanlang",
-"parent_category_details": "Yuqori toifa"
+"parent_category_details": "Yuqori toifa",
+"label": "Yorliq",
+"hit": "Xit",
+"promotion": "Aksiya",
+"newest": "Yangi",
+"select_label": "Yorliqni tanlang"
+
 
 
 

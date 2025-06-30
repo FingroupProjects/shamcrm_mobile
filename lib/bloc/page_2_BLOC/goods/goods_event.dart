@@ -47,7 +47,10 @@ class CreateGoods extends GoodsEvent {
   final bool isActive;
   final double? discountPrice;
   final int? branch;
-  final int? mainImageIndex; // Добавляем поле
+  final int? mainImageIndex;
+  final bool isNew; // Added
+  final bool isPopular; // Added
+  final bool isSale; // Added
 
   CreateGoods({
     required this.name,
@@ -61,7 +64,10 @@ class CreateGoods extends GoodsEvent {
     required this.isActive,
     this.discountPrice,
     required this.branch,
-    this.mainImageIndex,  
+    this.mainImageIndex,
+    required this.isNew,
+    required this.isPopular,
+    required this.isSale,
   });
 }
 
@@ -80,6 +86,9 @@ class UpdateGoods extends GoodsEvent {
   final int? branch;
   final String? comments; // Добавляем поле comments
   final int? mainImageIndex; // Добавляем поле mainImageIndex
+  final bool isNew; // Added
+  final bool isPopular; // Added
+  final bool isSale; // Added
 
   UpdateGoods({
     required this.goodId,
@@ -96,5 +105,8 @@ class UpdateGoods extends GoodsEvent {
     required this.branch,
     this.comments,
     this.mainImageIndex,
+    required this.isNew, // Added
+    required this.isPopular, // Added
+    required this.isSale, // Added
   });
 }

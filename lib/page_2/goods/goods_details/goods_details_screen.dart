@@ -419,6 +419,20 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 Widget _buildDetailsList(Goods goods) {
+  // Build the labels string
+  List<String> labels = [];
+  if (goods.isPopular) {
+    labels.add(AppLocalizations.of(context)!.translate('hit'));
+  }
+  if (goods.isSale) {
+    labels.add(AppLocalizations.of(context)!.translate('promotion'));
+  }
+  if (goods.isNew) {
+    labels.add(AppLocalizations.of(context)!.translate('new'));
+  }
+  String labelsValue = labels.isNotEmpty
+      ? labels.join(', ')
+      : AppLocalizations.of(context)!.translate('not_specified'); 
   details = [
     {
       'label': AppLocalizations.of(context)!.translate('goods_name_details'),
@@ -433,6 +447,11 @@ Widget _buildDetailsList(Goods goods) {
       'value': goods.category.name ?? '',
     },
     {
+      'label': AppLocalizations.of(context)!.translate('label'),
+      'value': labelsValue,
+    },
+    {
+
       'label': AppLocalizations.of(context)!.translate('branch_details'),
       'value': goods.branches != null && goods.branches!.isNotEmpty
           ? goods.branches!.map((branch) => branch.name).join(', ')
