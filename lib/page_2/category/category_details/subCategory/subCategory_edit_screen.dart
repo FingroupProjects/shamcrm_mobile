@@ -28,6 +28,7 @@ class SubCategoryEditBottomSheet {
     File? _image = initialImage;
     bool _isImageSelected = initialImage != null;
     bool _isImageChanged = false;
+    
     List<CustomField> customFields = initialAttributes
         .map((attr) => CustomField(
               name: attr.name,
@@ -139,7 +140,7 @@ class SubCategoryEditBottomSheet {
                                   setState(() {
                                     selectedType = type;
                                   });
-                                },
+                                }, isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -285,14 +286,14 @@ class SubCategoryEditBottomSheet {
                                           color: Color(0x991E2E52),
                                         ),
                                       ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
-                                        onPressed: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                      ),
+                                      // trailing: IconButton(
+                                      //   icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       customFields.remove(field);
+                                      //     });
+                                      //   },
+                                      // ),
                                     ),
                                   );
                                 }).toList(),

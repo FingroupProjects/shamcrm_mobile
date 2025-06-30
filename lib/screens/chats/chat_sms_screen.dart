@@ -102,22 +102,27 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  @override
-  void initState() {
-    _checkPermissions();
-    context.read<MessagingCubit>().getMessages(widget.chatId);
+ @override
+void initState() {
+  _checkPermissions();
+  context.read<MessagingCubit>().getMessages(widget.chatId);
 
-    context.read<ListenSenderFileCubit>().updateValue(false);
-    context.read<ListenSenderVoiceCubit>().updateValue(false);
-    context.read<ListenSenderTextCubit>().updateValue(false);
+  context.read<ListenSenderFileCubit>().updateValue(false);
+  context.read<ListenSenderVoiceCubit>().updateValue(false);
+  context.read<ListenSenderTextCubit>().updateValue(false);
 
-    setUpServices();
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-      _fetchBaseUrl();
+  setUpServices();
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _fetchBaseUrl();
+    // Move scroll to bottom after messages are loaded
+    context.read<MessagingCubit>().stream.listen((state) {
+      if (state is MessagesLoadedState || state is PinnedMessagesState) {
+        _scrollToBottom();
+      }
     });
-  }
+  });
+}
 
   Future<void> _playSound() async {
     try {
@@ -272,15 +277,14 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
 
 
 int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-  for (int i = messages.length - 1; i >= 0; i--) {
+  for (int i = 0; i < messages.length; i++) {
     final messageDate = DateTime.parse(messages[i].createMessateTime);
     if (isSameDay(messageDate, targetDate)) {
-      return i; // Возвращаем индекс последнего сообщения за дату
+      return i; // Возвращаем индекс первого сообщения за дату
     }
   }
   return -1; // Если сообщений нет
 }
-
 void _scrollToMessageIndex(DateTime selectedDate) {
   final state = context.read<MessagingCubit>().state;
   if (state is MessagesLoadedState || state is PinnedMessagesState) {
@@ -641,202 +645,200 @@ Widget build(BuildContext context) {
 }
 
   void _scrollToMessageReply(int messageId) {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState || state is PinnedMessagesState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : (state as PinnedMessagesState).messages;
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState || state is PinnedMessagesState) {
+    final messages = state is MessagesLoadedState
+        ? state.messages
+        : (state as PinnedMessagesState).messages;
 
-      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+    final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
 
-      if (messageIndex != -1) {
-        _scrollControllerMessage.scrollTo(
-          index: messageIndex,
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.easeInOut,
-        );
+    if (messageIndex != -1) {
+      _scrollControllerMessage.scrollTo(
+        index: messageIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
 
-        setState(() {
-          _highlightedMessageId = messageId;
-        });
+      setState(() {
+        _highlightedMessageId = messageId;
+      });
 
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && _highlightedMessageId == messageId) {
-            setState(() {
-              _highlightedMessageId = null;
-            });
-          }
-        });
-      }
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _highlightedMessageId == messageId) {
+          setState(() {
+            _highlightedMessageId = null;
+          });
+        }
+      });
     }
   }
+}
 
-  Widget messageListUi() {
-    return BlocBuilder<MessagingCubit, MessagingState>(
-      builder: (context, state) {
-        if (state is MessagesErrorState) {
-          return Center(child: Text("Ошибка!"));
+Widget messageListUi() {
+  return BlocBuilder<MessagingCubit, MessagingState>(
+    builder: (context, state) {
+      if (state is MessagesErrorState) {
+        return Center(child: Text("Ошибка!"));
+      }
+      if (state is MessagesLoadingState) {
+        return Center(child: CircularProgressIndicator.adaptive());
+      }
+      if (state is MessagesLoadedState ||
+          state is ReplyingToMessageState ||
+          state is PinnedMessagesState ||
+          state is EditingMessageState) {
+        final messages = state is MessagesLoadedState
+            ? state.messages
+            : state is ReplyingToMessageState
+                ? state.messages
+                : state is PinnedMessagesState
+                    ? state.messages
+                    : (state as EditingMessageState).messages;
+        final pinnedMessages = state is PinnedMessagesState
+            ? state.pinnedMessages
+            : state is ReplyingToMessageState
+                ? state.pinnedMessages
+                : state is EditingMessageState
+                    ? state.pinnedMessages
+                    : [];
+
+        if (messages.isEmpty) {
+          return Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('not_sms'),
+              style: TextStyle(color: AppColors.textPrimary700),
+            ),
+          );
         }
-        if (state is MessagesLoadingState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadedState ||
-            state is ReplyingToMessageState ||
-            state is PinnedMessagesState ||
-            state is EditingMessageState) {
-          final messages = state is MessagesLoadedState
-              ? state.messages
-              : state is ReplyingToMessageState
-                  ? state.messages
-                  : state is PinnedMessagesState
-                      ? state.messages
-                      : (state as EditingMessageState).messages;
-          final pinnedMessages = state is PinnedMessagesState
-              ? state.pinnedMessages
-              : state is ReplyingToMessageState
-                  ? state.pinnedMessages
-                  : state is EditingMessageState
-                      ? state.pinnedMessages
-                      : [];
 
-          if (messages.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: AppColors.textPrimary700),
-              ),
-            );
-          }
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _scrollControllerMessage,
+                  itemCount: messages.length,
+                  initialScrollIndex: messages.length - 1, // Позиционируем на последнее сообщение
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final messageDate =
+                        DateTime.parse(message.createMessateTime);
 
-          return Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: ScrollablePositionedList.builder(
-                    itemScrollController: _scrollControllerMessage,
-                    itemCount: messages.length,
-                    reverse: true,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final messageDate =
-                          DateTime.parse(message.createMessateTime);
+                    bool shouldShowDate = false;
+                    if (index == 0) {
+                      shouldShowDate = true;
+                    } else {
+                      final previousMessage = messages[index - 1];
+                      final previousMessageDate =
+                          DateTime.parse(previousMessage.createMessateTime);
+                      shouldShowDate =
+                          !isSameDay(messageDate, previousMessageDate);
+                    }
 
-                      bool shouldShowDate = false;
-                      if (index == messages.length - 1) {
-                        shouldShowDate = true;
-                      } else {
-                        final previousMessage = messages[index + 1];
-                        final previousMessageDate =
-                            DateTime.parse(previousMessage.createMessateTime);
-                        shouldShowDate =
-                            !isSameDay(messageDate, previousMessageDate);
-                      }
+                    bool isFirstMessage = index == 0;
 
-                      // Определяем, является ли сообщение первым
-                      bool isFirstMessage = index == messages.length - 1;
+                    List<Widget> widgets = [];
 
-                      List<Widget> widgets = [];
-
-                      if (shouldShowDate) {
-                        widgets.add(
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8),
-                            child: GestureDetector(
-                              onTap: () => _showDatePicker(context, messages),
-                              child: Center(
-                                child: Text(
-                                  formatDate(messageDate),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black,
-                                  ),
+                    if (shouldShowDate) {
+                      widgets.add(
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, bottom: 8),
+                          child: GestureDetector(
+                            onTap: () => _showDatePicker(context, messages),
+                            child: Center(
+                              child: Text(
+                                formatDate(messageDate),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: "Gilroy",
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.black,
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      }
-                      widgets.add(
-                        MessageItemWidget(
-                          message: message,
-                          chatId: widget.chatId,
-                          endPointInTab: widget.endPointInTab,
-                          apiServiceDownload: widget.apiServiceDownload,
-                          baseUrl: baseUrl,
-                          onReplyTap: _scrollToMessageReply,
-                          highlightedMessageId: _highlightedMessageId,
-                          onMenuStateChanged: (isOpen) {
-                            setState(() {
-                              _isMenuOpen = isOpen;
-                            });
-                          },
-                          focusNode: _focusNode,
-                          isRead: message.isRead,
-                          isFirstMessage: isFirstMessage,
                         ),
                       );
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: widgets,
-                      );
-                    },
-                  ),
+                    }
+                    widgets.add(
+                      MessageItemWidget(
+                        message: message,
+                        chatId: widget.chatId,
+                        endPointInTab: widget.endPointInTab,
+                        apiServiceDownload: widget.apiServiceDownload,
+                        baseUrl: baseUrl,
+                        onReplyTap: _scrollToMessageReply,
+                        highlightedMessageId: _highlightedMessageId,
+                        onMenuStateChanged: (isOpen) {
+                          setState(() {
+                            _isMenuOpen = isOpen;
+                          });
+                        },
+                        focusNode: _focusNode,
+                        isRead: message.isRead,
+                        isFirstMessage: isFirstMessage,
+                      ),
+                    );
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: widgets,
+                    );
+                  },
                 ),
               ),
-              if (pinnedMessages.isNotEmpty)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Column(
-                    children: [
-                      Material(
-                        color: Colors.transparent,
-                        child: PinnedMessageWidget(
-                          message: pinnedMessages.last.text,
-                          onUnpin: () {
+            ),
+            if (pinnedMessages.isNotEmpty)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: PinnedMessageWidget(
+                        message: pinnedMessages.last.text,
+                        onUnpin: () {
+                          context
+                              .read<MessagingCubit>()
+                              .unpinMessage(pinnedMessages.last);
+                        },
+                        onTap: () {
+                          _scrollToMessageReply(pinnedMessages.last.id);
+                          if (pinnedMessages.isNotEmpty) {
+                            final updatedPinnedMessages =
+                                List<Message>.from(pinnedMessages);
+                            final firstPinnedMessage =
+                                updatedPinnedMessages.removeAt(0);
+                            updatedPinnedMessages.add(firstPinnedMessage);
                             context
                                 .read<MessagingCubit>()
-                                .unpinMessage(pinnedMessages.last);
-                          },
-                          onTap: () {
-                            _scrollToMessageReply(pinnedMessages.last.id);
-                            if (pinnedMessages.isNotEmpty) {
-                              final updatedPinnedMessages =
-                                  List<Message>.from(pinnedMessages);
-                              final firstPinnedMessage =
-                                  updatedPinnedMessages.removeAt(0);
-                              updatedPinnedMessages.add(firstPinnedMessage);
-                              context
-                                  .read<MessagingCubit>()
-                                  .updatePinnedMessages(updatedPinnedMessages);
-                            }
-                          },
-                        ),
+                                .updatePinnedMessages(updatedPinnedMessages);
+                          }
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              if (_isMenuOpen)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.3),
-                  ),
+              ),
+            if (_isMenuOpen)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
                 ),
-            ],
-          );
-        }
-        return Container();
-      },
-    );
-  }
-
+              ),
+          ],
+        );
+      }
+      return Container();
+    },
+  );
+}
   Widget inputWidget() {
     return InputField(
       onSend: _onSendInButton,
@@ -1106,16 +1108,27 @@ Widget build(BuildContext context) {
     }
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.pixels,
+void _scrollToBottom() {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState || state is PinnedMessagesState) {
+    final messages = state is MessagesLoadedState
+        ? state.messages
+        : (state as PinnedMessagesState).messages;
+    
+    if (_scrollControllerMessage.isAttached && messages.isNotEmpty) {
+      _scrollControllerMessage.scrollTo(
+        index: messages.length - 1,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+      debugPrint('Scrolled to index: ${messages.length - 1}');
+    } else {
+      debugPrint('Cannot scroll: controller not attached or messages empty');
     }
+  } else {
+    debugPrint('Cannot scroll: state is ${state.runtimeType}');
   }
-
+}
   Future<void> _onSendInButton(
       String messageText, String? replyMessageId) async {
     if (messageText.trim().isNotEmpty) {

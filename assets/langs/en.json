@@ -1071,7 +1071,16 @@
 "field_type_date": "Date",
 "field_type": "Field type",
 "select_field_type": "Enter field type",
-"name_too_short": "The name field must not be shorter than three characters"
+"name_too_short": "The name field must not be shorter than three characters",
+"select_parent_category": "Select parent category",
+"parent_category_details": "Parent category",
+"label": "Label",
+"hit": "Hit",
+"promotion": "Promotion",
+"newest": "Newest",
+"select_label": "Select a label"
+
+
 
 
 

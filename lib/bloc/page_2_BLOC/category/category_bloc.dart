@@ -3,12 +3,14 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryById.dart'; // Для SubCategoryResponseASD
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   final ApiService apiService;
   List<CategoryData> _categories = [];
   String? _currentQuery;
+  final Map<int, CategoryDataById> _categoryCache = {}; // Кэш для категорий по ID
 
   CategoryBloc(this.apiService) : super(CategoryInitial()) {
     on<FetchCategories>(_fetchCategories);
@@ -17,6 +19,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     on<DeleteCategory>(_deleteCategory);
     on<UpdateSubCategory>(_updateSubCategory);
     on<SearchCategories>(_searchCategories);
+    on<FetchSubCategoryById>(_fetchSubCategoryById); // Новое событие для подкатегорий
   }
 
   Future<void> _fetchCategories(FetchCategories event, Emitter<CategoryState> emit) async {
@@ -157,6 +160,22 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
       }
     } else {
       emit(CategoryError('Нет подключения к интернету'));
+    }
+  }
+
+  Future<void> _fetchSubCategoryById(FetchSubCategoryById event, Emitter<CategoryState> emit) async {
+    if (_categoryCache.containsKey(event.categoryId)) {
+      emit(SubCategoryByIdLoaded(_categoryCache[event.categoryId]!));
+      return;
+    }
+
+    emit(CategoryLoading());
+    try {
+      final category = await apiService.getSubCategoryById(event.categoryId);
+      _categoryCache[event.categoryId] = category.categories.first;
+      emit(SubCategoryByIdLoaded(category.categories.first));
+    } catch (e) {
+      emit(CategoryError('Не удалось загрузить подкатегорию!'));
     }
   }
 

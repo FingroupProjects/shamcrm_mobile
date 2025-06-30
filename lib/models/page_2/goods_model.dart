@@ -8,15 +8,18 @@ class Goods {
   final String? description;
   final int? unitId;
   final int? quantity;
-  final double? discountPrice; // Исходная цена
-  final double? discountedPrice; // Цена со скидкой
-  final int? discountPercent; // Процент скидки
+  final double? discountPrice;
+  final double? discountedPrice;
+  final int? discountPercent;
   final bool? isActive;
   final List<GoodsFile> files;
   final List<GoodsAttribute> attributes;
   final List<GoodsVariant>? variants;
   final List<Branch>? branches;
-  final String? comments; // Поле для комментариев клиента
+  final String? comments;
+  final bool isNew; // Added
+  final bool isPopular; // Added
+  final bool isSale; // Added
 
   Goods({
     required this.id,
@@ -34,6 +37,9 @@ class Goods {
     this.variants,
     this.branches,
     this.comments,
+    required this.isNew, // Added
+    required this.isPopular, // Added
+    required this.isSale, // Added
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -65,14 +71,11 @@ class Goods {
         }
       }
 
-      // Извлечение процента скидки из discounts
       int? discountPercent;
       double? discountedPrice;
       if (json['discounts'] != null && (json['discounts'] as List).isNotEmpty) {
         final discount = json['discounts'][0];
         discountPercent = discount['percent'] as int? ?? 0;
-
-        // Расчет цены со скидкой
         if (discountPrice != null && discountPercent != 0) {
           discountedPrice = discountPrice - (discountPrice * discountPercent / 100);
         }
@@ -112,7 +115,10 @@ class Goods {
               'GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
           return Branch.fromJson(b as Map<String, dynamic>);
         }).toList(),
-        comments: json['comments'] as String?, // Парсинг комментариев
+        comments: json['comments'] as String?,
+        isNew: json['is_new'] == 1 || json['is_new'] == true, // Added
+        isPopular: json['is_popular'] == 1 || json['is_popular'] == true, // Added
+        isSale: json['is_sale'] == 1 || json['is_sale'] == true, // Added
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Ошибка парсинга товара: $e');
@@ -121,6 +127,7 @@ class Goods {
     }
   }
 }
+
 class GoodsFile {
   final int id;
   final String name;

@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -49,6 +50,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   List<Branch> branches = [];
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
+  List<String> selectedLabels = []; // Added for labels
   bool isCategoryValid = true;
   bool isImagesValid = true;
   bool isLoading = false;
@@ -103,10 +105,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     commentsController.text = widget.goods.comments ?? '';
+    
     isActive = widget.goods.isActive ?? false;
     selectedBranch = null;
     _imagePaths = widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
     mainImageIndex = widget.initialMainImageIndex ?? 0;
+    // Initialize labels
+    if (widget.goods.isPopular) selectedLabels.add('hit');
+    if (widget.goods.isSale) selectedLabels.add('promotion');
+    if (widget.goods.isNew) selectedLabels.add('newest');
     print(
         'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, comments: ${commentsController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
   }
@@ -745,6 +752,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    LabelMultiSelectWidget(
+                      selectedLabels: selectedLabels,
+                      onSelectLabels: (List<String> labels) {
+                        setState(() {
+                          selectedLabels = labels;
+                        });
+                      },
+                    ),
                   const SizedBox(height: 8),
                   branches.isEmpty
                       ? Center(
@@ -830,25 +846,39 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               ),
                           ],
                         ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   if (selectedCategory != null &&
                       selectedCategory!.attributes.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(color: Color(0xff1E2E52)),
-                        Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('product_characteristic'),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ),
-                        Divider(color: Color(0xff1E2E52)),
+                        // const SizedBox(height: 8),
+  Column(
+    
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0), // Отступы слева и справа
+        child: Container(
+          decoration: BoxDecoration(
+  border: Border.all(color: Color(0xff1E2E52), width: 1.0),
+  borderRadius: BorderRadius.circular(14.0),
+),
+
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                AppLocalizations.of(context)!.translate('characteristic'),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
@@ -1679,6 +1709,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           }
         }
       }
+      bool isNew = selectedLabels.contains('newest');
+        bool isPopular = selectedLabels.contains('hit');
+        bool isSale = selectedLabels.contains('promotion');
 
       final response = await _apiService.updateGoods(
         goodId: widget.goods.id,
@@ -1697,6 +1730,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         branch: selectedBranch!.id,
         comments: commentsController.text.trim(),
         mainImageIndex: mainImageIndex ?? 0,
+        isNew: isNew, // Added
+                isPopular: isPopular, // Added
+                isSale: isSale, // Added
       );
 
       print('GoodsEditScreen: Update response: $response');

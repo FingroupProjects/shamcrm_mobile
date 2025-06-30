@@ -6935,24 +6935,37 @@ Future<List<Goods>> getGoods({
   if (search != null && search.isNotEmpty) {
     path += '&search=$search';
   }
-  
+
   if (filters != null) {
-    if (filters.containsKey('category_id') && 
-        filters['category_id'] is List && 
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
         (filters['category_id'] as List).isNotEmpty) {
-      
-      // Правильное формирование параметра для массива
       final categoryIds = filters['category_id'] as List;
       for (int i = 0; i < categoryIds.length; i++) {
         path += '&category_id[]=${categoryIds[i]}';
       }
     }
-    
+
     if (filters.containsKey('discount_percent')) {
       path += '&discount=${filters['discount_percent']}';
     }
+
+    if (filters.containsKey('labels') &&
+        filters['labels'] is List &&
+        (filters['labels'] as List).isNotEmpty) {
+      final labels = filters['labels'] as List<String>;
+      if (labels.contains('new')) {
+        path += '&is_new=1';
+      }
+      if (labels.contains('hit')) {
+        path += '&is_popular=1';
+      }
+      if (labels.contains('promotion')) {
+        path += '&is_sale=1';
+      }
+    }
   }
-  
+
   if (kDebugMode) {
     print('ApiService: Формирование запроса товаров: $path');
   }
@@ -6963,12 +6976,16 @@ Future<List<Goods>> getGoods({
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
     if (data.containsKey('result') && data['result']['data'] is List) {
-      if (kDebugMode) {
-        print('ApiService: Успешно получено ${data['result']['data'].length} товаров');
-      }
-      return (data['result']['data'] as List)
+      final goods = (data['result']['data'] as List)
           .map((item) => Goods.fromJson(item as Map<String, dynamic>))
           .toList();
+      // Проверяем метаданные пагинации
+      final total = data['result']['total'] ?? goods.length;
+      final totalPages = data['result']['total_pages'] ?? (goods.length < perPage ? page : page + 1);
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
+      }
+      return goods;
     } else {
       if (kDebugMode) {
         print('ApiService: Ошибка формата данных: $data');
@@ -6982,7 +6999,6 @@ Future<List<Goods>> getGoods({
     throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
 }
-  
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
     final String path = '/good/$goodsId?organization_id=$organizationId';
@@ -7031,9 +7047,12 @@ Future<List<Goods>> getGoods({
   required List<File> images,
   required bool isActive,
   double? discountPrice,
-  int? branch, // Параметр уже опциональный
+  int? branch,
   double? price,
   int? mainImageIndex,
+  required bool isNew, // Added
+  required bool isPopular, // Added
+  required bool isSale, // Added
 }) async {
   try {
     final token = await getToken();
@@ -7052,6 +7071,9 @@ Future<List<Goods>> getGoods({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
+    request.fields['is_new'] = isNew ? '1' : '0'; // Add label fields
+    request.fields['is_popular'] = isPopular ? '1' : '0';
+    request.fields['is_sale'] = isSale ? '1' : '0';
 
     if (price != null) {
       request.fields['price'] = price.toString();
@@ -7061,7 +7083,6 @@ Future<List<Goods>> getGoods({
       request.fields['discount_price'] = discountPrice.toString();
     }
 
-    // Условно добавляем branches только если branch не null
     if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
     }
@@ -7127,6 +7148,7 @@ Future<List<Goods>> getGoods({
     };
   }
 }
+
   // Метод для обновления товара
  Future<Map<String, dynamic>> updateGoods({
   required int goodId,
@@ -7142,6 +7164,9 @@ Future<List<Goods>> getGoods({
   int? branch,
   String? comments,
   int? mainImageIndex,
+  required bool isNew, // Added
+  required bool isPopular, // Added
+  required bool isSale, // Added
 }) async {
   try {
     final token = await getToken();
@@ -7167,6 +7192,9 @@ Future<List<Goods>> getGoods({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
+    request.fields['is_new'] = isNew ? '1' : '0'; // Added
+    request.fields['is_popular'] = isPopular ? '1' : '0'; // Added
+    request.fields['is_sale'] = isSale ? '1' : '0'; // Added
     if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
       print('ApiService: Added branch: $branch');

@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ class GoodsFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final List<int>? initialCategoryIds;
   final double? initialDiscountPercent;
+  final List<String>? initialLabels; // Added for initial labels
 
   GoodsFilterScreen({
     Key? key,
@@ -22,6 +24,7 @@ class GoodsFilterScreen extends StatefulWidget {
     this.onResetFilters,
     this.initialCategoryIds,
     this.initialDiscountPercent,
+    this.initialLabels, // Added
   }) : super(key: key);
 
   @override
@@ -29,9 +32,9 @@ class GoodsFilterScreen extends StatefulWidget {
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
-  final TextEditingController discountPercentController =
-      TextEditingController();
+  final TextEditingController discountPercentController = TextEditingController();
   List<SubCategoryAttributesData> selectedCategories = [];
+  List<String> selectedLabels = []; // Added for label filtering
   bool isCategoryValid = true;
 
   @override
@@ -40,7 +43,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (kDebugMode) {
       print('GoodsFilterScreen: Инициализация экрана фильтров');
       print(
-          'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, discount_percent: ${widget.initialDiscountPercent}');
+          'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, discount_percent: ${widget.initialDiscountPercent}, labels: ${widget.initialLabels}');
     }
 
     if (widget.initialDiscountPercent != null &&
@@ -50,6 +53,13 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       if (kDebugMode) {
         print(
             'GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
+      }
+    }
+
+    if (widget.initialLabels != null) {
+      selectedLabels = List.from(widget.initialLabels!); // Initialize labels
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Установлены начальные метки: $selectedLabels');
       }
     }
 
@@ -92,6 +102,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 }
                 widget.onResetFilters?.call();
                 selectedCategories = [];
+                selectedLabels = []; // Reset labels
                 discountPercentController.clear();
                 isCategoryValid = true;
               });
@@ -127,6 +138,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         .map((category) => category.id.toString())
                         .toList()
                     : [],
+                'labels': selectedLabels.isNotEmpty ? selectedLabels : [], // Add labels to filters
               };
               if (discountPercentController.text.isNotEmpty) {
                 final discount =
@@ -147,7 +159,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               }
 
               if (filters['category_id'].isNotEmpty ||
-                  filters.containsKey('discount_percent')) {
+                  filters.containsKey('discount_percent') ||
+                  filters['labels'].isNotEmpty) {
                 widget.onSelectedDataFilter?.call(filters);
               } else {
                 if (kDebugMode) {
@@ -281,6 +294,27 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                 });
                               },
                               isValid: isCategoryValid,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: LabelMultiSelectWidget(
+                              selectedLabels: selectedLabels,
+                              onSelectLabels: (labels) {
+                                setState(() {
+                                  selectedLabels = labels;
+                                  if (kDebugMode) {
+                                    print(
+                                        'GoodsFilterScreen: Выбраны метки: $labels');
+                                  }
+                                });
+                              },
                             ),
                           ),
                         ),

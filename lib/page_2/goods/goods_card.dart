@@ -12,6 +12,9 @@ class GoodsCard extends StatefulWidget {
   final String goodsCategory;
   final int goodsStockQuantity;
   final List<GoodsFile> goodsFiles;
+  final bool isNew; // Added
+  final bool isPopular; // Added
+  final bool isSale; // Added
 
   GoodsCard({
     Key? key,
@@ -21,6 +24,9 @@ class GoodsCard extends StatefulWidget {
     required this.goodsCategory,
     required this.goodsStockQuantity,
     required this.goodsFiles,
+    required this.isNew,
+    required this.isPopular,
+    required this.isSale,
   }) : super(key: key);
 
   @override
@@ -73,7 +79,6 @@ class _GoodsCardState extends State<GoodsCard> {
       return null;
     }
 
-    // Ищем изображение с is_main: true
     final mainImage = widget.goodsFiles.firstWhere(
       (file) => file.isMain,
       orElse: () => widget.goodsFiles.first,
@@ -120,6 +125,85 @@ class _GoodsCardState extends State<GoodsCard> {
     );
   }
 
+  List<Widget> _buildLabels() {
+    List<Widget> labels = [];
+    final localizations = AppLocalizations.of(context)!;
+    const double labelHeight = 18;
+    const double labelPadding = 6;
+
+    final List<Map<String, dynamic>> labelConfigs = [
+      if (widget.isPopular)
+        {
+          'text': localizations.translate('hit'),
+          'icon': Icons.star,
+          'gradient': const LinearGradient(
+            colors: [Color(0xffFF4D4F), Color(0xffFF7875)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        },
+      if (widget.isSale)
+        {
+          'text': localizations.translate('promotion'),
+          'icon': Icons.bolt,
+          'gradient': const LinearGradient(
+            colors: [Color(0xffFFA940), Color(0xffFFC107)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        },
+      if (widget.isNew)
+        {
+          'text': localizations.translate('new'),
+          'icon': Icons.auto_awesome,
+          'gradient': const LinearGradient(
+            colors: [Color(0xff2ECC71), Color(0xff27AE60)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        },
+    ];
+
+    for (var config in labelConfigs) {
+      labels.add(
+        Container(
+          height: labelHeight,
+          margin: const EdgeInsets.only(right: 8, bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: labelPadding, vertical: 2),
+          decoration: BoxDecoration(
+            gradient: config['gradient'],
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(config['icon'], size: 12, color: Colors.white),
+              const SizedBox(width: 3),
+              Text(
+                config['text'],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return labels;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mainImage = _getMainImage();
@@ -143,6 +227,15 @@ class _GoodsCardState extends State<GoodsCard> {
                         style: TaskCardStyles.titleStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 4),
+                      // Add labels here
+                      if (widget.isNew || widget.isPopular || widget.isSale)
+                        Wrap(
+                          spacing: 0, // Handled by margin in _buildLabels
+                          runSpacing: 4,
+                          children: _buildLabels(),
+                        ),
+                      const SizedBox(height: 4),
                       RichText(
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -164,20 +257,8 @@ class _GoodsCardState extends State<GoodsCard> {
                               )
                             : const TextSpan(
                                 text: '\n\u200B',
-                                style: TaskCardStyles.priorityStyle),
-                      ),
-                      RichText(
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          text: '\n\u200B',
-                          style: TaskCardStyles.priorityStyle.copyWith(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
+                                style: TaskCardStyles.priorityStyle,
+                              ),
                       ),
                       RichText(
                         text: TextSpan(
@@ -199,11 +280,19 @@ class _GoodsCardState extends State<GoodsCard> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('stock_quantity_details')}: ${widget.goodsStockQuantity}',
+                        style: TaskCardStyles.priorityStyle.copyWith(
+                          color: Color(0xff99A4BA),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Container(
                   width: 100,
                   height: 100,
@@ -214,8 +303,11 @@ class _GoodsCardState extends State<GoodsCard> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.image_not_supported,
-                              size: 40, color: Color(0xff99A4BA)),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Color(0xff99A4BA),
+                          ),
                         ),
                 ),
               ],

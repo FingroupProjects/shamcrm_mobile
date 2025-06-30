@@ -4,11 +4,13 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 class CategoryTypeSelector extends StatelessWidget {
   final String selectedType;
   final ValueChanged<String> onTypeChanged;
+  final bool isAffectingPrice; // Новое свойство
 
   const CategoryTypeSelector({
     Key? key,
     required this.selectedType,
     required this.onTypeChanged,
+    required this.isAffectingPrice, // Добавляем в конструктор
   }) : super(key: key);
 
   @override
@@ -25,7 +27,6 @@ class CategoryTypeSelector extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Text(
             AppLocalizations.of(context)!.translate('show_as'),
@@ -50,17 +51,19 @@ class CategoryTypeSelector extends StatelessWidget {
           RadioListTile<String>(
             value: 'a',
             groupValue: selectedType,
-            onChanged: (value) {
-              if (value != null) onTypeChanged(value);
-            },
+            onChanged: isAffectingPrice
+                ? null // Отключаем выбор Товар, если isAffectingPrice = true
+                : (value) {
+                    if (value != null) onTypeChanged(value);
+                  },
             activeColor: activeColor,
             title: Text(
               AppLocalizations.of(context)!.translate('product'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: isAffectingPrice ? Colors.grey : const Color(0xff1E2E52), // Затемняем, если недоступно
               ),
             ),
             contentPadding: EdgeInsets.zero,
