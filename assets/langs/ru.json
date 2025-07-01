@@ -851,7 +851,7 @@
   "discount_price": "Скидочная цена",
   "enter_stock_quantity": "Введите количество в наличии",
   "stock_quantity": "Количество в наличии",
-  "pick_image": "Нажмите для загрузки фото",
+  "pick_image": "Нажмите для загрузки фото/видео",
   "image": "фото",
   "status_goods": "Статус",
   "active": "Активен",
@@ -1081,7 +1081,8 @@
   "hit": "Хит",
   "promotion": "Акция",
   "newest": "Новинка",
-  "select_label": "Выберите метку"
+  "select_label": "Выберите метку",
+  "payment_method_title":"Способ оплаты:"
 
 
 }

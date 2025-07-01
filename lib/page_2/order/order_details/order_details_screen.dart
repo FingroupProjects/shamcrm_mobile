@@ -59,56 +59,77 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     super.initState();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
-
-  void _updateDetails(Order order) {
-    String formattedDate = order.lead.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-        : AppLocalizations.of(context)!.translate('not_specified');
-
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('order_number'),
-        'value': order.orderNumber
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('client'),
-        'value': order.lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('client_phone'),
-        'value': order.phone
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_date'),
-        'value': formattedDate
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_status'),
-        'value': order.orderStatus.name
-      },
-      {
-        'label': order.delivery
-            ? AppLocalizations.of(context)!.translate('order_address')
-            : AppLocalizations.of(context)!.translate('branch_order'),
-        'value': order.delivery
-            ? (order.deliveryAddress ??
-                AppLocalizations.of(context)!.translate('not_specified'))
-            : (order.branchName ??
-                AppLocalizations.of(context)!.translate('not_specified')),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('comment_client'),
-        'value': order.commentToCourier ??
-            AppLocalizations.of(context)!.translate('no_comment')
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('price'),
-        'value': order.sum != null && order.sum! > 0
-            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-            : AppLocalizations.of(context)!.translate('0')
-      },
-    ];
+String formatPaymentType(String? paymentType, BuildContext context) {
+  switch (paymentType?.toLowerCase()) {
+    case 'cash':
+      return 'Наличными';
+    case 'alif':
+      return 'ALIF';
+    case 'click':
+      return 'CLICK';
+    case 'payme':
+      return 'PAYME';
+    default:
+      return AppLocalizations.of(context)!.translate('not_specified'); // Fallback for unknown types
   }
+}
+void _updateDetails(Order order) {
+  String formattedDate = order.lead.createdAt != null
+      ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+      : AppLocalizations.of(context)!.translate('not_specified');
+
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('order_number'),
+      'value': order.orderNumber
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('client'),
+      'value': order.lead.name
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('manager_details'),
+      'value': order.manager?.name ?? 'become_manager' // Modified to handle null manager
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('client_phone'),
+      'value': order.phone
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('order_date'),
+      'value': formattedDate
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('order_status'),
+      'value': order.orderStatus.name
+    },
+    {
+      'label': order.delivery
+          ? AppLocalizations.of(context)!.translate('order_address')
+          : AppLocalizations.of(context)!.translate('branch_order'),
+      'value': order.delivery
+          ? (order.deliveryAddress ??
+              AppLocalizations.of(context)!.translate('not_specified'))
+          : (order.branchName ??
+              AppLocalizations.of(context)!.translate('not_specified')),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('comment_client'),
+      'value': order.commentToCourier ??
+          AppLocalizations.of(context)!.translate('no_comment')
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('price'),
+      'value': order.sum != null && order.sum! > 0
+          ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
+          : AppLocalizations.of(context)!.translate('0')
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('payment_method_title'),
+      'value': formatPaymentType(order.paymentMethod, context)
+    },
+  ];
+}
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -233,7 +254,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('order_title')} #${order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('order_title')} №${order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',

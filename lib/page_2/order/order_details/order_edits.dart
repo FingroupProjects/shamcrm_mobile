@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -12,6 +12,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -20,6 +21,7 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dro
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +42,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   late TextEditingController _commentController;
   late List<Map<String, dynamic>> _items;
   String? selectedLead;
+  String? selectedManager;
   String? _deliveryMethod;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
@@ -47,7 +50,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? baseUrl;
   List<Branch> branches = [];
 
-@override
+  @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController();
@@ -65,6 +68,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       };
     }).toList();
     selectedLead = widget.order.lead.id.toString();
+    selectedManager = widget.order.manager?.id.toString(); // Инициализация менеджера
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
             id: widget.order.deliveryAddressId ?? 0,
@@ -76,12 +80,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           )
         : null;
 
-    // Инициализация _selectedBranch на основе branchId и branchName
     if (widget.order.branchId != null && widget.order.branchName != null) {
       _selectedBranch = Branch(
         id: widget.order.branchId!,
         name: widget.order.branchName!,
-        address: '', // Адрес может быть пустым, так как он не используется в UI
+        address: '',
       );
     }
 
@@ -101,20 +104,19 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeBaseUrl();
       context.read<BranchBloc>().add(FetchBranches());
-      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-            leadId: widget.order.lead.id,
-          ));
+      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+      context.read<GetAllManagerBloc>().add(GetAllManagerEv()); // Загружаем менеджеров
     });
   }
 
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  // Инициализация метода доставки с использованием локализации
-  _deliveryMethod = widget.order.delivery
-      ? AppLocalizations.of(context)!.translate('delivery')
-      : AppLocalizations.of(context)!.translate('self_delivery');
-}
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _deliveryMethod = widget.order.delivery
+        ? AppLocalizations.of(context)!.translate('delivery')
+        : AppLocalizations.of(context)!.translate('self_delivery');
+  }
+
   Future<void> _initializeBaseUrl() async {
     final apiService = ApiService();
     try {
@@ -158,6 +160,9 @@ void didChangeDependencies() {
             ? '$selectedDialCode${_phoneController.text}'
             : _phoneController.text,
       ),
+      // manager: selectedManager != null
+      //     ? ManagerData(id: int.parse(selectedManager!), name: widget.order.manager?.name ?? '')
+      //     : widget.order.manager,
       goods: _items.map((item) {
         final goodItem = GoodItem(
           id: item['id'],
@@ -219,6 +224,7 @@ void didChangeDependencies() {
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
+        // BlocProvider(create: (context) => GetAllManagerBloc(context.read<ApiService>())), // Добавляем GetAllManagerBloc
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -228,7 +234,7 @@ void didChangeDependencies() {
             if (state is OrderSuccess) {
               showCustomSnackBar(
                 context: context,
-                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
+                message: AppLocalizations.of(context)!.translate('order_updated_successfully'), // Изменено на 'success'
                 isSuccess: true,
               );
               Navigator.pop(context, true);
@@ -264,9 +270,17 @@ void didChangeDependencies() {
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
                                       leadId: lead.id,
-                                      // organizationId: widget.order.organizationId ?? 1,
                                     ));
                               }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          ManagerRadioGroupWidget(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                              });
                             },
                           ),
                           const SizedBox(height: 16),
@@ -354,7 +368,7 @@ void didChangeDependencies() {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('edit_order')} #${widget.order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('edit_order')} №${widget.order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -525,16 +539,6 @@ void didChangeDependencies() {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                // const SizedBox(height: 4),
-                // Text(
-                //   item['id'].toString(),
-                //   style: const TextStyle(
-                //     fontSize: 12,
-                //     fontFamily: 'Gilroy',
-                //     fontWeight: FontWeight.w500,
-                //     color: Color(0xff99A4BA),
-                  // ),?
-                // ),
               ],
             ),
           ),
@@ -719,6 +723,7 @@ void didChangeDependencies() {
                         commentToCourier: _commentController.text.isNotEmpty
                             ? _commentController.text
                             : null,
+                        managerId: selectedManager != null ? int.parse(selectedManager!) : null,
                       ));
                 } else {
                   showCustomSnackBar(
