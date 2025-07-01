@@ -28,6 +28,115 @@ class OrderCard extends StatefulWidget {
   _OrderCardState createState() => _OrderCardState();
 }
 
+class PaymentTypeStyle {
+  final Widget content;
+  final Color backgroundColor;
+  final bool isImage;
+
+  PaymentTypeStyle({
+    required this.content,
+    required this.backgroundColor,
+    this.isImage = false,
+  });
+}
+
+PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) {
+  switch (paymentType?.toLowerCase()) {
+    case 'cash':
+      return PaymentTypeStyle(
+        content: Text(
+          'Наличными',
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color.fromARGB(255, 242, 242, 242),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: const Color.fromARGB(255, 23, 178, 36),
+        isImage: false,
+      );
+    case 'alif':
+      return PaymentTypeStyle(
+        content: Image.asset(
+          'assets/icons/alif.png',
+          width: 40,
+          height: 20,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Text(
+            'ALIF',
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color.fromARGB(255, 242, 242, 242),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        isImage: true,
+      );
+    case 'click':
+      return PaymentTypeStyle(
+        content: Image.asset(
+          'assets/icons/click3.png',
+          width: 40,
+          height: 20,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Text(
+            'CLICK',
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color.fromARGB(255, 242, 242, 242),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        isImage: true,
+      );
+    case 'payme':
+      return PaymentTypeStyle(
+        content: Image.asset(
+          'assets/icons/payme.png',
+          width: 40,
+          height: 20,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Text(
+            'PAYME',
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color.fromARGB(255, 242, 242, 242),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        isImage: true,
+      );
+    default:
+      return PaymentTypeStyle(
+        content: Text(
+          'Неизвестно',
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: Colors.grey[300]!,
+        isImage: false,
+      );
+  }
+}
+
 class _OrderCardState extends State<OrderCard> {
   late String dropdownValue;
   late int statusId;
@@ -108,7 +217,7 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 Text(
-                'Создан: ${_formatDate(widget.order.lead.createdAt)}',
+                  'Создан: ${_formatDate(widget.order.lead.createdAt)}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -136,10 +245,10 @@ class _OrderCardState extends State<OrderCard> {
                         widget.onStatusId(newStatusId);
                         widget.onStatusUpdated();
                         context.read<OrderBloc>().add(ChangeOrderStatus(
-                          orderId: widget.order.id,
-                          statusId: newStatusId,
-                          organizationId: widget.organizationId,
-                        ));
+                              orderId: widget.order.id,
+                              statusId: newStatusId,
+                              organizationId: widget.organizationId,
+                            ));
                       },
                       widget.order,
                       onTabChange: widget.onTabChange,
@@ -153,7 +262,8 @@ class _OrderCardState extends State<OrderCard> {
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         Container(
@@ -198,20 +308,10 @@ class _OrderCardState extends State<OrderCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 23, 178, 36),
+                    color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    'Наличными',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color.fromARGB(255, 242, 242, 242),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -220,7 +320,7 @@ class _OrderCardState extends State<OrderCard> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Система',
+                    widget.order.manager?.name ?? 'Система',
                     style: const TextStyle(
                       fontSize: 12,
                       fontFamily: 'Gilroy',
@@ -231,7 +331,6 @@ class _OrderCardState extends State<OrderCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                
               ],
             ),
             const SizedBox(height: 18),
@@ -264,21 +363,19 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 Text(
-              widget.order.phone.isNotEmpty
-                  ? widget.order.phone
-                  : AppLocalizations.of(context)!.translate('no_phone'),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
-            ),
+                  widget.order.phone.isNotEmpty
+                      ? widget.order.phone
+                      : AppLocalizations.of(context)!.translate('no_phone'),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            // Телефон
-          
           ],
         ),
       ),

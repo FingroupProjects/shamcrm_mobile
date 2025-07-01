@@ -1287,7 +1287,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     buttonText: AppLocalizations.of(context)!.translate('yes'),
                     onPressed: () {
                       Navigator.of(context).pop(true);
-                    },
+                    },  
                     buttonColor: Color(0xFF1E2E52),
                     textColor: Colors.white,
                   ),

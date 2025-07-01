@@ -156,7 +156,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
           emit(CategoryError('Ошибка удаления категории'));
         }
       } catch (e) {
-        emit(CategoryError('Ошибка удаления категории!'));
+        emit(CategoryError('Удаление невозможно: есть товары, привязанные к этой категории или подкатегории!'));
       }
     } else {
       emit(CategoryError('Нет подключения к интернету'));

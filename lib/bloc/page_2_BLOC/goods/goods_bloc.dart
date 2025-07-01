@@ -363,7 +363,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         discountPrice: event.discountPrice,
         branch: event.branch,
         mainImageIndex: event.mainImageIndex,
-        isNew: event.isNew, // Add label fields
+        isNew: event.isNew,
         isPopular: event.isPopular,
         isSale: event.isSale,
       );

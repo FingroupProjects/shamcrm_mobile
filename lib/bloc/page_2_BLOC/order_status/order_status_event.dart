@@ -43,12 +43,13 @@ class CreateOrder extends OrderEvent {
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
-  final int? deliveryAddressId; // Новое поле
+  final int? deliveryAddressId;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int statusId;
   final int? branchId;
   final String? commentToCourier;
+  final int? managerId; // Новое поле
 
   CreateOrder({
     required this.phone,
@@ -61,6 +62,7 @@ class CreateOrder extends OrderEvent {
     required this.statusId,
     this.branchId,
     this.commentToCourier,
+    this.managerId, // Добавляем в конструктор
   });
 }
 class UpdateOrder extends OrderEvent {
@@ -69,11 +71,12 @@ class UpdateOrder extends OrderEvent {
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
-  final int? deliveryAddressId; // Новое поле
+  final int? deliveryAddressId;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int? branchId;
   final String? commentToCourier;
+  final int? managerId; // Новое поле
 
   UpdateOrder({
     required this.orderId,
@@ -86,6 +89,7 @@ class UpdateOrder extends OrderEvent {
     required this.organizationId,
     this.branchId,
     this.commentToCourier,
+    this.managerId,
   });
 }
 class DeleteOrder extends OrderEvent {

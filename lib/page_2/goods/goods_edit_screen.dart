@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -100,15 +99,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           ? ''
           : (widget.goods.description ?? ''),
     );
-    discountPriceController =
-        TextEditingController(text: widget.goods.discountPrice?.toString() ?? '');
+    discountPriceController = TextEditingController(
+        text: widget.goods.discountPrice?.toString() ?? '');
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     commentsController.text = widget.goods.comments ?? '';
-    
+
     isActive = widget.goods.isActive ?? false;
     selectedBranch = null;
-    _imagePaths = widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
+    _imagePaths =
+        widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
     mainImageIndex = widget.initialMainImageIndex ?? 0;
     // Initialize labels
     if (widget.goods.isPopular) selectedLabels.add('hit');
@@ -161,7 +161,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Error loading all data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.translate('error_loading_data'))),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .translate('error_loading_data'))),
         );
       }
     } finally {
@@ -506,7 +508,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -552,7 +555,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
         if (mainImageIndex == null && _imagePaths.isNotEmpty) {
-          mainImageIndex = _imagePaths.length - pickedFiles.length; // Set the first new image as main
+          mainImageIndex = _imagePaths.length -
+              pickedFiles.length; // Set the first new image as main
         }
         isImagesValid = true;
         print(
@@ -615,7 +619,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -707,25 +712,32 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
-                    label: AppLocalizations.of(context)!.translate('goods_name'),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_goods_name'),
+                    label:
+                        AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!.translate('field_required')
+                        ? AppLocalizations.of(context)!
+                            .translate('field_required')
                         : null,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!.translate('goods_description'),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!
+                        .translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: commentsController,
-                    hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                    label: AppLocalizations.of(context)!.translate('comment_client'),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('please_enter_comment'),
+                    label: AppLocalizations.of(context)!
+                        .translate('comment_client'),
                     maxLines: 3,
                     keyboardType: TextInputType.multiline,
                   ),
@@ -737,30 +749,34 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: discountPriceController,
-                          hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                          label: AppLocalizations.of(context)!.translate('goods_price_details'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_price'),
+                          label: AppLocalizations.of(context)!
+                              .translate('goods_price_details'),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    LabelMultiSelectWidget(
-                      selectedLabels: selectedLabels,
-                      onSelectLabels: (List<String> labels) {
-                        setState(() {
-                          selectedLabels = labels;
-                        });
-                      },
-                    ),
+                  const SizedBox(height: 8),
+                  LabelMultiSelectWidget(
+                    selectedLabels: selectedLabels,
+                    onSelectLabels: (List<String> labels) {
+                      setState(() {
+                        selectedLabels = labels;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 8),
                   branches.isEmpty
                       ? Center(
@@ -771,7 +787,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ),
                         )
                       : BranchesDropdown(
-                          label: AppLocalizations.of(context)!.translate('branch'),
+                          label:
+                              AppLocalizations.of(context)!.translate('branch'),
                           selectedBranch: selectedBranch,
                           branches: branches,
                           onSelectBranch: (Branch branch) {
@@ -787,7 +804,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!.translate('please_select_branch'),
+                        AppLocalizations.of(context)!
+                            .translate('please_select_branch'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -836,7 +854,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  AppLocalizations.of(context)!.translate('please_select_subcategory'),
+                                  AppLocalizations.of(context)!
+                                      .translate('please_select_subcategory'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.red,
@@ -849,36 +868,37 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   const SizedBox(height: 16),
                   if (selectedCategory != null &&
                       selectedCategory!.attributes.isNotEmpty)
-                        // const SizedBox(height: 8),
-  Column(
-    
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.0), // Отступы слева и справа
-        child: Container(
-          decoration: BoxDecoration(
-  border: Border.all(color: Color(0xff1E2E52), width: 1.0),
-  borderRadius: BorderRadius.circular(14.0),
-),
-
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                AppLocalizations.of(context)!.translate('characteristic'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-
+                    // const SizedBox(height: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 0.0), // Отступы слева и справа
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: Color(0xff1E2E52), width: 1.0),
+                              borderRadius: BorderRadius.circular(14.0),
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('characteristic'),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
@@ -913,7 +933,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 8),
+                             const SizedBox(height: 8),
                               SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
                                 child: Column(
@@ -931,7 +951,21 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       print(
                                           'GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
 
-                                      List<DataColumn> columns = [
+                                       List<DataColumn> columns = [
+                                        // Колонка Image теперь первая (как в создании)
+                                        DataColumn(
+                                          label: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate('image_message'),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
+                                        // Затем динамические атрибуты
                                         ...individualAttrs
                                             .map((attr) => DataColumn(
                                                   label: Text(
@@ -945,11 +979,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     ),
                                                   ),
                                                 )),
+                                        // Price (если есть)
                                         if (selectedCategory!
                                             .hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('goods_price_details'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('price'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -958,9 +994,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               ),
                                             ),
                                           ),
+                                        // Status
                                         DataColumn(
                                           label: Text(
-                                            AppLocalizations.of(context)!.translate('image_message'),
+                                            AppLocalizations.of(context)!
+                                                .translate('status'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -969,17 +1007,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                           ),
                                         ),
-                                        DataColumn(
-                                          label: Text(
-                                            AppLocalizations.of(context)!.translate('status_lead_profile'),
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              fontFamily: 'Gilroy',
-                                              color: Color(0xff1E2E52),
-                                            ),
-                                          ),
-                                        ),
+                                        // Actions (пустая колонка для удаления)
                                         DataColumn(
                                           label: Text(
                                             '',
@@ -1011,71 +1039,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 }).toList()}');
 
                                         List<DataCell> cells = [
-                                          ...individualAttrs.map((attr) =>
-                                              DataCell(
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: TextField(
-                                                    controller: row[
-                                                            attr.name] ??
-                                                        TextEditingController(),
-                                                    decoration: InputDecoration(
-                                                      hintText:
-                                                          '${AppLocalizations.of(context)!.translate('please_enter')}${attr.name}',
-                                                      hintStyle: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff99A4BA),
-                                                      ),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                      ),
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 16),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )),
-                                          if (selectedCategory!
-                                              .hasPriceCharacteristics)
-                                            DataCell(
-                                              SizedBox(
-                                                width: 150,
-                                                child: TextField(
-                                                  controller: row['price'] ??
-                                                      TextEditingController(),
-                                                  decoration: InputDecoration(
-                                                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                                                    hintStyle: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff99A4BA),
-                                                    ),
-                                                    border: OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    contentPadding:
-                                                        EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 16),
-                                                  ),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                ),
-                                              ),
-                                            ),
+                                          // DataCell с изображениями теперь первая
                                           DataCell(
                                             Row(
                                               children: [
@@ -1158,6 +1122,78 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               ],
                                             ),
                                           ),
+                                          // Затем DataCell'ы для динамических атрибутов
+                                          ...individualAttrs.map((attr) =>
+                                              DataCell(
+                                                SizedBox(
+                                                  width: 150,
+                                                  child: TextField(
+                                                    controller: row[
+                                                            attr.name] ??
+                                                        TextEditingController(),
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff99A4BA),
+                                                      ),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 16),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )),
+                                          // Price DataCell (если есть)
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
+                                            DataCell(
+                                              SizedBox(
+                                                width: 150,
+                                                child: TextField(
+                                                  controller: row['price'] ??
+                                                      TextEditingController(),
+                                                  decoration: InputDecoration(
+                                                    hintText:
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'enter_price'),
+                                                    hintStyle: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff99A4BA),
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 16),
+                                                  ),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                ),
+                                              ),
+                                            ),
+                                          // Status DataCell
                                           DataCell(
                                             Switch(
                                               value: row['is_active'],
@@ -1181,6 +1217,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                       255, 255, 255, 255),
                                             ),
                                           ),
+                                          // Actions DataCell (удаление)
                                           DataCell(
                                             IconButton(
                                               icon: Icon(Icons.delete,
@@ -1265,7 +1302,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!.translate('select_image'),
+                                    AppLocalizations.of(context)!
+                                        .translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -1283,10 +1321,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   runSpacing: 10,
                                   padding: const EdgeInsets.all(8),
                                   children: [
-                                    ..._imagePaths
-                                        .asMap()
-                                        .entries
-                                        .map((entry) {
+                                    ..._imagePaths.asMap().entries.map((entry) {
                                       final index = entry.key;
                                       final imagePath = entry.value;
                                       return GestureDetector(
@@ -1304,7 +1339,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     width: 2)
                                                 : null,
                                             image: DecorationImage(
-                                              image: imagePath.startsWith('http')
+                                              image: imagePath
+                                                      .startsWith('http')
                                                   ? NetworkImage(imagePath)
                                                       as ImageProvider
                                                   : FileImage(File(imagePath)),
@@ -1383,7 +1419,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              AppLocalizations.of(context)!.translate('add_image'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1396,7 +1433,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item = _imagePaths.removeAt(oldIndex);
+                                      final item =
+                                          _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                       if (mainImageIndex != null) {
                                         if (mainImageIndex == oldIndex) {
@@ -1445,7 +1483,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!.translate('please_select_image'),
+                        AppLocalizations.of(context)!
+                            .translate('please_select_image'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -1461,7 +1500,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('status_product'),
+                              AppLocalizations.of(context)!
+                                  .translate('status_product'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -1509,8 +1549,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     const SizedBox(width: 10),
                                     Text(
                                       isActive
-                                          ? AppLocalizations.of(context)!.translate('active_swtich')
-                                          : AppLocalizations.of(context)!.translate('inactive_swtich'),
+                                          ? AppLocalizations.of(context)!
+                                              .translate('active_swtich')
+                                          : AppLocalizations.of(context)!
+                                              .translate('inactive_swtich'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1561,7 +1603,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('save'),
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
@@ -1574,7 +1617,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: AppLocalizations.of(context)!.translate('fill_required_fields'),
+                            message: AppLocalizations.of(context)!
+                                .translate('fill_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -1634,7 +1678,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 variantImages.add(file);
                 print('GoodsEditScreen: Added variant image: $path');
               } else {
-                print('GoodsEditScreen: Variant file not found, skipping: $path');
+                print(
+                    'GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
@@ -1670,7 +1715,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print('GoodsEditScreen: Added variant price: ${variant['price']}');
+              print(
+                  'GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
               print('GoodsEditScreen: Set default variant price: 0.0');
@@ -1710,8 +1756,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
       }
       bool isNew = selectedLabels.contains('newest');
-        bool isPopular = selectedLabels.contains('hit');
-        bool isSale = selectedLabels.contains('promotion');
+      bool isPopular = selectedLabels.contains('hit');
+      bool isSale = selectedLabels.contains('promotion');
 
       final response = await _apiService.updateGoods(
         goodId: widget.goods.id,
@@ -1731,8 +1777,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         comments: commentsController.text.trim(),
         mainImageIndex: mainImageIndex ?? 0,
         isNew: isNew, // Added
-                isPopular: isPopular, // Added
-                isSale: isSale, // Added
+        isPopular: isPopular, // Added
+        isSale: isSale, // Added
       );
 
       print('GoodsEditScreen: Update response: $response');
@@ -1748,7 +1794,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? AppLocalizations.of(context)!.translate('error_update_product'),
+          message: response['message'] ??
+              AppLocalizations.of(context)!.translate('error_update_product'),
           isSuccess: false,
         );
       }
@@ -1758,7 +1805,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('error_update_product'),
+        message:
+            AppLocalizations.of(context)!.translate('error_update_product'),
         isSuccess: false,
       );
     }
@@ -1783,4 +1831,3 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     super.dispose();
   }
 }
-

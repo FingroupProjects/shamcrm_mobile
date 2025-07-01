@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
@@ -22,6 +23,8 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dro
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -55,7 +58,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? selectedDialCode;
   String? baseUrl;
   String? selectedManager;
-  String? _selectedPaymentMethod;
+    bool isManagerInvalid = false;
+
+  bool isManagerManuallySelected = false;
 
   @override
   void initState() {
@@ -89,8 +94,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               updatedAt: '',
             )
           : null;
-      _selectedPaymentMethod =
-          widget.order!.paymentMethod; // Assuming Order model has paymentMethod
+      //_selectedPaymentMethod =
+       //   widget.order!.paymentMethod; // Assuming Order model has paymentMethod
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -324,36 +329,56 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          LeadRadioGroupWidget(
-                            key: const Key('lead_radio_group'),
+                          const SizedBox(height: 8),
+                          LeadWithManager(
                             selectedLead: selectedLead,
-                            onSelectLead: (LeadData lead) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  setState(() {
-                                    selectedLead = lead.id.toString();
-                                    _selectedDeliveryAddress = null;
-                                  });
-                                  context
-                                      .read<DeliveryAddressBloc>()
-                                      .add(FetchDeliveryAddresses(
-                                        leadId: lead.id,
-                                        // organizationId:
-                                        //     widget.organizationId ?? 1,
-                                      ));
+                            onSelectLead: (LeadData selectedLeadData) {
+                              print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
+                              if (selectedLead == selectedLeadData.id.toString()) {
+                                print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
+                                return;
+                              }
+                              setState(() {
+                                selectedLead = selectedLeadData.id.toString();
+                                print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
+                                if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
+                                  print('DealAddScreen: Attempting to auto-select manager');
+                                  final managerBlocState = context.read<GetAllManagerBloc>().state;
+                                  print('DealAddScreen: ManagerBloc state: $managerBlocState');
+                                  if (managerBlocState is GetAllManagerSuccess) {
+                                    final managers = managerBlocState.dataManager.result ?? [];
+                                    print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
+                                    try {
+                                      final matchingManager = managers.firstWhere(
+                                        (manager) => manager.id == selectedLeadData.managerId,
+                                      );
+                                      selectedManager = matchingManager.id.toString();
+                                      print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
+                                    } catch (e) {
+                                      print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
+                                      selectedManager = null;
+                                    }
+                                  } else {
+                                    print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
+                                  }
+                                } else {
+                                  print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
                                 }
                               });
                             },
                           ),
-                          const SizedBox(height: 15),
-                          ManagerRadioGroupWidget(
+                          const SizedBox(height: 8),
+                          ManagerForLead(
                             selectedManager: selectedManager,
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
-                                selectedManager =
-                                    selectedManagerData.id.toString();
+                                selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false;
+                                isManagerManuallySelected = true;
+                                print('DealAddScreen: Manager manually selected: ${selectedManagerData.id} (${selectedManagerData.name})');
                               });
                             },
+                            hasError: isManagerInvalid,
                           ),
                           const SizedBox(height: 16),
                           CustomPhoneNumberInput(
@@ -377,15 +402,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             label: AppLocalizations.of(context)!
                                 .translate('phone'),
                           ),
-                          PaymentMethodDropdown(
-                            key: const Key('payment_method_dropdown'),
-                            selectedPaymentMethod: _selectedPaymentMethod,
-                            onSelectPaymentMethod: (value) {
-                              setState(() {
-                                _selectedPaymentMethod = value;
-                              });
-                            },
-                          ),
+                          // PaymentMethodDropdown(
+                          //   key: const Key('payment_method_dropdown'),
+                          //   selectedPaymentMethod: _selectedPaymentMethod,
+                          //   onSelectPaymentMethod: (value) {
+                          //     setState(() {
+                          //       _selectedPaymentMethod = value;
+                          //     });
+                          //   },
+                          // ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
                           const SizedBox(height: 16),
@@ -718,131 +743,145 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, -1))
-        ]),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffF4F7FD),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('cancel'),
-                  style: const TextStyle(
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(color: Colors.white, boxShadow: [
+      BoxShadow(
+          color: Colors.grey.withOpacity(0.1),
+          spreadRadius: 1,
+          blurRadius: 3,
+          offset: const Offset(0, -1))
+    ]),
+    child: Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xffF4F7FD),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.translate('cancel'),
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                // Добавляем валидацию manager_id, если поле обязательно
+                if (selectedManager == null) {
+                  setState(() {
+                    isManagerInvalid = true; // Устанавливаем флаг ошибки
+                  });
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!
+                        .translate('please_select_manager'),
+                    isSuccess: false,
+                  );
+                  return;
+                }
+                if (_deliveryMethod ==
+                        AppLocalizations.of(context)!
+                            .translate('self_delivery') &&
+                    _selectedBranch == null) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!
+                        .translate('please_select_branch'),
+                    isSuccess: false,
+                  );
+                  return;
+                }
+                if (_deliveryMethod ==
+                        AppLocalizations.of(context)!
+                            .translate('delivery') &&
+                    _selectedDeliveryAddress == null) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!
+                        .translate('please_select_delivery_address'),
+                    isSuccess: false,
+                  );
+                  return;
+                }
+
+                final orderBloc = context.read<OrderBloc>();
+                final isPickup = _deliveryMethod ==
+                    AppLocalizations.of(context)!.translate('self_delivery');
+
+                orderBloc.add(CreateOrder(
+                  phone: selectedDialCode ?? _phoneController.text,
+                  leadId: int.parse(selectedLead ?? '0'),
+                  delivery: !isPickup,
+                  deliveryAddress:
+                      isPickup ? null : _selectedDeliveryAddress?.address,
+                  deliveryAddressId:
+                      isPickup ? null : _selectedDeliveryAddress?.id,
+                  goods: _items
+                      .map((item) => {
+                            'variant_id': item['id'].toString(),
+                            'quantity': item['quantity'] ?? 1,
+                            'price': item['price'].toString(),
+                          })
+                      .toList(),
+                  organizationId: widget.organizationId ?? 1,
+                  statusId: selectedStatusId ?? 1,
+                  branchId: isPickup ? _selectedBranch?.id : null,
+                  commentToCourier: _commentController.text.isNotEmpty
+                      ? _commentController.text
+                      : null,
+                  managerId: selectedManager != null
+                      ? int.parse(selectedManager!)
+                      : null, // Передаем managerId
+                ));
+
+                await Future.delayed(const Duration(milliseconds: 500));
+
+                if (orderBloc.state is OrderSuccess && mounted) {
+                  final successState = orderBloc.state as OrderSuccess;
+                  Navigator.pop(context, {
+                    'statusId': successState.statusId,
+                    'success': true,
+                  });
+                }
+              } else if (mounted) {
+                showCustomSnackBar(
+                  context: context,
+                  message: _items.isEmpty
+                      ? AppLocalizations.of(context)!
+                          .translate('add_at_least_one_product')
+                      : AppLocalizations.of(context)!
+                          .translate('fill_all_required_fields'),
+                  isSuccess: false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12)),
+            child: Text(AppLocalizations.of(context)!.translate('create'),
+                style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                    if (_deliveryMethod ==
-                            AppLocalizations.of(context)!
-                                .translate('self_delivery') &&
-                        _selectedBranch == null) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate('please_select_branch'),
-                        isSuccess: false,
-                      );
-                      return;
-                    }
-                    if (_deliveryMethod ==
-                            AppLocalizations.of(context)!
-                                .translate('delivery') &&
-                        _selectedDeliveryAddress == null) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate('please_select_delivery_address'),
-                        isSuccess: false,
-                      );
-                      return;
-                    }
-
-                    final orderBloc = context.read<OrderBloc>();
-                    final isPickup = _deliveryMethod ==
-                        AppLocalizations.of(context)!
-                            .translate('self_delivery');
-
-                    orderBloc.add(CreateOrder(
-                      phone: selectedDialCode ?? _phoneController.text,
-                      leadId: int.parse(selectedLead ?? '0'),
-                      delivery: !isPickup,
-                      deliveryAddress:
-                          isPickup ? null : _selectedDeliveryAddress?.address,
-                      deliveryAddressId:
-                          isPickup ? null : _selectedDeliveryAddress?.id,
-                      goods: _items
-                          .map((item) => {
-                                'variant_id': item['id'].toString(),
-                                'quantity': item['quantity'] ?? 1,
-                                'price': item['price'].toString(),
-                              })
-                          .toList(),
-                      organizationId: widget.organizationId ?? 1,
-                      statusId: selectedStatusId ?? 1,
-                      branchId: isPickup ? _selectedBranch?.id : null,
-                      commentToCourier: _commentController.text.isNotEmpty
-                          ? _commentController.text
-                          : null,
-                    ));
-
-                    await Future.delayed(const Duration(milliseconds: 500));
-
-                    if (orderBloc.state is OrderSuccess && mounted) {
-                      final successState = orderBloc.state as OrderSuccess;
-                      Navigator.pop(context, {
-                        'statusId': successState.statusId,
-                        'success': true,
-                      });
-                    }
-                  } else if (mounted) {
-                    showCustomSnackBar(
-                      context: context,
-                      message: _items.isEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('add_at_least_one_product')
-                          : AppLocalizations.of(context)!
-                              .translate('fill_all_required_fields'),
-                      isSuccess: false,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12)),
-                child: Text(AppLocalizations.of(context)!.translate('create'),
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white)),
-              ),
-            ),
-          ],
-        ));
-  }
-}
+                    color: Colors.white)),
+          ),
+        ),
+      ],
+    ));
+}}

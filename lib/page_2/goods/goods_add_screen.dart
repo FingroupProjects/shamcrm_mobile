@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart'; // Добавляем импорт состояний
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
@@ -187,65 +188,83 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        titleSpacing: 0,
-        title: Text(
-          AppLocalizations.of(context)!.translate('add_goods'),
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () => Navigator.pop(context),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      forceMaterialTransparency: true,
+      titleSpacing: 0,
+      title: Text(
+        AppLocalizations.of(context)!.translate('add_goods'),
+        style: const TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: Color(0xff1E2E52),
         ),
       ),
-      body: BlocListener<BranchBloc, BranchState>(
-        listener: (context, state) {
-          if (state is BranchLoaded) {
-            setState(() {
-              branches = state.branches;
-              // print(
-              //     'GoodsAddScreen: Branches loaded: ${branches.map((b) => b.name).toList()}');
-            });
-          } else if (state is BranchError) {
-            print('GoodsAddScreen: Error loading branches: ${state.message}');
-            showCustomSnackBar(
-              context: context,
-              message: AppLocalizations.of(context)!
-                      .translate('error_loading_branches') +
-                  ': ${state.message}',
-              isSuccess: false,
-            );
-          }
-        },
-        child: Padding(
-          padding:
-              const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
-          child: GestureDetector(
-            onTap: () {
-              FocusScope.of(context).unfocus();
-            },
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+      centerTitle: false,
+      leading: IconButton(
+        icon: Image.asset(
+          'assets/icons/arrow-left.png',
+          width: 24,
+          height: 24,
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+    ),
+    body: MultiBlocListener(
+      listeners: [
+        BlocListener<BranchBloc, BranchState>(
+          listener: (context, state) {
+            if (state is BranchLoaded) {
+              setState(() {
+                branches = state.branches;
+              });
+            } else if (state is BranchError) {
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!
+                        .translate('error_loading_branches') +
+                    ': ${state.message}',
+                isSuccess: false,
+              );
+            }
+          },
+        ),
+        BlocListener<GoodsBloc, GoodsState>(
+          listener: (context, state) {
+            if (state is GoodsSuccess) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message, // Используем сообщение из GoodsSuccess
+                isSuccess: true,
+              );
+              Navigator.pop(context); // Закрываем экран при успехе
+            } else if (state is GoodsError) {
+              setState(() => isLoading = false); // Сбрасываем индикатор
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
+                isSuccess: false,
+              );
+            }
+          },
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+        child: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                     CustomTextField(
                       controller: goodsNameController,
                       hintText: AppLocalizations.of(context)!
@@ -294,7 +313,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     // Add LabelMultiSelectWidget here
                     LabelMultiSelectWidget(
                       selectedLabels: selectedLabels,
@@ -361,38 +380,39 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     //       ),
                     //     ),
                     //   ),
-                     const SizedBox(height: 16),
-                if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
-                
-  Column(
-    
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.0), // Отступы слева и справа
-        child: Container(
-         decoration: BoxDecoration(
-  border: Border.all(color: Color(0xff1E2E52), width: 1.0),
-  borderRadius: BorderRadius.circular(14.0),
-),
-
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                AppLocalizations.of(context)!.translate('characteristic'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-
+                    const SizedBox(height: 16),
+                    if (selectedCategory != null &&
+                        selectedCategory!.attributes.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 0.0), // Отступы слева и справа
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Color(0xff1E2E52), width: 1.0),
+                                borderRadius: BorderRadius.circular(14.0),
+                              ),
+                              child: Center(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('characteristic'),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                           ...selectedCategory!.attributes
                               .where((attr) => !attr.isIndividual)
                               .map((attribute) {
@@ -430,205 +450,287 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   child: Column(
                                     children: [
                                       DataTable(
-  columnSpacing: 16,
-  dataRowHeight: 70,
-  headingRowHeight: 56,
-  dividerThickness: 0,
-  columns: [
-    DataColumn(
-      label: Text(
-        AppLocalizations.of(context)!.translate('image_message'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-    ),
-    ...selectedCategory!.attributes
-        .where((attr) => attr.isIndividual)
-        .map((attr) => DataColumn(
-              label: Text(
-                attr.name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ))
-        .toList(),
-    if (selectedCategory!.hasPriceCharacteristics)
-      DataColumn(
-        label: Text(
-          AppLocalizations.of(context)!.translate('price'),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      ),
-    DataColumn(
-      label: Text(
-        AppLocalizations.of(context)!.translate('status'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        '',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-    ),
-  ],
-  rows: tableAttributes.asMap().entries.map((entry) {
-    int index = entry.key;
-    Map<String, dynamic> row = entry.value;
-    return DataRow(
-      cells: [
-        DataCell(
-          Row(
-            children: [
-              if (row['images'].isNotEmpty)
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: FileImage(File(row['images'].first)),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              Stack(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                    onPressed: () => _showImagePickerOptionsForRow(index),
-                  ),
-                  if (row['images'].isNotEmpty)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${row['images'].length}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              IconButton(
-                icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                onPressed: row['images'].isNotEmpty
-                    ? () => _showImageListPopup(row['images'])
-                    : null,
-              ),
-            ],
-          ),
-        ),
-        ...selectedCategory!.attributes
-            .where((attr) => attr.isIndividual)
-            .map((attr) => DataCell(
-                  SizedBox(
-                    width: 150,
-                    child: TextField(
-                      controller: row[attr.name],
-                      decoration: InputDecoration(
-                        hintText:
-                            '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                        hintStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 16),
-                      ),
-                    ),
-                  ),
-                ))
-            .toList(),
-        if (selectedCategory!.hasPriceCharacteristics)
-          DataCell(
-            SizedBox(
-              width: 150,
-              child: TextField(
-                controller: row['price'],
-                decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('enter_price'),
-                  hintStyle: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff99A4BA),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ),
-        DataCell(
-          Switch(
-            value: row['is_active'],
-            onChanged: (value) {
-              setState(() {
-                row['is_active'] = value;
-              });
-            },
-            activeColor: const Color.fromARGB(255, 255, 255, 255),
-            inactiveTrackColor:
-                const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-            activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
-          ),
-        ),
-        DataCell(
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.red, size: 20),
-            onPressed: () => removeTableRow(index),
-          ),
-        ),
-      ],
-    );
-  }).toList(),
-),
+                                        columnSpacing: 16,
+                                        dataRowHeight: 70,
+                                        headingRowHeight: 56,
+                                        dividerThickness: 0,
+                                        columns: [
+                                          DataColumn(
+                                            label: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('image_message'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                          ...selectedCategory!.attributes
+                                              .where(
+                                                  (attr) => attr.isIndividual)
+                                              .map((attr) => DataColumn(
+                                                    label: Text(
+                                                      attr.name,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff1E2E52),
+                                                      ),
+                                                    ),
+                                                  ))
+                                              .toList(),
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
+                                            DataColumn(
+                                              label: Text(
+                                                AppLocalizations.of(context)!
+                                                    .translate('price'),
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff1E2E52),
+                                                ),
+                                              ),
+                                            ),
+                                          DataColumn(
+                                            label: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('status'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              '',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        rows: tableAttributes
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          int index = entry.key;
+                                          Map<String, dynamic> row =
+                                              entry.value;
+                                          return DataRow(
+                                            cells: [
+                                              DataCell(
+                                                Row(
+                                                  children: [
+                                                    if (row['images']
+                                                        .isNotEmpty)
+                                                      Container(
+                                                        width: 40,
+                                                        height: 40,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          image:
+                                                              DecorationImage(
+                                                            image: FileImage(
+                                                                File(row[
+                                                                        'images']
+                                                                    .first)),
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    const SizedBox(width: 8),
+                                                    Stack(
+                                                      children: [
+                                                        IconButton(
+                                                          icon: Icon(
+                                                              Icons.add_circle,
+                                                              color:
+                                                                  Colors.blue,
+                                                              size: 20),
+                                                          onPressed: () =>
+                                                              _showImagePickerOptionsForRow(
+                                                                  index),
+                                                        ),
+                                                        if (row['images']
+                                                            .isNotEmpty)
+                                                          Positioned(
+                                                            top: 4,
+                                                            right: 4,
+                                                            child: Container(
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .all(4),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color:
+                                                                    Colors.red,
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                              ),
+                                                              child: Text(
+                                                                '${row['images'].length}',
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 10,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.visibility,
+                                                          color: Colors.grey,
+                                                          size: 20),
+                                                      onPressed: row['images']
+                                                              .isNotEmpty
+                                                          ? () =>
+                                                              _showImageListPopup(
+                                                                  row['images'])
+                                                          : null,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              ...selectedCategory!.attributes
+                                                  .where((attr) =>
+                                                      attr.isIndividual)
+                                                  .map((attr) => DataCell(
+                                                        SizedBox(
+                                                          width: 150,
+                                                          child: TextField(
+                                                            controller:
+                                                                row[attr.name],
+                                                            decoration:
+                                                                InputDecoration(
+                                                              hintText:
+                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                              hintStyle:
+                                                                  TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                                fontFamily:
+                                                                    'Gilroy',
+                                                                color: Color(
+                                                                    0xff99A4BA),
+                                                              ),
+                                                              border:
+                                                                  OutlineInputBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                              contentPadding:
+                                                                  EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          16),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ))
+                                                  .toList(),
+                                              if (selectedCategory!
+                                                  .hasPriceCharacteristics)
+                                                DataCell(
+                                                  SizedBox(
+                                                    width: 150,
+                                                    child: TextField(
+                                                      controller: row['price'],
+                                                      decoration:
+                                                          InputDecoration(
+                                                        hintText: AppLocalizations
+                                                                .of(context)!
+                                                            .translate(
+                                                                'enter_price'),
+                                                        hintStyle: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          fontFamily: 'Gilroy',
+                                                          color:
+                                                              Color(0xff99A4BA),
+                                                        ),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                        contentPadding:
+                                                            EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical:
+                                                                        16),
+                                                      ),
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                    ),
+                                                  ),
+                                                ),
+                                              DataCell(
+                                                Switch(
+                                                  value: row['is_active'],
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      row['is_active'] = value;
+                                                    });
+                                                  },
+                                                  activeColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
+                                                  inactiveTrackColor:
+                                                      const Color.fromARGB(255,
+                                                              179, 179, 179)
+                                                          .withOpacity(0.5),
+                                                  activeTrackColor: ChatSmsStyles
+                                                      .messageBubbleSenderColor,
+                                                  inactiveThumbColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
+                                                ),
+                                              ),
+                                              DataCell(
+                                                IconButton(
+                                                  icon: Icon(Icons.delete,
+                                                      color: Colors.red,
+                                                      size: 20),
+                                                  onPressed: () =>
+                                                      removeTableRow(index),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
+                                      ),
                                       ...tableAttributes
                                           .asMap()
                                           .entries
@@ -963,56 +1065,53 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           ),
         ),
       ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-        decoration: const BoxDecoration(color: Colors.white),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                buttonColor: const Color(0xffF4F7FD),
-                textColor: Colors.black,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: isLoading
-                  ? SizedBox(
-                      height: 48,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: CircularProgressIndicator(
-                            color: const Color(0xff4759FF)),
-                      ),
-                    )
-                  : CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('add'),
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
-                      onPressed: () {
-                        validateForm();
-                        if (formKey.currentState!.validate() &&
-                            isCategoryValid &&
-                            isImagesValid ) {
-                          _createProduct();
-                        } else {
-                          showCustomSnackBar(
-                            context: context,
-                            message: AppLocalizations.of(context)!
-                                .translate('fill_all_required_fields'),
-                            isSuccess: false,
-                          );
-                        }
-                      },
-                    ),
-            ),
-          ],
+   bottomSheet: Container(
+  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
+  decoration: const BoxDecoration(color: Colors.white),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Expanded(
+        child: CustomButton(
+          buttonText: AppLocalizations.of(context)!.translate('cancel'),
+          buttonColor: const Color(0xffF4F7FD),
+          textColor: Colors.black,
+          onPressed: () => Navigator.pop(context),
         ),
       ),
+      const SizedBox(width: 16),
+      Expanded(
+        child: isLoading
+            ? const SizedBox(
+                height: 48,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xff4759FF)),
+                ),
+              )
+            : CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('add'),
+                buttonColor: const Color(0xff4759FF),
+                textColor: Colors.white,
+                onPressed: () {
+                  validateForm();
+                  if (formKey.currentState!.validate() &&
+                      isCategoryValid &&
+                      isImagesValid) {
+                    _createProduct();
+                  } else {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('fill_all_required_fields'),
+                      isSuccess: false,
+                    );
+                  }
+                },
+              ),
+      ),
+    ],
+  ),
+),
     );
   }
 
@@ -1100,169 +1199,148 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     });
   }
 
- void _createProduct() async {
-    validateForm();
-    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
-      bool isPriceValid = true;
-      if (selectedCategory!.hasPriceCharacteristics) {
-        for (var row in tableAttributes) {
-          final priceController = row['price'] as TextEditingController?;
-          if (priceController == null ||
-              priceController.text.trim().isEmpty ||
-              double.tryParse(priceController.text.trim()) == null) {
-            isPriceValid = false;
-            break;
-          }
+void _createProduct() async {
+  validateForm();
+  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+    bool isPriceValid = true;
+    if (selectedCategory!.hasPriceCharacteristics) {
+      for (var row in tableAttributes) {
+        final priceController = row['price'] as TextEditingController?;
+        if (priceController == null ||
+            priceController.text.trim().isEmpty ||
+            double.tryParse(priceController.text.trim()) == null) {
+          isPriceValid = false;
+          break;
         }
       }
-      if (!isPriceValid) {
-        showCustomSnackBar(
-          context: context,
-          message: AppLocalizations.of(context)!.translate('fill_all_prices'),
-          isSuccess: false,
-        );
-        return;
+    }
+    if (!isPriceValid) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('fill_all_prices'),
+        isSuccess: false,
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      List<Map<String, dynamic>> attributes = [];
+      List<Map<String, dynamic>> variants = [];
+
+      for (var attribute
+          in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        final controller = attributeControllers[attribute.name];
+        if (controller != null && controller.text.trim().isNotEmpty) {
+          attributes.add({
+            'category_attribute_id': attribute.id,
+            'value': controller.text.trim(),
+          });
+        }
       }
 
-      setState(() => isLoading = true);
+      for (var row in tableAttributes) {
+        Map<String, dynamic> variant = {
+          'is_active': row['is_active'],
+          'variant_attributes': [],
+        };
 
-      try {
-        List<Map<String, dynamic>> attributes = [];
-        List<Map<String, dynamic>> variants = [];
+        List<String> variantImagePaths =
+            (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+        List<File> variantImages = [];
+        for (var path in variantImagePaths) {
+          File file = File(path);
+          if (await file.exists()) {
+            variantImages.add(file);
+          } else {
+            print('File not found, skipping: $path');
+          }
+        }
 
-        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
-          final controller = attributeControllers[attribute.name];
+        for (var attr
+            in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          final controller = row[attr.name] as TextEditingController?;
           if (controller != null && controller.text.trim().isNotEmpty) {
-            attributes.add({
-              'category_attribute_id': attribute.id,
+            variant['variant_attributes'].add({
+              'category_attribute_id': attr.id,
               'value': controller.text.trim(),
             });
           }
         }
 
-        for (var row in tableAttributes) {
-          Map<String, dynamic> variant = {
-            'is_active': row['is_active'],
-            'variant_attributes': [],
-          };
-
-          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
-          List<File> variantImages = [];
-          for (var path in variantImagePaths) {
-            File file = File(path);
-            if (await file.exists()) {
-              variantImages.add(file);
-            } else {
-              print('File not found, skipping: $path');
-            }
-          }
-
-          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
-            final controller = row[attr.name] as TextEditingController?;
-            if (controller != null && controller.text.trim().isNotEmpty) {
-              variant['variant_attributes'].add({
-                'category_attribute_id': attr.id,
-                'value': controller.text.trim(),
-              });
-            }
-          }
-
-          if (selectedCategory!.hasPriceCharacteristics) {
-            final priceController = row['price'] as TextEditingController?;
-            if (priceController != null && priceController.text.trim().isNotEmpty) {
-              final price = double.tryParse(priceController.text.trim());
-              if (price != null) {
-                variant['price'] = price;
-              } else {
-                variant['price'] = 0.0;
-              }
+        if (selectedCategory!.hasPriceCharacteristics) {
+          final priceController = row['price'] as TextEditingController?;
+          if (priceController != null &&
+              priceController.text.trim().isNotEmpty) {
+            final price = double.tryParse(priceController.text.trim());
+            if (price != null) {
+              variant['price'] = price;
             } else {
               variant['price'] = 0.0;
             }
           } else {
             variant['price'] = 0.0;
           }
-
-          if (variantImages.isNotEmpty) {
-            variant['files'] = variantImages;
-          }
-
-          if (variant['variant_attributes'].isNotEmpty) {
-            variants.add(variant);
-          }
+        } else {
+          variant['price'] = 0.0;
         }
 
-        List<File> images = [];
-        for (var path in _imagePaths) {
-          File file = File(path);
-          if (await file.exists()) {
-            images.add(file);
-          }
+        if (variantImages.isNotEmpty) {
+          variant['files'] = variantImages;
         }
 
-        // Map selected labels to server format
-        bool isNew = selectedLabels.contains('newest');
-        bool isPopular = selectedLabels.contains('hit');
-        bool isSale = selectedLabels.contains('promotion');
-
-        context.read<GoodsBloc>().add(
-              CreateGoods(
-                name: goodsNameController.text.trim(),
-                parentId: selectedCategory!.id,
-                description: goodsDescriptionController.text.trim(),
-                quantity: int.tryParse(stockQuantityController.text) ?? 0,
-                unitId: int.tryParse(unitIdController.text) ?? 0,
-                attributes: attributes,
-                variants: variants,
-                images: images,
-                isActive: isActive,
-                discountPrice: selectedCategory!.hasPriceCharacteristics
-                    ? null
-                    : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-                branch: selectedBranch?.id,
-                mainImageIndex: mainImageIndex,
-                isNew: isNew, // Add label fields
-                isPopular: isPopular,
-                isSale: isSale,
-              ),
-            );
-
-        setState(() => isLoading = false);
-      } catch (e, stackTrace) {
-        setState(() => isLoading = false);
-        print('Error creating product: $e');
-        print(stackTrace);
-        showCustomSnackBar(
-          context: context,
-          message:
-              '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
-          isSuccess: false,
-        );
-      }
-    } else {
-      showCustomSnackBar(
-        context: context,
-        message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
-        isSuccess: false,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    goodsNameController.dispose();
-    goodsDescriptionController.dispose();
-    discountPriceController.dispose();
-    stockQuantityController.dispose();
-    unitIdController.dispose();
-    attributeControllers.values.forEach((controller) => controller.dispose());
-    for (var row in tableAttributes) {
-      for (var attr in row.values) {
-        if (attr is TextEditingController) {
-          attr.dispose();
+        if (variant['variant_attributes'].isNotEmpty) {
+          variants.add(variant);
         }
       }
+
+      List<File> images = [];
+      for (var path in _imagePaths) {
+        File file = File(path);
+        if (await file.exists()) {
+          images.add(file);
+        }
+      }
+
+      bool isNew = selectedLabels.contains('newest');
+      bool isPopular = selectedLabels.contains('hit');
+      bool isSale = selectedLabels.contains('promotion');
+
+      context.read<GoodsBloc>().add(
+            CreateGoods(
+              name: goodsNameController.text.trim(),
+              parentId: selectedCategory!.id,
+              description: goodsDescriptionController.text.trim(),
+              quantity: int.tryParse(stockQuantityController.text) ?? 0,
+              unitId: int.tryParse(unitIdController.text) ?? 0,
+              attributes: attributes,
+              variants: variants,
+              images: images,
+              isActive: isActive,
+              discountPrice: selectedCategory!.hasPriceCharacteristics
+                  ? null
+                  : (double.tryParse(discountPriceController.text.trim()) ??
+                      0.0),
+              branch: selectedBranch?.id,
+              mainImageIndex: mainImageIndex,
+              isNew: isNew,
+              isPopular: isPopular,
+              isSale: isSale,
+            ),
+          );
+    } catch (e, stackTrace) {
+      setState(() => isLoading = false); // Сбрасываем индикатор
+      print('Error creating product: $e');
+      print(stackTrace);
+      // Удаляем showCustomSnackBar, так как ошибка обрабатывается в BlocListener
     }
-    super.dispose();
+  } else {
+    showCustomSnackBar(
+      context: context,
+      message:
+          AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+      isSuccess: false,
+    );
   }
-}
+}}

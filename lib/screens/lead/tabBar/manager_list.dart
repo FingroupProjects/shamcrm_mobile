@@ -35,7 +35,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     super.initState();
     managersList = [
       ManagerData(
-        id: 1,
+        id: 0,
         name: "Система",
         lastname: "",
       ),
@@ -100,7 +100,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
             if (state is GetAllManagerSuccess && !isInitialized) {
               managersList = [
                 ManagerData(
-                  id: 1,
+                  id: 0,
                   name: "Система",
                   lastname: "",
                 ),
