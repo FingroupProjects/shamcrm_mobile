@@ -306,7 +306,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         if (kDebugMode) {
           print('GoodsBloc: Ошибка загрузки подкатегорий: $e');
         }
-        emit(GoodsError('Не удалось загрузить подкатегории: $e'));
+        emit(GoodsError('Не удалось загрузить подкатегории'));
       }
     } else {
       if (kDebugMode) {

@@ -335,81 +335,81 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         }
       : null,
 ),
-                      IconButton(
-                        padding: const EdgeInsets.only(right: 8),
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/delete.png',
-                            width: 24, height: 24),
-                        onPressed: state is GoodsByIdLoaded
-                            ? () {
-                                print(
-                                    'GoodsDetailsScreen: Delete button pressed');
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('delete_goods'),
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                    content: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('confrim_delete_goods'),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w400,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          print(
-                                              'GoodsDetailsScreen: Delete dialog cancelled');
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('cancel'),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xff99A4BA),
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          print(
-                                              'GoodsDetailsScreen: Delete confirmed for ID ${widget.id}');
-                                          Navigator.pop(context);
-                                          context.read<GoodsByIdBloc>().add(
-                                              DeleteGoods(widget.id, null));
-                                        },
-                                        child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('delete'),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            : null,
-                      ),
+                      // IconButton(
+                      //   padding: const EdgeInsets.only(right: 8),
+                      //   constraints: const BoxConstraints(),
+                      //   icon: Image.asset('assets/icons/delete.png',
+                      //       width: 24, height: 24),
+                      //   onPressed: state is GoodsByIdLoaded
+                      //       ? () {
+                      //           print(
+                      //               'GoodsDetailsScreen: Delete button pressed');
+                      //           showDialog(
+                      //             context: context,
+                      //             builder: (context) => AlertDialog(
+                      //               title: Text(
+                      //                 AppLocalizations.of(context)!
+                      //                     .translate('delete_goods'),
+                      //                 style: const TextStyle(
+                      //                   fontSize: 18,
+                      //                   fontFamily: 'Gilroy',
+                      //                   fontWeight: FontWeight.w600,
+                      //                   color: Color(0xff1E2E52),
+                      //                 ),
+                      //               ),
+                      //               content: Text(
+                      //                 AppLocalizations.of(context)!
+                      //                     .translate('confrim_delete_goods'),
+                      //                 style: const TextStyle(
+                      //                   fontSize: 16,
+                      //                   fontFamily: 'Gilroy',
+                      //                   fontWeight: FontWeight.w400,
+                      //                   color: Color(0xff1E2E52),
+                      //                 ),
+                      //               ),
+                      //               actions: [
+                      //                 TextButton(
+                      //                   onPressed: () {
+                      //                     print(
+                      //                         'GoodsDetailsScreen: Delete dialog cancelled');
+                      //                     Navigator.pop(context);
+                      //                   },
+                      //                   child: Text(
+                      //                     AppLocalizations.of(context)!
+                      //                         .translate('cancel'),
+                      //                     style: const TextStyle(
+                      //                       fontSize: 16,
+                      //                       fontFamily: 'Gilroy',
+                      //                       fontWeight: FontWeight.w500,
+                      //                       color: Color(0xff99A4BA),
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //                 TextButton(
+                      //                   onPressed: () {
+                      //                     print(
+                      //                         'GoodsDetailsScreen: Delete confirmed for ID ${widget.id}');
+                      //                     Navigator.pop(context);
+                      //                     context.read<GoodsByIdBloc>().add(
+                      //                         DeleteGoods(widget.id, null));
+                      //                   },
+                      //                   child: Text(
+                      //                     AppLocalizations.of(context)!
+                      //                         .translate('delete'),
+                      //                     style: const TextStyle(
+                      //                       fontSize: 16,
+                      //                       fontFamily: 'Gilroy',
+                      //                       fontWeight: FontWeight.w500,
+                      //                       color: Colors.red,
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           );
+                      //         }
+                      //       : null,
+                      // ),
                     ],
                   );
                 },

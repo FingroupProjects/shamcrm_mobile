@@ -1082,7 +1082,8 @@
   "promotion": "Акция",
   "newest": "Новинка",
   "select_label": "Выберите метку",
-  "payment_method_title":"Способ оплаты:"
+  "payment_method_title":"Способ оплаты:",
+  "active_status":"Статус"
 
 
 }

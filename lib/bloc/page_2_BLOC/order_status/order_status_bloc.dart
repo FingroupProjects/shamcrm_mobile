@@ -240,12 +240,12 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       print('OrderBloc: Выдано состояние OrderSuccess');
     } else {
       print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
-      emit(OrderError('Не удалось создать заказ: ${result['error']}'));
+      emit(OrderError('Не удалось создать заказ:'));
     }
   } catch (e, stackTrace) {
     print('OrderBloc: Ошибка при создании заказа: $e');
     print('OrderBloc: StackTrace: $stackTrace');
-    emit(OrderError('Ошибка создания заказа: $e'));
+    emit(OrderError('Ошибка создания заказа'));
   }
 }
 Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {

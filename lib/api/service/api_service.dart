@@ -6277,8 +6277,7 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
-
+  
   //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
 
   Future<List<NoticeEvent>> getEvents({
@@ -6787,7 +6786,7 @@ Future<List<CategoryData>> getCategory({String? search}) async {
     } catch (e) {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': 'An error occurred: ',
       };
     }
   }
@@ -6839,7 +6838,7 @@ Future<List<CategoryData>> getCategory({String? search}) async {
     } catch (e) {
       return {
         'success': false,
-        'message': 'An error occurred: $e',
+        'message': 'An error occurred: ',
       };
     }
   }
@@ -6916,7 +6915,7 @@ Future<List<CategoryData>> getCategory({String? search}) async {
     } catch (e) {
       return {
         'success': false,
-        'message': 'error_occurred: $e',
+        'message': 'error_occurred: ',
       };
     }
   }
@@ -6964,6 +6963,13 @@ Future<List<Goods>> getGoods({
         path += '&is_sale=1';
       }
     }
+
+    if (filters.containsKey('is_active')) {
+      path += '&is_active=${filters['is_active'] ? 1 : 0}';
+      if (kDebugMode) {
+        print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+      }
+    }
   }
 
   if (kDebugMode) {
@@ -6979,7 +6985,6 @@ Future<List<Goods>> getGoods({
       final goods = (data['result']['data'] as List)
           .map((item) => Goods.fromJson(item as Map<String, dynamic>))
           .toList();
-      // Проверяем метаданные пагинации
       final total = data['result']['total'] ?? goods.length;
       final totalPages = data['result']['total_pages'] ?? (goods.length < perPage ? page : page + 1);
       if (kDebugMode) {
@@ -6998,7 +7003,7 @@ Future<List<Goods>> getGoods({
     }
     throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
-}
+} 
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
     final String path = '/good/$goodsId?organization_id=$organizationId';
@@ -7018,24 +7023,28 @@ Future<List<Goods>> getGoods({
   }
 
   Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
-    final organizationId = await getSelectedOrganization();
-    final String path = '/category/get/subcategories?organization_id=$organizationId';
+  final organizationId = await getSelectedOrganization();
+  final String path = '/category/get/subcategories?organization_id=$organizationId';
 
-    final response = await _getRequest(path);
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('data')) {
-        return (data['data'] as List)
-            .map((item) => SubCategoryAttributesData.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    print('Response data: $data'); // Debug: Print the response
+    if (data.containsKey('data')) {
+      return (data['data'] as List)
+          .map((item) {
+            print('Item: $item'); // Debug: Print each item
+            return SubCategoryAttributesData.fromJson(item as Map<String, dynamic>);
+          })
+          .toList();
     } else {
-      throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
+      throw Exception('Ошибка: Неверный формат данных');
     }
+  } else {
+    throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
   }
+}
 
  Future<Map<String, dynamic>> createGoods({
   required String name,
@@ -7140,11 +7149,11 @@ Future<List<Goods>> getGoods({
       };
     }
   } catch (e, stackTrace) {
-    print('ApiService: Error in createGoods: $e');
+    print('ApiService: Error in createGoods: ');
     print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
-      'message': 'Произошла ошибка: $e',
+      'message': 'Произошла ошибка: ',
     };
   }
 }
@@ -7280,11 +7289,11 @@ Future<List<Goods>> getGoods({
       };
     }
   } catch (e, stackTrace) {
-    print('ApiService: Error in updateGoods: $e');
+    print('ApiService: Error in updateGoods: ');
     print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
-      'message': 'An error occurred: $e',
+      'message': 'An error occurred: ',
     };
   }
 }
@@ -7297,7 +7306,7 @@ Future<List<Goods>> getGoods({
       final effectiveOrgId = organizationId ??
           orgId; // Используем переданный organizationId или из getSelectedOrganization
       var uri = Uri.parse(
-        '$baseUrl/good/$goodId${effectiveOrgId != null ? '?organization_id=$effectiveOrgId' : ''}',
+        '$baseUrl/good/$goodId${effectiveOrgId != null ? '?organization_id=ffectiveOrgId' : ''}',
       );
 
       final response = await http.delete(
@@ -7317,7 +7326,7 @@ Future<List<Goods>> getGoods({
             jsonResponse['message'] ?? 'Ошибка при удалении товара');
       }
     } catch (e) {
-      print('Ошибка удаления товара: $e');
+      print('Ошибка удаления товара: ');
       return false;
     }
   }
@@ -7394,7 +7403,7 @@ Future<List<Goods>> getGoods({
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print('Ошибка загрузки заказов: $e');
+      print('Ошибка загрузки заказов: ');
       throw e;
     }
   }
@@ -7419,7 +7428,7 @@ Future<List<Goods>> getGoods({
       }
     } catch (e) {
       print(
-          'Ошибка загрузки деталей заказа: $e. Используем кэшированные данные.');
+          'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
       final cachedOrder = prefs.getString('cachedOrder_$orderId');
       if (cachedOrder != null) {
         final decodedData = json.decode(cachedOrder);
@@ -7461,7 +7470,7 @@ Future<Map<String, dynamic>> createOrder({
       'organization_id': organizationId,
       'status_id': statusId,
       'comment_to_courier': commentToCourier,
-      'payment_type': 'сфыр',
+      'payment_type': 'cash ',
       'manager_id': managerId,
     };
 
@@ -7508,14 +7517,14 @@ Future<Map<String, dynamic>> createOrder({
           'order': jsonResponse['result'],
         };
       } else {
-        throw Exception('Неожиданная структура ответа сервера: ${jsonResponse['result']}');
+        throw ('Неожиданная структура ответа сервера:');
       }
     } else {
       final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при создании заказа');
+      throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
     }
   } catch (e) {
-    print('ApiService: Ошибка создания заказа: $e');
+    print('ApiService: Ошибка создания заказа: ');
     return {'success': false, 'error': e.toString()};
   }
 }
@@ -7601,7 +7610,7 @@ Future<Map<String, dynamic>> createOrder({
       throw Exception(jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
     }
   } catch (e, stackTrace) {
-    print('ApiService: Ошибка обновления заказа: $e');
+    print('ApiService: Ошибка обновления заказа: ');
     print('ApiService: StackTrace: $stackTrace');
     return {'success': false, 'error': e.toString()};
   }
@@ -7629,7 +7638,7 @@ Future<Map<String, dynamic>> createOrder({
             'Ошибка при получении адресов доставки: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка при получении адресов доставки: $e');
+      throw Exception('Ошибка при получении адресов доставки: ');
     }
   }
 
@@ -7722,7 +7731,7 @@ Future<Map<String, dynamic>> createOrder({
             jsonResponse['message'] ?? 'Ошибка при удалении заказа');
       }
     } catch (e) {
-      print('Ошибка удаления заказа: $e');
+      print('Ошибка удаления заказа: ');
       return false;
     }
   }
@@ -7760,7 +7769,7 @@ Future<Map<String, dynamic>> createOrder({
             jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
       }
     } catch (e) {
-      print('Ошибка смены статуса заказа: $e');
+      print('Ошибка смены статуса заказа: ');
       return false;
     }
   }

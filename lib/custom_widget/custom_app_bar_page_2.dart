@@ -549,6 +549,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   List<int>? initialCategoryIds;
   double? initialDiscountPercent;
   List<String>? initialLabels;
+  bool? initialIsActive;
 
   if (widget.currentFilters.containsKey('category_id') &&
       widget.currentFilters['category_id'] is List &&
@@ -569,6 +570,13 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       widget.currentFilters['labels'] is List &&
       widget.currentFilters['labels'].isNotEmpty) {
     initialLabels = List<String>.from(widget.currentFilters['labels']);
+  }
+
+  if (widget.currentFilters.containsKey('is_active')) {
+    initialIsActive = widget.currentFilters['is_active'] as bool?;
+    if (kDebugMode) {
+      print('CustomAppBarPage2: Начальное значение is_active: $initialIsActive');
+    }
   }
 
   Navigator.push(
@@ -595,7 +603,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         },
         initialCategoryIds: initialCategoryIds,
         initialDiscountPercent: initialDiscountPercent,
-        initialLabels: initialLabels, // Pass initial labels
+        initialLabels: initialLabels,
+        initialIsActive: initialIsActive, // Передаем initialIsActive
       ),
     ),
   );

@@ -7,8 +7,8 @@ class CategoryDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
   final Function(SubCategoryAttributesData?) onSelectCategory;
   final List<SubCategoryAttributesData> subCategories;
-  final bool isValid; 
-  final VoidCallback? onValidationChanged; 
+  final bool isValid;
+  final VoidCallback? onValidationChanged;
 
   CategoryDropdownWidget({
     Key? key,
@@ -25,7 +25,7 @@ class CategoryDropdownWidget extends StatefulWidget {
 
 class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
   SubCategoryAttributesData? selectedSubCategory;
-  
+
   final TextStyle categoryTextStyle = const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
@@ -39,14 +39,14 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
     if (widget.selectedCategory != null && widget.subCategories.isNotEmpty) {
       selectedSubCategory = widget.subCategories.firstWhere(
         (subCat) => subCat.name == widget.selectedCategory,
-        orElse: () => widget.subCategories.first 
+        orElse: () => widget.subCategories.first,
       );
     }
   }
 
   @override
-Widget build(BuildContext context) {
-      return Column(
+  Widget build(BuildContext context) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -55,14 +55,6 @@ Widget build(BuildContext context) {
         ),
         const SizedBox(height: 4),
         Container(
-          // decoration: BoxDecoration(
-          //   color: const Color(0xFFF4F7FD),
-          //   borderRadius: BorderRadius.circular(12),
-          //   border: Border.all(
-          //     width: 1.5,
-          //     color: widget.isValid ? const Color(0xFFF4F7FD) : Colors.red, // Красная рамка при ошибке
-          //   ),
-          // ),
           child: CustomDropdown<SubCategoryAttributesData>.search(
             closeDropDownOnClearFilterSearch: true,
             items: widget.subCategories,
@@ -72,7 +64,7 @@ Widget build(BuildContext context) {
               closedFillColor: Color(0xffF4F7FD),
               expandedFillColor: Colors.white,
               closedBorder: Border.all(
-                color: widget.isValid ? const  Color(0xffF4F7FD) : Colors.red,
+                color: widget.isValid ? const Color(0xffF4F7FD) : Colors.red,
                 width: 1.5,
               ),
               closedBorderRadius: BorderRadius.circular(12),
@@ -90,7 +82,8 @@ Widget build(BuildContext context) {
             },
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
-                selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_category'),
+                selectedItem?.name ??
+                    AppLocalizations.of(context)!.translate('select_category'),
                 style: categoryTextStyle,
               );
             },
@@ -111,20 +104,19 @@ Widget build(BuildContext context) {
             },
           ),
         ),
-        if (!widget.isValid) 
+        if (!widget.isValid)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-            '    ${AppLocalizations.of(context)!.translate('field_required')}',
+              '    ${AppLocalizations.of(context)!.translate('field_required')}',
               style: TextStyle(
-              fontSize: 14,
-              color: Colors.red,
-              fontWeight: FontWeight.w400),
+                fontSize: 14,
+                color: Colors.red,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
       ],
     );
   }
-  
-  }
-  
+}
