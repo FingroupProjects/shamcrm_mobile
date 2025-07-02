@@ -80,18 +80,17 @@ class _GoodsScreenState extends State<GoodsScreen> {
   }
 
   void _onFilterSelected(Map<String, dynamic> filters) {
-    if (kDebugMode) {
-      print('GoodsScreen: Применение фильтров: $filters');
-    }
-    setState(() {
-      _currentFilters = Map.from(filters);
-      if (kDebugMode) {
-        print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
-      }
-    });
-    context.read<GoodsBloc>().add(FilterGoods(filters));
+  if (kDebugMode) {
+    print('GoodsScreen: Применение фильтров: $filters');
   }
-
+  setState(() {
+    _currentFilters = Map.from(filters);
+    if (kDebugMode) {
+      print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+    }
+  });
+  context.read<GoodsBloc>().add(FilterGoods(filters));
+}
   void _onResetFilters() {
     if (kDebugMode) {
       print('GoodsScreen: Сброс фильтров');
@@ -152,7 +151,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           },
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
-          currentFilters: _currentFilters,
+          currentFilters: _currentFilters, // Pass current filters
         ),
       ),
       body: isClickAvatarIcon
@@ -220,13 +219,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         child: GoodsCard(
                           goodsId: goods.id,
                           goodsName: goods.name,
+                          isNew: goods.isNew,
+                          isPopular: goods.isPopular,
+                          isSale: goods.isSale,
                           goodsDescription: goods.description ?? "",
                           goodsCategory: goods.category.name,
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
-                          isNew: goods.isNew, // Added
-                          isPopular: goods.isPopular, // Added
-                          isSale: goods.isSale, // Added
+                          isActive: goods.isActive,
                         ),
                       );
                     },

@@ -12,9 +12,10 @@ class GoodsCard extends StatefulWidget {
   final String goodsCategory;
   final int goodsStockQuantity;
   final List<GoodsFile> goodsFiles;
-  final bool isNew; // Added
-  final bool isPopular; // Added
-  final bool isSale; // Added
+  final bool isNew;
+  final bool isPopular;
+  final bool isSale;
+  final bool? isActive;
 
   GoodsCard({
     Key? key,
@@ -27,6 +28,7 @@ class GoodsCard extends StatefulWidget {
     required this.isNew,
     required this.isPopular,
     required this.isSale,
+    this.isActive,
   }) : super(key: key);
 
   @override
@@ -204,6 +206,47 @@ class _GoodsCardState extends State<GoodsCard> {
     return labels;
   }
 
+  Color _getStatusBackgroundColor(bool? isActive) {
+    if (isActive == true) {
+      return const Color(0xFFE8F5E9); // Цвет для активного (как "Обычный" в TaskCard)
+    } else {
+      return const Color(0xFFFFEBEE); // Цвет для неактивного (как "Срочный" в TaskCard)
+    }
+  }
+
+  Color _getStatusTextColor(bool? isActive) {
+    if (isActive == true) {
+      return const Color(0xFF2E7D32); // Цвет текста для активного (как "Обычный" в TaskCard)
+    } else {
+      return const Color(0xFFC62828); // Цвет текста для неактивного (как "Срочный" в TaskCard)
+    }
+  }
+
+  Widget _buildStatusLabel() {
+    final localizations = AppLocalizations.of(context)!;
+    final isActive = widget.isActive ?? false;
+    final statusText = isActive
+        ? localizations.translate('active')
+        : localizations.translate('inactive');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getStatusBackgroundColor(isActive),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(
+          color: _getStatusTextColor(isActive),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mainImage = _getMainImage();
@@ -228,10 +271,9 @@ class _GoodsCardState extends State<GoodsCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      // Add labels here
                       if (widget.isNew || widget.isPopular || widget.isSale)
                         Wrap(
-                          spacing: 0, // Handled by margin in _buildLabels
+                          spacing: 0,
                           runSpacing: 4,
                           children: _buildLabels(),
                         ),
@@ -268,11 +310,13 @@ class _GoodsCardState extends State<GoodsCard> {
                                   .translate('subcategory_card'),
                               style: TaskCardStyles.priorityStyle.copyWith(
                                 color: Color(0xff99A4BA),
+                                fontSize: 14,
                               ),
                             ),
                             TextSpan(
                               text: widget.goodsCategory,
                               style: TaskCardStyles.priorityStyle.copyWith(
+                                fontSize: 14,
                                 color: Color(0xff1E2E52),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -281,14 +325,7 @@ class _GoodsCardState extends State<GoodsCard> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('stock_quantity_details')}: ${widget.goodsStockQuantity}',
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff99A4BA),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      _buildStatusLabel(),
                     ],
                   ),
                 ),

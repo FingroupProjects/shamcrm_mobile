@@ -62,8 +62,8 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       return PaymentTypeStyle(
         content: Image.asset(
           'assets/icons/alif.png',
-          width: 40,
-          height: 20,
+          width: 60,
+          height: 30,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Text(
             'ALIF',
@@ -82,8 +82,8 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       return PaymentTypeStyle(
         content: Image.asset(
           'assets/icons/click3.png',
-          width: 40,
-          height: 20,
+          width: 60,
+          height: 30,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Text(
             'CLICK',
@@ -102,8 +102,8 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       return PaymentTypeStyle(
         content: Image.asset(
           'assets/icons/payme.png',
-          width: 40,
-          height: 20,
+          width: 60,
+          height: 30,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Text(
             'PAYME',
