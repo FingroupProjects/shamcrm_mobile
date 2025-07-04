@@ -72,7 +72,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   void _fetchAndAddCustomFields() async {
     try {
-      print('TaskAddScreen: Fetching custom fields and directories');
+      //print('TaskAddScreen: Fetching custom fields and directories');
       final customFieldsData = await ApiService().getCustomFields();
       if (customFieldsData['result'] != null) {
         setState(() {
@@ -83,7 +83,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('TaskAddScreen: Added custom fields: ${customFields.length}');
+          //print('TaskAddScreen: Added custom fields: ${customFields.length}');
         });
       }
 
@@ -99,11 +99,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('TaskAddScreen: Added directory fields: ${customFields.length}');
+          //print('TaskAddScreen: Added directory fields: ${customFields.length}');
         });
       }
     } catch (e) {
-      print('TaskAddScreen: Error fetching custom fields: $e');
+      //print('TaskAddScreen: Error fetching custom fields: $e');
     }
   }
 
@@ -114,11 +114,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-    print('TaskAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+    //print('TaskAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
     if (isDirectory && directoryId != null) {
       bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        print('TaskAddScreen: Directory with ID $directoryId already exists, skipping');
+        //print('TaskAddScreen: Directory with ID $directoryId already exists, skipping');
         return;
       }
     }
@@ -131,12 +131,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         type: type,
         uniqueId: Uuid().v4(),
       ));
-      print('TaskAddScreen: Added custom field: $fieldName');
+      //print('TaskAddScreen: Added custom field: $fieldName');
     });
   }
 
   void _showAddFieldMenu() {
-    print('TaskAddScreen: Showing add field menu');
+    //print('TaskAddScreen: Showing add field menu');
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(300, 650, 200, 300),
@@ -172,7 +172,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ),
       ],
     ).then((value) {
-      print('TaskAddScreen: Menu selected value: $value');
+      //print('TaskAddScreen: Menu selected value: $value');
       if (value == 'manual') {
         showDialog(
           context: context,
@@ -190,7 +190,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory_model.Directory directory) {
-                print('TaskAddScreen: Selected directory: ${directory.name}, id: ${directory.id}');
+                //print('TaskAddScreen: Selected directory: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
               },
             );
@@ -201,7 +201,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   Widget _buildFileSelection() {
-    print('TaskAddScreen: Building file selection with ${fileNames.length} files');
+    //print('TaskAddScreen: Building file selection with ${fileNames.length} files');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,7 +254,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
               final fileName = fileNames[index];
               final fileExtension = fileName.split('.').last.toLowerCase();
-              print('TaskAddScreen: Displaying file: $fileName');
+              //print('TaskAddScreen: Displaying file: $fileName');
               return Padding(
                 padding: EdgeInsets.only(right: 16),
                 child: Stack(
@@ -299,7 +299,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             selectedFiles.removeAt(index);
                             fileNames.removeAt(index);
                             fileSizes.removeAt(index);
-                            print('TaskAddScreen: Removed file: $fileName');
+                            //print('TaskAddScreen: Removed file: $fileName');
                           });
                         },
                         child: Container(
@@ -325,7 +325,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   Future<void> _pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      print('TaskAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
+      //print('TaskAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
       if (result != null) {
         double totalSize = selectedFiles.fold<double>(
           0.0,
@@ -338,7 +338,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         );
 
         if (totalSize + newFilesSize > 50) {
-          print('TaskAddScreen: File size exceeds 50MB limit');
+          //print('TaskAddScreen: File size exceeds 50MB limit');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -370,11 +370,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
-          print('TaskAddScreen: Added files: $fileNames');
+          //print('TaskAddScreen: Added files: $fileNames');
         });
       }
     } catch (e) {
-      print('TaskAddScreen: Error picking file: $e');
+      //print('TaskAddScreen: Error picking file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),
@@ -403,7 +403,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('TaskAddScreen: Building with selectedProject: $selectedProject, selectedUsers: $selectedUsers');
+    //print('TaskAddScreen: Building with selectedProject: $selectedProject, selectedUsers: $selectedUsers');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -431,7 +431,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 height: 24,
               ),
               onPressed: () {
-                print('TaskAddScreen: Back button pressed');
+                //print('TaskAddScreen: Back button pressed');
                 Navigator.pop(context, widget.statusId);
                 context.read<TaskBloc>().add(FetchTaskStatuses());
               },
@@ -447,7 +447,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ],
         child: BlocListener<TaskBloc, TaskState>(
           listener: (context, state) {
-            print('TaskAddScreen: TaskBloc state changed: $state');
+            //print('TaskAddScreen: TaskBloc state changed: $state');
             if (state is TaskError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -505,7 +505,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      print('TaskAddScreen: Unfocusing on tap');
+                      //print('TaskAddScreen: Unfocusing on tap');
                       FocusScope.of(context).unfocus();
                     },
                     child: SingleChildScrollView(
@@ -522,7 +522,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             onPriorityChanged: (bool? value) {
                               setState(() {
                                 selectedPriority = value == true ? 3 : 1;
-                                print('TaskAddScreen: Priority changed to: $selectedPriority');
+                                //print('TaskAddScreen: Priority changed to: $selectedPriority');
                               });
                             },
                             priorityText: AppLocalizations.of(context)!.translate('urgent'),
@@ -547,7 +547,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             onSelectUsers: (List<UserData> selectedUsersData) {
                               setState(() {
                                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                                print('TaskAddScreen: Selected users: $selectedUsers');
+                                //print('TaskAddScreen: Selected users: $selectedUsers');
                               });
                             },
                           ),
@@ -557,7 +557,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             onSelectProject: (ProjectTask selectedProjectData) {
                               setState(() {
                                 selectedProject = selectedProjectData.id.toString();
-                                print('TaskAddScreen: Selected project: ${selectedProjectData.id}');
+                                //print('TaskAddScreen: Selected project: ${selectedProjectData.id}');
                               });
                             },
                           ),
@@ -582,7 +582,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                               onPressed: () {
                                 setState(() {
                                   _showAdditionalFields = true;
-                                  print('TaskAddScreen: Additional fields toggled');
+                                  //print('TaskAddScreen: Additional fields toggled');
                                 });
                               },
                             )
@@ -608,7 +608,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                                 entryId: selectedField.id,
                                                 controller: TextEditingController(text: selectedField.value),
                                               );
-                                              print('TaskAddScreen: Directory field updated: ${field.fieldName}');
+                                              //print('TaskAddScreen: Directory field updated: ${field.fieldName}');
                                             });
                                           },
                                           controller: field.controller,
@@ -617,13 +617,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                               customFields[index] = field.copyWith(
                                                 entryId: entryId,
                                               );
-                                              print('TaskAddScreen: Directory entry ID updated: $entryId');
+                                              //print('TaskAddScreen: Directory entry ID updated: $entryId');
                                             });
                                           },
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('TaskAddScreen: Removed custom field at index: $index');
+                                              //print('TaskAddScreen: Removed custom field at index: $index');
                                             });
                                           },
                                         )
@@ -633,7 +633,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('TaskAddScreen: Removed custom field: ${field.fieldName}');
+                                              //print('TaskAddScreen: Removed custom field: ${field.fieldName}');
                                             });
                                           },
                                           type: field.type,
@@ -675,7 +675,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () {
-                print('TaskAddScreen: Cancel button pressed');
+                //print('TaskAddScreen: Cancel button pressed');
                 Navigator.pop(context);
               },
             ),
@@ -684,7 +684,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           Expanded(
             child: BlocBuilder<TaskBloc, TaskState>(
               builder: (context, state) {
-                print('TaskAddScreen: TaskBloc builder state: $state');
+                //print('TaskAddScreen: TaskBloc builder state: $state');
                 if (state is TaskLoading) {
                   return Center(
                     child: CircularProgressIndicator(
@@ -708,11 +708,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   void _submitForm() {
-    print('TaskAddScreen: Submitting form with name: ${nameController.text}, project: $selectedProject, users: $selectedUsers');
+    //print('TaskAddScreen: Submitting form with name: ${nameController.text}, project: $selectedProject, users: $selectedUsers');
     if (_formKey.currentState!.validate()) {
       _createTask();
     } else {
-      print('TaskAddScreen: Form validation failed');
+      //print('TaskAddScreen: Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -749,7 +749,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       try {
         startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
       } catch (e) {
-        print('TaskAddScreen: Invalid start date format: $e');
+        //print('TaskAddScreen: Invalid start date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -767,7 +767,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       try {
         endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
       } catch (e) {
-        print('TaskAddScreen: Invalid end date format: $e');
+        //print('TaskAddScreen: Invalid end date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -784,7 +784,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       setState(() {
         isEndDateInvalid = true;
       });
-      print('TaskAddScreen: Start date is after end date');
+      //print('TaskAddScreen: Start date is after end date');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -871,14 +871,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
         });
-        print('TaskAddScreen: Added directory value: ${field.directoryId}, ${field.entryId}');
+        //print('TaskAddScreen: Added directory value: ${field.directoryId}, ${field.entryId}');
       } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
           'type': fieldType ?? 'string',
         });
-        print('TaskAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
+        //print('TaskAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
       }
     }
 
@@ -899,6 +899,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       directoryValues: directoryValues,
       localizations: localizations,
     ));
-    print('TaskAddScreen: Dispatched CreateTask event');
+    //print('TaskAddScreen: Dispatched CreateTask event');
   }
 }

@@ -19,6 +19,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   bool _isKeyboardVisible = false;
   bool isCommonActive = true; 
   bool isUniqueActive = false; 
+  bool showOnWebsite = false; // Новый переключатель
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   Widget build(BuildContext context) {
     final double dialogHeight = _isDropdownVisible
         ? MediaQuery.of(context).size.height * 0.60
-        : MediaQuery.of(context).size.height * 0.35;
+        : MediaQuery.of(context).size.height * 0.40;
 
     return Dialog(
       insetPadding: EdgeInsets.zero,
@@ -98,6 +99,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         isCommonActive = value;
                         if (isCommonActive) {
                           isUniqueActive = false;
+                          showOnWebsite = false; // Сбрасываем при переключении
                         }
                       });
                     },
@@ -128,6 +130,8 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         isUniqueActive = value;
                         if (isUniqueActive) {
                           isCommonActive = false;
+                        } else {
+                          showOnWebsite = false; // Сбрасываем при выключении
                         }
                       });
                     },
@@ -148,6 +152,35 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   ),
                 ],
               ),
+              // Третий переключатель - показывается только когда isUniqueActive == true
+              if (isUniqueActive)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Switch(
+                      value: showOnWebsite,
+                      onChanged: (value) {
+                        setState(() {
+                          showOnWebsite = value;
+                        });
+                      },
+                      activeColor: const Color.fromARGB(255, 255, 255, 255),
+                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                      activeTrackColor: Color(0xff1E2E52),
+                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!.translate('show_on_website'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ],
+                ),
               SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,

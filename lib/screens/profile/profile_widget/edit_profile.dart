@@ -109,13 +109,13 @@ class _InteractiveAvatarState extends State<InteractiveAvatar>
   // Обработчик нажатия с анимацией
 void _handleTap() {
   _tapController.forward().then((_) => _tapController.reverse());
-  print('Avatar tapped, isExpanded: $_isExpanded'); // Логирование
+  //print('Avatar tapped, isExpanded: $_isExpanded'); // Логирование
   _openFullScreenGallery(); // Всегда открываем галерею
 }
 
   // Открытие полноэкранной галереи
   void _openFullScreenGallery() {
-  print('Opening gallery with localImage: ${widget.localImage}, userImage: ${widget.userImage}');
+  //print('Opening gallery with localImage: ${widget.localImage}, userImage: ${widget.userImage}');
   Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
@@ -741,7 +741,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _loadSelectedOrganization(),
       ]);
     } catch (e) {
-      print('Error loading initial data: $e');
+      //print('Error loading initial data: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -800,7 +800,7 @@ Future<void> _loadUserPhone() async {
       _userImage = userProfile.image ?? '';
     });
   } catch (e) {
-    print('Ошибка при загрузке данных из API: $e');
+    //print('Ошибка при загрузке данных из API: $e');
   }
 }
 
@@ -866,7 +866,7 @@ Future<void> _showImagePickerDialog() async {
                 setState(() {
                   _localImage = file;
                   _userImage = ''; // Сбрасываем URL
-                  print('Local image selected: ${_localImage?.path}'); // Логирование
+                  //print('Local image selected: ${_localImage?.path}'); // Логирование
                 });
                 Navigator.pop(context);
               }
@@ -895,7 +895,7 @@ Future<void> _showImagePickerDialog() async {
                 setState(() {
                   _localImage = file;
                   _userImage = ''; // Сбрасываем URL
-                  print('Local image selected: ${_localImage?.path}'); // Логирование
+                  //print('Local image selected: ${_localImage?.path}'); // Логирование
                 });
                 Navigator.pop(context);
               }

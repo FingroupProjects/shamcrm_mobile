@@ -24,11 +24,12 @@ class SubCategoryEditBottomSheet {
     bool initialHasPriceCharacteristics = false,
   }) async {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController categoryNameController = TextEditingController(text: initialName);
+    final TextEditingController categoryNameController =
+        TextEditingController(text: initialName);
     File? _image = initialImage;
     bool _isImageSelected = initialImage != null;
     bool _isImageChanged = false;
-    
+
     List<CustomField> customFields = initialAttributes
         .map((attr) => CustomField(
               name: attr.name,
@@ -39,7 +40,8 @@ class SubCategoryEditBottomSheet {
     bool isAffectingPrice = initialHasPriceCharacteristics;
 
     Future<void> _pickImage() async {
-      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _isImageSelected = true;
@@ -66,7 +68,8 @@ class SubCategoryEditBottomSheet {
                   return AddCustomCharacterFieldDialog(
                     onAddField: (fieldName, isIndividual) {
                       setState(() {
-                        customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
+                        customFields.add(CustomField(
+                            name: fieldName, isIndividual: isIndividual));
                       });
                     },
                   );
@@ -97,7 +100,8 @@ class SubCategoryEditBottomSheet {
                       ),
                     ),
                     Text(
-                      AppLocalizations.of(context)!.translate('edit_subcategory'),
+                      AppLocalizations.of(context)!
+                          .translate('edit_subcategory'),
                       style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -115,11 +119,14 @@ class SubCategoryEditBottomSheet {
                             children: [
                               CustomTextField(
                                 controller: categoryNameController,
-                                hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
-                                label: AppLocalizations.of(context)!.translate('category_name'),
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_category_name'),
+                                label: AppLocalizations.of(context)!
+                                    .translate('category_name'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!.translate('field_required');
+                                    return AppLocalizations.of(context)!
+                                        .translate('field_required');
                                   }
                                   return null;
                                 },
@@ -140,11 +147,13 @@ class SubCategoryEditBottomSheet {
                                   setState(() {
                                     selectedType = type;
                                   });
-                                }, isAffectingPrice: isAffectingPrice,
+                                },
+                                isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                AppLocalizations.of(context)!.translate('image_message'),
+                                AppLocalizations.of(context)!
+                                    .translate('image_message'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
@@ -168,14 +177,17 @@ class SubCategoryEditBottomSheet {
                                         color: const Color(0xffF4F7FD),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
+                                          color: !_isImageSelected
+                                              ? Colors.red
+                                              : const Color(0xffF4F7FD),
                                           width: 1.5,
                                         ),
                                       ),
                                       child: _image == null
                                           ? Center(
                                               child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: [
                                                   const Icon(
                                                     Icons.camera_alt,
@@ -184,10 +196,14 @@ class SubCategoryEditBottomSheet {
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    AppLocalizations.of(context)!.translate('pick_image'),
+                                                    AppLocalizations.of(
+                                                            context)!
+                                                        .translate(
+                                                            'pick_image'),
                                                     style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       fontFamily: 'Gilroy',
                                                       color: Color(0xff99A4BA),
                                                     ),
@@ -196,16 +212,21 @@ class SubCategoryEditBottomSheet {
                                               ),
                                             )
                                           : Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16),
                                               child: Row(
                                                 children: [
                                                   Container(
                                                     width: 54,
                                                     height: 54,
                                                     decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
                                                       image: DecorationImage(
-                                                        image: FileImage(_image!),
+                                                        image:
+                                                            FileImage(_image!),
                                                         fit: BoxFit.cover,
                                                       ),
                                                     ),
@@ -213,22 +234,31 @@ class SubCategoryEditBottomSheet {
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
-                                                      _image!.path.split('/').last,
+                                                      _image!.path
+                                                          .split('/')
+                                                          .last,
                                                       style: const TextStyle(
                                                         fontSize: 14,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
+                                                        color:
+                                                            Color(0xff1E2E52),
                                                       ),
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   IconButton(
-                                                    icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                    icon: const Icon(
+                                                        Icons.close,
+                                                        color:
+                                                            Color(0xff1E2E52)),
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
-                                                        _isImageSelected = false;
+                                                        _isImageSelected =
+                                                            false;
                                                         _isImageChanged = true;
                                                       });
                                                     },
@@ -241,7 +271,8 @@ class SubCategoryEditBottomSheet {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 4),
                                         child: Text(
-                                          AppLocalizations.of(context)!.translate('required_image'),
+                                          AppLocalizations.of(context)!
+                                              .translate('required_image'),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.red,
@@ -254,7 +285,8 @@ class SubCategoryEditBottomSheet {
                               ),
                               const SizedBox(height: 10),
                               CustomButton(
-                                buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('add_characteristic'),
                                 buttonColor: const Color(0xff1E2E52),
                                 textColor: Colors.white,
                                 onPressed: _showAddCharacterCustomFieldDialog,
@@ -264,9 +296,11 @@ class SubCategoryEditBottomSheet {
                                 children: customFields.map((field) {
                                   return Card(
                                     color: const Color(0xffF4F7FD),
-                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
-                                      contentPadding: const EdgeInsets.only(left: 16, right: 16),
+                                      contentPadding: const EdgeInsets.only(
+                                          left: 16, right: 16),
                                       title: Text(
                                         field.name,
                                         style: const TextStyle(
@@ -277,8 +311,10 @@ class SubCategoryEditBottomSheet {
                                       ),
                                       subtitle: Text(
                                         field.isIndividual
-                                            ? AppLocalizations.of(context)!.translate('individual')
-                                            : AppLocalizations.of(context)!.translate('common'),
+                                            ? AppLocalizations.of(context)!
+                                                .translate('individual')
+                                            : AppLocalizations.of(context)!
+                                                .translate('common'),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w400,
@@ -286,14 +322,17 @@ class SubCategoryEditBottomSheet {
                                           color: Color(0x991E2E52),
                                         ),
                                       ),
-                                      // trailing: IconButton(
-                                      //   icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
-                                      //   onPressed: () {
-                                      //     setState(() {
-                                      //       customFields.remove(field);
-                                      //     });
-                                      //   },
-                                      // ),
+                                      trailing: IconButton(
+                                        icon: Image.asset(
+                                            'assets/icons/edit.png',
+                                            width: 24,
+                                            height: 24),
+                                        onPressed: () {
+                                         AddCustomCharacterFieldDialog(onAddField: (String p1, bool p2) {  },
+                                           
+                                         );
+                                        },
+                                      ),
                                     ),
                                   );
                                 }).toList(),
@@ -308,7 +347,8 @@ class SubCategoryEditBottomSheet {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () => Navigator.pop(context),
@@ -317,11 +357,13 @@ class SubCategoryEditBottomSheet {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('save'),
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() && _isImageSelected) {
+                              if (formKey.currentState!.validate() &&
+                                  _isImageSelected) {
                                 final result = _createCategory(
                                   initialSubCategoryId,
                                   categoryNameController.text,
@@ -394,7 +436,8 @@ class SubCategoryEditBottomSheet {
     } catch (e) {
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('error_update_subcategory'),
+        message:
+            AppLocalizations.of(context)!.translate('error_update_subcategory'),
         isSuccess: false,
       );
       return {};

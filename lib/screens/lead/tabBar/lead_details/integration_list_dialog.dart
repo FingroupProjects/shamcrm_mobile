@@ -24,11 +24,11 @@ class IntegrationListDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('IntegrationListDialog: Building with ${integrations.length} integrations: $integrations');
+    //print('IntegrationListDialog: Building with ${integrations.length} integrations: $integrations');
     
     // Если только одна интеграция, автоматически переходим в чат
     if (integrations.length == 1) {
-      print('IntegrationListDialog: Single integration found, navigating to chat ID: ${integrations[0]['id']}');
+      //print('IntegrationListDialog: Single integration found, navigating to chat ID: ${integrations[0]['id']}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         navigateToChatScreen(context, integrations[0]['id'], canSendMessage);
       });
@@ -77,7 +77,7 @@ class IntegrationListDialog extends StatelessWidget {
                       final username = integration['username'].isNotEmpty
                           ? integration['username']
                           : AppLocalizations.of(context)!.translate('no_username');
-                      print('IntegrationListDialog: Building integration item $index - ID: ${integration['id']}, Username: $username');
+                      //print('IntegrationListDialog: Building integration item $index - ID: ${integration['id']}, Username: $username');
                       return ListTile(
                         title: Text(
                           username,
@@ -89,7 +89,7 @@ class IntegrationListDialog extends StatelessWidget {
                           ),
                         ),
                         onTap: () {
-                          print('IntegrationListDialog: Integration tapped - ID: ${integration['id']}, Username: $username');
+                          //print('IntegrationListDialog: Integration tapped - ID: ${integration['id']}, Username: $username');
                           navigateToChatScreen(context, integration['id'], canSendMessage);
                         },
                       );
@@ -101,7 +101,7 @@ class IntegrationListDialog extends StatelessWidget {
             child: CustomButton(
               buttonText: AppLocalizations.of(context)!.translate('close'),
               onPressed: () {
-                print('IntegrationListDialog: Closing dialog');
+                //print('IntegrationListDialog: Closing dialog');
                 Navigator.pop(context);
               },
               buttonColor: Color(0xff1E2E52),
@@ -114,7 +114,7 @@ class IntegrationListDialog extends StatelessWidget {
   }
 
   void navigateToChatScreen(BuildContext context, int chatId, bool canSendMessage) {
-    print('IntegrationListDialog: Navigating to chat screen with ID: $chatId, canSendMessage: $canSendMessage');
+    //print('IntegrationListDialog: Navigating to chat screen with ID: $chatId, canSendMessage: $canSendMessage');
     Navigator.pop(context);
     navigatorKey.currentState?.push(
       MaterialPageRoute(

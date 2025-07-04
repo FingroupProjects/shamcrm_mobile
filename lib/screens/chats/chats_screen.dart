@@ -132,7 +132,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     // Инициализируем слушатели для каждого PagingController
     _pagingControllers.forEach((endPoint, controller) {
       controller.addPageRequestListener((pageKey) {
-        print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+        //print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
         if (pageKey == 0) {
           controller.refresh();
         }
@@ -175,7 +175,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         showTutorial();
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -266,7 +266,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       onSkip: () {
         prefs.setBool('isTutorialShowninChat', true);
         apiService.markPageCompleted("chat", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
+          //print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTaskScreenTutorialCompleted = true;
@@ -279,7 +279,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         try {
           await apiService.markPageCompleted("chat", "index");
         } catch (e) {
-          print('Error marking page completed on finish: $e');
+          //print('Error marking page completed on finish: $e');
         }
         setState(() {
           _isTaskScreenTutorialCompleted = true;
@@ -348,11 +348,11 @@ final myPresenceChannel = socketClient.presenceChannel(
 socketClient.onConnectionEstablished.listen((_) {
   myPresenceChannel.subscribeIfNotUnsubscribed();
   chatSubscribtion = myPresenceChannel.bind('chat.created').listen((event) {
-    print(event.data);
+    //print(event.data);
     updateFromSocket();
   });
   chatSubscribtion = myPresenceChannel.bind('chat.updated').listen((event) {
-    print(event.data);
+    //print(event.data);
     updateFromSocket();
   });
 });
@@ -363,11 +363,11 @@ await socketClient.connect();
 
       chatSubscribtion = myPresenceChannel.bind('chat.created').listen((event) {
         if (kDebugMode) {
-          print(event.data);
-          print(event.channelName);
-          print('------ socket');
-          print('--------');
-          print('--------');
+          //print(event.data);
+          //print(event.channelName);
+          //print('------ socket');
+          //print('--------');
+          //print('--------');
         }
         updateFromSocket();
       });
@@ -375,11 +375,11 @@ await socketClient.connect();
       chatSubscribtion =
           myPresenceChannel.bind('chat.updated').listen((event) async {
         if (kDebugMode) {
-          print(event.data);
-          print(event.channelName);
-          print('------ socket');
-          print('--------');
-          print('--------');
+          //print(event.data);
+          //print(event.channelName);
+          //print('------ socket');
+          //print('--------');
+          //print('--------');
         }
         updateFromSocket();
       });
@@ -389,7 +389,7 @@ await socketClient.connect();
       await socketClient.connect();
     } catch (e) {
       if (kDebugMode) {
-        print(e);
+        //print(e);
       }
     }
   }
@@ -523,7 +523,7 @@ await socketClient.connect();
 
     return GestureDetector(
       onTap: () {
-        print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
+        //print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
         setState(() {
           selectTabIndex = index;
         });
@@ -537,7 +537,7 @@ await socketClient.connect();
         endPointInTab = newEndPoint;
 
         // Очищаем данные перед загрузкой новых
-        print('ChatsScreen._buildTabButton: Triggering ClearChats for endpoint $endPointInTab');
+        //print('ChatsScreen._buildTabButton: Triggering ClearChats for endpoint $endPointInTab');
         final chatsBloc = _chatsBlocs[newEndPoint]!;
         chatsBloc.add(ClearChats());
 
@@ -546,7 +546,7 @@ await socketClient.connect();
         _pagingControllers[newEndPoint]!.refresh();
 
         // Загружаем чаты для новой вкладки
-        print('ChatsScreen._buildTabButton: Fetching chats for endpoint $endPointInTab');
+        //print('ChatsScreen._buildTabButton: Fetching chats for endpoint $endPointInTab');
         chatsBloc.add(FetchChats(endPoint: newEndPoint));
       },
       child: Container(
@@ -670,13 +670,13 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {
         if (state is ChatsInitial) {
-          print('_ChatItemsWidget: ChatsInitial - Refreshing PagingController and clearing itemList for endpoint ${widget.endPointInTab}');
+         // //print('_ChatItemsWidget: ChatsInitial - Refreshing PagingController and clearing itemList for endpoint ${widget.endPointInTab}');
           widget.pagingController.itemList = null;
           widget.pagingController.refresh();
         }
         if (state is ChatsLoaded) {
-          print('_ChatItemsWidget: ChatsLoaded - Received ${state.chatsPagination.data.length} chats for page ${state.chatsPagination.currentPage}, endpoint: ${widget.endPointInTab}');
-          print('_ChatItemsWidget: Chat IDs: ${state.chatsPagination.data.map((chat) => chat.id).toList()}');
+         // //print('_ChatItemsWidget: ChatsLoaded - Received ${state.chatsPagination.data.length} chats for page ${state.chatsPagination.currentPage}, endpoint: ${widget.endPointInTab}');
+         // //print('_ChatItemsWidget: Chat IDs: ${state.chatsPagination.data.map((chat) => chat.id).toList()}');
 
           // Очищаем текущий список перед добавлением новых данных
           widget.pagingController.itemList = null;
@@ -692,19 +692,19 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               .values
               .toList();
 
-          print('_ChatItemsWidget: Unique chats after filtering: ${uniqueChats.length}');
-          print('_ChatItemsWidget: Unique chat IDs: ${uniqueChats.map((chat) => chat.id).toList()}');
+        //  //print('_ChatItemsWidget: Unique chats after filtering: ${uniqueChats.length}');
+////print('_ChatItemsWidget: Unique chat IDs: ${uniqueChats.map((chat) => chat.id).toList()}');
 
           if (state.chatsPagination.currentPage == state.chatsPagination.totalPage) {
-            print('_ChatItemsWidget: Appending last page with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
+           // //print('_ChatItemsWidget: Appending last page with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
             widget.pagingController.appendLastPage(uniqueChats);
           } else {
-            print('_ChatItemsWidget: Appending page ${state.chatsPagination.currentPage} with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
+          //  //print('_ChatItemsWidget: Appending page ${state.chatsPagination.currentPage} with ${uniqueChats.length} chats for endpoint ${widget.endPointInTab}');
             widget.pagingController.appendPage(uniqueChats, state.chatsPagination.currentPage);
           }
         }
         if (state is ChatsError) {
-          print('_ChatItemsWidget: ChatsError - ${state.message}');
+         // //print('_ChatItemsWidget: ChatsError - ${state.message}');
           if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -753,7 +753,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           firstPageProgressIndicatorBuilder: (context) {
-            print('_ChatItemsWidget: Showing first page progress indicator for endpoint ${widget.endPointInTab}');
+         //   //print('_ChatItemsWidget: Showing first page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -762,7 +762,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           newPageProgressIndicatorBuilder: (context) {
-            print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
+           // //print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -771,7 +771,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           itemBuilder: (context, item, index) {
-            print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}');
+         //   //print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}');
             return InkWell(
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),

@@ -54,6 +54,7 @@ import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
@@ -123,7 +124,7 @@ class ApiService {
   Future<void> initializeWithDomain(String domain, String mainDomain) async {
     baseUrl = 'https://$domain-back.$mainDomain/api';
     baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
-    print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+    //print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('domain', domain);
@@ -178,7 +179,7 @@ class ApiService {
     // Сброс значений при выходе
     baseUrl = null;
     baseUrlSocket = null;
-    print('API сброшено');
+    //print('API сброшено');
   }
 
   // Метод для получения токена из SharedPreferences
@@ -227,9 +228,9 @@ class ApiService {
 
     // // Проверяем успешность очистки
     // if (isCleared) {
-    //   print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
+    //   //print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
     // } else {
-    //   print('Ошибка при очистке данных.');
+    //   //print('Ошибка при очистке данных.');
     // }
   }
 
@@ -237,13 +238,13 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Выводим в консоль текущие права доступа до удаления
-    print('Перед удалением: ${prefs.getStringList('permissions')}');
+    //print('Перед удалением: ${prefs.getStringList('permissions')}');
 
     // Удаляем права доступа
     await prefs.remove('permissions');
 
     // Проверяем, что ключ действительно удалён
-    print('После удаления: ${prefs.getStringList('permissions')}');
+    //print('После удаления: ${prefs.getStringList('permissions')}');
   }
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
@@ -261,8 +262,8 @@ class ApiService {
       },
     );
 
-    // print('Статус ответа! ${response.statusCode}');
-    // print('Тело ответа!${response.body}');
+    // //print('Статус ответа! ${response.statusCode}');
+    // //print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -284,8 +285,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа! ${response.statusCode}');
-    print('Тело ответа!${response.body}');
+    //print('Статус ответа! ${response.statusCode}');
+    //print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -307,8 +308,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа! ${response.statusCode}');
-    print('Тело ответа!${response.body}');
+    //print('Статус ответа! ${response.statusCode}');
+    //print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -327,8 +328,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа! ${response.statusCode}');
-    print('Тело ответа!${response.body}');
+    //print('Статус ответа! ${response.statusCode}');
+    //print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -363,9 +364,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print('FCM-токен успешно отправлен!');
+      //print('FCM-токен успешно отправлен!');
     } else {
-      print('Ошибка при отправке FCM-токена!');
+      //print('Ошибка при отправке FCM-токена!');
       throw Exception('Ошибка!');
     }
   }
@@ -393,17 +394,17 @@ class ApiService {
 
     // Сохраняем данные из QR-кода
     await prefs.setString('domain', domain ?? '');
-    print(prefs.getString('domain'));
+    //print(prefs.getString('domain'));
     await prefs.setString('mainDomain', mainDomain ?? '');
-    print(prefs.getString('mainDomain'));
+    //print(prefs.getString('mainDomain'));
     await prefs.setString('userLogin', login ?? '');
-    print(prefs.getString('userLogin'));
+    //print(prefs.getString('userLogin'));
     await prefs.setString('token', token);
-    print(prefs.getString('token'));
+    //print(prefs.getString('token'));
     await prefs.setString('userID', userId ?? '');
-    print(prefs.getString('userID'));
+    //print(prefs.getString('userID'));
     await prefs.setString('selectedOrganization', organizationId ?? '');
-    print(prefs.getString('selectedOrganization'));
+    //print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
@@ -443,14 +444,14 @@ class ApiService {
     final String DomainUrl = 'https://$enteredMainDomain/api';
 
     // Выводим URL домена перед отправкой запроса
-    print(
-        "-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
-    print(DomainUrl);
+    //print(
+        // "-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
+    //print(DomainUrl);
 
     final token = await getToken(); // Получаем токен перед запросом
 
     // Выводим статус и тело запроса перед отправкой
-    print('Отправка запроса на проверку домена...');
+    //print('Отправка запроса на проверку домена...');
 
     final response = await http.post(
       Uri.parse('$DomainUrl$path'),
@@ -465,17 +466,17 @@ class ApiService {
     );
 
     // Выводим статус и тело ответа после получения ответа
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    //print('Статус ответа: ${response.statusCode}');
+    //print('Тело ответа: ${response.body}');
 
     return response;
   }
 
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
-    print(
-        '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
-    print(domain);
+    //print(
+        // '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+    //print(domain);
     final organizationId = await getSelectedOrganization();
     final response = await _postRequestDomain(
         '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
@@ -507,10 +508,10 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('enteredDomain', domain);
-    print('Ввведеный Doмен:----------------------');
-    print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
-    print('Ввведеный Poddomen---=----:----------------------');
-    print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
+    //print('Ввведеный Doмен:----------------------');
+    //print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+    //print('Ввведеный Poddomen---=----:----------------------');
+    //print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
@@ -531,13 +532,13 @@ class ApiService {
   // Метод для проверки логина и пароля
   Future<LoginResponse> login(LoginModel loginModel) async {
     final organizationId = await getSelectedOrganization();
-    print("------------------------ $organizationId");
+    //print("------------------------ $organizationId");
     final response = await _postRequest(
         '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
         loginModel.toJson());
 
     // Выводим ответ от сервера в консоль
-    print("Response from server: ${response.body}");
+    //print("Response from server: ${response.body}");
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -592,7 +593,7 @@ class ApiService {
         throw Exception('Ошибка при получении прав доступа!!');
       }
     } catch (e) {
-      print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
+      //print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
       rethrow;
     }
   }
@@ -601,14 +602,14 @@ class ApiService {
   Future<void> savePermissions(List<String> permissions) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('permissions', permissions);
-    // print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
+    // //print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
   }
 
 // Получение списка прав доступа из SharedPreferences
   Future<List<String>> getPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final permissions = prefs.getStringList('permissions') ?? [];
-    // print('Извлечённые права доступа: $permissions');
+    // //print('Извлечённые права доступа: $permissions');
     return permissions;
   }
 
@@ -669,11 +670,11 @@ class ApiService {
       else if (response.statusCode == 400) {
         throw Exception('Некорректные данные запроса.');
       } else {
-        print('Ошибка API forgotPin!');
+        //print('Ошибка API forgotPin!');
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print('Ошибка в forgotPin!');
+      //print('Ошибка в forgotPin!');
       throw Exception('Ошибка в запросе!');
     }
   }
@@ -840,9 +841,9 @@ class ApiService {
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // print(
+      // //print(
       //     '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-      // print('Отправка запроса на API с путём: ${response.body}');
+      // //print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -856,17 +857,17 @@ class ApiService {
               prefs.getString('cachedLeadStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            // print(
+            // //print(
             //     '------------------------------ Старые данные в кэше ------------------------------');
-            // print(decodedData); // Старые данные
+            // //print(decodedData); // Старые данные
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedLeadStatuses_$organizationId',
               json.encode(data['result']));
-          // print(
+          // //print(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
 
           return statuses;
         } else {
@@ -876,7 +877,7 @@ class ApiService {
         throw Exception('Ошибка при получении данных!');
       }
     } catch (e) {
-      print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
+      //print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
           prefs.getString('cachedLeadStatuses_$organizationId');
@@ -902,7 +903,7 @@ class ApiService {
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has leads!');
+      //print('Error while checking if status has leads!');
       return false;
     }
   }
@@ -941,7 +942,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print('Статус задачи успешно обновлен');
+      //print('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       final responseData = jsonDecode(response.body);
       final errorMessage = responseData['message'];
@@ -966,11 +967,11 @@ class ApiService {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load lead history!');
+        //print('Failed to load lead history!');
         throw Exception('Ошибка загрузки истории лида!');
       }
     } catch (e) {
-      print('Error occurred!');
+      //print('Error occurred!');
       throw Exception('Ошибка загрузки истории лида!');
     }
   }
@@ -1604,7 +1605,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
 
     if (kDebugMode) {
-      // print('getAll region!');
+      // //print('getAll region!');
     }
 
     return dataRegion;
@@ -1879,7 +1880,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
     final path = '/lead/$leadId/chats?organization_id=$organizationId';
 
     final response = await _getRequest(path);
-    print('Request path: $path');
+    //print('Request path: $path');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1900,7 +1901,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Полученные данные: $data');
+      //print('Полученные данные: $data');
       return (data as List)
           .map((sourceLead) => SourceLead.fromJson(sourceLead))
           .toList();
@@ -1919,13 +1920,13 @@ Future<Map<String, dynamic>> updateLeadWithData({
       final response = await _postRequest(path, {});
 
       if (response.statusCode == 200) {
-        print('Успешно отправлено в 1С');
+        //print('Успешно отправлено в 1С');
       } else {
-        print('Ошибка отправки в 1С Лид!');
+        //print('Ошибка отправки в 1С Лид!');
         throw Exception('Ошибка отправки в 1С!');
       }
     } catch (e) {
-      print('Произошла ошибка!');
+      //print('Произошла ошибка!');
       throw Exception('Ошибка отправки в 1С!');
     }
   }
@@ -1942,17 +1943,17 @@ Future<Map<String, dynamic>> updateLeadWithData({
 
   //     if (response.statusCode == 200) {
   //       // final data = jsonDecode(response.body);
-  //       print("------------------------------------------------------------------------------------");
-  //       print('LEAD TO 1C');
-  //       // print(data);
+  //       //print("------------------------------------------------------------------------------------");
+  //       //print('LEAD TO 1C');
+  //       // //print(data);
 
   //       // return data;
   //     } else {
-  //       print('Ошибка отправки в  1С Лид!');
+  //       //print('Ошибка отправки в  1С Лид!');
   //       throw Exception('Ошибка отправки в  Лид 1С!');
   //     }
   //   } catch (e) {
-  //     print('Произошла ошибка!');
+  //     //print('Произошла ошибка!');
   //     throw Exception('Ошибка отправки 1С Лид!');
   //   }
   // }
@@ -2178,13 +2179,13 @@ Future<Map<String, dynamic>> updateLeadWithData({
           // Обновляем кэш новыми данными
           await prefs.setString('cachedDealStatuses_$organizationId',
               json.encode(data['result']));
-          // print(
+          // //print(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
 
-          // print(
+          // //print(
           //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
-          // print('Статусы сделок обновлены в кэше');
+          // //print('Статусы сделок обновлены в кэше');
 
           return (data['result'] as List)
               .map((status) => DealStatus.fromJson(status))
@@ -2196,7 +2197,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
+      //print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
           prefs.getString('cachedDealStatuses_$organizationId');
@@ -2222,7 +2223,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
       // Если список лидов не пуст, значит статус содержит элементы
       return deals.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals!');
+      //print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -2261,11 +2262,11 @@ Future<Map<String, dynamic>> updateLeadWithData({
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load deal history!');
+        //print('Failed to load deal history!');
         throw Exception('Ошибка загрузки истории сделки!');
       }
     } catch (e) {
-      print('Error occurred!');
+      //print('Error occurred!');
       throw Exception('Ошибка загрузки истории сделки!');
     }
   }
@@ -2282,11 +2283,11 @@ Future<Map<String, dynamic>> updateLeadWithData({
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => OrderHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load order history!');
+        //print('Failed to load order history!');
         throw Exception('Ошибка загрузки истории заказа!');
       }
     } catch (e) {
-      print('Error occurred: $e');
+      //print('Error occurred: $e');
       throw Exception('Ошибка загрузки истории заказа!');
     }
   }
@@ -2304,7 +2305,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
     );
 
     if (response.statusCode == 200) {
-      print('Статус задачи успешно обновлен.');
+      //print('Статус задачи успешно обновлен.');
     } else if (response.statusCode == 422) {
       throw DealStatusUpdateException(
         422,
@@ -2781,7 +2782,7 @@ Future<Map<String, dynamic>> updateDeal({
       throw Exception('Нет данных о задачах в ответе');
     }
   } else {
-    print('Error response! - ${response.body}');
+    //print('Error response! - ${response.body}');
     throw Exception('Ошибка загрузки задач!');
   }
 }
@@ -2803,17 +2804,17 @@ Future<Map<String, dynamic>> updateDeal({
               prefs.getString('cachedTaskStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            // print(
+            // //print(
             //     '------------------------------ Старые данные в кэше ------------------------------');
-            // print(decodedData); // Старые данные
+            // //print(decodedData); // Старые данные
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedTaskStatuses_$organizationId',
               json.encode(data['result']));
-          // print(
+          // //print(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
 
           return (data['result'] as List)
               .map((status) => TaskStatus.fromJson(status))
@@ -2825,7 +2826,7 @@ Future<Map<String, dynamic>> updateDeal({
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
           prefs.getString('cachedTaskStatuses_$organizationId');
@@ -2851,7 +2852,7 @@ Future<Map<String, dynamic>> updateDeal({
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals!');
+      //print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -2869,7 +2870,7 @@ Future<Map<String, dynamic>> updateDeal({
         });
 
     if (response.statusCode == 200) {
-      print('Статус задачи успешно обновлен');
+      //print('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       throw TaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
@@ -3595,7 +3596,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
           'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
-        print('Server Response: ${response.body}'); // Добавим для отладки
+        //print('Server Response: ${response.body}'); // Добавим для отладки
 
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
@@ -3632,7 +3633,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
           'message': 'error_server_text',
         };
       } else {
-        print('Server Response: ${response.body}'); // Добавим для отладки
+        //print('Server Response: ${response.body}'); // Добавим для отладки
 
         return {
           'success': false,
@@ -3640,7 +3641,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
         };
       }
     } catch (e) {
-      print('Update Task Error: $e'); // Добавим для отладки
+      //print('Update Task Error: $e'); // Добавим для отладки
 
       return {
         'success': false,
@@ -3663,11 +3664,11 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load task history!');
+        //print('Failed to load task history!');
         throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
-      print('Error occurred!');
+      //print('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
     }
   }
@@ -3724,7 +3725,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
     }
 
     if (kDebugMode) {
-      // print('getAll project!');
+      // //print('getAll project!');
     }
 
     return dataProject;
@@ -3735,11 +3736,11 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
     try {
       final organizationId = await getSelectedOrganization();
 
-      print('Отправка запроса на /user');
+      //print('Отправка запроса на /user');
       final response = await _getRequest(
           '/user${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      // print('Статус ответа!');
-      // print('Тело ответа!');
+      // //print('Статус ответа!');
+      // //print('Тело ответа!');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3766,7 +3767,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
 
   // if (response.statusCode == 200) {
   //   final data = json.decode(response.body);
-  //   print('Ответ пользователей: $data'); // Для отладки
+  //   //print('Ответ пользователей: $data'); // Для отладки
 
   //   if (data['users'] != null) {
   //     return (data['users'] as List)
@@ -3803,21 +3804,21 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
   Future<List<StatusName>> getStatusName() async {
     final organizationId = await getSelectedOrganization();
 
-    print('Начало запроса статусов задач'); // Отладочный вывод
+    //print('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(
         '/taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    print('Статус код ответа!'); // Отладочный вывод
+    //print('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Полученные данные: $data'); // Отладочный вывод
+      //print('Полученные данные: $data'); // Отладочный вывод
 
       if (data['result'] != null) {
         final statusList = (data['result'] as List)
             .map((name) => StatusName.fromJson(name))
             .toList();
-        print(
-            'Преобразованный список статусов: $statusList'); // Отладочный вывод
+        //print(
+            // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
         return statusList;
       } else {
         throw Exception('Статусы задач не найдены');
@@ -3984,7 +3985,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final result = data['result']; // Извлекаем массив из ключа "result"
-      print('Полученные данные отделов: $result');
+      //print('Полученные данные отделов: $result');
       return (result as List)
           .map((department) => Department.fromJson(department))
           .toList();
@@ -4019,7 +4020,7 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
   }
 
   if (kDebugMode) {
-    print('getAll directory!');
+    //print('getAll directory!');
   }
 
   return dataDirectory;
@@ -4027,14 +4028,14 @@ if (directoryValues != null && directoryValues.isNotEmpty) {
 
 Future<MainFieldResponse> getMainFields(int directoryId) async {
     final organizationId = await getSelectedOrganization();
-    print('Вызов getMainFields для directoryId: $directoryId');
+    //print('Вызов getMainFields для directoryId: $directoryId');
     final response = await _getRequest(
         '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
     );
 
     if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Ответ getMainFields для directoryId $directoryId: $data');
+        //print('Ответ getMainFields для directoryId $directoryId: $data');
         if (data['result'] != null) {
             return MainFieldResponse.fromJson(data);
         } else {
@@ -4067,7 +4068,7 @@ Future<void> linkDirectory({
   }
 
   if (kDebugMode) {
-    print('Directory linked successfully!');
+    //print('Directory linked successfully!');
   }
 }
 
@@ -4204,7 +4205,7 @@ Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
         throw Exception('Ошибка загрузки данных!');
       }
     } catch (e) {
-      print('Ошибка запроса!');
+      //print('Ошибка запроса!');
       throw ('');
     }
   }
@@ -4313,7 +4314,7 @@ Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
         throw Exception('Ошибка загрузки данных!');
       }
     } catch (e) {
-      print('Ошибка запроса!');
+      //print('Ошибка запроса!');
       throw ('');
     }
   }
@@ -4455,7 +4456,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     url += '&search=$search';
   }
 
-  print('ApiService.getAllChats: Requesting URL: $url');
+  ////print('ApiService.getAllChats: Requesting URL: $url');
 
   final response = await http.get(
     Uri.parse(url),
@@ -4471,16 +4472,16 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
         return Chats.fromJson(e);
       });
-      print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
-      print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
+      // //print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
+      // //print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
       return pagination;
     } else {
-      print('ApiService.getAllChats: No result found in response');
-      throw Exception('Результат отсутствует в ответе');
+      // //print('ApiService.getAllChats: No result found in response');
+      throw ('Результат отсутствует в ответе');
     }
   } else {
-    print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    // //print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
+    throw ('Ошибка ${response.statusCode}: ${response.body}');
   }
 }
 
@@ -4638,25 +4639,25 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
             // contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode!');
+        //print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('Audio message sent successfully!');
+          //print('Audio message sent successfully!');
         }
       } else {
         if (kDebugMode) {
-          print('Error sending audio message: ${response.data}');
+          //print('Error sending audio message: ${response.data}');
         }
         throw Exception('Error sending audio message: ${response.data}');
       }
     } on DioException catch (e) {
       if (kDebugMode) {
-        print('Exception caught!');
+        //print('Exception caught!');
       }
       if (kDebugMode) {
-        print(e.response?.data);
+        //print(e.response?.data);
       }
       throw Exception('Failed to send audio message due to an exception!');
     }
@@ -4686,22 +4687,22 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
             contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode!');
+        //print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('Audio message sent successfully!');
+          //print('Audio message sent successfully!');
         }
       } else {
         if (kDebugMode) {
-          print('Error sending audio message: ${response.data}');
+          //print('Error sending audio message: ${response.data}');
         }
         throw Exception('Error sending audio message: ${response.data}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Exception caught!');
+        //print('Exception caught!');
       }
       throw Exception('Failed to send audio message due to an exception!');
     }
@@ -4763,12 +4764,12 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
 //       );
 
 //       if (response.statusCode == 200) {
-//         print('Messages marked as read');
+//         //print('Messages marked as read');
 //       } else {
-//         print('Error marking messages as read!');
+//         //print('Error marking messages as read!');
 //       }
 //     } catch (e) {
-//       print('Exception when marking messages as read!');
+//       //print('Exception when marking messages as read!');
 //     }
 //   }
 
@@ -4836,10 +4837,10 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     }
 
     if (kDebugMode) {
-      // print('Статус ответа!');
+      // //print('Статус ответа!');
     }
     if (kDebugMode) {
-      // print('getAll user!');
+      // //print('getAll user!');
     }
 
     return dataUser;
@@ -4870,10 +4871,10 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     }
 
     if (kDebugMode) {
-      // print('Статус ответа!');
+      // //print('Статус ответа!');
     }
     if (kDebugMode) {
-      // print('getAll user!');
+      // //print('getAll user!');
     }
 
     return dataUser;
@@ -4906,10 +4907,10 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     }
 
     if (kDebugMode) {
-      // print('Статус ответа!');
+      // //print('Статус ответа!');
     }
     if (kDebugMode) {
-      // print('getUsersNotInChat!');
+      // //print('getUsersNotInChat!');
     }
 
     return dataUser;
@@ -4928,11 +4929,11 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         if (token != null) 'Authorization': 'Bearer $token',
       },
     );
-    print(
-        '----------------------------------------------------------------------');
-    print(
-        '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
-    print(response);
+    //print(
+        // '----------------------------------------------------------------------');
+    //print(
+        // '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
+    //print(response);
 
     late UsersDataResponse dataUser;
 
@@ -4947,10 +4948,10 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     }
 
     if (kDebugMode) {
-      // print('Статус ответа!');
+      // //print('Статус ответа!');
     }
     if (kDebugMode) {
-      // print('getAll user!');
+      // //print('getAll user!');
     }
 
     return dataUser;
@@ -4971,8 +4972,8 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     );
 
     if (kDebugMode) {
-      // print('Статус ответа!');
-      // print('data!');
+      // //print('Статус ответа!');
+      // //print('data!');
     }
 
     if (response.statusCode == 200) {
@@ -5132,7 +5133,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     String path =
         '/chat/delete-message/$messageId?organization_id=$organizationId';
 
-    print('Sending DELETE request to API with path: $path');
+    //print('Sending DELETE request to API with path: $path');
 
     // Используем _deleteRequest для отправки DELETE-запроса
     final response = await _deleteRequest(path);
@@ -5171,11 +5172,11 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       } else if (response.statusCode == 404) {
         throw ('Такого Лида не существует');
       } else {
-        print('Ошибка загрузки профиля чата!');
+        //print('Ошибка загрузки профиля чата!');
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в getChatProfile!');
+      //print('Ошибка в getChatProfile!');
       throw ('$e');
     }
   }
@@ -5183,46 +5184,46 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
   Future<TaskProfile> getTaskProfile(int chatId) async {
     try {
       final organizationId = await getSelectedOrganization();
-      print('Organization ID: $organizationId'); // Добавим логирование
+      //print('Organization ID: $organizationId'); // Добавим логирование
 
       final response = await _getRequest(
         '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
-      print('Response status code!'); // Логируем статус ответа
-      print('Response body!'); // Логируем тело ответа
+      //print('Response status code!'); // Логируем статус ответа
+      //print('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
         try {
           final dynamic decodedJson = json.decode(response.body);
-          print(
-              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
-          print('Decoded JSON: $decodedJson'); // Отладочный вывод
+          //print(
+              // 'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
+          //print('Decoded JSON: $decodedJson'); // Отладочный вывод
 
           if (decodedJson is Map<String, dynamic>) {
             if (decodedJson['result'] != null) {
-              print(
-                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
+              //print(
+                  // 'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
               return TaskProfile.fromJson(decodedJson['result']);
             } else {
-              print('Result is null');
+              //print('Result is null');
               throw Exception('Данные задачи не найдены');
             }
           } else {
-            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+            //print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
             throw Exception('Неверный формат ответа');
           }
         } catch (parseError) {
-          print('Ошибка парсинга JSON: $parseError');
+          //print('Ошибка парсинга JSON: $parseError');
           throw Exception('Ошибка парсинга ответа: $parseError');
         }
       } else {
-        print('Ошибка загрузки задачи!');
+        //print('Ошибка загрузки задачи!');
         throw Exception('Ошибка загрузки задачи!');
       }
     } catch (e) {
-      print('Полная ошибка в getTaskProfile!');
-      print('Трассировка стека: ${StackTrace.current}');
+      //print('Полная ошибка в getTaskProfile!');
+      //print('Трассировка стека: ${StackTrace.current}');
       throw Exception('Ошибка загрузки задачи!');
     }
   }
@@ -5237,7 +5238,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Тело ответа: $data'); // Для отладки
+      //print('Тело ответа: $data'); // Для отладки
 
       if (data['result'] != null && data['result']['data'] != null) {
         return (data['result']['data'] as List)
@@ -5292,7 +5293,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
 
     path += '&organization_id=$organizationId';
 
-    // print('Sending request to API with path: $path');
+    // //print('Sending request to API with path: $path');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -5314,7 +5315,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     final organizationId = await getSelectedOrganization();
     String path = '/notification/readAll?organization_id=$organizationId';
 
-    print('Sending POST request to API with path: $path');
+    //print('Sending POST request to API with path: $path');
 
     final response = await _postRequest(path, {});
 
@@ -5334,7 +5335,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       'organization_id': organizationId,
     };
 
-    print('Sending POST request to API with path: $path');
+    //print('Sending POST request to API with path: $path');
 
     final response = await _postRequest(path, body);
 
@@ -5374,9 +5375,9 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       if (userProfile.uniqueId != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('unique_id', userProfile.uniqueId!);
-        print('unique_id сохранён: ${userProfile.uniqueId}');
+        //print('unique_id сохранён: ${userProfile.uniqueId}');
       } else {
-        print('unique_id не получен от сервера');
+        //print('unique_id не получен от сервера');
       }
 
       return userProfile;
@@ -5384,7 +5385,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
     }
   } catch (e) {
-    print('Ошибка загрузки User ID: $e');
+    //print('Ошибка загрузки User ID: $e');
     throw Exception('Ошибка загрузки User ID: $e');
   }
 }
@@ -5478,8 +5479,8 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
-      print('Response status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      //print('Response status code: ${response.statusCode}');
+      //print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5494,7 +5495,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         throw ('HTTP Error');
       }
     } catch (e) {
-      print('Error in getMyTaskById: $e');
+      //print('Error in getMyTaskById: $e');
       throw ('Ошибка загрузки task ID');
     }
   }
@@ -5535,7 +5536,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       path += '&task_status_id=$taskStatusId';
     }
     // Логируем конечный URL запроса
-    // print('Sending request to API with path: $path');
+    // //print('Sending request to API with path: $path');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -5549,7 +5550,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       }
     } else {
       // Логирование ошибки с ответом сервера
-      print('Error response! - ${response.body}');
+      //print('Error response! - ${response.body}');
       throw Exception('Ошибка загрузки задач!');
     }
   }
@@ -5577,9 +5578,9 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
           // Обновляем кэш новыми данными
           await prefs.setString('cachedMyTaskStatuses_$organizationId',
               json.encode(data['result']));
-          // print(
+          // //print(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
 
           return (data['result'] as List)
               .map((status) => MyTaskStatus.fromJson(status))
@@ -5591,7 +5592,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
           prefs.getString('cachedMyTaskStatuses_$organizationId');
@@ -5617,7 +5618,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals!');
+      //print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -5636,7 +5637,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         });
 
     if (response.statusCode == 200) {
-      print('Статус задачи успешно обновлен');
+      //print('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       throw MyTaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
@@ -5892,7 +5893,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         };
       }
     } catch (e) {
-      print('Detailed error: $e');
+      //print('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
@@ -6097,7 +6098,7 @@ Future<Map<String, dynamic>> createMyTask({
         };
       }
     } catch (e) {
-      print('Detailed error: $e');
+      //print('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
@@ -6120,11 +6121,11 @@ Future<Map<String, dynamic>> createMyTask({
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load task history!');
+        //print('Failed to load task history!');
         throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
-      print('Error occurred!');
+      //print('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
     }
   }
@@ -6133,21 +6134,21 @@ Future<Map<String, dynamic>> createMyTask({
   Future<List<MyStatusName>> getMyStatusName() async {
     final organizationId = await getSelectedOrganization();
 
-    print('Начало запроса статусов задач'); // Отладочный вывод
+    //print('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(
         '/my-taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    print('Статус код ответа!'); // Отладочный вывод
+    //print('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Полученные данные: $data'); // Отладочный вывод
+      //print('Полученные данные: $data'); // Отладочный вывод
 
       if (data['result'] != null) {
         final statusList = (data['result'] as List)
             .map((name) => MyStatusName.fromJson(name))
             .toList();
-        print(
-            'Преобразованный список статусов: $statusList'); // Отладочный вывод
+        //print(
+            // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
         return statusList;
       } else {
         throw Exception('Статусы задач не найдены');
@@ -6582,10 +6583,10 @@ Future<Map<String, dynamic>> updateNotice({
     }
 
     if (kDebugMode) {
-      // print('Статус ответа!');
+      // //print('Статус ответа!');
     }
     if (kDebugMode) {
-      // print('getAll author!');
+      // //print('getAll author!');
     }
 
     return dataAuthor;
@@ -6595,12 +6596,12 @@ Future<Map<String, dynamic>> updateNotice({
     if (recordPath.isEmpty) return '';
 
     // Если путь уже содержит полный URL, возвращаем его
-    if (recordPath.startsWith('http://') || recordPath.startsWith('https://')) {
+    if (recordPath.startsWith('') || recordPath.startsWith('')) {
       return recordPath;
     }
 
     // Убираем '/api' из baseUrl и добавляем путь к записи
-    String cleanBaseUrl = baseUrl?.replaceAll('/api', '') ?? '';
+    String cleanBaseUrl = baseUrl?.replaceAll('', '') ?? '';
     return recordPath.startsWith('/call-recordings/')
         ? '$cleanBaseUrl$recordPath'
         : '$cleanBaseUrl/storage/$recordPath';
@@ -6710,7 +6711,7 @@ Future<List<CategoryData>> getCategory({String? search}) async {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
-        print(decodedJson);
+        //print(decodedJson);
         return SubCategoryResponseASD.fromJson(decodedJson);
       } else {
         throw Exception(
@@ -6967,17 +6968,17 @@ Future<List<Goods>> getGoods({
     if (filters.containsKey('is_active')) {
       path += '&is_active=${filters['is_active'] ? 1 : 0}';
       if (kDebugMode) {
-        print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+        //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
       }
     }
   }
 
   if (kDebugMode) {
-    print('ApiService: Формирование запроса товаров: $path');
+    //print('ApiService: Формирование запроса товаров: $path');
   }
   final response = await _getRequest(path);
   if (kDebugMode) {
-    print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+    //print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
   }
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
@@ -6988,22 +6989,87 @@ Future<List<Goods>> getGoods({
       final total = data['result']['total'] ?? goods.length;
       final totalPages = data['result']['total_pages'] ?? (goods.length < perPage ? page : page + 1);
       if (kDebugMode) {
-        print('ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
+        //print('ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
       }
       return goods;
     } else {
       if (kDebugMode) {
-        print('ApiService: Ошибка формата данных: $data');
+        //print('ApiService: Ошибка формата данных: $data');
       }
       throw Exception('Ошибка: Неверный формат данных');
     }
   } else {
     if (kDebugMode) {
-      print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+      //print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
     }
     throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
 } 
+
+Future<List<Variant>> getVariants({
+  int page = 1,
+  int perPage = 15, // Соответствует предоставленным данным (15 элементов на страницу)
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/good/get/variant?page=$page&per_page=$perPage&organization_id=$organizationId';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  if (filters != null) {
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
+        (filters['category_id'] as List).isNotEmpty) {
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
+      }
+    }
+    if (filters.containsKey('is_active')) {
+      path += '&is_active=${filters['is_active'] ? 1 : 0}';
+      if (kDebugMode) {
+        //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+      }
+    }
+  }
+
+  if (kDebugMode) {
+    //print('ApiService: Формирование запроса вариантов: $path');
+  }
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    //print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      final variants = (data['result']['data'] as List)
+          .map((item) => Variant.fromJson(item as Map<String, dynamic>))
+          .toList();
+      final paginationData = data['result']['pagination'] ?? {};
+      final total = paginationData['total'] ?? variants.length;
+      final totalPages = paginationData['total_pages'] ?? (variants.length < perPage ? page : page + 1);
+      if (kDebugMode) {
+        //print('ApiService: Успешно получено ${variants.length} вариантов, всего: $total, страниц: $totalPages');
+      }
+      return variants;
+    } else {
+      if (kDebugMode) {
+        //print('ApiService: Ошибка формата данных: $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      //print('ApiService: Ошибка загрузки вариантов: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
+  }
+}
+
+
   Future<List<Goods>> getGoodsById(int goodsId) async {
     final organizationId = await getSelectedOrganization();
     final String path = '/good/$goodsId?organization_id=$organizationId';
@@ -7030,11 +7096,11 @@ Future<List<Goods>> getGoods({
 
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
-    print('Response data: $data'); // Debug: Print the response
+    //print('Response data: $data'); // Debug: Print the response
     if (data.containsKey('data')) {
       return (data['data'] as List)
           .map((item) {
-            print('Item: $item'); // Debug: Print each item
+            //print('Item: $item'); // Debug: Print each item
             return SubCategoryAttributesData.fromJson(item as Map<String, dynamic>);
           })
           .toList();
@@ -7149,8 +7215,8 @@ Future<List<Goods>> getGoods({
       };
     }
   } catch (e, stackTrace) {
-    print('ApiService: Error in createGoods: ');
-    print('ApiService: Stack trace: $stackTrace');
+    //print('ApiService: Error in createGoods: ');
+    //print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
       'message': 'Произошла ошибка: ',
@@ -7189,12 +7255,12 @@ Future<List<Goods>> getGoods({
       'Content-Type': 'multipart/form-data; charset=utf-8',
     });
 
-    print('ApiService: Sending updateGoods request:');
-    print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-    print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
-    print('ApiService: attributes: $attributes');
-    print('ApiService: variants: $variants');
-    print('ApiService: images: ${images.map((file) => file.path).toList()}');
+    //print('ApiService: Sending updateGoods request:');
+    //print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
+    //print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
+    //print('ApiService: attributes: $attributes');
+    //print('ApiService: variants: $variants');
+    //print('ApiService: images: ${images.map((file) => file.path).toList()}');
 
     request.fields['name'] = name;
     request.fields['category_id'] = parentId.toString();
@@ -7206,41 +7272,41 @@ Future<List<Goods>> getGoods({
     request.fields['is_sale'] = isSale ? '1' : '0'; // Added
     if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
-      print('ApiService: Added branch: $branch');
+      //print('ApiService: Added branch: $branch');
     }
     if (comments != null && comments.isNotEmpty) {
       request.fields['comments'] = comments;
-      print('ApiService: Added comments: $comments');
+      //print('ApiService: Added comments: $comments');
     }
     if (discountPrice != null) {
       request.fields['discount_price'] = discountPrice.toString();
-      print('ApiService: Added discount_price: $discountPrice');
+      //print('ApiService: Added discount_price: $discountPrice');
     }
 
     for (int i = 0; i < attributes.length; i++) {
       request.fields['attributes[$i][category_attribute_id]'] = attributes[i]['category_attribute_id'].toString();
       request.fields['attributes[$i][value]'] = attributes[i]['value'].toString();
-      print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
+      //print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
     }
 
     for (int i = 0; i < variants.length; i++) {
       if (variants[i].containsKey('id')) {
         request.fields['variants[$i][id]'] = variants[i]['id'].toString();
-        print('ApiService: Added variant ID $i: ${variants[i]['id']}');
+        //print('ApiService: Added variant ID $i: ${variants[i]['id']}');
       }
       request.fields['variants[$i][is_active]'] = variants[i]['is_active'] ? '1' : '0';
       request.fields['variants[$i][price]'] = (variants[i]['price'] ?? 0.0).toString();
-      print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
+      //print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
 
       List<dynamic> variantAttributes = variants[i]['variant_attributes'] ?? [];
       for (int j = 0; j < variantAttributes.length; j++) {
         if (variantAttributes[j].containsKey('id')) {
           request.fields['variants[$i][variant_attributes][$j][id]'] = variantAttributes[j]['id'].toString();
-          print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
+          //print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
         }
         request.fields['variants[$i][variant_attributes][$j][category_attribute_id]'] = variantAttributes[j]['category_attribute_id'].toString();
         request.fields['variants[$i][variant_attributes][$j][value]'] = variantAttributes[j]['value'].toString();
-        print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
+        //print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
       }
 
       List<File> variantFiles = variants[i]['files'] ?? [];
@@ -7249,9 +7315,9 @@ Future<List<Goods>> getGoods({
         if (await file.exists()) {
           final imageFile = await http.MultipartFile.fromPath('variants[$i][files][$j]', file.path);
           request.files.add(imageFile);
-          print('ApiService: Added variant file $i-$j: ${file.path}');
+          //print('ApiService: Added variant file $i-$j: ${file.path}');
         } else {
-          print('ApiService: Variant file not found, skipping: ${file.path}');
+          //print('ApiService: Variant file not found, skipping: ${file.path}');
         }
       }
     }
@@ -7262,9 +7328,9 @@ Future<List<Goods>> getGoods({
         final imageFile = await http.MultipartFile.fromPath('files[$i][file]', file.path);
         request.files.add(imageFile);
         request.fields['files[$i][is_main]'] = i == (mainImageIndex ?? 0) ? '1' : '0';
-        print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
+        //print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
       } else {
-        print('ApiService: General image not found, skipping: ${file.path}');
+        //print('ApiService: General image not found, skipping: ${file.path}');
       }
     }
 
@@ -7272,8 +7338,8 @@ Future<List<Goods>> getGoods({
     final response = await http.Response.fromStream(streamedResponse);
     final responseBody = json.decode(response.body);
 
-    print('ApiService: Response status: ${response.statusCode}');
-    print('ApiService: Response body: $responseBody');
+    //print('ApiService: Response status: ${response.statusCode}');
+    //print('ApiService: Response body: $responseBody');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {
@@ -7289,8 +7355,8 @@ Future<List<Goods>> getGoods({
       };
     }
   } catch (e, stackTrace) {
-    print('ApiService: Error in updateGoods: ');
-    print('ApiService: Stack trace: $stackTrace');
+    //print('ApiService: Error in updateGoods: ');
+    //print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
       'message': 'An error occurred: ',
@@ -7326,7 +7392,7 @@ Future<List<Goods>> getGoods({
             jsonResponse['message'] ?? 'Ошибка при удалении товара');
       }
     } catch (e) {
-      print('Ошибка удаления товара: ');
+      //print('Ошибка удаления товара: ');
       return false;
     }
   }
@@ -7358,8 +7424,8 @@ Future<List<Goods>> getGoods({
         throw Exception('Ошибка сервера');
       }
     } catch (e) {
-      print(
-          'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
+      //print(
+          // 'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
       final cachedStatuses =
           prefs.getString('cachedOrderStatuses_$organizationId');
       if (cachedStatuses != null) {
@@ -7391,19 +7457,19 @@ Future<List<Goods>> getGoods({
       }
 
       final response = await _getRequest(url);
-      print('Request URL: $url'); // Логи для отладки
-      print('Response status: ${response.statusCode}');
+      //print('Request URL: $url'); // Логи для отладки
+      //print('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
         final data = rawData['result'];
-        print('Response data: $data'); // Логи для отладки
+        //print('Response data: $data'); // Логи для отладки
         return OrderResponse.fromJson(data);
       } else {
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print('Ошибка загрузки заказов: ');
+      //print('Ошибка загрузки заказов: ');
       throw e;
     }
   }
@@ -7427,8 +7493,8 @@ Future<List<Goods>> getGoods({
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print(
-          'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
+      //print(
+          // 'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
       final cachedOrder = prefs.getString('cachedOrder_$orderId');
       if (cachedOrder != null) {
         final decodedData = json.decode(cachedOrder);
@@ -7470,7 +7536,7 @@ Future<Map<String, dynamic>> createOrder({
       'organization_id': organizationId,
       'status_id': statusId,
       'comment_to_courier': commentToCourier,
-      'payment_type': 'cash ',
+      'payment_type': 'cash',
       'manager_id': managerId,
     };
 
@@ -7483,7 +7549,7 @@ Future<Map<String, dynamic>> createOrder({
       }
     }
 
-    print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
+    //print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
     final response = await http.post(
       uri,
@@ -7496,8 +7562,8 @@ Future<Map<String, dynamic>> createOrder({
       body: jsonEncode(body),
     );
 
-    print('ApiService: Код ответа сервера: ${response.statusCode}');
-    print('ApiService: Тело ответа сервера: ${response.body}');
+    //print('ApiService: Код ответа сервера: ${response.statusCode}');
+    //print('ApiService: Тело ответа сервера: ${response.body}');
 
    if (<int>[200, 201, 202, 203, 204, 300, 301].contains(response.statusCode)) {
       final jsonResponse = jsonDecode(response.body);
@@ -7524,7 +7590,7 @@ Future<Map<String, dynamic>> createOrder({
       throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
     }
   } catch (e) {
-    print('ApiService: Ошибка создания заказа: ');
+    //print('ApiService: Ошибка создания заказа: ');
     return {'success': false, 'error': e.toString()};
   }
 }
@@ -7573,7 +7639,7 @@ Future<Map<String, dynamic>> createOrder({
       }
     }
 
-    print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+    //print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
     final response = await http.patch(
       uri,
@@ -7586,8 +7652,8 @@ Future<Map<String, dynamic>> createOrder({
       body: jsonEncode(body),
     );
 
-    print('ApiService: Код ответа сервера: ${response.statusCode}');
-    print('ApiService: Тело ответа сервера: ${response.body}');
+    //print('ApiService: Код ответа сервера: ${response.statusCode}');
+    //print('ApiService: Тело ответа сервера: ${response.body}');
 
     // Обрабатываем коды ответа 200, 201, 202, 203, 204, 300, 301 как успешные
     if (<int>[200, 201, 202, 203, 204, 300, 301].contains(response.statusCode)) {
@@ -7610,8 +7676,8 @@ Future<Map<String, dynamic>> createOrder({
       throw Exception(jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
     }
   } catch (e, stackTrace) {
-    print('ApiService: Ошибка обновления заказа: ');
-    print('ApiService: StackTrace: $stackTrace');
+    //print('ApiService: Ошибка обновления заказа: ');
+    //print('ApiService: StackTrace: $stackTrace');
     return {'success': false, 'error': e.toString()};
   }
 }
@@ -7731,7 +7797,7 @@ Future<Map<String, dynamic>> createOrder({
             jsonResponse['message'] ?? 'Ошибка при удалении заказа');
       }
     } catch (e) {
-      print('Ошибка удаления заказа: ');
+      //print('Ошибка удаления заказа: ');
       return false;
     }
   }
@@ -7769,7 +7835,7 @@ Future<Map<String, dynamic>> createOrder({
             jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
       }
     } catch (e) {
-      print('Ошибка смены статуса заказа: ');
+      //print('Ошибка смены статуса заказа: ');
       return false;
     }
   }

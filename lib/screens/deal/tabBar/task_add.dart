@@ -71,7 +71,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
   void _fetchAndAddCustomFields() async {
     try {
-      print('TaskAddFromDeal: Fetching custom fields and directories');
+      //print('TaskAddFromDeal: Fetching custom fields and directories');
       final customFieldsData = await ApiService().getCustomFields();
       if (customFieldsData['result'] != null) {
         setState(() {
@@ -82,7 +82,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('TaskAddFromDeal: Added custom fields: ${customFields.length}');
+          //print('TaskAddFromDeal: Added custom fields: ${customFields.length}');
         });
       }
 
@@ -98,11 +98,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('TaskAddFromDeal: Added directory fields: ${customFields.length}');
+          //print('TaskAddFromDeal: Added directory fields: ${customFields.length}');
         });
       }
     } catch (e) {
-      print('TaskAddFromDeal: Error fetching custom fields: $e');
+      //print('TaskAddFromDeal: Error fetching custom fields: $e');
     }
   }
 
@@ -113,11 +113,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   }
 
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-    print('TaskAddFromDeal: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+    //print('TaskAddFromDeal: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
     if (isDirectory && directoryId != null) {
       bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        print('TaskAddFromDeal: Directory with ID $directoryId already exists, skipping');
+        //print('TaskAddFromDeal: Directory with ID $directoryId already exists, skipping');
         return;
       }
     }
@@ -130,12 +130,12 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         type: type,
         uniqueId: Uuid().v4(),
       ));
-      print('TaskAddFromDeal: Added custom field: $fieldName');
+      //print('TaskAddFromDeal: Added custom field: $fieldName');
     });
   }
 
   void _showAddFieldMenu() {
-    print('TaskAddFromDeal: Showing add field menu');
+    //print('TaskAddFromDeal: Showing add field menu');
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(300, 650, 200, 300),
@@ -171,7 +171,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         ),
       ],
     ).then((value) {
-      print('TaskAddFromDeal: Menu selected value: $value');
+      //print('TaskAddFromDeal: Menu selected value: $value');
       if (value == 'manual') {
         showDialog(
           context: context,
@@ -189,16 +189,16 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) {
-                print('TaskAddFromDeal: Selected directory: ${directory.name}, id: ${directory.id}');
+                //print('TaskAddFromDeal: Selected directory: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
                 ApiService().linkDirectory(
                   directoryId: directory.id,
                   modelType: 'task',
                   organizationId: ApiService().getSelectedOrganization().toString(),
                 ).then((_) {
-                  print('TaskAddFromDeal: Directory linked to task model');
+                  //print('TaskAddFromDeal: Directory linked to task model');
                 }).catchError((e) {
-                  print('TaskAddFromDeal: Error linking directory: $e');
+                  //print('TaskAddFromDeal: Error linking directory: $e');
                 });
               },
             );
@@ -209,7 +209,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   }
 
   Widget _buildFileSelection() {
-    print('TaskAddFromDeal: Building file selection with ${fileNames.length} files');
+    //print('TaskAddFromDeal: Building file selection with ${fileNames.length} files');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,7 +262,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
               final fileName = fileNames[index];
               final fileExtension = fileName.split('.').last.toLowerCase();
-              print('TaskAddFromDeal: Displaying file: $fileName');
+              //print('TaskAddFromDeal: Displaying file: $fileName');
               return Padding(
                 padding: EdgeInsets.only(right: 16),
                 child: Stack(
@@ -307,7 +307,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             selectedFiles.removeAt(index);
                             fileNames.removeAt(index);
                             fileSizes.removeAt(index);
-                            print('TaskAddFromDeal: Removed file: $fileName');
+                            //print('TaskAddFromDeal: Removed file: $fileName');
                           });
                         },
                         child: Container(
@@ -333,7 +333,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   Future<void> _pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      print('TaskAddFromDeal: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
+      //print('TaskAddFromDeal: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
       if (result != null) {
         double totalSize = selectedFiles.fold<double>(
           0.0,
@@ -346,7 +346,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         );
 
         if (totalSize + newFilesSize > 50) {
-          print('TaskAddFromDeal: File size exceeds 50MB limit');
+          //print('TaskAddFromDeal: File size exceeds 50MB limit');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -378,11 +378,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
-          print('TaskAddFromDeal: Added files: $fileNames');
+          //print('TaskAddFromDeal: Added files: $fileNames');
         });
       }
     } catch (e) {
-      print('TaskAddFromDeal: Error picking file: $e');
+      //print('TaskAddFromDeal: Error picking file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.translate('file_selection_error')),
@@ -420,7 +420,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () {
-                print('TaskAddFromDeal: Cancel button pressed');
+                //print('TaskAddFromDeal: Cancel button pressed');
                 Navigator.pop(context);
               },
             ),
@@ -429,7 +429,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           Expanded(
             child: BlocBuilder<TaskAddFromDealBloc, TaskAddFromDealState>(
               builder: (context, state) {
-                print('TaskAddFromDeal: TaskAddFromDealBloc builder state: $state');
+                //print('TaskAddFromDeal: TaskAddFromDealBloc builder state: $state');
                 return state is TaskAddFromDealLoading
                     ? const Center(
                         child: CircularProgressIndicator(
@@ -451,10 +451,10 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   }
 
   void _submitForm() {
-    print('TaskAddFromDeal: Submitting form with name: ${nameController.text}, statusId: $selectedStatusId');
+    //print('TaskAddFromDeal: Submitting form with name: ${nameController.text}, statusId: $selectedStatusId');
     if (_formKey.currentState!.validate()) {
       if (selectedStatusId == null) {
-        print('TaskAddFromDeal: Status not selected');
+        //print('TaskAddFromDeal: Status not selected');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.translate('please_select_status_task')),
@@ -465,7 +465,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       }
       _createTask();
     } else {
-      print('TaskAddFromDeal: Form validation failed');
+      //print('TaskAddFromDeal: Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.translate('fill_required_fields')),
@@ -486,7 +486,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       try {
         startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
       } catch (e) {
-        print('TaskAddFromDeal: Invalid start date format: $e');
+        //print('TaskAddFromDeal: Invalid start date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
@@ -501,7 +501,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       try {
         endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
       } catch (e) {
-        print('TaskAddFromDeal: Invalid end date format: $e');
+        //print('TaskAddFromDeal: Invalid end date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
@@ -515,7 +515,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       setState(() {
         isEndDateInvalid = true;
       });
-      print('TaskAddFromDeal: Start date is after end date');
+      //print('TaskAddFromDeal: Start date is after end date');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -601,14 +601,14 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
         });
-        print('TaskAddFromDeal: Added directory value: ${field.directoryId}, ${field.entryId}');
+        //print('TaskAddFromDeal: Added directory value: ${field.directoryId}, ${field.entryId}');
       } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
           'type': fieldType ?? 'string',
         });
-        print('TaskAddFromDeal: Added custom field: $fieldName = $fieldValue, type: $fieldType');
+        //print('TaskAddFromDeal: Added custom field: $fieldName = $fieldValue, type: $fieldType');
       }
     }
 
@@ -629,12 +629,12 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             directoryValues: directoryValues,
           ),
     );
-    print('TaskAddFromDeal: Dispatched CreateTaskFromDeal event');
+    //print('TaskAddFromDeal: Dispatched CreateTaskFromDeal event');
   }
 
   @override
   Widget build(BuildContext context) {
-    print('TaskAddFromDeal: Building with selectedProject: $selectedProject, selectedUsers: $selectedUsers');
+    //print('TaskAddFromDeal: Building with selectedProject: $selectedProject, selectedUsers: $selectedUsers');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -645,7 +645,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             height: 24,
           ),
           onPressed: () {
-            print('TaskAddFromDeal: Back button pressed');
+            //print('TaskAddFromDeal: Back button pressed');
             Navigator.pop(context, widget.dealId);
             context.read<TaskAddFromDealBloc>().add(FetchTaskDealStatuses());
           },
@@ -668,7 +668,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         ],
         child: BlocListener<TaskAddFromDealBloc, TaskAddFromDealState>(
           listener: (context, state) {
-            print('TaskAddFromDeal: TaskAddFromDealBloc state changed: $state');
+            //print('TaskAddFromDeal: TaskAddFromDealBloc state changed: $state');
             if (state is TaskAddFromDealError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -726,7 +726,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      print('TaskAddFromDeal: Unfocusing on tap');
+                      //print('TaskAddFromDeal: Unfocusing on tap');
                       FocusScope.of(context).unfocus();
                     },
                     child: SingleChildScrollView(
@@ -739,7 +739,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onSelectStatus: (TaskStatus selectedStatusData) {
                               setState(() {
                                 selectedStatusId = selectedStatusData.id;
-                                print('TaskAddFromDeal: Selected status: ${selectedStatusData.id}');
+                                //print('TaskAddFromDeal: Selected status: ${selectedStatusData.id}');
                               });
                             },
                           ),
@@ -753,7 +753,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onPriorityChanged: (bool? value) {
                               setState(() {
                                 selectedPriority = value == true ? 3 : 1;
-                                print('TaskAddFromDeal: Priority changed to: $selectedPriority');
+                                //print('TaskAddFromDeal: Priority changed to: $selectedPriority');
                               });
                             },
                             priorityText: AppLocalizations.of(context)!.translate('urgent'),
@@ -778,7 +778,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onSelectUsers: (List<UserData> selectedUsersData) {
                               setState(() {
                                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                                print('TaskAddFromDeal: Selected users: $selectedUsers');
+                                //print('TaskAddFromDeal: Selected users: $selectedUsers');
                               });
                             },
                           ),
@@ -788,7 +788,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onSelectProject: (ProjectTask selectedProjectData) {
                               setState(() {
                                 selectedProject = selectedProjectData.id.toString();
-                                print('TaskAddFromDeal: Selected project: ${selectedProjectData.id}');
+                                //print('TaskAddFromDeal: Selected project: ${selectedProjectData.id}');
                               });
                             },
                           ),
@@ -813,7 +813,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                               onPressed: () {
                                 setState(() {
                                   _showAdditionalFields = true;
-                                  print('TaskAddFromDeal: Additional fields toggled');
+                                  //print('TaskAddFromDeal: Additional fields toggled');
                                 });
                               },
                             )
@@ -839,7 +839,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                                                 entryId: selectedField.id,
                                                 controller: TextEditingController(text: selectedField.value),
                                               );
-                                              print('TaskAddFromDeal: Directory field updated: ${field.fieldName}');
+                                              //print('TaskAddFromDeal: Directory field updated: ${field.fieldName}');
                                             });
                                           },
                                           controller: field.controller,
@@ -848,13 +848,13 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                                               customFields[index] = field.copyWith(
                                                 entryId: entryId,
                                               );
-                                              print('TaskAddFromDeal: Directory entry ID updated: $entryId');
+                                              //print('TaskAddFromDeal: Directory entry ID updated: $entryId');
                                             });
                                           },
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('TaskAddFromDeal: Removed custom field at index: $index');
+                                              //print('TaskAddFromDeal: Removed custom field at index: $index');
                                             });
                                           },
                                         )
@@ -864,7 +864,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('TaskAddFromDeal: Removed custom field: ${field.fieldName}');
+                                              //print('TaskAddFromDeal: Removed custom field: ${field.fieldName}');
                                             });
                                           },
                                           type: field.type,

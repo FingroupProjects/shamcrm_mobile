@@ -54,7 +54,7 @@
     });
 
     factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
-      print('LeadById: Parsing JSON for leadId: ${json['id']}');
+      //print('LeadById: Parsing JSON for leadId: ${json['id']}');
       final directoryValues = (json['directory_values'] as List<dynamic>?)
               ?.map((item) => DirectoryValue.fromJson(item))
               .toList() ??
@@ -67,9 +67,9 @@
               ?.map((item) => LeadFiles.fromJson(item))
               .toList() ??
           [];
-      print('LeadById: Parsed directoryValues: $directoryValues');
-      print('LeadById: Parsed chats: $chats');
-      print('LeadById: Parsed files: $files');
+      //print('LeadById: Parsed directoryValues: $directoryValues');
+      //print('LeadById: Parsed chats: $chats');
+      //print('LeadById: Parsed files: $files');
       final lead = LeadById(
         id: json['id'] is int ? json['id'] : 0,
         name: json['name'] is String ? json['name'] : 'Без имени',
@@ -111,7 +111,7 @@
         chats: chats,
         files: files,
       );
-      print('LeadById: Lead object created: id=${lead.id}, name=${lead.name}, directoryValues length=${lead.directoryValues.length}, chats length=${lead.chats.length}, files length=${lead.files?.length ?? 0}');
+      //print('LeadById: Lead object created: id=${lead.id}, name=${lead.name}, directoryValues length=${lead.directoryValues.length}, chats length=${lead.chats.length}, files length=${lead.files?.length ?? 0}');
       return lead;
     }
   }
@@ -125,14 +125,14 @@
     });
 
     factory LeadChat.fromJson(Map<String, dynamic> json) {
-      print('LeadChat: Parsing JSON for chat ID: ${json['id']}');
+      //print('LeadChat: Parsing JSON for chat ID: ${json['id']}');
       final chat = LeadChat(
         id: json['id'] is int ? json['id'] : 0,
         integration: json['integration'] != null && json['integration'] is Map<String, dynamic>
             ? Integration.fromJson(json['integration'])
             : null,
       );
-      print('LeadChat: Chat created: id=${chat.id}, integration=${chat.integration?.username}');
+      //print('LeadChat: Chat created: id=${chat.id}, integration=${chat.integration?.username}');
       return chat;
     }
   }
@@ -149,13 +149,13 @@
     });
 
     factory Integration.fromJson(Map<String, dynamic> json) {
-      print('Integration: Parsing JSON: $json');
+      //print('Integration: Parsing JSON: $json');
       final integration = Integration(
         id: json['id'] ?? 0,
         name: json['name'] ?? '',
         username: json['username'] ?? '',
       );
-      print('Integration: Integration created: id=${integration.id}, name=${integration.name}, username=${integration.username}');
+      //print('Integration: Integration created: id=${integration.id}, name=${integration.name}, username=${integration.username}');
       return integration;
     }
   }
@@ -169,12 +169,12 @@
     });
 
     factory Author.fromJson(Map<String, dynamic> json) {
-      print('Author: Parsing JSON for author: ${json['id']}');
+      //print('Author: Parsing JSON for author: ${json['id']}');
       final author = Author(
         id: json['id'] ?? 0,
         name: json['name'] ?? 'Не указан',
       );
-      print('Author: Author created: id=${author.id}, name=${author.name}');
+      //print('Author: Author created: id=${author.id}, name=${author.name}');
       return author;
     }
   }
@@ -191,13 +191,13 @@
     });
 
     factory LeadFiles.fromJson(Map<String, dynamic> json) {
-      print('LeadFiles: Parsing JSON for file ID: ${json['id']}');
+      //print('LeadFiles: Parsing JSON for file ID: ${json['id']}');
       final file = LeadFiles(
         id: json['id'] is int ? json['id'] : 0,
         name: json['name'] is String ? json['name'] : '',
         path: json['path'] is String ? json['path'] : '',
       );
-      print('LeadFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
+      //print('LeadFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
       return file;
     }
   }
@@ -209,12 +209,12 @@
     Source({required this.name, required this.id});
 
     factory Source.fromJson(Map<String, dynamic> json) {
-      print('Source: Parsing JSON for source: ${json['id']}');
+      //print('Source: Parsing JSON for source: ${json['id']}');
       final source = Source(
         name: json['name'],
         id: json['id'],
       );
-      print('Source: Source created: id=${source.id}, name=${source.name}');
+      //print('Source: Source created: id=${source.id}, name=${source.name}');
       return source;
     }
   }
@@ -233,14 +233,14 @@
     });
 
     factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
-      print('LeadCustomFieldsById: Parsing JSON for custom field: ${json['id']}');
+      //print('LeadCustomFieldsById: Parsing JSON for custom field: ${json['id']}');
       final field = LeadCustomFieldsById(
         id: json['id'] ?? 0,
         key: json['key'] ?? '',
         value: json['value'] ?? '',
         type: json['type'],
       );
-      print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
+      //print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
       return field;
     }
   }
@@ -257,13 +257,13 @@
     });
 
     factory LeadStatusById.fromJson(Map<String, dynamic> json) {
-      print('LeadStatusById: Parsing JSON for status: ${json['id']}');
+      //print('LeadStatusById: Parsing JSON for status: ${json['id']}');
       final status = LeadStatusById(
         id: json['id'],
         title: json['title'] ?? json['name'] ?? 'Не указан',
         color: json['color'],
       );
-      print('LeadStatusById: Status created: id=${status.id}, title=${status.title}, color=${status.color}');
+      //print('LeadStatusById: Status created: id=${status.id}, title=${status.title}, color=${status.color}');
       return status;
     }
   }
@@ -278,12 +278,12 @@
     });
 
     factory DirectoryValue.fromJson(Map<String, dynamic> json) {
-      print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
+      //print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
       final value = DirectoryValue(
         id: json['id'] ?? 0,
         entry: DirectoryEntry.fromJson(json['entry']),
       );
-      print('DirectoryValue: Directory value created: id=${value.id}');
+      //print('DirectoryValue: Directory value created: id=${value.id}');
       return value;
     }
   }
@@ -302,7 +302,7 @@
     });
 
     factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
-      print('DirectoryEntry: Parsing JSON for entry: ${json['id']}');
+      //print('DirectoryEntry: Parsing JSON for entry: ${json['id']}');
       final entry = DirectoryEntry(
         id: json['id'] ?? 0,
         directory: DirectoryByLead.fromJson(json['directory']),
@@ -310,7 +310,7 @@
             {},
         createdAt: json['created_at'] ?? '',
       );
-      print('DirectoryEntry: Entry created: id=${entry.id}, directoryName=${entry.directory.name}, values=${entry.values}');
+      //print('DirectoryEntry: Entry created: id=${entry.id}, directoryName=${entry.directory.name}, values=${entry.values}');
       return entry;
     }
   }
@@ -327,13 +327,13 @@
     });
 
     factory DirectoryByLead.fromJson(Map<String, dynamic> json) {
-      print('Directory: Parsing JSON for directory: ${json['id']}');
+      //print('Directory: Parsing JSON for directory: ${json['id']}');
       final directory = DirectoryByLead(
         id: json['id'] ?? 0,
         name: json['name'] ?? '',
         createdAt: json['created_at'],
       );
-      print('Directory: Directory created: id=${directory.id}, name=${directory.name}');
+      //print('Directory: Directory created: id=${directory.id}, name=${directory.name}');
       return directory;
     }
   }

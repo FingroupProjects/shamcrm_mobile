@@ -131,12 +131,12 @@ class _LeadColumnState extends State<LeadColumn> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
+      //print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, reinitializing');
+      //print('No targets available for tutorial, reinitializing');
       _initTutorialTargets();
       if (targets.isEmpty) return;
     }
@@ -145,7 +145,7 @@ class _LeadColumnState extends State<LeadColumn> {
     bool isTutorialShown = prefs.getBool('isTutorialShownLeadColumn') ?? false;
 
     if (isTutorialShown || _isTutorialShown) {
-      print('Tutorial conditions not met');
+      //print('Tutorial conditions not met');
       return;
     }
 
@@ -218,9 +218,9 @@ class _LeadColumnState extends State<LeadColumn> {
           await prefs.setBool('isTutorialShownLeadColumn', true);
           try {
             await _apiService.markPageCompleted("leads", "index");
-            print('Sent markPageCompleted for leads/index after finishing LeadColumn');
+            //print('Sent markPageCompleted for leads/index after finishing LeadColumn');
           } catch (e) {
-            print('Error marking page completed on finish: $e');
+            //print('Error marking page completed on finish: $e');
           }
           setState(() {
             _isTutorialShown = true;
@@ -241,9 +241,9 @@ class _LeadColumnState extends State<LeadColumn> {
   Future<void> _completeTutorialAsync() async {
     try {
       await _apiService.markPageCompleted("leads", "index");
-      print('Sent markPageCompleted for leads/index after skipping LeadColumn');
+      //print('Sent markPageCompleted for leads/index after skipping LeadColumn');
     } catch (e) {
-      print('Error marking page completed on skip: $e');
+      //print('Error marking page completed on skip: $e');
     }
   }
 

@@ -348,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (visibleTargets.isEmpty) {
       await prefs.setBool('isTutorialShownProfile', true);
       await _apiService.markPageCompleted("settings", "index").catchError((e) {
-        print('Error marking page completed - no visible targets: $e');
+        //print('Error marking page completed - no visible targets: $e');
       });
       setState(() {
         _isTutorialShown = true;
@@ -376,10 +376,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Tutorial skipped");
+        //print("Tutorial skipped");
         prefs.setBool('isTutorialShownProfile', true);
         _apiService.markPageCompleted("settings", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
+          //print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -391,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await _apiService
             .markPageCompleted("settings", "index")
             .catchError((e) {
-          print('Error marking page completed on finish: $e');
+          //print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -445,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
     }
   }
 

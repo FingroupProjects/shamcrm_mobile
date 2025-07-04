@@ -1092,7 +1092,13 @@
 "hit": "Xit",
 "promotion": "Aksiya",
 "newest": "Yangi",
-"select_label": "Yorliqni tanlang"
+"select_label": "Yorliqni tanlang",
+"show_on_website": "Saytda ko‘rsatish",
+"select_integration": "Chatni tanlang",
+"field_type_datetime": "Sana va vaqt",
+"payment_method_title": "To‘lov usuli:",
+"active_status": "Holat"
+
 
 
 

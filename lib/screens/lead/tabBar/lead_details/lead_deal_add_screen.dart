@@ -61,14 +61,14 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   @override
   void initState() {
     super.initState();
-    print('LeadDealAddScreen: initState started');
+    //print('LeadDealAddScreen: initState started');
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<DealBloc>().add(FetchDealStatuses());
     _fetchAndAddCustomFields();
     if (widget.managerId != null) {
       setState(() {
         selectedManager = widget.managerId.toString();
-        print('LeadDealAddScreen: Auto-selected managerId: ${widget.managerId}');
+        //print('LeadDealAddScreen: Auto-selected managerId: ${widget.managerId}');
       });
     }
   
@@ -77,7 +77,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   Future<void> _pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      print('LeadDealAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
+      //print('LeadDealAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
       if (result != null) {
         double totalSize = selectedFiles.fold<double>(
           0.0,
@@ -87,10 +87,10 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           0.0,
           (sum, file) => sum + file.size / (1024 * 1024),
         );
-        print('LeadDealAddScreen: Total size: $totalSize MB, New files size: $newFilesSize MB');
+        //print('LeadDealAddScreen: Total size: $totalSize MB, New files size: $newFilesSize MB');
 
         if (totalSize + newFilesSize > 50) {
-          print('LeadDealAddScreen: File size exceeds 50MB limit');
+          //print('LeadDealAddScreen: File size exceeds 50MB limit');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -120,11 +120,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
-          print('LeadDealAddScreen: Added files: $fileNames');
+          //print('LeadDealAddScreen: Added files: $fileNames');
         });
       }
     } catch (e) {
-      print('LeadDealAddScreen: Error picking file: $e');
+      //print('LeadDealAddScreen: Error picking file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),
@@ -135,7 +135,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   Widget _buildFileSelection() {
-    print('LeadDealAddScreen: Building file selection with ${fileNames.length} files');
+    //print('LeadDealAddScreen: Building file selection with ${fileNames.length} files');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,7 +184,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
               final fileName = fileNames[index];
               final fileExtension = fileName.split('.').last.toLowerCase();
-              print('LeadDealAddScreen: Displaying file: $fileName');
+              //print('LeadDealAddScreen: Displaying file: $fileName');
               return Padding(
                 padding: EdgeInsets.only(right: 16),
                 child: Stack(
@@ -225,7 +225,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             selectedFiles.removeAt(index);
                             fileNames.removeAt(index);
                             fileSizes.removeAt(index);
-                            print('LeadDealAddScreen: Removed file: $fileName');
+                            //print('LeadDealAddScreen: Removed file: $fileName');
                           });
                         },
                         child: Container(
@@ -246,7 +246,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   void _fetchAndAddCustomFields() async {
     try {
-      print('LeadDealAddScreen: Fetching custom fields and directories');
+      //print('LeadDealAddScreen: Fetching custom fields and directories');
       final customFieldsData = await ApiService().getCustomFieldsdeal();
       if (customFieldsData['result'] != null) {
         setState(() {
@@ -257,7 +257,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('LeadDealAddScreen: Added custom fields: ${customFields.length}');
+          //print('LeadDealAddScreen: Added custom fields: ${customFields.length}');
         });
       }
 
@@ -273,20 +273,20 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               uniqueId: Uuid().v4(),
             );
           }).toList());
-          print('LeadDealAddScreen: Added directory fields: ${customFields.length}');
+          //print('LeadDealAddScreen: Added directory fields: ${customFields.length}');
         });
       }
     } catch (e) {
-      print('LeadDealAddScreen: Error fetching custom fields: $e');
+      //print('LeadDealAddScreen: Error fetching custom fields: $e');
     }
   }
 
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-    print('LeadDealAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+    //print('LeadDealAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
     if (isDirectory && directoryId != null) {
       bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        print('LeadDealAddScreen: Directory with ID $directoryId already exists, skipping');
+        //print('LeadDealAddScreen: Directory with ID $directoryId already exists, skipping');
         return;
       }
     }
@@ -299,12 +299,12 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         type: type,
         uniqueId: Uuid().v4(),
       ));
-      print('LeadDealAddScreen: Added custom field: $fieldName');
+      //print('LeadDealAddScreen: Added custom field: $fieldName');
     });
   }
 
   void _showAddFieldMenu() {
-    print('LeadDealAddScreen: Showing add field menu');
+    //print('LeadDealAddScreen: Showing add field menu');
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(300, 650, 200, 300),
@@ -338,7 +338,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         ),
       ],
     ).then((value) {
-      print('LeadDealAddScreen: Menu selected value: $value');
+      //print('LeadDealAddScreen: Menu selected value: $value');
       if (value == 'manual') {
         showDialog(
           context: context,
@@ -356,16 +356,16 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) {
-                print('LeadDealAddScreen: Selected directory: ${directory.name}, id: ${directory.id}');
+                //print('LeadDealAddScreen: Selected directory: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
                 ApiService().linkDirectory(
                   directoryId: directory.id,
                   modelType: 'deal',
                   organizationId: ApiService().getSelectedOrganization().toString(),
                 ).then((_) {
-                  print('LeadDealAddScreen: Directory linked successfully');
+                  //print('LeadDealAddScreen: Directory linked successfully');
                 }).catchError((e) {
-                  print('LeadDealAddScreen: Error linking directory: $e');
+                  //print('LeadDealAddScreen: Error linking directory: $e');
                 });
               },
             );
@@ -377,7 +377,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('LeadDealAddScreen: Building with selectedManager: $selectedManager, selectedDealStatus: $selectedDealStatus');
+    //print('LeadDealAddScreen: Building with selectedManager: $selectedManager, selectedDealStatus: $selectedDealStatus');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -387,7 +387,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         leading: IconButton(
           icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
           onPressed: () {
-            print('LeadDealAddScreen: Back button pressed');
+            //print('LeadDealAddScreen: Back button pressed');
             Navigator.pop(context, widget.leadId);
             context.read<DealBloc>().add(FetchDealStatuses());
           },
@@ -412,7 +412,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         ],
         child: BlocListener<DealBloc, DealState>(
           listener: (context, state) {
-            print('LeadDealAddScreen: DealBloc state changed: $state');
+            //print('LeadDealAddScreen: DealBloc state changed: $state');
             if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -468,7 +468,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      print('LeadDealAddScreen: Unfocusing on tap');
+                      //print('LeadDealAddScreen: Unfocusing on tap');
                       FocusScope.of(context).unfocus();
                     },
                     child: SingleChildScrollView(
@@ -481,7 +481,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             onSelectDealName: (String dealName) {
                               setState(() {
                                 titleController.text = dealName;
-                                print('LeadDealAddScreen: Deal name selected: $dealName');
+                                //print('LeadDealAddScreen: Deal name selected: $dealName');
                               });
                             },
                           ),
@@ -491,7 +491,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             onChanged: (String? newValue) {
                               setState(() {
                                 selectedDealStatus = newValue;
-                                print('LeadDealAddScreen: Deal status selected: $newValue');
+                                //print('LeadDealAddScreen: Deal status selected: $newValue');
                               });
                             },
                           ),
@@ -501,7 +501,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
                                 selectedManager = selectedManagerData.id.toString();
-                                print('LeadDealAddScreen: Manager selected: ${selectedManagerData.id}');
+                                //print('LeadDealAddScreen: Manager selected: ${selectedManagerData.id}');
                               });
                             },
                           ),
@@ -544,7 +544,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                               onPressed: () {
                                 setState(() {
                                   _showAdditionalFields = true;
-                                  print('LeadDealAddScreen: Additional fields toggled');
+                                  //print('LeadDealAddScreen: Additional fields toggled');
                                 });
                               },
                             )
@@ -570,20 +570,20 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                                 entryId: selectedField.id,
                                                 controller: TextEditingController(text: selectedField.value),
                                               );
-                                              print('LeadDealAddScreen: Directory field updated: ${field.fieldName}');
+                                              //print('LeadDealAddScreen: Directory field updated: ${field.fieldName}');
                                             });
                                           },
                                           controller: field.controller,
                                           onSelectEntryId: (int entryId) {
                                             setState(() {
                                               customFields[index] = field.copyWith(entryId: entryId);
-                                              print('LeadDealAddScreen: Directory entry ID updated: $entryId');
+                                              //print('LeadDealAddScreen: Directory entry ID updated: $entryId');
                                             });
                                           },
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('LeadDealAddScreen: Removed custom field at index: $index');
+                                              //print('LeadDealAddScreen: Removed custom field at index: $index');
                                             });
                                           },
                                         )
@@ -593,7 +593,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                           onRemove: () {
                                             setState(() {
                                               customFields.removeAt(index);
-                                              print('LeadDealAddScreen: Removed custom field: ${field.fieldName}');
+                                              //print('LeadDealAddScreen: Removed custom field: ${field.fieldName}');
                                             });
                                           },
                                           type: field.type,
@@ -624,7 +624,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           buttonColor: Color(0xffF4F7FD),
                           textColor: Colors.black,
                           onPressed: () {
-                            print('LeadDealAddScreen: Cancel button pressed');
+                            //print('LeadDealAddScreen: Cancel button pressed');
                             Navigator.pop(context, widget.leadId);
                             context.read<DealBloc>().add(FetchDealStatuses());
                           },
@@ -634,7 +634,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       Expanded(
                         child: BlocBuilder<DealBloc, DealState>(
                           builder: (context, state) {
-                            print('LeadDealAddScreen: DealBloc builder state: $state');
+                            //print('LeadDealAddScreen: DealBloc builder state: $state');
                             if (state is DealLoading) {
                               return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
                             } else {
@@ -660,11 +660,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   void _submitForm() {
-    print('LeadDealAddScreen: Submitting form with title: ${titleController.text}, manager: $selectedManager, dealStatus: $selectedDealStatus');
+    //print('LeadDealAddScreen: Submitting form with title: ${titleController.text}, manager: $selectedManager, dealStatus: $selectedDealStatus');
     if (_formKey.currentState!.validate() && titleController.text.isNotEmpty && selectedManager != null && selectedDealStatus != null) {
       _createLeadDeal();
     } else {
-      print('LeadDealAddScreen: Form validation failed');
+      //print('LeadDealAddScreen: Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -703,7 +703,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         isStartDateInvalid = true;
         isEndDateInvalid = true;
       });
-      print('LeadDealAddScreen: Invalid date format: $e');
+      //print('LeadDealAddScreen: Invalid date format: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -725,7 +725,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         isStartDateInvalid = true;
         isEndDateInvalid = true;
       });
-      print('LeadDealAddScreen: Start date is after end date');
+      //print('LeadDealAddScreen: Start date is after end date');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -806,14 +806,14 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
         });
-        print('LeadDealAddScreen: Added directory value: ${field.directoryId}, ${field.entryId}');
+        //print('LeadDealAddScreen: Added directory value: ${field.directoryId}, ${field.entryId}');
       } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
           'type': fieldType ?? 'string',
         });
-        print('LeadDealAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
+        //print('LeadDealAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
       }
     }
 
@@ -835,6 +835,6 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       filePaths: selectedFiles,
       localizations: localizations,
     ));
-    print('LeadDealAddScreen: Dispatched CreateDeal event');
+    //print('LeadDealAddScreen: Dispatched CreateDeal event');
   }
 }

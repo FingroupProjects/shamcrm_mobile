@@ -139,7 +139,7 @@ class ChatListItem extends StatelessWidget {
   }
 
  Widget _buildAvatar(String avatar) {
-  print('Avatar path: $avatar');
+  // //print('Avatar path: $avatar');
   bool isLeadsSection = endPointInTab == 'lead';
   bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
 
@@ -150,7 +150,7 @@ class ChatListItem extends StatelessWidget {
       radius: 24,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        print('Error loading asset image: assets/images/AvatarChat.png, $exception');
+        //print('Error loading asset image: assets/images/AvatarChat.png, $exception');
       },
     );
   }
@@ -245,11 +245,11 @@ class ChatListItem extends StatelessWidget {
       radius: 24,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        print('Error loading asset image: $avatar, $exception');
+        //print('Error loading asset image: $avatar, $exception');
       },
     );
   } catch (e) {
-    print('Fallback avatar due to error: $e');
+    //print('Fallback avatar due to error: $e');
     return CircleAvatar(
       backgroundImage: AssetImage('assets/images/AvatarChat.png'),
       radius: 24,
@@ -266,7 +266,7 @@ class ChatListItem extends StatelessWidget {
       DateTime parsedTime = DateTime.parse(time);
       return DateFormat('dd.MM.yyyy').format(parsedTime);
     } catch (e) {
-      print("Ошибка парсинга даты: $e");
+      //print("Ошибка парсинга даты: $e");
       return '';
     }
   }

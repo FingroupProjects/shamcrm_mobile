@@ -234,7 +234,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              builder: (context) => ProductSelectionSheet(order: widget.order),
+              builder: (context) => VariantSelectionSheet(order: widget.order),
             );
           },
           style: TextButton.styleFrom(

@@ -28,18 +28,18 @@ class _LeadWithManagerState extends State<LeadWithManager> {
   @override
   void initState() {
     super.initState();
-    print('LeadWithManager: initState started');
+    //print('LeadWithManager: initState started');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllLeadBloc>().state;
-        print('LeadWithManager: Initial GetAllLeadBloc state: $state');
+        //print('LeadWithManager: Initial GetAllLeadBloc state: $state');
         if (state is GetAllLeadSuccess) {
           leadsList = state.dataLead.result ?? [];
-          print('LeadWithManager: Loaded ${leadsList.length} leads');
+          //print('LeadWithManager: Loaded ${leadsList.length} leads');
           _updateSelectedLeadData();
         }
         if (state is! GetAllLeadSuccess) {
-          print('LeadWithManager: Dispatching GetAllLeadEv');
+          //print('LeadWithManager: Dispatching GetAllLeadEv');
           context.read<GetAllLeadBloc>().add(GetAllLeadEv());
         }
       }
@@ -47,7 +47,7 @@ class _LeadWithManagerState extends State<LeadWithManager> {
   }
 
 void _updateSelectedLeadData() {
-  print('LeadWithManager: Updating selected lead, prop selectedLead: ${widget.selectedLead}');
+  //print('LeadWithManager: Updating selected lead, prop selectedLead: ${widget.selectedLead}');
   if (widget.selectedLead != null && leadsList.isNotEmpty) {
     try {
       final newSelectedLead = leadsList.firstWhere(
@@ -55,24 +55,24 @@ void _updateSelectedLeadData() {
       );
       if (selectedLeadData?.id != newSelectedLead.id) {
         selectedLeadData = newSelectedLead;
-        print('LeadWithManager: Found lead: ${newSelectedLead.id}, managerId: ${newSelectedLead.managerId}');
+        //print('LeadWithManager: Found lead: ${newSelectedLead.id}, managerId: ${newSelectedLead.managerId}');
         widget.onSelectLead(newSelectedLead);
       } else {
-        print('LeadWithManager: Lead ${newSelectedLead.id} already selected, skipping onSelectLead');
+        //print('LeadWithManager: Lead ${newSelectedLead.id} already selected, skipping onSelectLead');
       }
     } catch (e) {
-      print('LeadWithManager: Lead not found for ID ${widget.selectedLead}: $e');
+      //print('LeadWithManager: Lead not found for ID ${widget.selectedLead}: $e');
       selectedLeadData = null;
     }
   } else {
-    print('LeadWithManager: No selected lead or empty leads list');
+    //print('LeadWithManager: No selected lead or empty leads list');
     selectedLeadData = null;
   }
 }
 
 @override
 Widget build(BuildContext context) {
-  print('LeadWithManager: Building with selectedLeadData: ${selectedLeadData?.id}');
+  //print('LeadWithManager: Building with selectedLeadData: ${selectedLeadData?.id}');
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -88,17 +88,17 @@ Widget build(BuildContext context) {
       const SizedBox(height: 4),
       BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
         builder: (context, state) {
-          print('LeadWithManager: BlocBuilder state: $state');
+          //print('LeadWithManager: BlocBuilder state: $state');
           if (state is GetAllLeadSuccess) {
             leadsList = state.dataLead.result ?? [];
-            print('LeadWithManager: Updated leadsList with ${leadsList.length} leads');
+            //print('LeadWithManager: Updated leadsList with ${leadsList.length} leads');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _updateSelectedLeadData();
             });
           } else if (state is GetAllLeadLoading) {
-            print('LeadWithManager: Leads are loading');
+            //print('LeadWithManager: Leads are loading');
           } else if (state is GetAllLeadError) {
-            print('LeadWithManager: Error loading leads: ${state.message}');
+            //print('LeadWithManager: Error loading leads: ${state.message}');
           }
 
             return CustomDropdown<LeadData>.search(
@@ -167,11 +167,11 @@ Widget build(BuildContext context) {
               },
               onChanged: (value) {
                 if (value != null) {
-                  print('LeadWithManager: User selected lead: ${value.id}, managerId: ${value.managerId}');
+                  //print('LeadWithManager: User selected lead: ${value.id}, managerId: ${value.managerId}');
                   widget.onSelectLead(value);
                   setState(() {
                     selectedLeadData = value;
-                    print('LeadWithManager: Updated selectedLeadData to: ${value.id}');
+                    //print('LeadWithManager: Updated selectedLeadData to: ${value.id}');
                   });
                   FocusScope.of(context).unfocus();
                 }

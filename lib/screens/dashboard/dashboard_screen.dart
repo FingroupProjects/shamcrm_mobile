@@ -110,7 +110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      print('Error in initialization: $e');
+      //print('Error in initialization: $e');
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -149,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await prefs.setString('userRoles', userRoles.join(','));
       }
     } catch (e) {
-      print('Error loading user roles: $e');
+      //print('Error loading user roles: $e');
       if (mounted) {
         setState(() {
           userRoles = ['Error loading roles'];
@@ -160,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _checkPermissionsAndTutorial() async {
     if (_isPermissionsChecked) {
-      print('Permissions already checked for dashboard, skipping');
+      //print('Permissions already checked for dashboard, skipping');
       return;
     }
 
@@ -169,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
-      print('Tutorial Progress for dashboard: $progress');
+      //print('Tutorial Progress for dashboard: $progress');
 
       setState(() {
         tutorialProgress = progress['result'];
@@ -180,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'tutorial_progress', json.encode(progress['result']));
 
       bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-      print('isTutorialShown for dashboard: $isTutorialShown');
+      //print('isTutorialShown for dashboard: $isTutorialShown');
 
       setState(() {
         _isTutorialShown = isTutorialShown;
@@ -190,24 +190,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           tutorialProgress != null &&
           !_hasDashboardIndexPermission &&
           mounted) {
-        print('Scheduling tutorial display for dashboard');
+        //print('Scheduling tutorial display for dashboard');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _initTutorialTargets();
             showTutorial();
           } else {
-            print('Widget not mounted, skipping tutorial for dashboard');
+            //print('Widget not mounted, skipping tutorial for dashboard');
           }
         });
       } else {
-        print('Tutorial not shown for dashboard. Reasons:');
-        print('isTutorialShown: $isTutorialShown');
-        print('tutorialProgress: $tutorialProgress');
-        print('hasDashboardIndexPermission: $_hasDashboardIndexPermission');
-        print('mounted: $mounted');
+        //print('Tutorial not shown for dashboard. Reasons:');
+        //print('isTutorialShown: $isTutorialShown');
+        //print('tutorialProgress: $tutorialProgress');
+        //print('hasDashboardIndexPermission: $_hasDashboardIndexPermission');
+        //print('mounted: $mounted');
       }
     } catch (e) {
-      print('Error fetching tutorial progress for dashboard: $e');
+      //print('Error fetching tutorial progress for dashboard: $e');
     }
   }
 
@@ -472,7 +472,7 @@ void _initAdminTutorialTargets() {
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for dashboard, skipping');
+      //print('Tutorial already shown for dashboard, skipping');
       return;
     }
 
@@ -482,11 +482,11 @@ void _initAdminTutorialTargets() {
     if (isTutorialShown ||
         tutorialProgress == null ||
         _hasDashboardIndexPermission) {
-      print('Tutorial not shown in showTutorial for dashboard');
+      //print('Tutorial not shown in showTutorial for dashboard');
       return;
     }
 
-    print('Showing tutorial for dashboard');
+    //print('Showing tutorial for dashboard');
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -504,10 +504,10 @@ void _initAdminTutorialTargets() {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Tutorial skipped for dashboard");
+        //print("Tutorial skipped for dashboard");
         prefs.setBool('isTutorialShownDashboard', true).then((_) {
           _apiService.markPageCompleted("dashboard", "index").catchError((e) {
-            print('Error marking page completed on skip for dashboard: $e');
+            //print('Error marking page completed on skip for dashboard: $e');
           });
         });
         setState(() {
@@ -516,12 +516,12 @@ void _initAdminTutorialTargets() {
         return true;
       },
       onFinish: () async {
-        print("Tutorial finished for dashboard");
+        //print("Tutorial finished for dashboard");
         await prefs.setBool('isTutorialShownDashboard', true);
         try {
           await _apiService.markPageCompleted("dashboard", "index");
         } catch (e) {
-          print('Error marking page completed on finish for dashboard: $e');
+          //print('Error marking page completed on finish for dashboard: $e');
         }
         setState(() {
           _isTutorialShown = true;
@@ -550,7 +550,7 @@ void _initAdminTutorialTargets() {
         curve: Curves.easeInOut,
       );
     } else {
-      print("Error: Unable to find render object for key");
+      //print("Error: Unable to find render object for key");
     }
   }
 

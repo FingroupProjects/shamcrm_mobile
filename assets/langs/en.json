@@ -1078,7 +1078,14 @@
 "hit": "Hit",
 "promotion": "Promotion",
 "newest": "Newest",
-"select_label": "Select a label"
+"select_label": "Select a label",
+"show_on_website": "Show on website",
+"version_mobile": "App version",
+"select_integration": "Select chat",
+"field_type_datetime": "Date and time",
+"payment_method_title": "Payment method:",
+"active_status": "Status"
+
 
 
 

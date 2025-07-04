@@ -1083,7 +1083,9 @@
   "newest": "Новинка",
   "select_label": "Выберите метку",
   "payment_method_title":"Способ оплаты:",
-  "active_status":"Статус"
+  "active_status":"Статус",
+  "show_on_website": "Отображать на сайте"
+
 
 
 }

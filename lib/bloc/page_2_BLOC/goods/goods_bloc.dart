@@ -28,14 +28,14 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     on<FetchSubCategories>(_fetchSubCategories);
     on<ResetSubCategories>(_resetSubCategories); // Добавляем обработчик сброса
     if (kDebugMode) {
-      print('GoodsBloc: Инициализация блока');
+      //print('GoodsBloc: Инициализация блока');
     }
   }
 
  Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
   emit(GoodsLoading());
   if (kDebugMode) {
-    print('GoodsBloc: Загрузка товаров, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
+    //print('GoodsBloc: Загрузка товаров, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
   }
 
   if (await _checkInternetConnection()) {
@@ -60,12 +60,12 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
       if (goods.isEmpty) {
         if (kDebugMode) {
-          print('GoodsBloc: Товары не найдены');
+          //print('GoodsBloc: Товары не найдены');
         }
         emit(GoodsEmpty());
       } else {
         if (kDebugMode) {
-          print('GoodsBloc: Загружено ${goods.length} товаров');
+          //print('GoodsBloc: Загружено ${goods.length} товаров');
         }
         emit(GoodsDataLoaded(
           goods,
@@ -77,13 +77,13 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Ошибка загрузки товаров: $e');
+        //print('GoodsBloc: Ошибка загрузки товаров: $e');
       }
       emit(GoodsError('Не удалось загрузить товары: $e'));
     }
   } else {
     if (kDebugMode) {
-      print('GoodsBloc: Нет подключения к интернету');
+      //print('GoodsBloc: Нет подключения к интернету');
     }
     emit(GoodsError('Нет подключения к интернету'));
   }
@@ -93,7 +93,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
   emit(GoodsLoading());
   _currentQuery = event.query.isEmpty ? null : event.query;
   if (kDebugMode) {
-    print('GoodsBloc: Поиск товаров с запросом: ${_currentQuery}, фильтры: $_currentFilters');
+    //print('GoodsBloc: Поиск товаров с запросом: ${_currentQuery}, фильтры: $_currentFilters');
   }
 
   if (await _checkInternetConnection()) {
@@ -128,12 +128,12 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
 
       if (goods.isEmpty) {
         if (kDebugMode) {
-          print('GoodsBloc: Товары не найдены при поиске');
+          //print('GoodsBloc: Товары не найдены при поиске');
         }
         emit(GoodsEmpty());
       } else {
         if (kDebugMode) {
-          print('GoodsBloc: Найдено ${goods.length} товаров при поиске');
+          //print('GoodsBloc: Найдено ${goods.length} товаров при поиске');
         }
         emit(GoodsDataLoaded(
           goods,
@@ -145,13 +145,13 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Ошибка поиска товаров: $e');
+        //print('GoodsBloc: Ошибка поиска товаров: $e');
       }
       emit(GoodsError('Не удалось выполнить поиск товаров: $e'));
     }
   } else {
     if (kDebugMode) {
-      print('GoodsBloc: Нет подключения к интернету при поиске');
+      //print('GoodsBloc: Нет подключения к интернету при поиске');
     }
     emit(GoodsError('Нет подключения к интернету'));
   }
@@ -159,7 +159,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
   Future<void> _fetchMoreGoods(FetchMoreGoods event, Emitter<GoodsState> emit) async {
   if (allGoodsFetched || state is! GoodsDataLoaded) {
     if (kDebugMode) {
-      print('GoodsBloc: Загрузка дополнительных товаров прервана: все товары загружены или неверное состояние');
+      //print('GoodsBloc: Загрузка дополнительных товаров прервана: все товары загружены или неверное состояние');
     }
     return;
   }
@@ -167,7 +167,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
   if (await _checkInternetConnection()) {
     try {
       if (kDebugMode) {
-        print('GoodsBloc: Загрузка дополнительных товаров, страница: ${event.currentPage + 1}, поиск: $_currentQuery, фильтры: $_currentFilters');
+        //print('GoodsBloc: Загрузка дополнительных товаров, страница: ${event.currentPage + 1}, поиск: $_currentQuery, фильтры: $_currentFilters');
       }
       final newGoods = await apiService.getGoods(
         page: event.currentPage + 1,
@@ -190,7 +190,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
       );
 
       if (kDebugMode) {
-        print('GoodsBloc: Загружено ${uniqueNewGoods.length} новых товаров');
+        //print('GoodsBloc: Загружено ${uniqueNewGoods.length} новых товаров');
       }
       emit(currentState.merge(
         uniqueNewGoods,
@@ -201,13 +201,13 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
       ));
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Ошибка загрузки дополнительных товаров: $e');
+        //print('GoodsBloc: Ошибка загрузки дополнительных товаров: $e');
       }
       emit(GoodsError('Не удалось загрузить дополнительные товары: $e'));
     }
   } else {
     if (kDebugMode) {
-      print('GoodsBloc: Нет подключения к интернету при загрузке дополнительных товаров');
+      //print('GoodsBloc: Нет подключения к интернету при загрузке дополнительных товаров');
     }
     emit(GoodsError('Нет подключения к интернету'));
   }
@@ -219,7 +219,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         ? List<String>.from(_currentFilters!['labels'])
         : []; // Update selectedLabels
     if (kDebugMode) {
-      print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery, метки: $selectedLabels');
+      //print('GoodsBloc: Применение фильтров: $_currentFilters, поиск: $_currentQuery, метки: $selectedLabels');
     }
 
     if (await _checkInternetConnection()) {
@@ -243,12 +243,12 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
 
         if (goods.isEmpty) {
           if (kDebugMode) {
-            print('GoodsBloc: Товары не найдены после применения фильтров');
+            //print('GoodsBloc: Товары не найдены после применения фильтров');
           }
           emit(GoodsEmpty());
         } else {
           if (kDebugMode) {
-            print('GoodsBloc: Найдено ${goods.length} товаров после применения фильтров');
+            //print('GoodsBloc: Найдено ${goods.length} товаров после применения фильтров');
           }
           emit(GoodsDataLoaded(
             goods,
@@ -260,13 +260,13 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('GoodsBloc: Ошибка применения фильтров: $e');
+          //print('GoodsBloc: Ошибка применения фильтров: $e');
         }
         emit(GoodsError('Не удалось применить фильтры: $e'));
       }
     } else {
       if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при применении фильтров');
+        //print('GoodsBloc: Нет подключения к интернету при применении фильтров');
       }
       emit(GoodsError('Нет подключения к интернету'));
     }
@@ -276,12 +276,12 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
     if (await _checkInternetConnection()) {
       try {
         if (kDebugMode) {
-          print('GoodsBloc: Загрузка подкатегорий');
+          //print('GoodsBloc: Загрузка подкатегорий');
         }
         subCategories = await apiService.getSubCategoryAttributes();
         if (kDebugMode) {
-          print('GoodsBloc: Загружено ${subCategories.length} подкатегорий');
-          print('GoodsBloc: ID подкатегорий: ${subCategories.map((c) => c.id).toList()}');
+          //print('GoodsBloc: Загружено ${subCategories.length} подкатегорий');
+          //print('GoodsBloc: ID подкатегорий: ${subCategories.map((c) => c.id).toList()}');
         }
         if (state is GoodsDataLoaded) {
           final currentState = state as GoodsDataLoaded;
@@ -304,13 +304,13 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('GoodsBloc: Ошибка загрузки подкатегорий: $e');
+          //print('GoodsBloc: Ошибка загрузки подкатегорий: $e');
         }
         emit(GoodsError('Не удалось загрузить подкатегории'));
       }
     } else {
       if (kDebugMode) {
-        print('GoodsBloc: Нет подключения к интернету при загрузке подкатегорий');
+        //print('GoodsBloc: Нет подключения к интернету при загрузке подкатегорий');
       }
       emit(GoodsError('Нет подключения к интернету'));
     }
@@ -318,7 +318,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
 
   Future<void> _resetSubCategories(ResetSubCategories event, Emitter<GoodsState> emit) async {
     if (kDebugMode) {
-      print('GoodsBloc: Сброс выбранных подкатегорий и меток');
+      //print('GoodsBloc: Сброс выбранных подкатегорий и меток');
     }
     selectedSubCategories = [];
     selectedLabels = []; // Reset labels
@@ -346,7 +346,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
  Future<void> _createGoods(CreateGoods event, Emitter<GoodsState> emit) async {
   emit(GoodsLoading());
   if (kDebugMode) {
-    print('GoodsBloc: Создание товара: ${event.name}');
+    //print('GoodsBloc: Создание товара: ${event.name}');
   }
 
   if (await _checkInternetConnection()) {
@@ -370,25 +370,25 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
 
       if (response['success'] == true) {
         if (kDebugMode) {
-          print('GoodsBloc: Товар успешно создан');
+          //print('GoodsBloc: Товар успешно создан');
         }
         emit(GoodsSuccess("Товар успешно создан"));
         add(FetchGoods(page: 1));
       } else {
         if (kDebugMode) {
-          print('GoodsBloc: Ошибка создания товара: ${response['message']}');
+          //print('GoodsBloc: Ошибка создания товара: ${response['message']}');
         }
         emit(GoodsError(response['message'] ?? 'Не удалось создать товар'));
       }
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Ошибка при создании товара: $e');
+        //print('GoodsBloc: Ошибка при создании товара: $e');
       }
       emit(GoodsError('Ошибка при создании товара: ${e.toString()}'));
     }
   } else {
     if (kDebugMode) {
-      print('GoodsBloc: Нет подключения к интернету при создании товара');
+      //print('GoodsBloc: Нет подключения к интернету при создании товара');
     }
     emit(GoodsError('Нет подключения к интернету'));
   }
@@ -397,7 +397,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
  Future<void> _updateGoods(UpdateGoods event, Emitter<GoodsState> emit) async {
   emit(GoodsLoading());
   if (kDebugMode) {
-    print('GoodsBloc: Updating goods: ${event.name}');
+    //print('GoodsBloc: Updating goods: ${event.name}');
   }
 
   if (await _checkInternetConnection()) {
@@ -423,25 +423,25 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
 
       if (response['success'] == true) {
         if (kDebugMode) {
-          print('GoodsBloc: Goods successfully updated');
+          //print('GoodsBloc: Goods successfully updated');
         }
         emit(GoodsSuccess("Goods successfully updated"));
         add(FetchGoods(page: 1));
       } else {
         if (kDebugMode) {
-          print('GoodsBloc: Error updating goods: ${response['message']}');
+          //print('GoodsBloc: Error updating goods: ${response['message']}');
         }
         emit(GoodsError(response['message'] ?? 'Failed to update goods'));
       }
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Error updating goods: $e');
+        //print('GoodsBloc: Error updating goods: $e');
       }
       emit(GoodsError('Error updating goods: ${e.toString()}'));
     }
   } else {
     if (kDebugMode) {
-      print('GoodsBloc: No internet connection while updating goods');
+      //print('GoodsBloc: No internet connection while updating goods');
     }
     emit(GoodsError('No internet connection'));
   }
@@ -452,12 +452,12 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
       final result = await InternetAddress.lookup('example.com');
       bool isConnected = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
       if (kDebugMode) {
-        print('GoodsBloc: Проверка подключения к интернету: $isConnected');
+        //print('GoodsBloc: Проверка подключения к интернету: $isConnected');
       }
       return isConnected;
     } on SocketException catch (e) {
       if (kDebugMode) {
-        print('GoodsBloc: Ошибка проверки подключения: $e');
+        //print('GoodsBloc: Ошибка проверки подключения: $e');
       }
       return false;
     }

@@ -333,36 +333,36 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           LeadWithManager(
                             selectedLead: selectedLead,
                             onSelectLead: (LeadData selectedLeadData) {
-                              print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
+                              //print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
                               if (selectedLead == selectedLeadData.id.toString()) {
-                                print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
+                                //print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
                                 return;
                               }
                               setState(() {
                                 selectedLead = selectedLeadData.id.toString();
-                                print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
+                                //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
                                 if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
-                                  print('DealAddScreen: Attempting to auto-select manager');
+                                  //print('DealAddScreen: Attempting to auto-select manager');
                                   final managerBlocState = context.read<GetAllManagerBloc>().state;
-                                  print('DealAddScreen: ManagerBloc state: $managerBlocState');
+                                  //print('DealAddScreen: ManagerBloc state: $managerBlocState');
                                   if (managerBlocState is GetAllManagerSuccess) {
                                     final managers = managerBlocState.dataManager.result ?? [];
-                                    print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
+                                    //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
                                     try {
                                       final matchingManager = managers.firstWhere(
                                         (manager) => manager.id == selectedLeadData.managerId,
                                       );
                                       selectedManager = matchingManager.id.toString();
-                                      print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
+                                      //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
                                     } catch (e) {
-                                      print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
+                                      //print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
                                       selectedManager = null;
                                     }
                                   } else {
-                                    print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
+                                    //print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
                                   }
                                 } else {
-                                  print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
+                                  //print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
                                 }
                               });
                             },
@@ -375,7 +375,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                 selectedManager = selectedManagerData.id.toString();
                                 isManagerInvalid = false;
                                 isManagerManuallySelected = true;
-                                print('DealAddScreen: Manager manually selected: ${selectedManagerData.id} (${selectedManagerData.name})');
+                                //print('DealAddScreen: Manager manually selected: ${selectedManagerData.id} (${selectedManagerData.name})');
                               });
                             },
                             hasError: isManagerInvalid,

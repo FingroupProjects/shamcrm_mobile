@@ -33,22 +33,22 @@ class _ManagerForLeadState extends State<ManagerForLead> {
   @override
   void initState() {
     super.initState();
-    print('ManagerForLead: initState started');
+    //print('ManagerForLead: initState started');
     if (widget.currentUserId != null) {
       currentUserId = widget.currentUserId;
-      print('ManagerForLead: Current user ID from props: $currentUserId');
+      //print('ManagerForLead: Current user ID from props: $currentUserId');
     } else {
       _loadCurrentUserId();
     }
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    print('ManagerForLead: Dispatched GetAllManagerEv');
+    //print('ManagerForLead: Dispatched GetAllManagerEv');
   }
 
   @override
   void didUpdateWidget(covariant ManagerForLead oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedManager != oldWidget.selectedManager && widget.selectedManager != null) {
-      print('ManagerForLead: selectedManager changed to ${widget.selectedManager}');
+      //print('ManagerForLead: selectedManager changed to ${widget.selectedManager}');
       _updateSelectedManagerData();
     }
   }
@@ -60,16 +60,16 @@ class _ManagerForLeadState extends State<ManagerForLead> {
       if (mounted) {
         setState(() {
           currentUserId = userId;
-          print('ManagerForLead: Loaded current user ID: $userId');
+          //print('ManagerForLead: Loaded current user ID: $userId');
         });
       }
     } catch (e) {
-      print('ManagerForLead: Error getting current user ID: $e');
+      //print('ManagerForLead: Error getting current user ID: $e');
     }
   }
 
   void _updateSelectedManagerData() {
-    print('ManagerForLead: Updating selected manager, prop selectedManager: ${widget.selectedManager}');
+    //print('ManagerForLead: Updating selected manager, prop selectedManager: ${widget.selectedManager}');
     if (widget.selectedManager != null && managersList.isNotEmpty) {
       try {
         final newSelectedManager = managersList.firstWhere(
@@ -78,19 +78,19 @@ class _ManagerForLeadState extends State<ManagerForLead> {
         if (selectedManagerData?.id != newSelectedManager.id) {
           setState(() {
             selectedManagerData = newSelectedManager;
-            print('ManagerForLead: Updated selectedManagerData to: ${newSelectedManager.id} (${newSelectedManager.name})');
+            //print('ManagerForLead: Updated selectedManagerData to: ${newSelectedManager.id} (${newSelectedManager.name})');
           });
         } else {
-          print('ManagerForLead: Manager ${newSelectedManager.id} already selected, skipping update');
+          //print('ManagerForLead: Manager ${newSelectedManager.id} already selected, skipping update');
         }
       } catch (e) {
-        print('ManagerForLead: Manager not found for ID ${widget.selectedManager}: $e');
+        //print('ManagerForLead: Manager not found for ID ${widget.selectedManager}: $e');
         setState(() {
           selectedManagerData = null;
         });
       }
     } else {
-      print('ManagerForLead: No selected manager or empty managers list, keeping selectedManagerData null');
+      //print('ManagerForLead: No selected manager or empty managers list, keeping selectedManagerData null');
       if (selectedManagerData != null) {
         setState(() {
           selectedManagerData = null;
@@ -101,15 +101,15 @@ class _ManagerForLeadState extends State<ManagerForLead> {
 
   @override
   Widget build(BuildContext context) {
-    print('ManagerForLead: Building with selectedManager: ${widget.selectedManager}, selectedManagerData: ${selectedManagerData?.id}');
+    //print('ManagerForLead: Building with selectedManager: ${widget.selectedManager}, selectedManagerData: ${selectedManagerData?.id}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
           builder: (context, state) {
-            print('ManagerForLead: BlocBuilder state: $state');
+            //print('ManagerForLead: BlocBuilder state: $state');
             if (state is GetAllManagerError) {
-              print('ManagerForLead: Error loading managers: ${state.message}');
+              //print('ManagerForLead: Error loading managers: ${state.message}');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -136,7 +136,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
 
             if (state is GetAllManagerSuccess && !isInitialized) {
               managersList = state.dataManager.result ?? [];
-              print('ManagerForLead: Loaded ${managersList.length} managers');
+              //print('ManagerForLead: Loaded ${managersList.length} managers');
               isInitialized = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _updateSelectedManagerData();
@@ -189,7 +189,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is GetAllManagerLoading) {
-                      print('ManagerForLead: Displaying loading state');
+                      //print('ManagerForLead: Displaying loading state');
                       return Text(
                         AppLocalizations.of(context)!.translate('select_manager'),
                         style: const TextStyle(
@@ -200,7 +200,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                         ),
                       );
                     }
-                    print('ManagerForLead: Displaying selected item: ${selectedItem?.id} (${selectedItem?.name})');
+                    //print('ManagerForLead: Displaying selected item: ${selectedItem?.id} (${selectedItem?.name})');
                     return Text(
                       selectedItem != null
                           ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
@@ -226,7 +226,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   initialItem: selectedManagerData,
                   onChanged: (value) {
                     if (value != null) {
-                      print('ManagerForLead: User selected manager: ${value.id} (${value.name})');
+                      //print('ManagerForLead: User selected manager: ${value.id} (${value.name})');
                       widget.onSelectManager(value);
                       setState(() {
                         selectedManagerData = value;

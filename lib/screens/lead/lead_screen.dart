@@ -138,7 +138,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
       if (cachedLeads.isNotEmpty) {
-        print('Leads loaded from cache.');
+        //print('Leads loaded from cache.');
       }
     });
     _checkPermissions();
@@ -231,13 +231,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
     }
   }
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for LeadScreen, skipping');
+      //print('Tutorial already shown for LeadScreen, skipping');
       return;
     }
 
@@ -261,7 +261,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print('Tutorial skipped for LeadScreen');
+        //print('Tutorial skipped for LeadScreen');
         prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -270,7 +270,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         return true;
       },
       onFinish: () {
-        print('Tutorial finished for LeadScreen');
+        //print('Tutorial finished for LeadScreen');
         prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -284,7 +284,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
 
     await LeadCache.clearAllLeads();
-    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
+    //print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
 
     leadBloc.add(FetchLeads(
       currentStatusId,
@@ -507,14 +507,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     _hasUnreadMessages == false &&
                     _hasDeal == false &&
                     _directoryValues.isEmpty) { // Проверяем справочники
-                  print("IF SEARCH EMPTY AND NO FILTERS");
+                  //print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
                   });
                   final taskBloc = BlocProvider.of<LeadBloc>(context);
                   taskBloc.add(FetchLeadStatuses());
                 } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                  //print("IF SEARCH EMPTY BUT FILTERS EXIST");
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<LeadBloc>(context);
                   taskBloc.add(FetchLeads(
@@ -548,7 +548,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 }
               } else if (_selectedManagerIds != null &&
                   _selectedManagerIds!.isNotEmpty) {
-                print("ELSE IF SEARCH NOT EMPTY");
+                //print("ELSE IF SEARCH NOT EMPTY");
 
                 final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                 final taskBloc = BlocProvider.of<LeadBloc>(context);
@@ -636,10 +636,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
               onStatusUpdated: () {
-                print('Статус лида обновлён');
+                //print('Статус лида обновлён');
               },
               onStatusId: (StatusLeadId) {
-                print('onStatusId вызван с id: $StatusLeadId');
+                //print('onStatusId вызван с id: $StatusLeadId');
               },
             ),
           );
@@ -1062,7 +1062,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   statusId: statusId,
                   title: title,
                   onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
+                    //print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 
