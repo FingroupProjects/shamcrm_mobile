@@ -55,8 +55,8 @@
       if (await _checkInternetConnection()) {
         try {
           chatsPagination = await apiService.getAllChats(event.endPoint, 1, event.query);
-          print('ChatsBloc._fetchChatsEvent: Fetched ${chatsPagination!.data.length} chats for endpoint ${event.endPoint}, page 1');
-          print('ChatsBloc._fetchChatsEvent: Chat IDs: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
+          // print('ChatsBloc._fetchChatsEvent: Fetched ${chatsPagination!.data.length} chats for endpoint ${event.endPoint}, page 1');
+          // print('ChatsBloc._fetchChatsEvent: Chat IDs: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
 
           // Сортируем чаты
           final sortedChats = _sortChats(chatsPagination!.data, event.endPoint);
@@ -71,7 +71,7 @@
           _lastFetchedPage = 1;
           emit(ChatsLoaded(chatsPagination!));
         } catch (e) {
-          print('ChatsBloc._fetchChatsEvent: Error: $e');
+          // print('ChatsBloc._fetchChatsEvent: Error: $e');
           emit(ChatsError(e.toString()));
         }
       } else {
@@ -114,33 +114,33 @@
         final nextPage = state.chatsPagination.currentPage + 1;
 
         if (nextPage <= state.chatsPagination.totalPage && nextPage > _lastFetchedPage) {
-          print('ChatsBloc._getNextPageChatsEvent: Loading page $nextPage for endpoint $endPoint');
+          // print('ChatsBloc._getNextPageChatsEvent: Loading page $nextPage for endpoint $endPoint');
 
           if (await _checkInternetConnection()) {
             try {
               final nextPageChats = await apiService.getAllChats(endPoint, nextPage);
-              print('ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
-              print('ChatsBloc._getNextPageChatsEvent: New chat IDs: ${nextPageChats.data.map((chat) => chat.id).toList()}');
+              // print('ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
+              // print('ChatsBloc._getNextPageChatsEvent: New chat IDs: ${nextPageChats.data.map((chat) => chat.id).toList()}');
 
               // Сортируем новые данные
               final sortedNewChats = _sortChats(nextPageChats.data, endPoint);
 
               // Объединяем с текущими данными
               chatsPagination = state.chatsPagination.merge(nextPageChats);
-              print('ChatsBloc._getNextPageChatsEvent: Total chats after merge: ${chatsPagination!.data.length}');
-              print('ChatsBloc._getNextPageChatsEvent: All chat IDs after merge: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
+              // print('ChatsBloc._getNextPageChatsEvent: Total chats after merge: ${chatsPagination!.data.length}');
+              // print('ChatsBloc._getNextPageChatsEvent: All chat IDs after merge: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
 
               _lastFetchedPage = nextPage;
               emit(ChatsLoaded(chatsPagination!));
             } catch (e) {
-              print('ChatsBloc._getNextPageChatsEvent: Error: $e');
+              // print('ChatsBloc._getNextPageChatsEvent: Error: $e');
               emit(ChatsError(e.toString()));
             }
           } else {
             emit(ChatsError('Нет подключения к интернету'));
           }
         } else {
-          print('ChatsBloc._getNextPageChatsEvent: No more pages to load or page already fetched (current: ${state.chatsPagination.currentPage}, total: ${state.chatsPagination.totalPage}, lastFetched: $_lastFetchedPage)');
+          // print('ChatsBloc._getNextPageChatsEvent: No more pages to load or page already fetched (current: ${state.chatsPagination.currentPage}, total: ${state.chatsPagination.totalPage}, lastFetched: $_lastFetchedPage)');
         }
       }
     }

@@ -42,14 +42,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       final String? scanData = barcodeCapture.barcodes.first.rawValue;
 
       if (scanData != null) {
-        print('Сканированный QR-код: $scanData');
+        //print('Сканированный QR-код: $scanData');
 
         try {
           String base64String = scanData;
           Uint8List bytes = base64Decode(base64String);
 
           String decodedString = utf8.decode(bytes);
-          print('Декодированная строка: $decodedString');
+          //print('Декодированная строка: $decodedString');
 
           String cleanedResult = decodedString.replaceAll('-back?', '?');
           List<String> qrParts = cleanedResult.split('?');
@@ -61,12 +61,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           String login = qrParts[4];
           String organizationId = qrParts[5];
 
-          print('Token: $token');
-          print('Domain: $domain');
-          print('MainDomain: $mainDomain');
-          print('User ID: $userId');
-          print('Login: $login');
-          print('Organization ID: $organizationId');
+          //print('Token: $token');
+          //print('Domain: $domain');
+          //print('MainDomain: $mainDomain');
+          //print('User ID: $userId');
+          //print('Login: $login');
+          //print('Organization ID: $organizationId');
 
           await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
           await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
@@ -81,9 +81,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             await apiService.sendDeviceToken(fcmToken);
           }
         } catch (e, stackTrace) {
-          print('Ошибка при декодировании Base64: $e');
-          print('Стек вызовов: $stackTrace');
-          print('Исходные данные сканирования: $scanData');
+          //print('Ошибка при декодировании Base64: $e');
+          //print('Стек вызовов: $stackTrace');
+          //print('Исходные данные сканирования: $scanData');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -138,14 +138,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null) {
       final file = File(result.files.single.path!);
-      print('Файл выбран: ${file.path}');
+      //print('Файл выбран: ${file.path}');
 
       try {
         final BarcodeCapture? barcodeCapture = await controller.analyzeImage(file.path);
 
         if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
           final String? qrCode = barcodeCapture.barcodes.first.rawValue;
-          print('QR-код из изображения: $qrCode');
+          //print('QR-код из изображения: $qrCode');
 
           if (qrCode != null) {
             try {
@@ -153,7 +153,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               Uint8List bytes = base64Decode(base64String);
 
               String decodedString = utf8.decode(bytes);
-              print('Декодированная строка: $decodedString');
+              //print('Декодированная строка: $decodedString');
 
               String cleanedResult = decodedString.replaceAll('-back?', '?');
               List<String> qrParts = cleanedResult.split('?');
@@ -165,12 +165,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               String login = qrParts[4];
               String organizationId = qrParts[5];
 
-              print('Token: $token');
-              print('Domain: $domain');
-              print('MainDomain: $mainDomain');
-              print('User ID: $userId');
-              print('Login: $login');
-              print('Organization ID: $organizationId');
+              //print('Token: $token');
+              //print('Domain: $domain');
+              //print('MainDomain: $mainDomain');
+              //print('User ID: $userId');
+              //print('Login: $login');
+              //print('Organization ID: $organizationId');
 
               await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
               await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
@@ -183,7 +183,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 await apiService.sendDeviceToken(fcmToken);
               }
             } catch (e) {
-              print('Ошибка при декодировании Base64: $e');
+              //print('Ошибка при декодировании Base64: $e');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -209,7 +209,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             }
           }
         } else {
-          print('QR-код не найден');
+          //print('QR-код не найден');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -234,7 +234,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           );
         }
       } catch (e) {
-        print('Ошибка при обработке файла: $e');
+        //print('Ошибка при обработке файла: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

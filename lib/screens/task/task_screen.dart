@@ -245,7 +245,7 @@ Future<void> _saveFilterState() async {
         });
       }
     } catch (e) {
-      print('Error loading user roles: $e');
+      //print('Error loading user roles: $e');
       if (mounted) {
         setState(() { userRoles = ['Error loading roles']; });
       }
@@ -308,7 +308,7 @@ Future<void> _saveFilterState() async {
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for TaskScreen, skipping');
+      //print('Tutorial already shown for TaskScreen, skipping');
       return;
     }
 
@@ -332,7 +332,7 @@ Future<void> _saveFilterState() async {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print('Tutorial skipped for TaskScreen');
+        //print('Tutorial skipped for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -341,7 +341,7 @@ Future<void> _saveFilterState() async {
         return true;
       },
       onFinish: () {
-        print('Tutorial finished for TaskScreen');
+        //print('Tutorial finished for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -621,14 +621,14 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                       _toDate == null &&
                       _deadlinefromDate == null &&
                       _deadlinetoDate == null) {
-                    print("IF SEARCH EMPTY AND NO FILTERS");
+                    //print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
                     });
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
                     taskBloc.add(FetchTaskStatuses());
                   } else {
-                    print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                    //print("IF SEARCH EMPTY BUT FILTERS EXIST");
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
                     taskBloc.add(FetchTasks(
@@ -652,7 +652,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                   }
                 } else if (_selectedUserIds != null &&
                     _selectedUserIds!.isNotEmpty) {
-                  print("ELSE IF SEARCH NOT EMPTY");
+                  //print("ELSE IF SEARCH NOT EMPTY");
 
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -743,10 +743,10 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
               name: task.taskStatus?.taskStatus?.name ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {
-                print('Статус задачи обновлён');
+                //print('Статус задачи обновлён');
               },
               onStatusId: (StatusLeadId) {
-                print('onStatusId вызван с id: $StatusLeadId');
+                //print('onStatusId вызван с id: $StatusLeadId');
               },
             ),
           );
@@ -1098,7 +1098,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
       },
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
-          // print('state: ${state.runtimeType}');
+          // //print('state: ${state.runtimeType}');
           if (state is TaskDataLoaded) {
             final List<Task> tasks = state.tasks;
             return searchWidget(tasks);
@@ -1126,7 +1126,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                   name: title,
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
+                    //print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 

@@ -87,7 +87,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    print("InitState: Initializing DealScreen");
+    //print("InitState: Initializing DealScreen");
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
@@ -100,7 +100,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               .toList();
           _tabController = TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
-          print("Loaded TabTitles from cache: $_tabTitles");
+          //print("Loaded TabTitles from cache: $_tabTitles");
         });
       } else {
         final dealBloc = BlocProvider.of<DealBloc>(context);
@@ -110,7 +110,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     DealCache.getDealsForStatus(widget.initialStatusId).then((cachedDeals) {
       if (cachedDeals.isNotEmpty) {
-        print('Deals loaded from cache: $cachedDeals');
+        //print('Deals loaded from cache: $cachedDeals');
       }
     });
     _loadFilterState();
@@ -119,7 +119,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    print("Loading filter state from SharedPreferences in DealScreen");
+    //print("Loading filter state from SharedPreferences in DealScreen");
     setState(() {
       _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
           .map((m) => ManagerData.fromJson(m))
@@ -139,20 +139,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
           .map((d) => Map<String, dynamic>.from(d))
           .toList();
-      print("Loaded Managers: $_selectedManagers");
-      print("Loaded Leads: $_selectedLeads");
-      print("Loaded Statuses: $_selectedStatuses");
-      print("Loaded FromDate: $_fromDate");
-      print("Loaded ToDate: $_toDate");
-      print("Loaded DaysWithoutActivity: $_daysWithoutActivity");
-      print("Loaded HasTasks: $_hasTasks");
-      print("Loaded DirectoryValues: $_selectedDirectoryValues");
+      //print("Loaded Managers: $_selectedManagers");
+      //print("Loaded Leads: $_selectedLeads");
+      //print("Loaded Statuses: $_selectedStatuses");
+      //print("Loaded FromDate: $_fromDate");
+      //print("Loaded ToDate: $_toDate");
+      //print("Loaded DaysWithoutActivity: $_daysWithoutActivity");
+      //print("Loaded HasTasks: $_hasTasks");
+      //print("Loaded DirectoryValues: $_selectedDirectoryValues");
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    print("Saving filter state to SharedPreferences in DealScreen");
+    //print("Saving filter state to SharedPreferences in DealScreen");
     await prefs.setString('deal_selected_managers', jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
     await prefs.setString('deal_selected_leads', jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
     await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
@@ -161,7 +161,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
     await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
     await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
-    print("Saved DirectoryValues: $_selectedDirectoryValues");
+    //print("Saved DirectoryValues: $_selectedDirectoryValues");
   }
 
   void _onScroll() {
@@ -246,19 +246,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           }
         });
       } else {
-        print('Tutorial not shown for DealScreen. Reasons:');
-        print('tutorialProgress: $tutorialProgress');
-        print('deals/index: ${tutorialProgress?['deals']?['index']}');
-        print('isTutorialShown: $_isTutorialShown');
+        //print('Tutorial not shown for DealScreen. Reasons:');
+        //print('tutorialProgress: $tutorialProgress');
+        //print('deals/index: ${tutorialProgress?['deals']?['index']}');
+        //print('isTutorialShown: $_isTutorialShown');
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
     }
   }
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for DealScreen, skipping');
+      //print('Tutorial already shown for DealScreen, skipping');
       return;
     }
 
@@ -282,7 +282,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print('Tutorial skipped for DealScreen');
+        //print('Tutorial skipped for DealScreen');
         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -291,7 +291,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         return true;
       },
       onFinish: () {
-        print('Tutorial finished for DealScreen');
+        //print('Tutorial finished for DealScreen');
         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
@@ -303,7 +303,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
-    print("Searching deals with query: $query, statusId: $currentStatusId");
+    //print("Searching deals with query: $query, statusId: $currentStatusId");
     await DealCache.clearAllDeals();
     dealBloc.add(FetchDeals(currentStatusId,
         query: query,
@@ -320,7 +320,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _resetFilters() {
     setState(() {
-      print("Resetting filters in DealScreen");
+      //print("Resetting filters in DealScreen");
       _showCustomTabBar = true;
       _selectedManagers = [];
       _selectedLeads = [];
@@ -340,7 +340,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       _searchController.clear();
       _initialHasTasks = false;
       _initialDaysWithoutActivity = null;
-      print("After reset: DirectoryValues: $_selectedDirectoryValues");
+      //print("After reset: DirectoryValues: $_selectedDirectoryValues");
     });
     final dealBloc = BlocProvider.of<DealBloc>(context);
     dealBloc.add(FetchDealStatuses());
@@ -348,7 +348,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _handleManagerSelected(Map managers) async {
     setState(() {
-      print("Handling manager selection: $managers");
+      //print("Handling manager selection: $managers");
       _showCustomTabBar = false;
       _selectedManagers = managers['managers'];
       _selectedLeads = managers['leads'];
@@ -373,7 +373,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               .toList() ??
           [];
       _initialDirectoryValues = List.from(_selectedDirectoryValues);
-      print("Updated DirectoryValues: $_selectedDirectoryValues");
+      //print("Updated DirectoryValues: $_selectedDirectoryValues");
     });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -395,7 +395,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future _handleStatusSelected(int? selectedStatusId) async {
     setState(() {
-      print("Handling status selection: $selectedStatusId");
+      //print("Handling status selection: $selectedStatusId");
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatusId;
       _initialSelStatus = selectedStatusId;
@@ -412,7 +412,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
     setState(() {
-      print("Handling date selection: from $fromDate to $toDate");
+      //print("Handling date selection: from $fromDate to $toDate");
       _showCustomTabBar = false;
       _fromDate = fromDate;
       _toDate = toDate;
@@ -432,7 +432,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future _handleStatusAndDateSelected(int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
     setState(() {
-      print("Handling status and date selection: status $selectedStatus, from $fromDate to $toDate");
+      //print("Handling status and date selection: status $selectedStatus, from $fromDate to $toDate");
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatus;
       _fromDate = fromDate;
@@ -468,8 +468,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    print("Building DealScreen");
-    print("Current DirectoryValues: $_selectedDirectoryValues");
+    //print("Building DealScreen");
+    //print("Current DirectoryValues: $_selectedDirectoryValues");
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -530,14 +530,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     _selectedLeads.isEmpty &&
                     _hasTasks == false &&
                     _daysWithoutActivity == null) {
-                  print("IF SEARCH EMPTY AND NO FILTERS");
+                  //print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
                   });
                   final taskBloc = BlocProvider.of<DealBloc>(context);
                   taskBloc.add(FetchDealStatuses());
                 } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                  //print("IF SEARCH EMPTY BUT FILTERS EXIST");
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<DealBloc>(context);
                   taskBloc.add(FetchDeals(
@@ -556,7 +556,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   ));
                 }
               } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-                print("ELSE IF SEARCH NOT EMPTY");
+                //print("ELSE IF SEARCH NOT EMPTY");
                 final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                 final taskBloc = BlocProvider.of<DealBloc>(context);
                 taskBloc.add(FetchDeals(
@@ -915,7 +915,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _showEditDealStatusDialog(int index) {
     final dealStatus = _tabTitles[index];
-    print("Showing edit dialog for status: $dealStatus");
+    //print("Showing edit dialog for status: $dealStatus");
     showDialog(
       context: context,
       builder: (context) => EditDealStatusScreen(
@@ -926,7 +926,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];
-    print("Showing delete dialog for status: $dealStatusId");
+    //print("Showing delete dialog for status: $dealStatusId");
 
     final result = await showDialog(
       context: context,
@@ -945,7 +945,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _currentTabIndex = 0;
         _isSearching = false;
         _searchController.clear();
-        print("After delete: TabTitles: $_tabTitles");
+        //print("After delete: TabTitles: $_tabTitles");
       });
 
       if (_tabTitles.isEmpty) {
@@ -1076,7 +1076,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   title: title,
                   managerId: _selectedManagerId,
                   onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
+                    //print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
                     BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());

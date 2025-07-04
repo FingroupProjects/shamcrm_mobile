@@ -60,18 +60,25 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       );
     case 'alif':
       return PaymentTypeStyle(
-        content: Image.asset(
-          'assets/icons/alif.png',
-          width: 60,
-          height: 30,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Text(
-            'ALIF',
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color.fromARGB(255, 242, 242, 242),
+        content: Transform.translate(
+          offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          child: Transform.scale(
+            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleX: 1.2,
+            child: Image.asset(
+              'assets/icons/alif.png',
+              width: 60,
+              height: 30,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Text(
+                'ALIF',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color.fromARGB(255, 242, 242, 242),
+                ),
+              ),
             ),
           ),
         ),
@@ -80,18 +87,25 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       );
     case 'click':
       return PaymentTypeStyle(
-        content: Image.asset(
-          'assets/icons/click3.png',
-          width: 60,
-          height: 30,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Text(
-            'CLICK',
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color.fromARGB(255, 242, 242, 242),
+        content: Transform.translate(
+          offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          child: Transform.scale(
+            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleX: 1.2,
+            child: Image.asset(
+              'assets/icons/click3.png',
+              width: 60,
+              height: 30,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Text(
+                'CLICK',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color.fromARGB(255, 242, 242, 242),
+                ),
+              ),
             ),
           ),
         ),
@@ -100,18 +114,25 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       );
     case 'payme':
       return PaymentTypeStyle(
-        content: Image.asset(
-          'assets/icons/payme.png',
-          width: 60,
-          height: 30,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Text(
-            'PAYME',
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color.fromARGB(255, 242, 242, 242),
+        content: Transform.translate(
+       offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          child: Transform.scale(
+            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleX: 1.2,
+            child: Image.asset(
+              'assets/icons/payme.png',
+              width: 60,
+              height: 30,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Text(
+                'PAYME',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color.fromARGB(255, 242, 242, 242),
+                ),
+              ),
             ),
           ),
         ),

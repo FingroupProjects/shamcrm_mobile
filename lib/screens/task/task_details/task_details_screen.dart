@@ -182,9 +182,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    print('================================================================');
-    print(widget.statusId);
-    print('================================================================');
+    // print('================================================================');
+    // print(widget.statusId);
+    // print('================================================================');
 
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
@@ -255,7 +255,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
+      // print('Tutorial already in progress, skipping');
       return;
     }
 
@@ -266,7 +266,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         tutorialProgress!['tasks']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      print('Tutorial conditions not met');
+      // print('Tutorial conditions not met');
       return;
     }
 
@@ -294,7 +294,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       onSkip: () {
         prefs.setBool('isTutorialShownTasksDet', true);
         _apiService.markPageCompleted("tasks", "view").catchError((e) {
-          print('Error marking page completed on skip: $e');
+          // print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -305,7 +305,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       onFinish: () {
         prefs.setBool('isTutorialShownTasksDet', true);
         _apiService.markPageCompleted("tasks", "view").catchError((e) {
-          print('Error marking page completed on finish: $e');
+          // print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -313,7 +313,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         });
       },
     ).show(context: context);
-    print('Showing tutorial for TaskDetails');
+    // print('Showing tutorial for TaskDetails');
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -344,7 +344,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         showTutorial();
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      // print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -948,10 +948,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   height: 24,
                 ),
                 onPressed: () async {
-                  print(
-                      'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
-                  print(
-                      'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
+                  // print(
+                  //     'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
+                  // print(
+                  //     'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
                   final createdAtString = currentTask?.createdAt != null &&
                           currentTask!.createdAt!.isNotEmpty
                       ? DateFormat('dd/MM/yyyy')

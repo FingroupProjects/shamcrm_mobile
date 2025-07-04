@@ -126,7 +126,7 @@ Future<void> _pickFile() async {
       });
     }
   } catch (e) {
-    print('Ошибка при выборе файла: $e');
+    //print('Ошибка при выборе файла: $e');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Ошибка при выборе файла!"),
@@ -137,7 +137,7 @@ Future<void> _pickFile() async {
 }
   void _fetchAndAddCustomFields() async {
     try {
-      print('Загрузка кастомных полей и справочников для лида');
+      //print('Загрузка кастомных полей и справочников для лида');
       // Получаем кастомные поля
       final customFieldsData = await ApiService().getCustomFieldslead();
       if (customFieldsData['result'] != null) {
@@ -167,16 +167,16 @@ Future<void> _pickFile() async {
         });
       }
     } catch (e) {
-      print('Ошибка при получении данных: $e');
+      //print('Ошибка при получении данных: $e');
     }
   }
 
 void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-  print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+  //print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
   if (isDirectory && directoryId != null) {
     bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
     if (directoryExists) {
-      print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+      //print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
       return;
     }
   }
@@ -193,7 +193,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
 }
 
   void _showAddFieldMenu() {
-    print('Открытие меню добавления поля');
+    //print('Открытие меню добавления поля');
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(300, 650, 200, 300),
@@ -229,7 +229,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
         ),
       ],
     ).then((value) {
-      print('Выбрано значение в меню: $value');
+      //print('Выбрано значение в меню: $value');
       if (value == 'manual') {
         showDialog(
   context: context,
@@ -247,16 +247,16 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) {
-                print('Выбран справочник: ${directory.name}, id: ${directory.id}');
+                //print('Выбран справочник: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
                 ApiService().linkDirectory(
                   directoryId: directory.id,
                   modelType: 'lead',
                   organizationId: ApiService().getSelectedOrganization().toString(),
                 ).then((_) {
-                  print('Справочник успешно связан с моделью lead');
+                  //print('Справочник успешно связан с моделью lead');
                 }).catchError((e) {
-                  print('Ошибка при связывании справочника: $e');
+                  //print('Ошибка при связывании справочника: $e');
                 });
               },
             );

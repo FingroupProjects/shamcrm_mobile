@@ -134,12 +134,12 @@ class _DealColumnState extends State<DealColumn> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
+      //print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, reinitializing');
+      //print('No targets available for tutorial, reinitializing');
       _initTutorialTargets();
       if (targets.isEmpty) return;
     }
@@ -148,7 +148,7 @@ class _DealColumnState extends State<DealColumn> {
     bool isTutorialShown = prefs.getBool('isTutorialShownDealColumn') ?? false;
 
     if (isTutorialShown || _isTutorialShown) {
-      print('Tutorial conditions not met');
+      //print('Tutorial conditions not met');
       return;
     }
 
@@ -222,9 +222,9 @@ class _DealColumnState extends State<DealColumn> {
           await prefs.setBool('isTutorialShownDealColumn', true);
           try {
             await _apiService.markPageCompleted("deals", "index");
-            print('Sent markPageCompleted for deals/index after finishing DealColumn');
+            //print('Sent markPageCompleted for deals/index after finishing DealColumn');
           } catch (e) {
-            print('Error marking page completed on finish: $e');
+            //print('Error marking page completed on finish: $e');
           }
           setState(() {
             _isTutorialShown = true;
@@ -244,9 +244,9 @@ class _DealColumnState extends State<DealColumn> {
   Future<void> _completeTutorialAsync() async {
     try {
       await _apiService.markPageCompleted("deals", "index");
-      print('Sent markPageCompleted for deals/index after skipping DealColumn');
+      //print('Sent markPageCompleted for deals/index after skipping DealColumn');
     } catch (e) {
-      print('Error marking page completed: $e');
+      //print('Error marking page completed: $e');
     }
   }
 

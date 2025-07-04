@@ -148,7 +148,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 450,
+            height: 480,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
