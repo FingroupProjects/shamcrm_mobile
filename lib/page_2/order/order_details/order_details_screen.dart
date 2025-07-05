@@ -128,6 +128,10 @@ void _updateDetails(Order order) {
       'label': AppLocalizations.of(context)!.translate('payment_method_title'),
       'value': formatPaymentType(order.paymentMethod, context)
     },
+      {
+      'label': AppLocalizations.of(context)!.translate('payment_status_title'),
+      'value': formatPaymentType(order.paymentStatus, context)
+    },
   ];
 }
 

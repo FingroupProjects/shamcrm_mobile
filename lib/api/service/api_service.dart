@@ -7442,37 +7442,46 @@ Future<List<Variant>> getVariants({
 
   // Метод для получение карточки
   Future<OrderResponse> getOrders({
-    int page = 1,
-    int perPage = 20,
-    int? statusId,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  int page = 1,
+  int perPage = 20,
+  int? statusId,
+  List<String>? managerIds, // Новое поле для списка ID менеджеров
+}) async {
+  final organizationId = await getSelectedOrganization();
 
-    try {
-      String url =
-          '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
-      url += '&page=$page&per_page=$perPage';
-      if (statusId != null) {
-        url += '&order_status_id=$statusId';
-      }
-
-      final response = await _getRequest(url);
-      //print('Request URL: $url'); // Логи для отладки
-      //print('Response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        final data = rawData['result'];
-        //print('Response data: $data'); // Логи для отладки
-        return OrderResponse.fromJson(data);
-      } else {
-        throw Exception('Ошибка сервера!');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки заказов: ');
-      throw e;
+  try {
+    String url =
+        '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    url += '&page=$page&per_page=$perPage';
+    if (statusId != null) {
+      url += '&order_status_id=$statusId';
     }
+    if (managerIds != null && managerIds.isNotEmpty) {
+      for (int i = 0; i < managerIds.length; i++) {
+        url += '&managers[$i]=${managerIds[i]}';
+      }
+    }
+
+    final response = await _getRequest(url);
+    if (kDebugMode) {
+      print('Request URL: $url');
+      print('Response status: ${response.statusCode}');
+    }
+
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body);
+      final data = rawData['result'];
+      return OrderResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка сервера!');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Ошибка загрузки заказов: $e');
+    }
+    throw e;
   }
+}
 
   //Метод для получение просмотра заказов
   Future<Order> getOrderDetails(int orderId) async {
@@ -7536,7 +7545,7 @@ Future<Map<String, dynamic>> createOrder({
       'organization_id': organizationId,
       'status_id': statusId,
       'comment_to_courier': commentToCourier,
-      'payment_type': 'cash',
+      'payment_type': 'ALIF',
       'manager_id': managerId,
     };
 

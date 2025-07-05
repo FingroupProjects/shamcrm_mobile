@@ -837,8 +837,11 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget inputWidget() {
-    return InputField(
+Widget inputWidget() {
+  return SafeArea(
+    bottom: true,
+    top: false,
+    child: InputField(
       onSend: _onSendInButton,
       onAttachFile: _onPickFilePressed,
       focusNode: _focusNode,
@@ -888,8 +891,9 @@ Widget build(BuildContext context) {
         }
         context.read<ListenSenderVoiceCubit>().updateValue(false);
       },
-    );
-  }
+    ),
+  );
+}
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();

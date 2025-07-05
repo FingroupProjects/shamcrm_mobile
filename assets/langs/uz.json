@@ -1097,7 +1097,8 @@
 "select_integration": "Chatni tanlang",
 "field_type_datetime": "Sana va vaqt",
 "payment_method_title": "To‘lov usuli:",
-"active_status": "Holat"
+"active_status": "Holat",
+"payment_status_title": ""
 
 
 

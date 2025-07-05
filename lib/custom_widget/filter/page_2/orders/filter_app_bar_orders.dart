@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/status_method_dropdown.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -28,6 +30,8 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   String? _selectedPaymentMethod;
   String? _paymentMethod;
   String? _statusMethod;
+    List _selectedManagers = [];
+
 
   String? selectedLead;
   // Список статусов заказов
@@ -120,23 +124,25 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           ),
           const SizedBox(width: 10),
           TextButton(
-            onPressed: () {
-              bool isAnyFilterSelected = _fromDate != null ||
-                  _toDate != null ||
-                  _clientController.text.isNotEmpty ||
-                  _selectedStatus != null ||
-                  _selectedPaymentMethod != null;
-              if (isAnyFilterSelected) {
-                widget.onSelectedDataFilter?.call({
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                  'client': _clientController.text,
-                  'status': _selectedStatus,
-                  'paymentMethod': _selectedPaymentMethod,
-                });
-              }
-              Navigator.pop(context);
-            },
+  onPressed: () {
+    bool isAnyFilterSelected = _fromDate != null ||
+        _toDate != null ||
+        _clientController.text.isNotEmpty ||
+        _selectedStatus != null ||
+        _selectedPaymentMethod != null ||
+        _selectedManagers.isNotEmpty; // Добавляем проверку на _selectedManagers
+    if (isAnyFilterSelected) {
+      widget.onSelectedDataFilter?.call({
+        'fromDate': _fromDate,
+        'toDate': _toDate,
+        'client': _clientController.text,
+        'status': _selectedStatus,
+        'paymentMethod': _selectedPaymentMethod,
+        'managers': _selectedManagers.map((manager) => manager.id.toString()).toList(), // Преобразуем в список ID
+      });
+    }
+    Navigator.pop(context);
+  },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -202,7 +208,23 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                         ),
                       ),
                     ),
+                                        const SizedBox(height: 8),
 
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ManagerMultiSelectWidget(
+                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
+                          onSelectManagers: (List<ManagerData> selectedUsersData) {
+                            setState(() {
+                              _selectedManagers = selectedUsersData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -322,3 +344,5 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     );
   }
 }
+
+
