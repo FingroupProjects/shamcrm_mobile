@@ -8,6 +8,7 @@ class FetchOrders extends OrderEvent {
   final int perPage;
   final String? query;
   final bool forceRefresh;
+  final List<String>? managerIds; // Новое поле
 
   FetchOrders({
     this.statusId,
@@ -15,9 +16,9 @@ class FetchOrders extends OrderEvent {
     this.perPage = 20,
     this.query,
     this.forceRefresh = false,
+    this.managerIds, // Добавляем в конструктор
   });
 }
-
 class FetchMoreOrders extends OrderEvent {
   final int? statusId;
   final int page;

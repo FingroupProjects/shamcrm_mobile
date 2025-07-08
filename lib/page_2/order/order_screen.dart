@@ -40,6 +40,7 @@ class _OrderScreenState extends State<OrderScreen>
   bool _isInitialLoad = true;
   bool _navigateToNewStatus = false;
   int? _newStatusId;
+  Map<String, dynamic> _currentFilters = {}; // Новое поле для хранения фильтров
 
   late OrderBloc _orderBloc;
 
@@ -249,37 +250,71 @@ class _OrderScreenState extends State<OrderScreen>
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
-            onChangedSearchInput: (value) => _onSearch(value),
-            showFilterIcon: false,
-            showSearchIcon: true,
-            title: isClickAvatarIcon
-                ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_orders'),
-            onClickProfileAvatar: () {
-              setState(() {
-                isClickAvatarIcon = !isClickAvatarIcon;
-             //   print(
-               //     'OrderScreen: isClickAvatarIcon изменен на $isClickAvatarIcon');
-              });
-            },
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-               //   print(
-                 //     'OrderScreen: Очищен поиск, _isSearching=$_isSearching');
-                });
-              }
-            },
-            clearButtonClickFiltr: (value) {},
-            currentFilters: {}, // Provide empty map since no filters are used
-          ),
-        ),
+  forceMaterialTransparency: true,
+  title: CustomAppBarPage2(
+    onChangedSearchInput: (value) => _onSearch(value),
+    showFilterIcon: false,
+    showSearchIcon: true,
+    showFilterOrderIcon: true, // Убедимся, что фильтр заказов включен
+    title: isClickAvatarIcon
+        ? localizations!.translate('appbar_settings')
+        : localizations!.translate('appbar_orders'),
+    onClickProfileAvatar: () {
+      setState(() {
+        isClickAvatarIcon = !isClickAvatarIcon;
+        print('OrderScreen: isClickAvatarIcon изменен на $isClickAvatarIcon');
+      });
+    },
+    textEditingController: _searchController,
+    focusNode: _focusNode,
+    clearButtonClick: (value) {
+      if (!value) {
+        setState(() {
+          _isSearching = false;
+          _searchController.clear();
+          print('OrderScreen: Очищен поиск, _isSearching=$_isSearching');
+        });
+      }
+    },
+    clearButtonClickFiltr: (value) {
+      // Сбрасываем фильтры
+      _orderBloc.add(FetchOrders(
+        statusId: _statuses.isNotEmpty ? _statuses[_currentTabIndex].id : null,
+        page: 1,
+        perPage: 20,
+        forceRefresh: true,
+      ));
+    },
+    currentFilters: _currentFilters, // Добавляем текущие фильтры
+    onFilterGoodsSelected: (filters) {
+      setState(() {
+        _currentFilters = filters; // Сохраняем фильтры
+        print('OrderScreen: Получены фильтры: $_currentFilters');
+      });
+      _orderBloc.add(FetchOrders(
+        statusId: _statuses.isNotEmpty ? _statuses[_currentTabIndex].id : null,
+        page: 1,
+        perPage: 20,
+        forceRefresh: true,
+        managerIds: filters['managers'] != null
+            ? List<String>.from(filters['managers'])
+            : null, // Передаем managerIds
+      ));
+    },
+    onGoodsResetFilters: () {
+      setState(() {
+        _currentFilters = {};
+        print('OrderScreen: Фильтры сброшены');
+      });
+      _orderBloc.add(FetchOrders(
+        statusId: _statuses.isNotEmpty ? _statuses[_currentTabIndex].id : null,
+        page: 1,
+        perPage: 20,
+        forceRefresh: true,
+      ));
+    },
+  ),
+),
         body: isClickAvatarIcon
             ? const ProfileScreen()
             : BlocListener<OrderBloc, OrderState>(

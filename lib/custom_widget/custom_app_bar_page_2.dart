@@ -24,6 +24,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final VoidCallback? onGoodsResetFilters;
   final Map<String, dynamic> currentFilters; // Added to receive filter data
   final List<String>? initialLabels; // Added
+  
 
   CustomAppBarPage2({
     super.key,
@@ -110,7 +111,9 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     });
 
     // Set initial filtering state based on currentFilters
-    _isGoodsFiltering = widget.currentFilters.isNotEmpty;
+    _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['managers'] != null &&
+            widget.currentFilters['managers'].isNotEmpty);
   }
 
   Future<void> _checkOverdueTasks() async {
@@ -611,17 +614,47 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 }
 
   void navigateToOrderFilterScreen(BuildContext context) {
-    if (kDebugMode) {
-      //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OrdersFilterScreen(
-          onSelectedDataFilter: widget.onFilterGoodsSelected,
-          onResetFilters: widget.onGoodsResetFilters,
-        ),
-      ),
-    );
+  if (kDebugMode) {
+    print('CustomAppBarPage2: Переход к экрану фильтров заказов');
+    print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
   }
+
+  // Извлекаем начальные значения фильтров
+  DateTime? initialFromDate = widget.currentFilters['fromDate'];
+  DateTime? initialToDate = widget.currentFilters['toDate'];
+  String? initialClient = widget.currentFilters['client'];
+  String? initialStatus = widget.currentFilters['status'];
+  String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
+  List<String>? initialManagers = widget.currentFilters['managers'] != null
+      ? List<String>.from(widget.currentFilters['managers'])
+      : null;
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OrdersFilterScreen(
+        onSelectedDataFilter: (filters) {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
+          }
+          setState(() {
+            _isGoodsFiltering = filters.isNotEmpty ||
+                (filters['managers'] != null && filters['managers'].isNotEmpty);
+          });
+          widget.onFilterGoodsSelected?.call(filters);
+        },
+        onResetFilters: () {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Сброс фильтров из OrdersFilterScreen');
+          }
+          setState(() {
+            _isGoodsFiltering = false;
+          });
+          widget.onGoodsResetFilters?.call();
+        },
+        // Передаем начальные значения фильтров (если нужно, можно добавить в OrdersFilterScreen)
+      ),
+    ),
+  );
+}
 }

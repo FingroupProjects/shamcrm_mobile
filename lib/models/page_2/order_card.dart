@@ -17,6 +17,10 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     final String? commentToCourier;
     final double? sum;
     final String? paymentMethod; // Add this field
+    final String? paymentStatus; // Новое поле
+        final DateTime? createdAt;
+
+
 
     Order({
       required this.id,
@@ -32,9 +36,11 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       required this.goods,
       this.organizationId,
       this.commentToCourier,
-          this.manager,
+      this.manager,
       this.sum,
       this.paymentMethod, // Add to constructor
+      this.paymentStatus, // Добавляем в конструктор
+      this.createdAt
     });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -58,6 +64,9 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
             : null,
         lead: OrderLead.fromJson(json['lead'] ?? {}),
         orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
+          createdAt: json['created_at'] != null
+            ? DateTime.tryParse(json['created_at'])
+            : null,
         goods: (json['order_goods'] as List? ?? [])
             .map((g) => Good.fromJson(g))
             .toList(),
@@ -65,6 +74,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         commentToCourier: json['comment_to_courier']?.toString(),
         sum: double.tryParse(json['sum']?.toString() ?? '0'),
         paymentMethod: json['payment_type']?.toString(), // Parse payment_type
+        paymentStatus: json['payment_status']?.toString(), // Парсим payment_status
          manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       );
     } catch (e) {
@@ -86,10 +96,13 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         'branch_id': branchId, // Добавляем в JSON
         'lead': lead.toJson(),
         'order_status': orderStatus.toJson(),
+                'created_at': createdAt?.toIso8601String(),
+
         'order_goods': goods.map((g) => g.toJson()).toList(),
         'organization_id': organizationId,
         'comment_to_courier': commentToCourier,
         'sum': sum,
+        'payment_status': paymentStatus, // Добавляем в JSON
       };
     }
 
@@ -108,6 +121,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       int? organizationId,
       String? commentToCourier,
       double? sum,
+      String? paymentStatus,
     }) {
       return Order(
         id: id ?? this.id,
@@ -124,6 +138,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         organizationId: organizationId ?? this.organizationId,
         commentToCourier: commentToCourier ?? this.commentToCourier,
         sum: sum ?? this.sum,
+        paymentStatus: paymentStatus ?? this.paymentStatus,
       );
     }
   }

@@ -47,20 +47,20 @@ class _MyNavBarState extends State<MyNavBar> {
     fontSize: 14,
   );
 
-@override
-void initState() {
-  super.initState();
-  currentIndexGroup1 = widget.currentIndexGroup1;
-  currentIndexGroup2 = widget.currentIndexGroup2;
-  
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (widget.currentIndexGroup2 != -1) {
-      _pageController.jumpToPage(1);
-    } else {
-      _pageController.jumpToPage(0);
-    }
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    currentIndexGroup1 = widget.currentIndexGroup1;
+    currentIndexGroup2 = widget.currentIndexGroup2;
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.currentIndexGroup2 != -1) {
+        _pageController.jumpToPage(1);
+      } else {
+        _pageController.jumpToPage(0);
+      }
+    });
+  }
 
   BottomNavyBarItem _buildNavBarItem(
       int index, String title, String activeIconPath, String inactiveIconPath, bool isActive) {
@@ -85,90 +85,104 @@ void initState() {
       inactiveColor: Colors.grey,
     );
   }
-@override
-Widget build(BuildContext context) {
-  return Container(
-    height: _navBarHeight,
-    child: Column(
-      children: [
-        Expanded(
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (page) {
-              setState(() {
-                if (page == 0) {
-                  currentIndexGroup1 = widget.currentIndexGroup1 != -1 
-                      ? widget.currentIndexGroup1 
-                      : 0;
-                  currentIndexGroup2 = -1;
-                  widget.onItemSelectedGroup1(currentIndexGroup1);
-                } else {
-                  currentIndexGroup1 = -1;
-                  currentIndexGroup2 = widget.currentIndexGroup2 != -1 
-                      ? widget.currentIndexGroup2 
-                      : 0;
-                  widget.onItemSelectedGroup2(currentIndexGroup2);
-                }
-              });
-            },
-            children: [
-              BottomNavyBar(
-                backgroundColor: Color(0xffF4F7FD),
-                selectedIndex: currentIndexGroup1 == -1 ? -1 : currentIndexGroup1,
-                onItemSelected: (index) {
-                  setState(() {
-                    currentIndexGroup1 = index;
-                    currentIndexGroup2 = -1;
-                    _pageController.jumpToPage(0);
-                  });
-                  widget.onItemSelectedGroup1(index);
-                },
-                items: List.generate(
-                  widget.navBarTitlesGroup1.length,
-                  (index) => _buildNavBarItem(
-                    index,
-                    widget.navBarTitlesGroup1[index],
-                    widget.activeIconsGroup1[index],
-                    widget.inactiveIconsGroup1[index],
-                    currentIndexGroup1 == index,
-                  ),
-                ),
-                iconSize: _iconSize,
-                containerHeight: _navBarHeight,
-                curve: Curves.ease,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-              ),
-              // BottomNavyBar(
-              //   backgroundColor: Color(0xffF4F7FD),
-              //   selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
-              //   onItemSelected: (index) {
-              //     setState(() {
-              //       currentIndexGroup2 = index;
-              //       currentIndexGroup1 = -1;
-              //       _pageController.jumpToPage(1);
-              //     });
-              //     widget.onItemSelectedGroup2(index);
-              //   },
-              //   items: List.generate(
-              //     widget.navBarTitlesGroup2.length,
-              //     (index) => _buildNavBarItem(
-              //       index,
-              //       widget.navBarTitlesGroup2[index],
-              //       widget.activeIconsGroup2[index],
-              //       widget.inactiveIconsGroup2[index],
-              //       currentIndexGroup2 == index,
-              //     ),
-              //   ),
-              //   iconSize: _iconSize,
-              //   containerHeight: _navBarHeight,
-              //   curve: Curves.ease,
-              //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-              // ),
-            ],
-          ),
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false, // Не добавляем отступ сверху
+      child: Container(
+        height: _navBarHeight,
+        decoration: BoxDecoration(
+          color: Color(0xffF4F7FD),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: Offset(0, -2),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
-}
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (page) {
+                  setState(() {
+                    if (page == 0) {
+                      currentIndexGroup1 = widget.currentIndexGroup1 != -1 
+                          ? widget.currentIndexGroup1 
+                          : 0;
+                      currentIndexGroup2 = -1;
+                      widget.onItemSelectedGroup1(currentIndexGroup1);
+                    } else {
+                      currentIndexGroup1 = -1;
+                      currentIndexGroup2 = widget.currentIndexGroup2 != -1 
+                          ? widget.currentIndexGroup2 
+                          : 0;
+                      widget.onItemSelectedGroup2(currentIndexGroup2);
+                    }
+                  });
+                },
+                children: [
+                  BottomNavyBar(
+                    backgroundColor: Color(0xffF4F7FD),
+                    selectedIndex: currentIndexGroup1 == -1 ? -1 : currentIndexGroup1,
+                    onItemSelected: (index) {
+                      setState(() {
+                        currentIndexGroup1 = index;
+                        currentIndexGroup2 = -1;
+                        _pageController.jumpToPage(0);
+                      });
+                      widget.onItemSelectedGroup1(index);
+                    },
+                    items: List.generate(
+                      widget.navBarTitlesGroup1.length,
+                      (index) => _buildNavBarItem(
+                        index,
+                        widget.navBarTitlesGroup1[index],
+                        widget.activeIconsGroup1[index],
+                        widget.inactiveIconsGroup1[index],
+                        currentIndexGroup1 == index,
+                      ),
+                    ),
+                    iconSize: _iconSize,
+                    containerHeight: _navBarHeight,
+                    curve: Curves.ease,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  ),
+                  BottomNavyBar(
+                    backgroundColor: Color(0xffF4F7FD),
+                    selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
+                    onItemSelected: (index) {
+                      setState(() {
+                        currentIndexGroup2 = index;
+                        currentIndexGroup1 = -1;
+                        _pageController.jumpToPage(1);
+                      });
+                      widget.onItemSelectedGroup2(index);
+                    },
+                    items: List.generate(
+                      widget.navBarTitlesGroup2.length,
+                      (index) => _buildNavBarItem(
+                        index,
+                        widget.navBarTitlesGroup2[index],
+                        widget.activeIconsGroup2[index],
+                        widget.inactiveIconsGroup2[index],
+                        currentIndexGroup2 == index,
+                      ),
+                    ),
+                    iconSize: _iconSize,
+                    containerHeight: _navBarHeight,
+                    curve: Curves.ease,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

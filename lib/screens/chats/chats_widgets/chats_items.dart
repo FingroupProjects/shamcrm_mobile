@@ -46,15 +46,7 @@ class ChatListItem extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: isSupportAvatar
-                  ? null
-                  : Border.all(
-                      color: Colors.black,
-                      width: 2,
-                    ),
-            ),
+         
             child: _buildAvatar(chatItem.avatar),
           ),
           const SizedBox(width: 12),
