@@ -18,6 +18,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     final double? sum;
     final String? paymentMethod; // Add this field
     final String? paymentStatus; // Новое поле
+        final DateTime? createdAt;
+
 
 
     Order({
@@ -38,6 +40,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       this.sum,
       this.paymentMethod, // Add to constructor
       this.paymentStatus, // Добавляем в конструктор
+      this.createdAt
     });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -61,6 +64,9 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
             : null,
         lead: OrderLead.fromJson(json['lead'] ?? {}),
         orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
+          createdAt: json['created_at'] != null
+            ? DateTime.tryParse(json['created_at'])
+            : null,
         goods: (json['order_goods'] as List? ?? [])
             .map((g) => Good.fromJson(g))
             .toList(),
@@ -90,6 +96,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         'branch_id': branchId, // Добавляем в JSON
         'lead': lead.toJson(),
         'order_status': orderStatus.toJson(),
+                'created_at': createdAt?.toIso8601String(),
+
         'order_goods': goods.map((g) => g.toJson()).toList(),
         'organization_id': organizationId,
         'comment_to_courier': commentToCourier,

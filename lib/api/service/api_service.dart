@@ -7515,6 +7515,40 @@ Future<List<Variant>> getVariants({
     }
   }
 
+Future<OrderResponse> getOrdersByLead({
+    required int leadId,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    
+    try {
+      String url = '/lead/get-orders/$leadId';
+      url += '?page=$page&per_page=$perPage';
+      if (organizationId != null) {
+        url += '&organization_id=$organizationId';
+      }
+
+      final response = await _getRequest(url);
+      if (kDebugMode) {
+        print('Request URL: $url');
+        print('Response status: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        return OrderResponse.fromJson(rawData);
+      } else {
+        throw Exception('Ошибка сервера при загрузке заказов!');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка загрузки заказов по лиду: $e');
+      }
+      throw Exception('Ошибка загрузки заказов: $e');
+    }
+  }
+  
 Future<Map<String, dynamic>> createOrder({
   required String phone,
   required int leadId,
@@ -7545,7 +7579,7 @@ Future<Map<String, dynamic>> createOrder({
       'organization_id': organizationId,
       'status_id': statusId,
       'comment_to_courier': commentToCourier,
-      'payment_type': 'ALIF',
+      'paymentType': 'ALIF',
       'manager_id': managerId,
     };
 
@@ -7633,7 +7667,7 @@ Future<Map<String, dynamic>> createOrder({
           }).toList(),
       'organization_id': organizationId.toString(),
       'comment_to_courier': commentToCourier,
-      'payment_type': 'cash',
+      'paymentType': 'cash',
       'manager_id': managerId?.toString(),
     };
 

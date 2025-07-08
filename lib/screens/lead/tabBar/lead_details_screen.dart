@@ -11,6 +11,8 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
@@ -23,6 +25,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -167,6 +170,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canReadNotes = false;
   bool _canReadDeal = false;
   bool _canExportContact = false;
+  bool _canReadOrders = true;
   bool _isExportContactEnabled = false;
   bool _isDownloading = false;
   Map<int, double> _downloadProgress = {};
@@ -191,22 +195,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
+ @override
+void initState() {
+  super.initState();
+  _scrollController = ScrollController();
 
-    _checkPermissions().then((_) {
-      context.read<OrganizationBloc>().add(FetchOrganizations());
-      _loadSelectedOrganization();
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-      _loadContactsToCache();
-    });
-    _fetchTutorialProgress();
-    _listenToPrefsChanges();
-  }
+  _checkPermissions().then((_) {
+    context.read<OrganizationBloc>().add(FetchOrganizations());
+    _loadSelectedOrganization();
+    context
+        .read<LeadByIdBloc>()
+        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    if (_canReadOrders) {
+      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+    }
+    _loadContactsToCache();
+  });
+  _fetchTutorialProgress();
+  _listenToPrefsChanges();
+}
 
   Future<void> _loadContactsToCache() async {
     try {
@@ -609,19 +616,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_isTutorialShown) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
-        setState(() {
-          _isTutorialShown = true;
-        });
+ @override
+Widget build(BuildContext context) {
+  if (!_isTutorialShown) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showTutorial();
+      setState(() {
+        _isTutorialShown = true;
       });
-    }
-    return Scaffold(
-      appBar: _buildAppBar(
-          context, AppLocalizations.of(context)!.translate('view_lead')),
+    });
+  }
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider<OrderByLeadBloc>(
+        create: (context) => OrderByLeadBloc(context.read<ApiService>()),
+      ),
+    ],
+    child: Scaffold(
+      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_lead')),
       backgroundColor: Colors.white,
       body: BlocListener<LeadByIdBloc, LeadByIdState>(
         listener: (context, state) {
@@ -687,6 +699,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     if (_canReadDeal)
                       DealsWidget(
                           leadId: int.parse(widget.leadId), key: keyLeadDeal,),
+                          if (_canReadOrders) // Добавляем проверку прав
+    OrdersWidget(
+      leadId: int.parse(widget.leadId),
+      key: GlobalKey(),
+    ),
                     ContactPersonWidget(
                         leadId: int.parse(widget.leadId),
                         key: keyLeadContactPerson),
@@ -707,11 +724,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               );
             }
             return Center(child: Text(''));
-          },
+         },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(

@@ -241,7 +241,7 @@ Widget build(BuildContext context) {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                'Создан: ${_formatDate(widget.order.lead.createdAt)}',
+                'Создан: ${_formatDate(widget.order.createdAt)}',
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
