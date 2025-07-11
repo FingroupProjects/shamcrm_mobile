@@ -90,9 +90,9 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
     final selectedVariants = variants
         .where((variant) => variant.isSelected == true)
         .map((variant) => {
-              'variant_id': variant.id, // Изменено на variant_id
+              'variant_id': variant.id.toString(),
               'quantity': variant.quantitySelected ?? 1,
-              'price': variant.price ?? 0.0,
+              'price': variant.price?.toString() ?? '0.0',
             })
         .toList();
 
@@ -123,10 +123,10 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
     }
 
     final currentGoods = widget.order.goods.map((good) => {
-              'good_id': good.goodId,
-              'quantity': good.quantity,
-              'price': good.price,
-            }).toList();
+          'variant_id': good.variantId.toString(),
+          'quantity': good.quantity,
+          'price': good.price,
+        }).toList();
 
     final updatedGoods = [...currentGoods, ...selectedVariants];
 
@@ -137,7 +137,10 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
           delivery: widget.order.delivery,
           deliveryAddress: widget.order.deliveryAddress ?? '',
           goods: updatedGoods,
-          organizationId: 1,
+          organizationId: widget.order.organizationId ?? 1,
+          branchId: widget.order.branchId,
+          commentToCourier: widget.order.commentToCourier,
+          managerId: widget.order.manager?.id,
         ));
 
     Navigator.pop(context);
@@ -321,7 +324,6 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
   }
 
   Widget _buildVariantImage(Variant variant) {
-    // Варианты не содержат изображений, используем заглушку
     return SizedBox(
       width: 48,
       height: 48,
@@ -357,7 +359,6 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
               color: Color(0xff99A4BA)),
         ),
         const SizedBox(height: 4),
-        // Отображаем атрибуты варианта
         ...variant.attributeValues.map((attr) => Text(
               '${attr.categoryAttribute?.attribute?.name ?? 'Атрибут'}: ${attr.value}',
               style: const TextStyle(

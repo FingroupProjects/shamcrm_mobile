@@ -1,6 +1,7 @@
 
   // Модель LeadById и связанные классы
   import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/price_type_model.dart';
   import 'package:crm_task_manager/models/region_model.dart';
   import 'package:crm_task_manager/models/source_model.dart';
 
@@ -27,6 +28,9 @@
     final List<DirectoryValue> directoryValues;
     final List<LeadChat> chats;
     final List<LeadFiles>? files; // Добавляем поле для файлов
+  final String? phone_verified_at;
+  final String? verification_code;
+  final PriceType? priceType;
 
     LeadById({
       required this.id,
@@ -51,6 +55,9 @@
       required this.directoryValues,
       required this.chats,
       this.files,
+      this.phone_verified_at,
+    this.verification_code,
+    this.priceType,
     });
 
     factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -110,11 +117,18 @@
         directoryValues: directoryValues,
         chats: chats,
         files: files,
+        phone_verified_at: json['phone_verified_at'] is String ? json['phone_verified_at'] : null,
+      verification_code: json['verification_code'] != null ? json['verification_code'].toString() : null,
+      priceType: json['priceType'] != null && json['priceType'] is Map<String, dynamic>
+          ? PriceType.fromJson(json['priceType'])
+          : null,
       );
       //print('LeadById: Lead object created: id=${lead.id}, name=${lead.name}, directoryValues length=${lead.directoryValues.length}, chats length=${lead.chats.length}, files length=${lead.files?.length ?? 0}');
       return lead;
     }
   }
+
+  
   class LeadChat {
     final int id;
     final Integration? integration;

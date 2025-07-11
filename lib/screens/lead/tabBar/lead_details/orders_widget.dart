@@ -103,78 +103,103 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       ],
     );
   }
+ String formatPaymentType(String? paymentType, BuildContext context) {
+    switch (paymentType?.toLowerCase()) {
+      case 'cash':
+        return 'Наличными';
+      case 'alif':
+        return 'ALIF';
+      case 'click':
+        return 'CLICK';
+      case 'payme':
+        return 'PAYME';
+      default:
+        return AppLocalizations.of(context)!.translate('not_specified');
+    }
+  }
+Widget _buildOrderItem(Order order) {
+  String formattedDate = order.createdAt != null
+      ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+      : AppLocalizations.of(context)!.translate('not_specified');
 
-  Widget _buildOrderItem(Order order) {
-    String formattedDate = order.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
-        : AppLocalizations.of(context)!.translate('not_specified');
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(
-              orderId: order.id,
-              order: order,
-              categoryName: '',
-            ),
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderDetailsScreen(
+            orderId: order.id,
+            order: order,
+            categoryName: '',
           ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/icons/MyNavBar/deal_ON.png',
-                  width: 24,
-                  height: 24,
-                  color: Color(0xff1E2E52),
+        ),
+      );
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/icons/MyNavBar/deal_ON.png',
+                width: 24,
+                height: 24,
+                color: Color(0xff1E2E52),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('order_title')}№${order.orderNumber}',
+                      style: TaskCardStyles.titleStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                     SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('payment_method')}: ${formatPaymentType(order.paymentMethod, context)}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('status_details')} ${order.orderStatus.name}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('summa_history')} ${order.sum}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                        // fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                   
+                  ],
                 ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('order_title')}№${order.orderNumber}',
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('status_details')} ${order.orderStatus.name}',
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // IconButton(
-                //   icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                //   onPressed: null,
-                // ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildTitleRow(String title) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

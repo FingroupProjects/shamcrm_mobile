@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -12,6 +11,7 @@ import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
@@ -32,9 +32,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   int _currentPage = 0;
   final ApiService _apiService = ApiService();
   String? baseUrl;
-  Timer? _timer; // Таймер для автопрокрутки
-  bool _isAutoScrollEnabled = true; // Флаг для автопрокрутки
-  final PageController _pageController = PageController(); // Контроллер для PageView
+  Timer? _timer;
+  bool _isAutoScrollEnabled = true;
+  final PageController _pageController = PageController();
+  bool _canUpdateProduct = false; // Новая переменная для права product.update
+
+  @override
+  void initState() {
+    super.initState();
+    print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}');
+    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+    _initializeBaseUrl();
+    _checkPermissions(); // Проверяем права доступа при инициализации
+  }
 
   Future<void> _initializeBaseUrl() async {
     try {
@@ -53,77 +63,83 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}');
-    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
-    _initializeBaseUrl();
+  Future<void> _checkPermissions() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+    final bool canUpdate = await _apiService.hasPermission('product.update');
+
+    setState(() {
+      _canUpdateProduct = canUpdate && !integrationWith1C;
+      print('GoodsDetailsScreen: _canUpdateProduct установлен в $_canUpdateProduct (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
+    });
+  } catch (e) {
+    setState(() {
+      _canUpdateProduct = false;
+      print('GoodsDetailsScreen: Ошибка при проверке прав: $e');
+    });
   }
+}
 
   @override
   void dispose() {
-    _timer?.cancel(); // Очищаем таймер при выходе
-    _pageController.dispose(); // Очищаем контроллер
+    _timer?.cancel();
+    _pageController.dispose();
     print('GoodsDetailsScreen: Disposed timer and page controller');
     super.dispose();
   }
-void _startAutoScroll(int itemCount) {
-  if (itemCount <= 1) {
-    print('GoodsDetailsScreen: Auto-scroll not started, itemCount: $itemCount');
-    return; // Не запускаем автопрокрутку, если 0 или 1 изображение
-  }
-  
-  _isAutoScrollEnabled = true;
-  _timer?.cancel(); // Отменяем предыдущий таймер
-  
-  void scrollToNextPage() {
-    if (!_isAutoScrollEnabled) {
-      _timer?.cancel();
-      print('GoodsDetailsScreen: Auto-scroll stopped due to manual interaction');
+
+  void _startAutoScroll(int itemCount) {
+    if (itemCount <= 1) {
+      print('GoodsDetailsScreen: Auto-scroll not started, itemCount: $itemCount');
       return;
     }
     
-    setState(() {
-      if (_currentPage >= itemCount - 1) {
-        // Достигнута последняя страница, возвращаемся к первой
-        _currentPage = 0;
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        // Полностью останавливаем автопрокрутку
-        _isAutoScrollEnabled = false;
+    _isAutoScrollEnabled = true;
+    _timer?.cancel();
+    
+    void scrollToNextPage() {
+      if (!_isAutoScrollEnabled) {
         _timer?.cancel();
-        print('GoodsDetailsScreen: Auto-scroll completed one cycle, returned to page 0 and stopped');
-        return; // Важно: выходим из функции, чтобы не запускать новый таймер
-      } else {
-        // Переходим к следующей странице
-        _currentPage++;
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        print('GoodsDetailsScreen: Auto-scroll to page $_currentPage');
-        // Запускаем таймер для следующей страницы только если не достигли конца
-        _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
+        print('GoodsDetailsScreen: Auto-scroll stopped due to manual interaction');
+        return;
       }
-    });
+      
+      setState(() {
+        if (_currentPage >= itemCount - 1) {
+          _currentPage = 0;
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+          _isAutoScrollEnabled = false;
+          _timer?.cancel();
+          print('GoodsDetailsScreen: Auto-scroll completed one cycle, returned to page 0 and stopped');
+          return;
+        } else {
+          _currentPage++;
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+          print('GoodsDetailsScreen: Auto-scroll to page $_currentPage');
+          _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
+        }
+      });
+    }
+
+    _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
+    print('GoodsDetailsScreen: Auto-scroll started for $itemCount items');
   }
 
-  // Запускаем первый таймер
-  _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
-  print('GoodsDetailsScreen: Auto-scroll started for $itemCount items');
-}
   Widget _buildImageSlider(List<GoodsFile> files) {
     if (baseUrl == null) {
       print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Сортируем список: изображение с isMain == true идёт первым
     final sortedFiles = List<GoodsFile>.from(files);
     final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
     if (mainImageIndex != -1) {
@@ -134,13 +150,11 @@ void _startAutoScroll(int itemCount) {
       print('GoodsDetailsScreen: No main image found, using original order');
     }
 
-    // Проверка на случай нескольких isMain == true
     final multipleMainImages = sortedFiles.where((file) => file.isMain).length > 1;
     if (multipleMainImages) {
       print('GoodsDetailsScreen: Warning: Multiple images with isMain == true detected');
     }
 
-    // Запускаем автопрокрутку, если изображений больше одного
     _startAutoScroll(sortedFiles.length);
 
     print('GoodsDetailsScreen: Building image slider with ${sortedFiles.length} files');
@@ -150,38 +164,37 @@ void _startAutoScroll(int itemCount) {
           margin: const EdgeInsets.only(top: 8),
           height: 250,
           child: PageView.builder(
-  controller: _pageController,
-  itemCount: sortedFiles.length,
-  onPageChanged: (index) {
-    setState(() {
-      _currentPage = index;
-      // Останавливаем автопрокрутку при ручном изменении
-      _isAutoScrollEnabled = false;
-      _timer?.cancel();
-    });
-    print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id}) manually');
-  },
-  itemBuilder: (context, index) {
-    final imageUrl = '$baseUrl/${sortedFiles[index].path}';
-    print('GoodsDetailsScreen: Loading image $imageUrl');
-    if (sortedFiles[index].path.isEmpty) {
-      print('GoodsDetailsScreen: Empty image path at index $index');
-      return _buildPlaceholder();
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        imageUrl,
-        width: double.infinity,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
-          return _buildPlaceholder();
-        },
-      ),
-    );
-  },
-)
+            controller: _pageController,
+            itemCount: sortedFiles.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+                _isAutoScrollEnabled = false;
+                _timer?.cancel();
+              });
+              print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id}) manually');
+            },
+            itemBuilder: (context, index) {
+              final imageUrl = '$baseUrl/${sortedFiles[index].path}';
+              print('GoodsDetailsScreen: Loading image $imageUrl');
+              if (sortedFiles[index].path.isEmpty) {
+                print('GoodsDetailsScreen: Empty image path at index $index');
+                return _buildPlaceholder();
+              }
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+                    return _buildPlaceholder();
+                  },
+                ),
+              );
+            },
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -246,57 +259,54 @@ void _startAutoScroll(int itemCount) {
           ),
         ),
       ),
-      actions: widget.showActions
-          ? [
-              BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
-                builder: (context, state) {
-                  print(
-                      'GoodsDetailsScreen: Building AppBar actions, state: $state');
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
-                        onPressed: state is GoodsByIdLoaded
-                            ? () async {
-                                print('GoodsDetailsScreen: Edit button pressed');
-                                // Сортируем изображения для передачи
-                                final sortedFiles = List<GoodsFile>.from(state.goods.files);
-                                final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
-                                if (mainImageIndex != -1) {
-                                  final mainImage = sortedFiles.removeAt(mainImageIndex);
-                                  sortedFiles.insert(0, mainImage);
-                                }
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => GoodsEditScreen(
-                                      goods: state.goods,
-                                      sortedFiles: sortedFiles,
-                                      initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
-                                    ),
-                                  ),
-                                );
-                                if (result == true) {
-                                  print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
-                                  context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
-                                }
-                              }
-                            : null,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ]
-          : null,
+     actions: widget.showActions && _canUpdateProduct
+    ? [
+        BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
+          builder: (context, state) {
+            print('GoodsDetailsScreen: Building AppBar actions, state: $state');
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
+                  onPressed: state is GoodsByIdLoaded
+                      ? () async {
+                          print('GoodsDetailsScreen: Edit button pressed');
+                          final sortedFiles = List<GoodsFile>.from(state.goods.files);
+                          final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
+                          if (mainImageIndex != -1) {
+                            final mainImage = sortedFiles.removeAt(mainImageIndex);
+                            sortedFiles.insert(0, mainImage);
+                          }
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GoodsEditScreen(
+                                goods: state.goods,
+                                sortedFiles: sortedFiles,
+                                initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
+                              ),
+                            ),
+                          );
+                          if (result == true) {
+                            print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
+                            context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+                          }
+                        }
+                      : null,
+                ),
+              ],
+            );
+          },
+        ),
+      ]
+    : null,
     );
   }
 
   Widget _buildDetailsList(Goods goods) {
-    // Build the labels string
     List<String> labels = [];
     if (goods.isPopular) {
       labels.add(AppLocalizations.of(context)!.translate('hit'));
@@ -357,7 +367,6 @@ void _startAutoScroll(int itemCount) {
             ? AppLocalizations.of(context)!.translate('active_swtich')
             : AppLocalizations.of(context)!.translate('inactive_swtich'),
       },
-      // Комментарии клиента как расширяемое поле
       if (goods.comments != null && goods.comments!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('client_comments'),
@@ -462,7 +471,6 @@ void _startAutoScroll(int itemCount) {
     final price = variant.variantPrice?.price ?? 0.0;
     print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
-    // Собираем уникальные характеристики с использованием Set
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
@@ -485,7 +493,6 @@ void _startAutoScroll(int itemCount) {
       });
     }
 
-    // Преобразуем Set в List и ограничиваем до 4 характеристик
     List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
 
     String? imageUrl;
@@ -519,7 +526,6 @@ void _startAutoScroll(int itemCount) {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Изображение
               SizedBox(
                 width: 120,
                 height: 120,
@@ -530,7 +536,6 @@ void _startAutoScroll(int itemCount) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Характеристики (до 4)
                     ...attributes.map((attr) => Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
@@ -567,7 +572,6 @@ void _startAutoScroll(int itemCount) {
                             ],
                           ),
                         )),
-                    // Индикатор дополнительных характеристик
                     if (uniqueAttributes.length > 4)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -582,7 +586,6 @@ void _startAutoScroll(int itemCount) {
                         ),
                       ),
                     const SizedBox(height: 8),
-                    // Цена
                     Text(
                       '$price',
                       style: const TextStyle(
@@ -835,7 +838,6 @@ void _startAutoScroll(int itemCount) {
                 'label': AppLocalizations.of(context)!.translate('category_details'),
                 'value': goods.category.name ?? '',
               },
-              // Добавляем филиал
               {
                 'label': AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty

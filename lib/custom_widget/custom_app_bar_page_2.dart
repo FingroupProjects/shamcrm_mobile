@@ -1,8 +1,10 @@
+
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
@@ -22,9 +24,8 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final VoidCallback? onGoodsResetFilters;
-  final Map<String, dynamic> currentFilters; // Added to receive filter data
-  final List<String>? initialLabels; // Added
-  
+  final Map<String, dynamic> currentFilters;
+  final List<String>? initialLabels;
 
   CustomAppBarPage2({
     super.key,
@@ -37,11 +38,11 @@ class CustomAppBarPage2 extends StatefulWidget {
     required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
-    this.initialLabels, // Added
     this.showFilterOrderIcon = true,
     this.onFilterGoodsSelected,
     this.onGoodsResetFilters,
-    required this.currentFilters, // Required parameter
+    required this.currentFilters,
+    this.initialLabels,
   });
 
   @override
@@ -68,12 +69,17 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   Color _iconColor = Colors.black;
   late Timer _timer;
   bool _isGoodsFiltering = false;
+  bool _canCreateProduct = false; // Новая переменная для права product.create
+  bool _canCreateOrder = false; // Новая переменная для права order.create
+  // bool _isGoodsFiltering = false;
+  bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
+  
 
   @override
   void initState() {
     super.initState();
     if (kDebugMode) {
-      //print('CustomAppBarPage2: Инициализация AppBar');
+      print('CustomAppBarPage2: Инициализация AppBar');
     }
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
@@ -86,6 +92,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 
     _loadNotificationState();
     _setUpSocketForNotifications();
+    _checkPermissions(); // Проверяем права доступа при инициализации
 
     _blinkController = AnimationController(
       vsync: this,
@@ -114,6 +121,43 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
         (widget.currentFilters['managers'] != null &&
             widget.currentFilters['managers'].isNotEmpty);
+
+            _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['managers'] != null &&
+            widget.currentFilters['managers'].isNotEmpty);
+    _isOrdersFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['fromDate'] != null ||
+            widget.currentFilters['toDate'] != null ||
+            widget.currentFilters['client'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['paymentMethod'] != null ||
+            (widget.currentFilters['managers'] != null &&
+                widget.currentFilters['managers'].isNotEmpty));
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final canCreateProduct = await _apiService.hasPermission('product.create');
+      final canCreateOrder = await _apiService.hasPermission('order.create');
+      final canReadNotice = await _apiService.hasPermission('notice.read');
+      setState(() {
+        _canCreateProduct = canCreateProduct;
+        _canCreateOrder = canCreateOrder;
+        _canReadNotice = canReadNotice;
+        if (kDebugMode) {
+          print('CustomAppBarPage2: Проверка разрешений: product.create = $_canCreateProduct, order.create = $_canCreateOrder, notice.read = $_canReadNotice');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _canCreateProduct = false;
+        _canCreateOrder = false;
+        _canReadNotice = false;
+        if (kDebugMode) {
+          print('CustomAppBarPage2: Ошибка при проверке прав: $e');
+        }
+      });
+    }
   }
 
   Future<void> _checkOverdueTasks() async {
@@ -125,12 +169,12 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           _hasOverdueTasks = hasOverdue;
         });
         if (kDebugMode) {
-          //print('CustomAppBarPage2: Проверка просроченных задач: $_hasOverdueTasks');
+          print('CustomAppBarPage2: Проверка просроченных задач: $_hasOverdueTasks');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarPage2: Ошибка проверки просроченных задач: $e');
+        print('CustomAppBarPage2: Ошибка проверки просроченных задач: $e');
       }
     }
   }
@@ -140,8 +184,10 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
+    notificationSubscription.cancel();
+    socketClient.disconnect();
     if (kDebugMode) {
-      //print('CustomAppBarPage2: Очистка ресурсов');
+      print('CustomAppBarPage2: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -153,13 +199,13 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       _hasNewNotification = hasNewNotification;
     });
     if (kDebugMode) {
-      //print('CustomAppBarPage2: Загрузка состояния уведомлений: $_hasNewNotification');
+      print('CustomAppBarPage2: Загрузка состояния уведомлений: $_hasNewNotification');
     }
   }
 
   Future<void> _setUpSocketForNotifications() async {
     if (kDebugMode) {
-      //print('CustomAppBarPage2: Настройка сокета для уведомлений');
+      print('CustomAppBarPage2: Настройка сокета для уведомлений');
     }
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -177,7 +223,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         if (kDebugMode) {
-          //print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
+          print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
         }
       },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
@@ -198,7 +244,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         },
         onAuthFailed: (exception, trace) {
           if (kDebugMode) {
-            //print('CustomAppBarPage2: Ошибка авторизации сокета: $exception');
+            print('CustomAppBarPage2: Ошибка авторизации сокета: $exception');
           }
         },
       ),
@@ -209,7 +255,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
         if (kDebugMode) {
-          //print('CustomAppBarPage2: Получено уведомление: ${event.data}');
+          print('CustomAppBarPage2: Получено уведомление: ${event.data}');
         }
         setState(() {
           _hasNewNotification = true;
@@ -221,22 +267,12 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     try {
       await socketClient.connect();
       if (kDebugMode) {
-        //print('CustomAppBarPage2: Успешное соединение сокета');
+        print('CustomAppBarPage2: Успешное соединение сокета');
       }
     } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarPage2: Ошибка соединения сокета: $e');
+        print('CustomAppBarPage2: Ошибка соединения сокета: $e');
       }
-    }
-  }
-
-  Future<void> _checkPermissions() async {
-    final canReadNotice = await _apiService.hasPermission('notice.read');
-    setState(() {
-      _canReadNotice = canReadNotice;
-    });
-    if (kDebugMode) {
-      //print('CustomAppBarPage2: Проверка разрешений: notice.read = $_canReadNotice');
     }
   }
 
@@ -256,19 +292,19 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         });
         await prefs.setString('userProfileImage_$UUID', _userImage);
         if (kDebugMode) {
-          //print('CustomAppBarPage2: Загружено изображение профиля: $_userImage');
+          print('CustomAppBarPage2: Загружено изображение профиля: $_userImage');
         }
       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
         });
         if (kDebugMode) {
-          //print('CustomAppBarPage2: Использовано кэшированное изображение: $_userImage');
+          print('CustomAppBarPage2: Использовано кэшированное изображение: $_userImage');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarPage2: Ошибка загрузки профиля: $e');
+        print('CustomAppBarPage2: Ошибка загрузки профиля: $e');
       }
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
@@ -282,7 +318,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _lastLoadedImage = '';
     await _loadUserProfile();
     if (kDebugMode) {
-      //print('CustomAppBarPage2: Обновление изображения профиля');
+      print('CustomAppBarPage2: Обновление изображения профиля');
     }
   }
 
@@ -498,57 +534,51 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                     });
                   }
                   if (kDebugMode) {
-                    //print('CustomAppBarPage2: Переключение поиска: $_isSearching');
+                    print('CustomAppBarPage2: Переключение поиска: $_isSearching');
                   }
                 },
               ),
             ),
           ),
-        if (widget.showFilterIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isGoodsFiltering ? _iconColor : null,
-              ),
+        if (widget.showFilterIcon && _canCreateProduct)
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+              color: _isGoodsFiltering ? _iconColor : null,
             ),
-            onPressed: () {
-              if (kDebugMode) {
-                //print('CustomAppBarPage2: Нажата кнопка фильтра для товаров');
-              }
-              navigateToGoodsFilterScreen(context);
-            },
           ),
-        if (widget.showFilterOrderIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-              ),
+          onPressed: () {
+            navigateToGoodsFilterScreen(context);
+          },
+        ),
+      if (widget.showFilterOrderIcon && _canCreateOrder)
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+              color: _isOrdersFiltering ? _iconColor : null, // Добавляем мигание
             ),
-            onPressed: () {
-              if (kDebugMode) {
-                //print('CustomAppBarPage2: Нажата кнопка фильтра для заказов');
-              }
-              navigateToOrderFilterScreen(context);
-            },
           ),
-      ]),
+          onPressed: () {
+            navigateToOrderFilterScreen(context);
+          },
+        ),
+    ]),
     );
   }
 
- void navigateToGoodsFilterScreen(BuildContext context) {
+void navigateToGoodsFilterScreen(BuildContext context) {
   if (kDebugMode) {
-    //print('CustomAppBarPage2: Переход к экрану фильтров товаров');
-    //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    print('CustomAppBarPage2: Переход к экрану фильтров товаров');
+    print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
   }
-  // Extract initial filter data
   List<int>? initialCategoryIds;
   double? initialDiscountPercent;
   List<String>? initialLabels;
@@ -577,9 +607,6 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 
   if (widget.currentFilters.containsKey('is_active')) {
     initialIsActive = widget.currentFilters['is_active'] as bool?;
-    if (kDebugMode) {
-      //print('CustomAppBarPage2: Начальное значение is_active: $initialIsActive');
-    }
   }
 
   Navigator.push(
@@ -588,7 +615,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       builder: (context) => GoodsFilterScreen(
         onSelectedDataFilter: (filters) {
           if (kDebugMode) {
-            //print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
+            print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
           }
           setState(() {
             _isGoodsFiltering = filters.isNotEmpty;
@@ -597,7 +624,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         },
         onResetFilters: () {
           if (kDebugMode) {
-            //print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
+            print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
           }
           setState(() {
             _isGoodsFiltering = false;
@@ -607,19 +634,18 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         initialCategoryIds: initialCategoryIds,
         initialDiscountPercent: initialDiscountPercent,
         initialLabels: initialLabels,
-        initialIsActive: initialIsActive, // Передаем initialIsActive
+        initialIsActive: initialIsActive,
       ),
     ),
   );
 }
 
-  void navigateToOrderFilterScreen(BuildContext context) {
+void navigateToOrderFilterScreen(BuildContext context) {
   if (kDebugMode) {
     print('CustomAppBarPage2: Переход к экрану фильтров заказов');
     print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
   }
 
-  // Извлекаем начальные значения фильтров
   DateTime? initialFromDate = widget.currentFilters['fromDate'];
   DateTime? initialToDate = widget.currentFilters['toDate'];
   String? initialClient = widget.currentFilters['client'];
@@ -627,6 +653,9 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
   List<String>? initialManagers = widget.currentFilters['managers'] != null
       ? List<String>.from(widget.currentFilters['managers'])
+      : null;
+  List<String>? initialLeads = widget.currentFilters['leads'] != null
+      ? List<String>.from(widget.currentFilters['leads'])
       : null;
 
   Navigator.push(
@@ -638,8 +667,14 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
           }
           setState(() {
-            _isGoodsFiltering = filters.isNotEmpty ||
-                (filters['managers'] != null && filters['managers'].isNotEmpty);
+            _isOrdersFiltering = filters.isNotEmpty ||
+                (filters['managers'] != null && filters['managers'].isNotEmpty) ||
+                (filters['leads'] != null && filters['leads'].isNotEmpty) ||
+                filters['fromDate'] != null ||
+                filters['toDate'] != null ||
+                filters['client'] != null ||
+                filters['status'] != null ||
+                filters['paymentMethod'] != null;
           });
           widget.onFilterGoodsSelected?.call(filters);
         },
@@ -648,11 +683,18 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             print('CustomAppBarPage2: Сброс фильтров из OrdersFilterScreen');
           }
           setState(() {
-            _isGoodsFiltering = false;
+            _isOrdersFiltering = false;
+            widget.currentFilters.clear(); // Очищаем фильтры
           });
           widget.onGoodsResetFilters?.call();
         },
-        // Передаем начальные значения фильтров (если нужно, можно добавить в OrdersFilterScreen)
+        initialFromDate: initialFromDate,
+        initialToDate: initialToDate,
+        initialClient: initialClient,
+        initialStatus: initialStatus,
+        initialPaymentMethod: initialPaymentMethod,
+        initialManagers: initialManagers,
+        initialLeads: initialLeads,
       ),
     ),
   );

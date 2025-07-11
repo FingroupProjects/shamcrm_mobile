@@ -1,3 +1,4 @@
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
@@ -16,6 +17,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_good_variant.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
@@ -56,19 +58,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _phoneController = TextEditingController();
     _commentController = TextEditingController(text: widget.order.commentToCourier);
     _items = widget.order.goods.map((good) {
-      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
-          ? good.variantGood!.files[0].path
+      final imagePath = good.variant != null &&
+              good.variant!['good'] != null &&
+              good.variant!['good']['files'] != null &&
+              (good.variant!['good']['files'] as List).isNotEmpty
+          ? good.variant!['good']['files'][0]['path']
           : null;
       return {
-        'id': good.goodId,
-        'name': good.goodName,
-        'price': good.price,
+        'id': good.id, // ID записи order_goods
+        'variant_id': good.variantId, // ID варианта
+        'name': good.variant?['good']?['name'] ?? 'Unknown',
+        'price': double.tryParse(good.price) ?? 0.0,
         'quantity': good.quantity,
         'imagePath': imagePath,
       };
     }).toList();
     selectedLead = widget.order.lead.id.toString();
-    selectedManager = widget.order.manager?.id.toString(); // Инициализация менеджера
+    selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
             id: widget.order.deliveryAddressId ?? 0,
@@ -105,7 +111,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _initializeBaseUrl();
       context.read<BranchBloc>().add(FetchBranches());
       context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
-      context.read<GetAllManagerBloc>().add(GetAllManagerEv()); // Загружаем менеджеров
+      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     });
   }
 
@@ -160,26 +166,42 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             ? '$selectedDialCode${_phoneController.text}'
             : _phoneController.text,
       ),
-      // manager: selectedManager != null
-      //     ? ManagerData(id: int.parse(selectedManager!), name: widget.order.manager?.name ?? '')
-      //     : widget.order.manager,
       goods: _items.map((item) {
-        final goodItem = GoodItem(
+        return OrderGoodVariant(
           id: item['id'],
-          name: item['name'],
-          description: '',
-          quantity: item['quantity'],
-          files: item['imagePath'] != null
-              ? [GoodFile(id: 0, name: '', path: item['imagePath'])]
-              : [],
-        );
-        return Good(
-          good: goodItem,
-          variantGood: goodItem,
-          goodId: item['id'],
-          goodName: item['name'],
-          price: item['price'],
-          quantity: item['quantity'],
+          variantId: item['variant_id'],
+          orderId: widget.order.id,
+          quantity: item['quantity'] ?? 1,
+          price: item['price'].toString(),
+          variant: {
+            'id': item['variant_id'],
+            'good_id': item['variant_id'], // Предполагаем, что good_id совпадает с variant_id
+            'good': {
+              'id': item['variant_id'],
+              'name': item['name'],
+              'files': item['imagePath'] != null
+                  ? [
+                      {
+                        'id': 0,
+                        'name': '',
+                        'path': item['imagePath'],
+                        'model_type': 'good',
+                        'model_id': item['variant_id'],
+                        'created_at': '',
+                        'updated_at': '',
+                        'external_id': null,
+                        'external_url': null,
+                        'is_main': true,
+                      }
+                    ]
+                  : [],
+            },
+            'price': {
+              'id': 0,
+              'variant_id': item['variant_id'],
+              'price': item['price'].toString(),
+            },
+          },
         );
       }).toList(),
     );
@@ -193,9 +215,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
-              'id': item['id'],
+              'id': item['id'] ?? 0,
+              'variant_id': item['id'],
               'name': item['name'],
-              'price': item['price'],
+              'price': item['price'] ?? 0.0,
               'quantity': item['quantity'] ?? 1,
               'imagePath': item['imagePath'],
             }));
@@ -224,7 +247,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
-        // BlocProvider(create: (context) => GetAllManagerBloc(context.read<ApiService>())), // Добавляем GetAllManagerBloc
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -234,7 +256,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             if (state is OrderSuccess) {
               showCustomSnackBar(
                 context: context,
-                message: AppLocalizations.of(context)!.translate('order_updated_successfully'), // Изменено на 'success'
+                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
                 isSuccess: true,
               );
               Navigator.pop(context, true);
@@ -713,7 +735,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
                         goods: _items
                             .map((item) => {
-                                  'variant_id': item['id'].toString(),
+                                  'variant_id': item['variant_id'].toString(),
                                   'quantity': item['quantity'] ?? 1,
                                   'price': item['price'].toString(),
                                 })

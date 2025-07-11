@@ -1,13 +1,15 @@
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_good_variant.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class OrderGoodsScreen extends StatefulWidget {
-  final List<Good> goods;
+  final List<OrderGoodVariant> goods; // Изменено на OrderGoodVariant
   final Order order;
 
   const OrderGoodsScreen({
@@ -52,7 +54,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     return _buildGoodsList(widget.goods);
   }
 
-  Widget _buildGoodsList(List<Good> goods) {
+  Widget _buildGoodsList(List<OrderGoodVariant> goods) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,7 +96,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  Widget _buildGoodsItem(Good good) {
+  Widget _buildGoodsItem(OrderGoodVariant good) {
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
@@ -113,7 +115,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        good.goodName,
+                        good.variant?['good']?['name'] ?? 'Unknown', // Используем variant.good.name
                         style: TaskCardStyles.titleStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -154,24 +156,20 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  Widget _buildImageWidget(Good good) {
+  Widget _buildImageWidget(OrderGoodVariant good) {
     if (baseUrl == null) {
-      print('Base URL is null for ${good.goodName}');
+      print('Base URL is null');
       return _buildPlaceholderImage();
     }
 
-    // Проверяем наличие файлов в good.files
-    List<GoodFile> files = good.good.files;
-    if (files.isEmpty && good.variantGood != null) {
-      // Если good.files пустой, используем variantGood.files
-      files = good.variantGood!.files;
-    }
-
-    print('Good files for ${good.goodName}: ${good.good.files}');
-    print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
+    List<GoodFile> files = good.variant?['good']?['files'] != null
+        ? (good.variant!['good']['files'] as List)
+            .map((f) => GoodFile.fromJson(f as Map<String, dynamic>))
+            .toList()
+        : [];
 
     if (files.isEmpty) {
-      print('No files found for ${good.goodName}');
+      print('No files found for ${good.variant?['good']?['name'] ?? 'Unknown'}');
       return _buildPlaceholderImage();
     }
 
@@ -183,7 +181,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
         height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('Image loading error for ${good.goodName}: $error');
+          print('Image loading error for ${good.variant?['good']?['name'] ?? 'Unknown'}: $error');
           return _buildPlaceholderImage();
         },
         loadingBuilder: (context, child, loadingProgress) {
@@ -208,12 +206,12 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
-  void _navigateToGoodsDetails(Good good) {
+  void _navigateToGoodsDetails(OrderGoodVariant good) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GoodsDetailsScreen(
-          id: good.goodId,
+          id: good.variantId ?? 0, // Используем variantId
         ),
       ),
     );
@@ -256,45 +254,6 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class DeleteGoodsDialog extends StatelessWidget {
-  const DeleteGoodsDialog({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(AppLocalizations.of(context)!.translate('delete_deal_dialog')),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(AppLocalizations.of(context)!.translate('cancel')),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text(AppLocalizations.of(context)!.translate('delete')),
-        ),
-      ],
-    );
-  }
-}
-
-class CategoryGoodsAddScreen extends StatelessWidget {
-  const CategoryGoodsAddScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.translate('addDeal')),
-      ),
-      body: Center(
-        child: Text(AppLocalizations.of(context)!.translate('add_deal_screen')),
-      ),
     );
   }
 }

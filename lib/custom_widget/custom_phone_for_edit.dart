@@ -28,33 +28,34 @@
     bool _hasReachedMaxLength = false;
 
     @override
-    void initState() {
-      super.initState();
-      // Инициализация начальной страны
-      if (widget.selectedDialCode != null && widget.selectedDialCode!.isNotEmpty) {
-        selectedCountry = countries.firstWhere(
-          (country) => widget.selectedDialCode!.startsWith(country.dialCode),
-          orElse: () => countries.firstWhere((country) => country.name == "TJ"),
-        );
-        // Устанавливаем номер телефона без кода региона
-        if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
-          widget.controller.text =
-              widget.controller.text.substring(selectedCountry!.dialCode.length);
-        }
-      } else {
-        selectedCountry = countries.firstWhere((country) => country.name == "TJ");
-      }
-
-      // Валидируем начальный текст
-      if (widget.controller.text.isNotEmpty) {
-        _validatePhoneNumber(widget.controller.text);
-        // Передаём полный номер при инициализации
-        if (widget.onInputChanged != null) {
-          widget.onInputChanged!(
-              selectedCountry!.dialCode + widget.controller.text);
-        }
-      }
+void initState() {
+  super.initState();
+  // Инициализация начальной страны
+  if (widget.selectedDialCode != null && widget.selectedDialCode!.isNotEmpty) {
+    selectedCountry = countries.firstWhere(
+      (country) => widget.selectedDialCode!.startsWith(country.dialCode),
+      orElse: () => countries.firstWhere((country) => country.name == "TJ"),
+    );
+    // Устанавливаем номер телефона без кода региона
+    if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
+      widget.controller.text =
+          widget.controller.text.substring(selectedCountry!.dialCode.length);
     }
+  } else {
+    selectedCountry = countries.firstWhere((country) => country.name == "TJ");
+  }
+
+  // Валидируем начальный текст
+  if (widget.controller.text.isNotEmpty) {
+    _validatePhoneNumber(widget.controller.text);
+    // Переносим вызов onInputChanged
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.onInputChanged != null) {
+        widget.onInputChanged!(selectedCountry!.dialCode + widget.controller.text);
+      }
+    });
+  }
+}
 
     void _validatePhoneNumber(String value) {
       final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
@@ -73,100 +74,101 @@
     }
 
     TextInputFormatter _phoneNumberPasteFormatter() {
-      return TextInputFormatter.withFunction((oldValue, newValue) {
-        int maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-        String newText = newValue.text;
+  return TextInputFormatter.withFunction((oldValue, newValue) {
+    int maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+    String newText = newValue.text;
 
-        // Проверяем, является ли ввод вставкой
-        bool isPaste = (newValue.text.length - oldValue.text.length).abs() > 1;
+    // Проверяем, является ли ввод вставкой
+    bool isPaste = (newValue.text.length - oldValue.text.length).abs() > 1;
 
-        if (isPaste) {
-          String? matchedDialCode;
-          Country? matchedCountry;
-          bool hasPlus = newText.startsWith('+');
-          String checkText = hasPlus ? newText : '+' + newText;
+    if (isPaste) {
+      String? matchedDialCode;
+      Country? matchedCountry;
+      bool hasPlus = newText.startsWith('+');
+      String checkText = hasPlus ? newText : '+' + newText;
 
-          // Проверяем, начинается ли текст с кода страны
-          for (var code in countryCodes) {
-            if (checkText.startsWith(code) &&
-                (matchedDialCode == null || code.length > matchedDialCode.length)) {
-              matchedDialCode = code;
-              matchedCountry = countries.firstWhere(
-                (country) => country.dialCode == code,
-                orElse: () => Country(name: '', flag: '', dialCode: ''),
-              );
-            }
+      // Проверяем, начинается ли текст с кода страны
+      for (var code in countryCodes) {
+        if (checkText.startsWith(code) &&
+            (matchedDialCode == null || code.length > matchedDialCode.length)) {
+          matchedDialCode = code;
+          matchedCountry = countries.firstWhere(
+            (country) => country.dialCode == code,
+            orElse: () => Country(name: '', flag: '', dialCode: ''),
+          );
+        }
+      }
+
+      if (matchedDialCode != null &&
+          matchedCountry != null &&
+          matchedCountry.name.isNotEmpty) {
+        // Извлекаем номер без кода страны
+        String phoneNumber = hasPlus
+            ? newText.substring(matchedDialCode.length)
+            : newText.substring(matchedDialCode.length - 1);
+
+        // Проверяем, что номер состоит только из цифр
+        if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
+          int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;
+          if (phoneNumber.length > newMaxLength) {
+            phoneNumber = phoneNumber.substring(0, newMaxLength);
           }
 
-          if (matchedDialCode != null &&
-              matchedCountry != null &&
-              matchedCountry.name.isNotEmpty) {
-            // Извлекаем номер без кода страны
-            String phoneNumber = hasPlus
-                ? newText.substring(matchedDialCode.length)
-                : newText.substring(matchedDialCode.length - 1);
-
-            // Проверяем, что номер состоит только из цифр
-            if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
-              int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;
-              if (phoneNumber.length > newMaxLength) {
-                phoneNumber = phoneNumber.substring(0, newMaxLength);
-              }
-
-              // Обновляем состояние
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                setState(() {
-                  selectedCountry = matchedCountry;
-                  widget.controller.text = phoneNumber;
-                  _validatePhoneNumber(phoneNumber);
-                });
-                // Передаём полный номер телефона
-                if (widget.onInputChanged != null) {
-                  widget.onInputChanged!(matchedCountry!.dialCode + phoneNumber);
-                }
-              });
-
-              return TextEditingValue(
-                text: phoneNumber,
-                selection: TextSelection.collapsed(offset: phoneNumber.length),
-              );
-            } else {
-              return oldValue; // Отклоняем вставку, если номер содержит не цифры
-            }
-          } else {
-            // Если код страны не найден, обрабатываем как обычный номер
-            String phoneNumber = newText;
-            if (phoneNumber.length > maxLength) {
-              phoneNumber = phoneNumber.substring(0, maxLength);
-            }
-            _validatePhoneNumber(phoneNumber);
-            // Передаём полный номер телефона
+          // Обновляем состояние
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedCountry = matchedCountry;
+              widget.controller.text = phoneNumber;
+              _validatePhoneNumber(phoneNumber);
+            });
             if (widget.onInputChanged != null) {
-              widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+              widget.onInputChanged!(matchedCountry!.dialCode + phoneNumber);
             }
-            return TextEditingValue(
-              text: phoneNumber,
-              selection: TextSelection.collapsed(offset: phoneNumber.length),
-            );
-          }
-        } else {
-          // Ручной ввод или удаление
-          String phoneNumber = newValue.text;
-          if (phoneNumber.length > maxLength) {
-            phoneNumber = phoneNumber.substring(0, maxLength);
-          }
-          _validatePhoneNumber(phoneNumber);
-          // Передаём полный номер телефона
-          if (widget.onInputChanged != null) {
-            widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
-          }
+          });
+
           return TextEditingValue(
             text: phoneNumber,
             selection: TextSelection.collapsed(offset: phoneNumber.length),
           );
+        } else {
+          return oldValue; // Отклоняем вставку, если номер содержит не цифры
+        }
+      } else {
+        // Если код страны не найден, обрабатываем как обычный номер
+        String phoneNumber = newText;
+        if (phoneNumber.length > maxLength) {
+          phoneNumber = phoneNumber.substring(0, maxLength);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _validatePhoneNumber(phoneNumber);
+          if (widget.onInputChanged != null) {
+            widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+          }
+        });
+        return TextEditingValue(
+          text: phoneNumber,
+          selection: TextSelection.collapsed(offset: phoneNumber.length),
+        );
+      }
+    } else {
+      // Ручной ввод или удаление
+      String phoneNumber = newValue.text;
+      if (phoneNumber.length > maxLength) {
+        phoneNumber = phoneNumber.substring(0, maxLength);
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _validatePhoneNumber(phoneNumber);
+        if (widget.onInputChanged != null) {
+          widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
         }
       });
+      return TextEditingValue(
+        text: phoneNumber,
+        selection: TextSelection.collapsed(offset: phoneNumber.length),
+      );
     }
+  });
+}
 
     
 
@@ -274,16 +276,18 @@
                     );
                   }).toList(),
                   onChanged: (Country? newValue) {
-                    setState(() {
-                      selectedCountry = newValue;
-                      widget.controller.text = '';
-                      _errorText = null;
-                      _hasReachedMaxLength = false;
-                      if (newValue != null && widget.onInputChanged != null) {
-                        widget.onInputChanged!(newValue.dialCode);
-                      }
-                    });
-                  },
+  setState(() {
+    selectedCountry = newValue;
+    widget.controller.text = '';
+    _errorText = null;
+    _hasReachedMaxLength = false;
+  });
+  if (newValue != null && widget.onInputChanged != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onInputChanged!(newValue.dialCode);
+    });
+  }
+},
                 ),
               ),
             ),

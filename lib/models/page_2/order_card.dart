@@ -1,47 +1,46 @@
   import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/page_2/order_good_variant.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
-  class Order {
-    final int id;
-    final String phone;
-    final String orderNumber;
-    final bool delivery;
-    final String? deliveryAddress;
-    final int? deliveryAddressId;
-    final String? branchName;
-    final int? branchId; // Новое поле для branch_id
-    final ManagerData? manager;
-    final OrderLead lead;
-    final OrderStatusName orderStatus;
-    final List<Good> goods;
-    final int? organizationId;
-    final String? commentToCourier;
-    final double? sum;
-    final String? paymentMethod; // Add this field
-    final String? paymentStatus; // Новое поле
-        final DateTime? createdAt;
+class Order {
+  final int id;
+  final String phone;
+  final String orderNumber;
+  final bool delivery;
+  final String? deliveryAddress;
+  final int? deliveryAddressId;
+  final String? branchName;
+  final int? branchId;
+  final ManagerData? manager;
+  final OrderLead lead;
+  final OrderStatusName orderStatus;
+  final List<OrderGoodVariant> goods; // Изменено на OrderGoodVariant
+  final int? organizationId;
+  final String? commentToCourier;
+  final double? sum;
+  final String? paymentMethod;
+  final String? paymentStatus;
+  final DateTime? createdAt;
 
-
-
-    Order({
-      required this.id,
-      required this.phone,
-      required this.orderNumber,
-      required this.delivery,
-      this.deliveryAddress,
-      this.deliveryAddressId,
-      this.branchName,
-      this.branchId,
-      required this.lead,
-      required this.orderStatus,
-      required this.goods,
-      this.organizationId,
-      this.commentToCourier,
-      this.manager,
-      this.sum,
-      this.paymentMethod, // Add to constructor
-      this.paymentStatus, // Добавляем в конструктор
-      this.createdAt
-    });
+  Order({
+    required this.id,
+    required this.phone,
+    required this.orderNumber,
+    required this.delivery,
+    this.deliveryAddress,
+    this.deliveryAddressId,
+    this.branchName,
+    this.branchId,
+    required this.lead,
+    required this.orderStatus,
+    required this.goods,
+    this.organizationId,
+    this.commentToCourier,
+    this.manager,
+    this.sum,
+    this.paymentMethod,
+    this.paymentStatus,
+    this.createdAt,
+  });
 
   factory Order.fromJson(Map<String, dynamic> json) {
     try {
@@ -64,18 +63,18 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
             : null,
         lead: OrderLead.fromJson(json['lead'] ?? {}),
         orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
-          createdAt: json['created_at'] != null
+        createdAt: json['created_at'] != null
             ? DateTime.tryParse(json['created_at'])
             : null,
         goods: (json['order_goods'] as List? ?? [])
-            .map((g) => Good.fromJson(g))
-            .toList(),
+            .map((g) => OrderGoodVariant.fromJson(g))
+            .toList(), // Используем OrderGoodVariant
         organizationId: json['organization_id'] ?? 1,
         commentToCourier: json['comment_to_courier']?.toString(),
         sum: double.tryParse(json['sum']?.toString() ?? '0'),
-        paymentMethod: json['payment_type']?.toString(), // Parse payment_type
-        paymentStatus: json['payment_status']?.toString(), // Парсим payment_status
-         manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
+        paymentMethod: json['payment_type']?.toString(),
+        paymentStatus: json['payment_status']?.toString(),
+        manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       );
     } catch (e) {
       print('Error parsing Order: $e');
@@ -84,64 +83,63 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     }
   }
 
-    Map<String, dynamic> toJson() {
-      return {
-        'id': id,
-        'phone': phone,
-        'order_number': orderNumber,
-        'delivery': delivery,
-        'delivery_address': deliveryAddress,
-        'delivery_address_id': deliveryAddressId,
-        'branch_name': branchName,
-        'branch_id': branchId, // Добавляем в JSON
-        'lead': lead.toJson(),
-        'order_status': orderStatus.toJson(),
-                'created_at': createdAt?.toIso8601String(),
-
-        'order_goods': goods.map((g) => g.toJson()).toList(),
-        'organization_id': organizationId,
-        'comment_to_courier': commentToCourier,
-        'sum': sum,
-        'payment_status': paymentStatus, // Добавляем в JSON
-      };
-    }
-
-    Order copyWith({
-      int? id,
-      String? phone,
-      String? orderNumber,
-      bool? delivery,
-      String? deliveryAddress,
-      int? deliveryAddressId,
-      String? branchName,
-      int? branchId,
-      OrderLead? lead,
-      OrderStatusName? orderStatus,
-      List<Good>? goods,
-      int? organizationId,
-      String? commentToCourier,
-      double? sum,
-      String? paymentStatus,
-    }) {
-      return Order(
-        id: id ?? this.id,
-        phone: phone ?? this.phone,
-        orderNumber: orderNumber ?? this.orderNumber,
-        delivery: delivery ?? this.delivery,
-        deliveryAddress: deliveryAddress ?? this.deliveryAddress,
-        deliveryAddressId: deliveryAddressId ?? this.deliveryAddressId,
-        branchName: branchName ?? this.branchName,
-        branchId: branchId ?? this.branchId, // Добавляем
-        lead: lead ?? this.lead,
-        orderStatus: orderStatus ?? this.orderStatus,
-        goods: goods ?? this.goods,
-        organizationId: organizationId ?? this.organizationId,
-        commentToCourier: commentToCourier ?? this.commentToCourier,
-        sum: sum ?? this.sum,
-        paymentStatus: paymentStatus ?? this.paymentStatus,
-      );
-    }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'phone': phone,
+      'order_number': orderNumber,
+      'delivery': delivery,
+      'delivery_address': deliveryAddress,
+      'delivery_address_id': deliveryAddressId,
+      'branch_name': branchName,
+      'branch_id': branchId,
+      'lead': lead.toJson(),
+      'order_status': orderStatus.toJson(),
+      'created_at': createdAt?.toIso8601String(),
+      'order_goods': goods.map((g) => g.toJson()).toList(),
+      'organization_id': organizationId,
+      'comment_to_courier': commentToCourier,
+      'sum': sum,
+      'payment_status': paymentStatus,
+    };
   }
+
+  Order copyWith({
+    int? id,
+    String? phone,
+    String? orderNumber,
+    bool? delivery,
+    String? deliveryAddress,
+    int? deliveryAddressId,
+    String? branchName,
+    int? branchId,
+    OrderLead? lead,
+    OrderStatusName? orderStatus,
+    List<OrderGoodVariant>? goods, // Изменено на OrderGoodVariant
+    int? organizationId,
+    String? commentToCourier,
+    double? sum,
+    String? paymentStatus,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      phone: phone ?? this.phone,
+      orderNumber: orderNumber ?? this.orderNumber,
+      delivery: delivery ?? this.delivery,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      deliveryAddressId: deliveryAddressId ?? this.deliveryAddressId,
+      branchName: branchName ?? this.branchName,
+      branchId: branchId ?? this.branchId,
+      lead: lead ?? this.lead,
+      orderStatus: orderStatus ?? this.orderStatus,
+      goods: goods ?? this.goods,
+      organizationId: organizationId ?? this.organizationId,
+      commentToCourier: commentToCourier ?? this.commentToCourier,
+      sum: sum ?? this.sum,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+    );
+  }
+}
   class OrderLead {
     final int id;
     final String name;

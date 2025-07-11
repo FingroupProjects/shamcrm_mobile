@@ -13,10 +13,12 @@ import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/models/mini_app_settiings.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,9 +50,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   int? userRoleId;
   bool _isLoading = true;
   bool isPermissionsLoaded = false;
+  String _storeName = '';
   Map<String, dynamic>? tutorialProgress;
   final ApiService _apiService = ApiService();
-  final FirebaseApi _firebaseApi = FirebaseApi(); // Добавляем экземпляр FirebaseApi
+  final FirebaseApi _firebaseApi = FirebaseApi();
 
   @override
   void initState() {
@@ -86,7 +89,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     await _loadUserRoleId();
     _checkSavedPin();
     _initBiometrics();
-
+    await _fetchMiniAppSettings();
     await _fetchTutorialProgress();
     await _fetchSettings();
   }
@@ -112,6 +115,41 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     }
   }
 
+  Future<void> _fetchMiniAppSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await _apiService.getSelectedOrganization();
+      
+      final settingsList = await _apiService.getMiniAppSettings(organizationId);
+      
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        await prefs.setString('mini_app_settings', json.encode(settings.toJson()));
+        await prefs.setInt('currency_id', settings.currencyId); // Сохраняем currency_id
+        
+        // Оставляем остальные поля
+        await prefs.setString('store_name', settings.name);
+        await prefs.setString('store_phone', settings.phone);
+        await prefs.setString('delivery_sum', settings.deliverySum);
+        await prefs.setBool('has_bonus', settings.hasBonus == 1);
+        await prefs.setBool('identify_by_phone', settings.identifyByPhone == 1);
+        
+        if (kDebugMode) {
+          print('MiniAppSettings сохранены: ${settings.name}, ${settings.phone}, currency_id: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      print('Error fetching mini-app settings: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final savedSettings = prefs.getString('mini_app_settings');
+      if (savedSettings != null) {
+        final settings = MiniAppSettings.fromJson(json.decode(savedSettings));
+        await prefs.setInt('currency_id', settings.currencyId); // Сохраняем currency_id из кэша
+        print('MiniAppSettings загружены из кэша: ${settings.name}, currency_id: ${settings.currencyId}');
+      }
+    }
+  }
+
   Future<void> _fetchSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -121,9 +159,15 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
       if (response['result'] != null) {
         await prefs.setBool('department_enabled', response['result']['department'] ?? false);
+        await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
+        if (kDebugMode) {
+          print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
+        }
       }
     } catch (e) {
       print('Error fetching settings: $e');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('integration_with_1C', false);
     }
   }
 
@@ -345,7 +389,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
           await _fetchTutorialProgress();
         }
         if (widget.initialMessage != null) {
-          await _firebaseApi.handleMessage(widget.initialMessage!); // Исправляем вызов
+          await _firebaseApi.handleMessage(widget.initialMessage!);
         }
       });
     });

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/category/category_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'category_card.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -22,6 +24,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
   String _lastSearchQuery = '';
+  bool _canCreateCategory = false; // Новая переменная для права category.create
+  final ApiService _apiService = ApiService(); // Экземпляр ApiService
 
   @override
   void initState() {
@@ -30,7 +34,26 @@ class _CategoryScreenState extends State<CategoryScreen> {
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
+    _checkPermissions(); // Проверяем права доступа при инициализации
   }
+
+Future<void> _checkPermissions() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+    final bool canCreate = await _apiService.hasPermission('category.create');
+
+    setState(() {
+      _canCreateCategory = canCreate && !integrationWith1C;
+      print('CategoryScreen: _canCreateCategory установлен в $_canCreateCategory (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
+    });
+  } catch (e) {
+    setState(() {
+      _canCreateCategory = false;
+      print('CategoryScreen: Ошибка при проверке прав: $e');
+    });
+  }
+}
 
   void _onSearch(String query) {
     setState(() {
@@ -53,6 +76,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    print('CategoryScreen: Очистка ресурсов');
     super.dispose();
   }
 
@@ -69,6 +93,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
+              print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
             });
           },
           clearButtonClickFiltr: (isSearching) {},
@@ -83,7 +108,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           clearButtonClick: (isSearching) {
             _resetSearch();
           },
-           currentFilters: {}, // Provide empty map since no filters are used
+          currentFilters: {},
         ),
       ),
       body: isClickAvatarIcon
@@ -96,16 +121,19 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: true,
                   );
+                  print('CategoryScreen: Успех: ${state.message}');
                 } else if (state is CategoryError) {
                   showCustomSnackBar(
                     context: context,
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: false,
                   );
+                  print('CategoryScreen: Ошибка: ${state.message}');
                 }
               },
               builder: (context, state) {
                 if (state is CategoryLoading) {
+                  print('CategoryScreen: Состояние загрузки');
                   return const Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -113,6 +141,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     ),
                   );
                 } else if (state is CategoryError) {
+                  print('CategoryScreen: Ошибка загрузки категорий: ${state.message}');
                   context.read<CategoryBloc>().add(FetchCategories());
                   return const Center(
                     child: PlayStoreImageLoading(
@@ -121,6 +150,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     ),
                   );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
+                  print('CategoryScreen: Список категорий пуст');
                   return Center(
                     child: Text(
                       _isSearching
@@ -136,6 +166,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   );
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
+                  print('CategoryScreen: Загружено категорий: ${categories.length}');
                   return ListView.builder(
                     padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
                     itemCount: categories.length,
@@ -154,18 +185,22 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     },
                   );
                 }
+                print('CategoryScreen: Неизвестное состояние');
                 return const Center(
                   child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          CategoryAddBottomSheet.show(context);
-        },
-        backgroundColor: const Color(0xff1E2E52),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: _canCreateCategory
+          ? FloatingActionButton(
+              onPressed: () {
+                print('CategoryScreen: Нажата кнопка добавления категории');
+                CategoryAddBottomSheet.show(context);
+              },
+              backgroundColor: const Color(0xff1E2E52),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 }

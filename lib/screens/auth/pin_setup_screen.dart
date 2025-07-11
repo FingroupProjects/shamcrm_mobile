@@ -15,6 +15,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,7 +37,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   late Animation<double> _shakeAnimation;
   int? userRoleId;
   bool isPermissionsLoaded = false;
-  Map<String, dynamic>? tutorialProgress; // Для хранения прогресса туториалов
+  Map<String, dynamic>? tutorialProgress;
   final ApiService _apiService = ApiService();
 
   @override
@@ -45,8 +46,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
-    _fetchTutorialProgress(); // Загружаем прогресс туториалов
-    _fetchSettings(); // Добавляем новый метод для получения настроек
+    _fetchTutorialProgress();
+    _fetchSettings();
+    _fetchMiniAppSettings(); // Добавляем вызов
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -56,23 +58,44 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .animate(_animationController);
   }
 
+ Future<void> _fetchMiniAppSettings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await _apiService.getSelectedOrganization();
+    
+    final settingsList = await _apiService.getMiniAppSettings(organizationId);
+    
+    if (settingsList.isNotEmpty) {
+      final settings = settingsList.first;
+      await prefs.setInt('currency_id', settings.currencyId);
+      
+      if (kDebugMode) {
+        print('MiniAppSettings: currency_id сохранён: ${settings.currencyId}');
+      }
+    }
+  } catch (e) {
+    print('Error fetching mini-app settings: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedCurrencyId = prefs.getInt('currency_id');
+    if (savedCurrencyId != null) {
+      print('MiniAppSettings: currency_id загружен из кэша: $savedCurrencyId');
+    }
+  }
+}
+
   Future<void> _fetchTutorialProgress() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Проверяем, был ли пользователь уже зарегистрирован
       bool isNewUser = prefs.getString('user_pin') == null;
 
       if (isNewUser) {
-        // Если новый пользователь - получаем прогресс туториалов
         final progress = await _apiService.getTutorialProgress();
         setState(() {
           tutorialProgress = progress['result'];
         });
-        // Сохраняем прогресс в SharedPreferences
         await prefs.setString(
             'tutorial_progress', json.encode(progress['result']));
       } else {
-        // Если старый пользователь - берем прогресс из SharedPreferences
         final savedProgress = prefs.getString('tutorial_progress');
         if (savedProgress != null) {
           setState(() {
@@ -85,7 +108,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     }
   }
 
-// Новый метод для получения настроек
   Future<void> _fetchSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -94,12 +116,16 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       final response = await _apiService.getSettings(organizationId);
 
       if (response['result'] != null) {
-        // Сохраняем только department в SharedPreferences
-        await prefs.setBool(
-            'department_enabled', response['result']['department'] ?? false);
+        await prefs.setBool('department_enabled', response['result']['department'] ?? false);
+        await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
+        if (kDebugMode) {
+          print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
+        }
       }
     } catch (e) {
       print('Error fetching settings: $e');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('integration_with_1C', false);
     }
   }
 
@@ -155,7 +181,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   Future<void> _loadUserRoleId() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      SharedPreferences prefs = await SharedPreferences
+
+.getInstance();
       String userId = prefs.getString('userID') ?? '';
       if (userId.isEmpty) {
         setState(() {

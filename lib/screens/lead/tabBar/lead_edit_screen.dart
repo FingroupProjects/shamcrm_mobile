@@ -6,7 +6,7 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -16,6 +16,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/price_type_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
@@ -53,6 +54,8 @@ class LeadEditScreen extends StatefulWidget {
   final List<LeadCustomFieldsById> leadCustomFields;
   final List<DirectoryValue> directoryValues;
   final List<LeadFiles>? files;
+  final String? priceTypeId;
+  final String? priceTypeName;
 
   LeadEditScreen({
     required this.leadId,
@@ -73,6 +76,8 @@ class LeadEditScreen extends StatefulWidget {
     required this.leadCustomFields,
     required this.directoryValues,
     this.files,
+    this.priceTypeId,
+    this.priceTypeName,
   });
 
   @override
@@ -97,6 +102,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? selectedRegion;
   String? selectedSource;
   String? selectedManager;
+  String? _selectedPriceType; // Новая переменная для priceTypeId
   String selectedDialCode = '+992';
   String selectedWhatsAppDialCode = '+992';
   bool _isPhoneEdited = false;
@@ -115,40 +121,39 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     super.initState();
     titleController.text = widget.leadName;
     _selectedStatuses = widget.statusId;
+    _selectedPriceType = widget.priceTypeId; // Инициализация priceTypeId
 
     if (widget.phone != null) {
-      String phoneNumber = widget.phone!;
-      for (var code in countryCodes) {
-        if (phoneNumber.startsWith(code)) {
-          setState(() {
-            selectedDialCode = code;
-            phoneController.text = phoneNumber.substring(code.length);
-          });
-          break;
-        }
+    String phoneNumber = widget.phone!;
+    for (var code in countryCodes) {
+      if (phoneNumber.startsWith(code)) {
+        setState(() {
+          selectedDialCode = code;
+          phoneController.text = phoneNumber.substring(code.length);
+        });
+        break;
       }
-      if (phoneController.text.isEmpty) {
-        phoneController.text = phoneNumber;
-      }
-      _isPhoneEdited = false;
     }
+    if (phoneController.text.isEmpty) {
+      phoneController.text = phoneNumber;
+    }
+  }
 
-    if (widget.whatsApp != null) {
-      String whatsAppNumber = widget.whatsApp!;
-      for (var code in countryCodes) {
-        if (whatsAppNumber.startsWith(code)) {
-          setState(() {
-            selectedWhatsAppDialCode = code;
-            whatsAppController.text = whatsAppNumber.substring(code.length);
-          });
-          break;
-        }
+  if (widget.whatsApp != null) {
+    String whatsAppNumber = widget.whatsApp!;
+    for (var code in countryCodes) {
+      if (whatsAppNumber.startsWith(code)) {
+        setState(() {
+          selectedWhatsAppDialCode = code;
+          whatsAppController.text = whatsAppNumber.substring(code.length);
+        });
+        break;
       }
-      if (whatsAppController.text.isEmpty) {
-        whatsAppController.text = whatsAppNumber;
-      }
-      _isWhatsAppEdited = false;
     }
+    if (whatsAppController.text.isEmpty) {
+      whatsAppController.text = whatsAppNumber;
+    }
+  }
 
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
@@ -161,25 +166,26 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedManager = widget.manager;
 
     // Инициализация кастомных полей с типами
-    for (var customField in widget.leadCustomFields) {
+    for (int i = 0; i < widget.leadCustomFields.length; i++) {
+      var customField = widget.leadCustomFields[i];
       customFields.add(CustomField(
         fieldName: customField.key,
         controller: TextEditingController(text: customField.value),
-        uniqueId: Uuid().v4(),
-        type: customField.type ?? 'string', // Предполагаем, что сервер возвращает type
+        uniqueId: '${Uuid().v4()}_init_custom_$i',
+        type: customField.type ?? 'string',
       ));
     }
 
     // Инициализация справочных полей
-    for (var dirValue in widget.directoryValues) {
+    for (int i = 0; i < widget.directoryValues.length; i++) {
+      var dirValue = widget.directoryValues[i];
       customFields.add(CustomField(
         fieldName: dirValue.entry.directory.name,
-        controller:
-            TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+        controller: TextEditingController(text: dirValue.entry.values['value'] ?? ''),
         isDirectoryField: true,
         directoryId: dirValue.entry.directory.id,
         entryId: dirValue.entry.id,
-        uniqueId: Uuid().v4(),
+        uniqueId: '${Uuid().v4()}_init_dir_$i',
       ));
     }
 
@@ -197,49 +203,73 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     _fetchAndAddDirectoryFields();
   }
 
+  @override
+  void dispose() {
+    // Освобождаем все контроллеры
+    titleController.dispose();
+    phoneController.dispose();
+    whatsAppController.dispose();
+    instaLoginController.dispose();
+    facebookLoginController.dispose();
+    telegramController.dispose();
+    birthdayController.dispose();
+    createdAtController.dispose();
+    emailController.dispose();
+    authorController.dispose();
+    descriptionController.dispose();
+
+    // Освобождаем контроллеры кастомных полей
+    for (var field in customFields) {
+      field.dispose();
+    }
+
+    super.dispose();
+  }
+
   Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-        allowMultiple: true,
-      );
-      if (result != null && result.files.isNotEmpty) {
-        for (var file in result.files) {
-          if (file.path != null && file.name != null) {
-            final filePath = file.path!;
-            final fileObject = File(filePath);
-            if (await fileObject.exists()) {
-              final fileName = file.name;
-              if (!existingFiles.any((f) => f.name == fileName) &&
-                  !newFiles.contains(filePath)) {
-                final fileSize = await fileObject.length();
-                setState(() {
-                  newFiles.add(filePath);
-                  fileNames.add(fileName);
-                  fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
-                  selectedFiles.add(filePath);
-                });
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate('file_already_exists'),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+  try {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      for (var file in result.files) {
+        if (file.path != null && file.name != null) {
+          final filePath = file.path!;
+          final fileObject = File(filePath);
+          if (await fileObject.exists()) {
+            final fileSize = await fileObject.length();
+            if (fileSize > 10 * 1024 * 1024) { // Ограничение 10 МБ
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('file_too_large'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
-                    backgroundColor: Colors.red,
                   ),
-                );
-              }
+                  backgroundColor: Colors.red,
+                ),
+              );
+              continue;
+            }
+            final fileName = file.name;
+            if (!existingFiles.any((f) => f.name == fileName) &&
+                !newFiles.contains(filePath)) {
+              setState(() {
+                newFiles.add(filePath);
+                fileNames.add(fileName);
+                fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
+                selectedFiles.add(filePath);
+              });
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('file_not_found'),
+                    AppLocalizations.of(context)!.translate('file_already_exists'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -254,55 +284,82 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           }
         }
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('error_picking_file'),
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+          style: TextStyle(color: Colors.white),
         ),
-      );
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
+  if (isDirectory && directoryId != null) {
+    bool directoryExists = customFields.any((field) =>
+        field.isDirectoryField && field.directoryId == directoryId);
+    if (directoryExists) {
+      return;
     }
   }
+  
+  setState(() {
+    customFields.add(CustomField(
+      fieldName: fieldName,
+      controller: TextEditingController(),
+      isDirectoryField: isDirectory,
+      directoryId: directoryId,
+      uniqueId: '${Uuid().v4()}_${DateTime.now().millisecondsSinceEpoch}', // Более уникальный ID
+      type: type ?? 'string',
+    ));
+  });
+}
 
-  void _fetchAndAddDirectoryFields() async {
+void _fetchAndAddDirectoryFields() {
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
     try {
       final directoryLinkData = await _apiService.getLeadDirectoryLinks();
       if (directoryLinkData.data != null) {
-        setState(() {
-          for (var link in directoryLinkData.data!) {
-            bool directoryExists = customFields.any((field) =>
-                field.isDirectoryField &&
-                field.directoryId == link.directory.id);
-            if (!directoryExists) {
-              final existingValue = widget.directoryValues.firstWhere(
-                (dirValue) => dirValue.entry.directory.id == link.directory.id,
-                orElse: () => DirectoryValue(
+        final List<CustomField> fieldsToAdd = [];
+        
+        for (var link in directoryLinkData.data!) {
+          bool directoryExists = customFields.any((field) =>
+              field.isDirectoryField && field.directoryId == link.directory.id);
+          if (!directoryExists) {
+            final existingValue = widget.directoryValues.firstWhere(
+              (dirValue) => dirValue.entry.directory.id == link.directory.id,
+              orElse: () => DirectoryValue(
+                id: 0,
+                entry: DirectoryEntry(
                   id: 0,
-                  entry: DirectoryEntry(
-                    id: 0,
-                    directory: DirectoryByLead(
-                        id: link.directory.id, name: link.directory.name),
-                    values: {},
-                    createdAt: '',
-                  ),
+                  directory: DirectoryByLead(
+                      id: link.directory.id, name: link.directory.name),
+                  values: {},
+                  createdAt: '',
                 ),
-              );
-              customFields.add(CustomField(
-                fieldName: link.directory.name,
-                controller: TextEditingController(
-                    text: existingValue.entry.values['value'] ?? ''),
-                isDirectoryField: true,
-                directoryId: link.directory.id,
-                entryId:
-                    existingValue.entry.id != 0 ? existingValue.entry.id : null,
-                uniqueId: Uuid().v4(),
-              ));
-            }
+              ),
+            );
+            
+            fieldsToAdd.add(CustomField(
+              fieldName: link.directory.name,
+              controller: TextEditingController(
+                  text: existingValue.entry.values['value'] ?? ''),
+              isDirectoryField: true,
+              directoryId: link.directory.id,
+              entryId: existingValue.entry.id != 0 ? existingValue.entry.id : null,
+              uniqueId: '${Uuid().v4()}_${DateTime.now().millisecondsSinceEpoch}',
+            ));
           }
-        });
+        }
+        
+        if (fieldsToAdd.isNotEmpty) {
+          setState(() {
+            customFields.addAll(fieldsToAdd);
+          });
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -320,27 +377,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         ),
       );
     }
-  }
-
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-    if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) =>
-          field.isDirectoryField && field.directoryId == directoryId);
-      if (directoryExists) {
-        return;
-      }
-    }
-    setState(() {
-      customFields.add(CustomField(
-        fieldName: fieldName,
-        controller: TextEditingController(),
-        isDirectoryField: isDirectory,
-        directoryId: directoryId,
-        uniqueId: Uuid().v4(),
-        type: type ?? 'string',
-      ));
-    });
-  }
+  });
+}
 
   void _showAddFieldDialog() {
     showMenu(
@@ -759,24 +797,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         ),
                         const SizedBox(height: 8),
                         CustomPhoneNumberInput(
-                          controller: phoneController,
-                          selectedDialCode: selectedDialCode,
-                          onInputChanged: (String number) {
-                            setState(() {
-                              _isPhoneEdited = true;
-                              selectedDialCode = number;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                  .translate('field_required');
-                            }
-                            return null;
-                          },
-                          label:
-                              AppLocalizations.of(context)!.translate('phone'),
-                        ),
+  controller: phoneController,
+  selectedDialCode: selectedDialCode,
+  onInputChanged: (String number) {
+    setState(() {
+      _isPhoneEdited = true;
+    });
+    // Не обновляем selectedDialCode, чтобы избежать дублирования
+  },
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return AppLocalizations.of(context)!.translate('field_required');
+    }
+    return null;
+  },
+  label: AppLocalizations.of(context)!.translate('phone'),
+),
                         const SizedBox(height: 8),
                         ManagerRadioGroupWidget(
                           selectedManager: selectedManager,
@@ -870,6 +906,17 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 .translate('birth_date'),
                             withTime: false,
                           ),
+                          if (widget.priceTypeId != null) ...[
+                            const SizedBox(height: 8),
+                            PriceTypeWidget(
+                              selectedPriceType: _selectedPriceType,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedPriceType = newValue;
+                                });
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: descriptionController,
@@ -883,67 +930,68 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                           const SizedBox(height: 8),
                           _buildFileSelection(),
                           const SizedBox(height: 8),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: customFields.length,
-                            itemBuilder: (context, index) {
-                              final field = customFields[index];
-                              return Container(
-                                key: ValueKey(field.uniqueId),
-                                child: field.isDirectoryField &&
-                                        field.directoryId != null
-                                    ? MainFieldDropdownWidget(
-                                        directoryId: field.directoryId!,
-                                        directoryName: field.fieldName,
-                                        selectedField: field.entryId != null
-                                            ? MainField(
-                                                id: field.entryId!,
-                                                value: field.controller.text)
-                                            : null,
-                                        onSelectField:
-                                            (MainField selectedField) {
-                                          setState(() {
-                                            customFields[index] =
-                                                field.copyWith(
-                                              entryId: selectedField.id,
-                                              controller: TextEditingController(
-                                                  text: selectedField.value),
-                                            );
-                                          });
-                                        },
-                                        controller: field.controller,
-                                        onSelectEntryId: (int entryId) {
-                                          setState(() {
-                                            customFields[index] =
-                                                field.copyWith(
-                                              entryId: entryId,
-                                            );
-                                          });
-                                        },
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.removeAt(index);
-                                          });
-                                        },
-                                        initialEntryId: field.entryId,
-                                      )
-                                    : CustomFieldWidget(
-                                        fieldName: field.fieldName,
-                                        valueController: field.controller,
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.removeAt(index);
-                                          });
-                                        },
-                                        type: field.type,
-                                      ),
-                              );
-                            },
+                          Column(
+                            children: [
+                              for (int index = 0; index < customFields.length; index++)
+                                Container(
+                                  key: ValueKey('${customFields[index].uniqueId}_$index'),
+                                  margin: EdgeInsets.only(bottom: 8),
+                                  child: customFields[index].isDirectoryField &&
+                                          customFields[index].directoryId != null
+                                      ? MainFieldDropdownWidget(
+                                          key: ValueKey(
+                                              'dropdown_${customFields[index].uniqueId}_$index'),
+                                          directoryId: customFields[index].directoryId!,
+                                          directoryName: customFields[index].fieldName,
+                                          selectedField: customFields[index].entryId != null
+                                              ? MainField(
+                                                  id: customFields[index].entryId!,
+                                                  value: customFields[index].controller.text,
+                                                )
+                                              : null,
+                                          onSelectField: (MainField selectedField) {
+                                            setState(() {
+                                              customFields[index] = customFields[index].copyWith(
+                                                entryId: selectedField.id,
+                                                controller:
+                                                    TextEditingController(text: selectedField.value),
+                                              );
+                                            });
+                                          },
+                                          controller: customFields[index].controller,
+                                          onSelectEntryId: (int entryId) {
+                                            setState(() {
+                                              customFields[index] = customFields[index]
+                                                  .copyWith(entryId: entryId);
+                                            });
+                                          },
+                                          onRemove: () {
+                                            setState(() {
+                                              customFields[index].dispose();
+                                              customFields.removeAt(index);
+                                            });
+                                          },
+                                          initialEntryId: customFields[index].entryId,
+                                        )
+                                      : CustomFieldWidget(
+                                          key: ValueKey(
+                                              'field_${customFields[index].uniqueId}_$index'),
+                                          fieldName: customFields[index].fieldName,
+                                          valueController: customFields[index].controller,
+                                          onRemove: () {
+                                            setState(() {
+                                              customFields[index].dispose();
+                                              customFields.removeAt(index);
+                                            });
+                                          },
+                                          type: customFields[index].type,
+                                        ),
+                                ),
+                            ],
                           ),
                           CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('add_field'),
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('add_field'),
                             buttonColor: Color(0xff1E2E52),
                             textColor: Colors.white,
                             onPressed: _showAddFieldDialog,
@@ -956,14 +1004,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText:
-                            AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -981,25 +1027,21 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: AppLocalizations.of(context)!
-                                  .translate('add'),
+                              buttonText:
+                                  AppLocalizations.of(context)!.translate('add'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
-                                  String phoneToSend;
-                                  String? whatsAppToSend;
+      String phoneToSend = selectedDialCode + phoneController.text;
+      String? whatsAppToSend;
 
-                                  if (_isPhoneEdited) {
-                                    phoneToSend = '$selectedDialCode${phoneController.text}';
-                                  } else {
-                                    phoneToSend = widget.phone ?? '';
-                                  }
-                                  if (_isWhatsAppEdited && whatsAppController.text.isNotEmpty) {
-                                    whatsAppToSend = '$selectedWhatsAppDialCode${whatsAppController.text}';
-                                  } else {
-                                    whatsAppToSend = widget.whatsApp;
-                                  }
+      if (whatsAppController.text.isNotEmpty) {
+        whatsAppToSend = selectedWhatsAppDialCode + whatsAppController.text;
+      } else {
+        whatsAppToSend = null;
+      }
+      
                                   DateTime? parsedBirthday;
 
                                   if (birthdayController.text.isNotEmpty) {
@@ -1007,13 +1049,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       parsedBirthday = DateFormat('dd/MM/yyyy')
                                           .parseStrict(birthdayController.text);
                                     } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             AppLocalizations.of(context)!
-                                                .translate(
-                                                    'error_enter_birth_day'),
+                                                .translate('error_enter_birth_day'),
                                           ),
                                           backgroundColor: Colors.red,
                                         ),
@@ -1021,70 +1061,74 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       return;
                                     }
                                   }
-                                  List<Map<String, dynamic>> customFieldList =
-                                      [];
+                                  List<Map<String, dynamic>> customFieldList = [];
                                   List<Map<String, int>> directoryValues = [];
 
-                                for (var field in customFields) {
-  String fieldName = field.fieldName.trim();
-  String fieldValue = field.controller.text.trim();
-  String? fieldType = field.type;
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue = field.controller.text.trim();
+                                    String? fieldType = field.type;
 
-  // Валидация для number
-  if (fieldType == 'number' && fieldValue.isNotEmpty) {
-    if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('enter_valid_number'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-  }
+                                    // Валидация для number
+                                    if (fieldType == 'number' && fieldValue.isNotEmpty) {
+                                      if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('enter_valid_number'),
+                                              style: TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                    }
 
-  // Форматирование для date и datetime
-  if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
-    try {
-      DateTime parsedDate;
-      if (fieldValue.contains('GMT+0500')) {
-        // Если значение уже в формате сервера, парсим его
-        parsedDate = DateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'").parse(fieldValue);
-      } else {
-        // Если введено вручную
-        parsedDate = fieldType == 'date'
-            ? DateFormat('dd/MM/yyyy').parse(fieldValue)
-            : DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
-      }
-      fieldValue = fieldType == 'date'
-          ? DateFormat('dd/MM/yyyy').format(parsedDate)
-          : DateFormat('dd/MM/yyyy HH:mm').format(parsedDate);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('enter_valid_$fieldType'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-  }
+                                    // Форматирование для date и datetime
+                                    if ((fieldType == 'date' || fieldType == 'datetime') &&
+                                        fieldValue.isNotEmpty) {
+                                      try {
+                                        DateTime parsedDate;
+                                        if (fieldValue.contains('GMT+0500')) {
+                                          parsedDate = DateFormat(
+                                                  "EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'")
+                                              .parse(fieldValue);
+                                        } else {
+                                          parsedDate = fieldType == 'date'
+                                              ? DateFormat('dd/MM/yyyy').parse(fieldValue)
+                                              : DateFormat('dd/MM/yyyy HH:mm')
+                                                  .parse(fieldValue);
+                                        }
+                                        fieldValue = fieldType == 'date'
+                                            ? DateFormat('dd/MM/yyyy').format(parsedDate)
+                                            : DateFormat('dd/MM/yyyy HH:mm')
+                                                .format(parsedDate);
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('enter_valid_$fieldType'),
+                                              style: TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                    }
 
                                     if (field.isDirectoryField &&
                                         field.directoryId != null &&
@@ -1093,8 +1137,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         'directory_id': field.directoryId!,
                                         'entry_id': field.entryId!,
                                       });
-                                    } else if (fieldName.isNotEmpty &&
-                                        fieldValue.isNotEmpty) {
+                                    } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
                                       customFieldList.add({
                                         'key': fieldName,
                                         'value': fieldValue,
@@ -1103,11 +1146,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     }
                                   }
                                   bool isSystemManager =
-                                      selectedManager == "-1" ||
-                                          selectedManager == "0";
+                                      selectedManager == "-1" || selectedManager == "0";
                                   final leadBloc = context.read<LeadBloc>();
-                                  final localizations =
-                                      AppLocalizations.of(context)!;
+                                  final localizations = AppLocalizations.of(context)!;
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
@@ -1116,21 +1157,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     regionId: selectedRegion != null
                                         ? int.tryParse(selectedRegion!)
                                         : null,
-                                    managerId: !isSystemManager &&
-                                            selectedManager != null
+                                    managerId: !isSystemManager && selectedManager != null
                                         ? int.tryParse(selectedManager!)
                                         : null,
                                     sourseId: selectedSource != null
                                         ? int.tryParse(selectedSource!)
                                         : null,
-                                    instaLogin: instaLoginController.text
-                                        .isEmpty
-                                        ? null
-                                        : instaLoginController.text,
-                                    facebookLogin: facebookLoginController.text
-                                            .isEmpty
-                                        ? null
-                                        : facebookLoginController.text,
+                                    instaLogin:
+                                        instaLoginController.text.isEmpty
+                                            ? null
+                                            : instaLoginController.text,
+                                    facebookLogin:
+                                        facebookLoginController.text.isEmpty
+                                            ? null
+                                            : facebookLoginController.text,
                                     tgNick: telegramController.text.isEmpty
                                         ? null
                                         : telegramController.text,
@@ -1138,8 +1178,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     email: emailController.text.isEmpty
                                         ? null
                                         : emailController.text,
-                                    description: descriptionController.text
-                                            .isEmpty
+                                    description: descriptionController.text.isEmpty
                                         ? null
                                         : descriptionController.text,
                                     leadStatusId: _selectedStatuses!.toInt(),
@@ -1149,6 +1188,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     isSystemManager: isSystemManager,
                                     filePaths: newFiles,
                                     existingFiles: existingFiles,
+                                    priceTypeId: _selectedPriceType, // Добавляем priceTypeId
                                   ));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(

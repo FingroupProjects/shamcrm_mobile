@@ -1085,7 +1085,9 @@
   "payment_method_title":"Способ оплаты:",
   "active_status":"Статус",
   "show_on_website": "Отображать на сайте",
-  "payment_status_title": "Статус платежа:"
+  "payment_status_title": "Статус платежа:",
+  "price_type": "Тип цены",
+"price_type_details": "Тип цены:"
 
 
 

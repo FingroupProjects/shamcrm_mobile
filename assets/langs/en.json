@@ -1084,7 +1084,10 @@
 "select_integration": "Select chat",
 "field_type_datetime": "Date and time",
 "payment_method_title": "Payment method:",
-"active_status": "Status"
+"active_status": "Status",
+"price_type": "Price type",
+"price_type_details": "Price type:"
+
 
 
 

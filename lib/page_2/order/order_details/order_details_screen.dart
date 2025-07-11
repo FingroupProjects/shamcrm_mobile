@@ -1,6 +1,6 @@
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -14,6 +14,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.order,
     required this.categoryName,
     this.organizationId,
+    super.key
   });
 
   @override
@@ -35,6 +37,53 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
+  final ApiService _apiService = ApiService();
+  bool _canEditOrder = false;
+  int? currencyId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+    _loadCurrencyId();
+    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  Future<void> _checkPermissions() async {
+    final canEdit = await _apiService.hasPermission('order.update');
+    setState(() {
+      _canEditOrder = canEdit;
+    });
+  }
+
+  Future<void> _loadCurrencyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currencyId = prefs.getInt('currency_id') ?? 0;
+    });
+  }
+
+  String _formatSum(double? sum) {
+    if (sum == null) sum = 0;
+    String symbol = '₽';
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+    }
+    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
+  }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
@@ -54,86 +103,80 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  String formatPaymentType(String? paymentType, BuildContext context) {
+    switch (paymentType?.toLowerCase()) {
+      case 'cash':
+        return 'Наличными';
+      case 'alif':
+        return 'ALIF';
+      case 'click':
+        return 'CLICK';
+      case 'payme':
+        return 'PAYME';
+      default:
+        return AppLocalizations.of(context)!.translate('not_specified');
+    }
   }
-String formatPaymentType(String? paymentType, BuildContext context) {
-  switch (paymentType?.toLowerCase()) {
-    case 'cash':
-      return 'Наличными';
-    case 'alif':
-      return 'ALIF';
-    case 'click':
-      return 'CLICK';
-    case 'payme':
-      return 'PAYME';
-    default:
-      return AppLocalizations.of(context)!.translate('not_specified'); // Fallback for unknown types
-  }
-}
-void _updateDetails(Order order) {
-  String formattedDate = order.lead.createdAt != null
-      ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-      : AppLocalizations.of(context)!.translate('not_specified');
 
-  details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('order_number'),
-      'value': order.orderNumber
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client'),
-      'value': order.lead.name
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('manager_details'),
-      'value': order.manager?.name ?? 'become_manager' // Modified to handle null manager
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client_phone'),
-      'value': order.phone
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_date'),
-      'value': formattedDate
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_status'),
-      'value': order.orderStatus.name
-    },
-    {
-      'label': order.delivery
-          ? AppLocalizations.of(context)!.translate('order_address')
-          : AppLocalizations.of(context)!.translate('branch_order'),
-      'value': order.delivery
-          ? (order.deliveryAddress ??
-              AppLocalizations.of(context)!.translate('not_specified'))
-          : (order.branchName ??
-              AppLocalizations.of(context)!.translate('not_specified')),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('comment_client'),
-      'value': order.commentToCourier ??
-          AppLocalizations.of(context)!.translate('no_comment')
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('price'),
-      'value': order.sum != null && order.sum! > 0
-          ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-          : AppLocalizations.of(context)!.translate('0')
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('payment_method_title'),
-      'value': formatPaymentType(order.paymentMethod, context)
-    },
+  void _updateDetails(Order order) {
+    String formattedDate = order.lead.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+        : AppLocalizations.of(context)!.translate('not_specified');
+
+    details = [
       {
-      'label': AppLocalizations.of(context)!.translate('payment_status_title'),
-      'value': formatPaymentType(order.paymentStatus, context)
-    },
-  ];
-}
+        'label': AppLocalizations.of(context)!.translate('order_number'),
+        'value': order.orderNumber
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client'),
+        'value': order.lead.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('manager_details'),
+        'value': order.manager?.name ?? 'become_manager'
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client_phone'),
+        'value': order.phone
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_date'),
+        'value': formattedDate
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_status'),
+        'value': order.orderStatus.name
+      },
+      {
+        'label': order.delivery
+            ? AppLocalizations.of(context)!.translate('order_address')
+            : AppLocalizations.of(context)!.translate('branch_order'),
+        'value': order.delivery
+            ? (order.deliveryAddress ??
+                AppLocalizations.of(context)!.translate('not_specified'))
+            : (order.branchName ??
+                AppLocalizations.of(context)!.translate('not_specified')),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment_client'),
+        'value': order.commentToCourier ??
+            AppLocalizations.of(context)!.translate('no_comment')
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('price'),
+        'value': _formatSum(order.sum)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('payment_method_title'),
+        'value': formatPaymentType(order.paymentMethod, context)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('payment_status_title'),
+        'value': formatPaymentType(order.paymentStatus, context)
+      },
+    ];
+  }
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -141,8 +184,7 @@ void _updateDetails(Order order) {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -219,8 +261,7 @@ void _updateDetails(Order order) {
               appBar: _buildAppBar(context, state.orderDetails!),
               backgroundColor: Colors.white,
               body: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   children: [
                     _buildDetailsList(),
@@ -228,7 +269,7 @@ void _updateDetails(Order order) {
                     OrderHistoryWidget(orderId: widget.orderId),
                     const SizedBox(height: 16),
                     OrderGoodsScreen(
-                      goods: state.orderDetails!.goods,
+                      goods: state.orderDetails!.goods, // Передаём List<OrderGoodVariant>
                       order: widget.order,
                     ),
                   ],
@@ -267,26 +308,27 @@ void _updateDetails(Order order) {
         ),
       ),
       actions: [
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Image.asset(
-            'assets/icons/edit.png',
-            width: 24,
-            height: 24,
+        if (_canEditOrder)
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              final updatedOrder = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OrderEditScreen(order: order),
+                ),
+              );
+              if (updatedOrder != null) {
+                context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+              }
+            },
           ),
-          onPressed: () async {
-            final updatedOrder = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderEditScreen(order: order),
-              ),
-            );
-            if (updatedOrder != null) {
-              context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
-            }
-          },
-        ),
       ],
     );
   }
