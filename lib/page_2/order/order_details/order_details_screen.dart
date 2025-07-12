@@ -1,6 +1,6 @@
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -28,7 +28,6 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.order,
     required this.categoryName,
     this.organizationId,
-    super.key
   });
 
   @override
@@ -39,50 +38,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
   bool _canEditOrder = false;
-  int? currencyId;
 
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
-    _loadCurrencyId();
+    _checkPermissions(); // Проверяем права доступа при инициализации
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
 
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('order.update');
+
     setState(() {
       _canEditOrder = canEdit;
     });
-  }
-
-  Future<void> _loadCurrencyId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currencyId = prefs.getInt('currency_id') ?? 0;
-    });
-  }
-
-  String _formatSum(double? sum) {
-    if (sum == null) sum = 0;
-    String symbol = '₽';
-    switch (currencyId) {
-      case 1:
-        symbol = '\$';
-        break;
-      case 2:
-        symbol = '€';
-        break;
-      case 3:
-        symbol = 'UZS';
-        break;
-      case 4:
-        symbol = 'TJS';
-        break;
-      default:
-        symbol = '₽';
-    }
-    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -91,7 +60,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
       );
       return;
-    }
+/*************  ✨ Windsurf Command ⭐  *************/
+  /// Fetches the order details from the server when the widget is initialized.
+  ///
+  /// This is done by adding a [FetchOrderDetails] event to the [OrderBloc].
+/*******  d02d3477-8d1b-40d3-ba4e-dd54d2d90d27  *******/    }
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
@@ -165,7 +138,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('price'),
-        'value': _formatSum(order.sum)
+        'value': order.sum != null && order.sum! > 0
+            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
+            : AppLocalizations.of(context)!.translate('0')
       },
       {
         'label': AppLocalizations.of(context)!.translate('payment_method_title'),
@@ -269,7 +244,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     OrderHistoryWidget(orderId: widget.orderId),
                     const SizedBox(height: 16),
                     OrderGoodsScreen(
-                      goods: state.orderDetails!.goods, // Передаём List<OrderGoodVariant>
+                      goods: state.orderDetails!.goods,
                       order: widget.order,
                     ),
                   ],
@@ -308,7 +283,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-        if (_canEditOrder)
+        if (_canEditOrder) // Условное отображение кнопки редактирования
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

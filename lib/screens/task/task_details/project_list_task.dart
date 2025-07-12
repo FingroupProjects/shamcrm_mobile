@@ -24,6 +24,7 @@ class ProjectTaskGroupWidget extends StatefulWidget {
 class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   List<ProjectTask> projectsList = [];
   ProjectTask? selectedProjectData;
+  bool _hasAutoSelected = false;
 
   final TextStyle projectTextStyle = const TextStyle(
     fontSize: 16,
@@ -36,6 +37,56 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   void initState() {
     super.initState();
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
+  }
+
+  void _handleProjectSelection(List<ProjectTask> projects) {
+    // Избегаем повторного автоматического выбора
+    if (_hasAutoSelected) return;
+
+    // Автоматический выбор, если только один проект
+    if (projects.length == 1 && selectedProjectData == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedProjectData = projects.first;
+          _hasAutoSelected = true;
+        });
+        widget.onSelectProject(projects.first);
+      });
+    } else if (widget.selectedProject != null && projects.isNotEmpty) {
+      try {
+        final foundProject = projects.firstWhere(
+          (projectTask) => projectTask.id.toString() == widget.selectedProject,
+        );
+        if (selectedProjectData != foundProject) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedProjectData = foundProject;
+            });
+          });
+        }
+      } catch (e) {
+        if (selectedProjectData != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedProjectData = null;
+            });
+          });
+        }
+      }
+    }
+  }
+
+  // Метод для проверки, содержится ли selectedProjectData в текущем списке
+  ProjectTask? _getValidInitialItem(List<ProjectTask> projects) {
+    if (selectedProjectData == null) return null;
+    
+    // Проверяем, содержится ли selectedProjectData в текущем списке проектов
+    try {
+      return projects.firstWhere((project) => project.id == selectedProjectData!.id);
+    } catch (e) {
+      // Если не найден, возвращаем null
+      return null;
+    }
   }
 
   @override
@@ -71,21 +122,9 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-
-                    // Автоматический выбор, если только один проект
-                    if (projectsList.length == 1 && selectedProjectData == null) {
-                      selectedProjectData = projectsList.first;
-                      widget.onSelectProject(selectedProjectData!);
-                      field.didChange(selectedProjectData);
-                    } else if (widget.selectedProject != null && projectsList.isNotEmpty) {
-                      try {
-                        selectedProjectData = projectsList.firstWhere(
-                          (projectTask) => projectTask.id.toString() == widget.selectedProject,
-                        );
-                      } catch (e) {
-                        selectedProjectData = null;
-                      }
-                    }
+                    
+                    // Обрабатываем выбор проекта после завершения build
+                    _handleProjectSelection(projectsList);
                   }
 
                   return CustomDropdown<ProjectTask>.search(
@@ -134,7 +173,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       ),
                     ),
                     excludeSelected: false,
-                    initialItem: selectedProjectData,
+                    initialItem: _getValidInitialItem(projectsList),
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectProject(value);
