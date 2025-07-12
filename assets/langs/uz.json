@@ -1098,7 +1098,11 @@
 "field_type_datetime": "Sana va vaqt",
 "payment_method_title": "To‘lov usuli:",
 "active_status": "Holat",
-"payment_status_title": ""
+"payment_status_title": "",
+"price_type": "Narx turi",
+"price_type_details": "Narx turi:",
+"phone_number_too_long": "Telefon raqami juda uzun",
+"phone_number_too_short": "Telefon raqami juda qisqa"
 
 
 

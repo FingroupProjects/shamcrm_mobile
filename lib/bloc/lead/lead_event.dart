@@ -148,6 +148,7 @@ class UpdateLead extends LeadEvent {
   final bool isSystemManager;
   final AppLocalizations localizations;
   final List<LeadFiles> existingFiles;
+  final String? priceTypeId; // Новое поле
 
   UpdateLead({
     required this.leadId,
@@ -170,6 +171,7 @@ class UpdateLead extends LeadEvent {
     required this.localizations,
     this.isSystemManager = false,
     required this.existingFiles,
+    this.priceTypeId,
   });
 }
 

@@ -208,12 +208,33 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
+    // Используем новый метод для получения корректного ID
+    int correctGoodId = good.getCorrectGoodId();
+    
+    print('Navigating to good details');
+    print('Good name: ${good.getCorrectGoodName()}');
+    print('Using good ID: $correctGoodId');
+    print('Has variant: ${good.variantGood != null}');
+    
+    // Дополнительная проверка на случай, если ID все еще равен 0
+    if (correctGoodId == 0) {
+      print('Error: Unable to determine correct good ID');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка: Не удалось определить ID товара'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GoodsDetailsScreen(
-          id: good.goodId,
+          id: correctGoodId,
         ),
       ),
     );

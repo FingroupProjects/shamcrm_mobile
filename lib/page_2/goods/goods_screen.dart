@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoodsScreen extends StatefulWidget {
   @override
@@ -26,6 +28,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
   late ScrollController _scrollController;
   String _lastSearchQuery = '';
   Map<String, dynamic> _currentFilters = {};
+  bool _canCreateProduct = false; // Новая переменная для права product.create
+  final ApiService _apiService = ApiService(); // Экземпляр ApiService
 
   @override
   void initState() {
@@ -33,14 +37,37 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     if (kDebugMode) {
-      //print('GoodsScreen: Инициализация экрана товаров');
+      print('GoodsScreen: Инициализация экрана товаров');
     }
     context.read<GoodsBloc>().add(FetchGoods());
     context.read<GoodsBloc>().add(FetchSubCategories());
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
+    _checkPermissions(); // Проверяем права доступа при инициализации
   }
+
+ Future<void> _checkPermissions() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+    final bool canCreate = await _apiService.hasPermission('product.create');
+
+    setState(() {
+      _canCreateProduct = canCreate && !integrationWith1C;
+      if (kDebugMode) {
+        print('GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
+      }
+    });
+  } catch (e) {
+    setState(() {
+      _canCreateProduct = false;
+      if (kDebugMode) {
+        print('GoodsScreen: Ошибка при проверке прав: $e');
+      }
+    });
+  }
+}
 
   void _onScroll() {
     if (_scrollController.position.pixels ==
@@ -49,7 +76,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       final state = context.read<GoodsBloc>().state;
       if (state is GoodsDataLoaded) {
         if (kDebugMode) {
-          //print('GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
+          print('GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
         }
         context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
       }
@@ -61,7 +88,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       _lastSearchQuery = query;
       _isSearching = query.isNotEmpty;
       if (kDebugMode) {
-        //print('GoodsScreen: Поиск товаров с запросом: $query');
+        print('GoodsScreen: Поиск товаров с запросом: $query');
       }
     });
     context.read<GoodsBloc>().add(SearchGoods(query));
@@ -73,32 +100,33 @@ class _GoodsScreenState extends State<GoodsScreen> {
       _lastSearchQuery = '';
       _searchController.clear();
       if (kDebugMode) {
-        //print('GoodsScreen: Сброс поиска');
+        print('GoodsScreen: Сброс поиска');
       }
     });
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
   void _onFilterSelected(Map<String, dynamic> filters) {
-  if (kDebugMode) {
-    //print('GoodsScreen: Применение фильтров: $filters');
-  }
-  setState(() {
-    _currentFilters = Map.from(filters);
     if (kDebugMode) {
-      //print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+      print('GoodsScreen: Применение фильтров: $filters');
     }
-  });
-  context.read<GoodsBloc>().add(FilterGoods(filters));
-}
+    setState(() {
+      _currentFilters = Map.from(filters);
+      if (kDebugMode) {
+        print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+      }
+    });
+    context.read<GoodsBloc>().add(FilterGoods(filters));
+  }
+
   void _onResetFilters() {
     if (kDebugMode) {
-      //print('GoodsScreen: Сброс фильтров');
+      print('GoodsScreen: Сброс фильтров');
     }
     setState(() {
       _currentFilters = {};
       if (kDebugMode) {
-        //print('GoodsScreen: Очищены текущие фильтры');
+        print('GoodsScreen: Очищены текущие фильтры');
       }
     });
     context.read<GoodsBloc>().add(FilterGoods({}));
@@ -110,7 +138,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     if (kDebugMode) {
-      //print('GoodsScreen: Очистка ресурсов');
+      print('GoodsScreen: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -129,13 +157,13 @@ class _GoodsScreenState extends State<GoodsScreen> {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
               if (kDebugMode) {
-                //print('GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
+                print('GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
               }
             });
           },
           clearButtonClickFiltr: (isSearching) {
             if (kDebugMode) {
-              //print('GoodsScreen: Очистка фильтров через AppBar');
+              print('GoodsScreen: Очистка фильтров через AppBar');
             }
           },
           showSearchIcon: true,
@@ -151,7 +179,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           },
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
-          currentFilters: _currentFilters, // Pass current filters
+          currentFilters: _currentFilters,
         ),
       ),
       body: isClickAvatarIcon
@@ -165,7 +193,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     isSuccess: true,
                   );
                   if (kDebugMode) {
-                    //print('GoodsScreen: Успех: ${state.message}');
+                    print('GoodsScreen: Успех: ${state.message}');
                   }
                 } else if (state is GoodsError) {
                   showCustomSnackBar(
@@ -174,14 +202,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     isSuccess: false,
                   );
                   if (kDebugMode) {
-                    //print('GoodsScreen: Ошибка: ${state.message}');
+                    print('GoodsScreen: Ошибка: ${state.message}');
                   }
                 }
               },
               builder: (context, state) {
                 if (state is GoodsLoading) {
                   if (kDebugMode) {
-                    //print('GoodsScreen: Состояние загрузки');
+                    print('GoodsScreen: Состояние загрузки');
                   }
                   return const Center(
                     child: PlayStoreImageLoading(
@@ -191,7 +219,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   );
                 } else if (state is GoodsDataLoaded) {
                   if (kDebugMode) {
-                    //print('GoodsScreen: Загружено товаров: ${state.goods.length}');
+                    print('GoodsScreen: Загружено товаров: ${state.goods.length}');
                   }
                   return ListView.builder(
                     controller: _scrollController,
@@ -201,7 +229,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     itemBuilder: (context, index) {
                       if (index == state.goods.length) {
                         if (kDebugMode) {
-                          //print('GoodsScreen: Отображение индикатора загрузки для следующей страницы');
+                          print('GoodsScreen: Отображение индикатора загрузки для следующей страницы');
                         }
                         return const Center(
                           child: Padding(
@@ -233,7 +261,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   );
                 } else if (state is GoodsEmpty) {
                   if (kDebugMode) {
-                    //print('GoodsScreen: Список товаров пуст');
+                    print('GoodsScreen: Список товаров пуст');
                   }
                   return Center(
                     child: Column(
@@ -255,7 +283,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         TextButton(
                           onPressed: () {
                             if (kDebugMode) {
-                              //print('GoodsScreen: Обновление списка товаров');
+                              print('GoodsScreen: Обновление списка товаров');
                             }
                             context.read<GoodsBloc>().add(FetchGoods());
                           },
@@ -266,7 +294,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   );
                 } else if (state is GoodsError) {
                   if (kDebugMode) {
-                    //print('GoodsScreen: Ошибка загрузки товаров: ${state.message}');
+                    print('GoodsScreen: Ошибка загрузки товаров: ${state.message}');
                   }
                   context.read<GoodsBloc>().add(FetchGoods());
                   return const Center(
@@ -277,30 +305,32 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   );
                 }
                 if (kDebugMode) {
-                  //print('GoodsScreen: Неизвестное состояние');
+                  print('GoodsScreen: Неизвестное состояние');
                 }
                 return const Center(child: Text('Error'));
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          if (kDebugMode) {
-            //print('GoodsScreen: Переход к экрану добавления товара');
-          }
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => GoodsAddScreen()),
-          );
-          if (result == true) {
-            if (kDebugMode) {
-              //print('GoodsScreen: Обновление списка товаров после добавления');
-            }
-            context.read<GoodsBloc>().add(FetchGoods());
-          }
-        },
-        backgroundColor: const Color(0xff1E2E52),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: _canCreateProduct
+          ? FloatingActionButton(
+              onPressed: () async {
+                if (kDebugMode) {
+                  print('GoodsScreen: Переход к экрану добавления товара');
+                }
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GoodsAddScreen()),
+                );
+                if (result == true) {
+                  if (kDebugMode) {
+                    print('GoodsScreen: Обновление списка товаров после добавления');
+                  }
+                  context.read<GoodsBloc>().add(FetchGoods());
+                }
+              },
+              backgroundColor: const Color(0xff1E2E52),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 }

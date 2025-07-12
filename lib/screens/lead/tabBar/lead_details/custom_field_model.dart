@@ -8,7 +8,8 @@ class CustomField {
   final int? directoryId;
   final int? entryId;
   final String uniqueId; // Уникальный идентификатор
-  final String? type; // Новое поле для типа
+  final String? type; // Тип поля
+  final GlobalKey _key; // Приватный ключ для виджета
 
   CustomField({
     required this.fieldName,
@@ -16,9 +17,13 @@ class CustomField {
     this.isDirectoryField = false,
     this.directoryId,
     this.entryId,
-    this.type, // Добавляем type
-    String? uniqueId, // Опционально, если не передан, генерируем новый
-  }) : uniqueId = uniqueId ?? Uuid().v4();
+    this.type,
+    String? uniqueId,
+  }) : uniqueId = uniqueId ?? Uuid().v4(),
+       _key = GlobalKey();
+
+  // Геттер для доступа к ключу
+  GlobalKey get key => _key;
 
   CustomField copyWith({
     String? fieldName,
@@ -38,5 +43,10 @@ class CustomField {
       uniqueId: uniqueId ?? this.uniqueId,
       type: type ?? this.type,
     );
+  }
+
+  // Метод для освобождения ресурсов
+  void dispose() {
+    controller.dispose();
   }
 }

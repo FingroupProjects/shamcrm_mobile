@@ -34,6 +34,7 @@ import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/mini_app_settiings.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
@@ -55,6 +56,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
+import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
@@ -1372,6 +1374,7 @@ Future<Map<String, dynamic>> updateLead({
   String? waPhone,
   List<Map<String, dynamic>>? customFields, // Изменён тип
   List<Map<String, int>>? directoryValues,
+  String? priceTypeId, // Добавляем priceTypeId
 }) async {
   final organizationId = await getSelectedOrganization();
 
@@ -1391,6 +1394,7 @@ Future<Map<String, dynamic>> updateLead({
       if (email != null) 'email': email,
       if (description != null) 'description': description,
       if (waPhone != null) 'wa_phone': waPhone,
+      if (priceTypeId != null) 'price_type_id': priceTypeId, // Добавляем price_type_id
       'lead_custom_fields': customFields ?? [],
       'directory_values': directoryValues ?? [],
     },
@@ -1428,6 +1432,9 @@ Future<Map<String, dynamic>> updateLead({
     }
     if (response.body.contains('type')) {
       return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('price_type_id')) {
+      return {'success': false, 'message': 'invalid_price_type_id'};
     }
     if (response.body.contains('lead_custom_fields')) {
       return {'success': false, 'message': 'invalid_fields'};
@@ -1489,6 +1496,9 @@ Future<Map<String, dynamic>> updateLeadWithData({
   }
   if (data['wa_phone'] != null) {
     request.fields['wa_phone'] = data['wa_phone'].toString();
+  }
+  if (data['price_type_id'] != null) {
+    request.fields['price_type_id'] = data['price_type_id'].toString(); // Добавляем price_type_id
   }
   if (data['existing_file_ids'] != null) {
     request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
@@ -1560,6 +1570,9 @@ Future<Map<String, dynamic>> updateLeadWithData({
     }
     if (response.body.contains('lead_custom_fields')) {
       return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    if (response.body.contains('price_type_id')) {
+      return {'success': false, 'message': 'invalid_price_type_id'};
     }
     return {'success': false, 'message': 'unknown_error'};
   } else if (response.statusCode == 500) {
@@ -1909,6 +1922,24 @@ Future<Map<String, dynamic>> updateLeadWithData({
       throw Exception('Ошибка загрузки источников');
     }
   }
+
+
+Future<List<PriceType>> getPriceType() async {
+  final organizationId = await getSelectedOrganization();
+  final path = '/priceType?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body)['result']['data'];
+    return (data as List)
+        .map((priceType) => PriceType.fromJson(priceType))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки типов цен');
+  }
+}
+
 
   /// Метод для отправки на 1С
   Future<void> postLeadToC(int leadId) async {
@@ -6639,6 +6670,26 @@ Future<Map<String, dynamic>> updateNotice({
     }
   }
 
+// api/service/api_service.dart
+Future<List<MiniAppSettings>> getMiniAppSettings(String? organizationId) async {
+  final response = await _getRequest(
+    '/mini-app/setting${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null && data['result'] is List) {
+      return (data['result'] as List)
+          .map((item) => MiniAppSettings.fromJson(item))
+          .toList();
+    } else {
+      throw Exception('Invalid response format: result is missing or not a list');
+    }
+  } else {
+    throw Exception('Failed to get mini-app settings: ${response.statusCode}');
+  }
+}
+
   Future<void> markPageCompleted(String section, String pageType) async {
     final organizationId = await getSelectedOrganization();
 
@@ -7445,29 +7496,49 @@ Future<List<Variant>> getVariants({
   int page = 1,
   int perPage = 20,
   int? statusId,
-  List<String>? managerIds, // Новое поле для списка ID менеджеров
+  String? query,
+  List<String>? managerIds,
+  List<String>? leadIds,
+  DateTime? fromDate,
+  DateTime? toDate,
+  String? status,
+  String? paymentMethod,
 }) async {
   final organizationId = await getSelectedOrganization();
 
   try {
-    String url =
-        '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    String url = '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
     url += '&page=$page&per_page=$perPage';
     if (statusId != null) {
       url += '&order_status_id=$statusId';
+    }
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
     }
     if (managerIds != null && managerIds.isNotEmpty) {
       for (int i = 0; i < managerIds.length; i++) {
         url += '&managers[$i]=${managerIds[i]}';
       }
     }
-
-    final response = await _getRequest(url);
-    if (kDebugMode) {
-      print('Request URL: $url');
-      print('Response status: ${response.statusCode}');
+    if (leadIds != null && leadIds.isNotEmpty) {
+      for (int i = 0; i < leadIds.length; i++) {
+        url += '&leads[$i]=${leadIds[i]}';
+      }
+    }
+    if (fromDate != null) {
+      url += '&from=${fromDate.toIso8601String()}';
+    }
+    if (toDate != null) {
+      url += '&to=${toDate.toIso8601String()}';
+    }
+    if (status != null && status.isNotEmpty) {
+      url += '&status=$status';
+    }
+    if (paymentMethod != null && paymentMethod.isNotEmpty) {
+      url += '&payment_type=$paymentMethod';
     }
 
+    final response = await _getRequest(url);
     if (response.statusCode == 200) {
       final rawData = json.decode(response.body);
       final data = rawData['result'];
@@ -7476,13 +7547,9 @@ Future<List<Variant>> getVariants({
       throw Exception('Ошибка сервера!');
     }
   } catch (e) {
-    if (kDebugMode) {
-      print('Ошибка загрузки заказов: $e');
-    }
     throw e;
   }
 }
-
   //Метод для получение просмотра заказов
   Future<Order> getOrderDetails(int orderId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();

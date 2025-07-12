@@ -30,8 +30,9 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
 
   final List<String> paymentMethods = [
     AppLocalizations.of(context)!.translate('cash'),
-    AppLocalizations.of(context)!.translate('online'),
-    AppLocalizations.of(context)!.translate('card'),
+    AppLocalizations.of(context)!.translate('ALIF'),
+    AppLocalizations.of(context)!.translate('CLICK'),
+    AppLocalizations.of(context)!.translate('PAYME'),
   ];
 
     return Column(

@@ -225,55 +225,101 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
   }
 
   class Good {
-    final GoodItem good;
-    final GoodItem? variantGood;
-    final int goodId;
-    final String goodName;
-    final int quantity;
-    final double price;
+  final GoodItem good;
+  final GoodItem? variantGood;
+  final int goodId;
+  final String goodName;
+  final int quantity;
+  final double price;
 
-    Good({
-      required this.good,
-      this.variantGood,
-      required this.goodId,
-      required this.goodName,
-      required this.quantity,
-      required this.price,
-    });
+  Good({
+    required this.good,
+    this.variantGood,
+    required this.goodId,
+    required this.goodName,
+    required this.quantity,
+    required this.price,
+  });
 
-    factory Good.fromJson(Map<String, dynamic> json) {
-      // Парсим good
-      final goodItem = GoodItem.fromJson(json['good'] ?? {});
-      
-      // Парсим variant.good, если variant существует
-      final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
-          ? GoodItem.fromJson(json['variant']['good'])
-          : null;
-
-      return Good(
-        good: goodItem,
-        variantGood: variantGoodItem,
-        goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
-        goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
-        quantity: json['quantity'] ?? 0,
-        price: double.tryParse(
-                json['variant']?['price']?['price']?.toString() ??
-                    json['good']?['good_price']?['price']?.toString() ??
-                    '0') ??
-            0.0,
-      );
+  // НОВЫЙ МЕТОД для получения корректного ID товара
+  int getCorrectGoodId() {
+    // Если good.id не равен 0, используем его
+    if (good.id != 0) {
+      return good.id;
     }
-
-    Map<String, dynamic> toJson() {
-      return {
-        'good_id': goodId,
-        'good_name': goodName,
-        'quantity': quantity,
-        'price': price,
-      };
+    
+    // Если good.id равен 0, но есть variantGood, используем его ID
+    if (variantGood != null && variantGood!.id != 0) {
+      return variantGood!.id;
     }
+    
+    // В крайнем случае используем goodId
+    return goodId;
   }
 
+  // НОВЫЙ МЕТОД для получения корректного названия товара
+  String getCorrectGoodName() {
+    // Если есть variantGood, используем его название
+    if (variantGood != null && variantGood!.name.isNotEmpty) {
+      return variantGood!.name;
+    }
+    
+    // Если нет variantGood, используем название основного товара
+    if (good.name.isNotEmpty) {
+      return good.name;
+    }
+    
+    // В крайнем случае используем goodName
+    return goodName;
+  }
+
+  // НОВЫЙ МЕТОД для получения корректных файлов
+  List<GoodFile> getCorrectFiles() {
+    // Сначала проверяем файлы основного товара
+    if (good.files.isNotEmpty) {
+      return good.files;
+    }
+    
+    // Если файлов нет в основном товаре, проверяем варианты
+    if (variantGood != null && variantGood!.files.isNotEmpty) {
+      return variantGood!.files;
+    }
+    
+    // Возвращаем пустой список, если файлов нет
+    return [];
+  }
+
+  factory Good.fromJson(Map<String, dynamic> json) {
+    // Парсим good
+    final goodItem = GoodItem.fromJson(json['good'] ?? {});
+    
+    // Парсим variant.good, если variant существует
+    final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
+        ? GoodItem.fromJson(json['variant']['good'])
+        : null;
+
+    return Good(
+      good: goodItem,
+      variantGood: variantGoodItem,
+      goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
+      goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
+      quantity: json['quantity'] ?? 0,
+      price: double.tryParse(
+              json['variant']?['price']?['price']?.toString() ??
+                  json['good']?['good_price']?['price']?.toString() ??
+                  '0') ??
+          0.0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'good_id': goodId,
+      'good_name': goodName,
+      'quantity': quantity,
+      'price': price,
+    };
+  }
+}
   class GoodItem {
     final int id;
     final String name;

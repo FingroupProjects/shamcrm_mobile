@@ -248,110 +248,100 @@ class _GoodsCardState extends State<GoodsCard> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final mainImage = _getMainImage();
-    return GestureDetector(
-      onTap: _navigateToGoodsDetails,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.goodsName,
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow.ellipsis,
+Widget build(BuildContext context) {
+  final mainImage = _getMainImage();
+  return GestureDetector(
+    onTap: _navigateToGoodsDetails,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.goodsName,
+                      style: TaskCardStyles.titleStyle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (widget.isNew || widget.isPopular || widget.isSale)
+                      Wrap(
+                        spacing: 0,
+                        runSpacing: 4,
+                        children: _buildLabels(),
                       ),
-                      const SizedBox(height: 4),
-                      if (widget.isNew || widget.isPopular || widget.isSale)
-                        Wrap(
-                          spacing: 0,
-                          runSpacing: 4,
-                          children: _buildLabels(),
-                        ),
-                      const SizedBox(height: 4),
-                      RichText(
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        text: widget.goodsDescription != 'null'
-                            ? TextSpan(
-                                text: widget.goodsDescription,
-                                style: TaskCardStyles.priorityStyle.copyWith(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                children: const <TextSpan>[
-                                  TextSpan(
-                                    text: '\n\u200B',
-                                    style: TaskCardStyles.priorityStyle,
-                                  ),
-                                ],
-                              )
-                            : const TextSpan(
-                                text: '\n\u200B',
-                                style: TaskCardStyles.priorityStyle,
-                              ),
-                      ),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: AppLocalizations.of(context)!
-                                  .translate('subcategory_card'),
+                    const SizedBox(height: 4),
+                    RichText(
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      text: widget.goodsDescription != 'null'
+                          ? TextSpan(
+                              text: widget.goodsDescription,
                               style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff99A4BA),
-                                fontSize: 14,
-                              ),
-                            ),
-                            TextSpan(
-                              text: widget.goodsCategory,
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                fontSize: 14,
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
-                                fontWeight: FontWeight.w600,
                               ),
+                              children: const <TextSpan>[
+                                TextSpan(
+                                  text: '\n\u200B',
+                                  style: TaskCardStyles.priorityStyle,
+                                ),
+                              ],
+                            )
+                          : const TextSpan(
+                              text: '\n\u200B',
+                              style: TaskCardStyles.priorityStyle,
                             ),
-                          ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('subcategory_card')}: ${widget.goodsCategory}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        fontSize: 14,
+                        color: Color(0xff1E2E52),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    _buildStatusLabel(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 100,
+                height: 100,
+                child: mainImage != null
+                    ? _buildImageWidget(mainImage)
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 40,
+                          color: Color(0xff99A4BA),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      _buildStatusLabel(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  width: 100,
-                  height: 100,
-                  child: mainImage != null
-                      ? _buildImageWidget(mainImage)
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

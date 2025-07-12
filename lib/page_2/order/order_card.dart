@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderCard extends StatefulWidget {
   final Order order;
@@ -28,7 +29,6 @@ class OrderCard extends StatefulWidget {
   @override
   _OrderCardState createState() => _OrderCardState();
 }
-
 class PaymentTypeStyle {
   final Widget content;
   final Color backgroundColor;
@@ -62,9 +62,9 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
     case 'alif':
       return PaymentTypeStyle(
         content: Transform.translate(
-          offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          offset: const Offset(0.0, 0),
           child: Transform.scale(
-            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleY: 1.2,
             scaleX: 1.2,
             child: Image.asset(
               'assets/icons/alif.png',
@@ -89,9 +89,9 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
     case 'click':
       return PaymentTypeStyle(
         content: Transform.translate(
-          offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          offset: const Offset(0.0, 0),
           child: Transform.scale(
-            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleY: 1.2,
             scaleX: 1.2,
             child: Image.asset(
               'assets/icons/click3.png',
@@ -116,9 +116,9 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
     case 'payme':
       return PaymentTypeStyle(
         content: Transform.translate(
-       offset: const Offset(0.0, 0), // Сдвиг влево на 8 пикселей
+          offset: const Offset(0.0, 0),
           child: Transform.scale(
-            scaleY: 1.2, // Увеличиваем высоту на 20%
+            scaleY: 1.2,
             scaleX: 1.2,
             child: Image.asset(
               'assets/icons/payme.png',
@@ -158,16 +158,24 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
       );
   }
 }
-
 class _OrderCardState extends State<OrderCard> {
   late String dropdownValue;
   late int statusId;
+  int? currencyId;
 
   @override
   void initState() {
     super.initState();
     statusId = widget.order.orderStatus.id;
     dropdownValue = widget.order.orderStatus.name;
+    _loadCurrencyId();
+  }
+
+  Future<void> _loadCurrencyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currencyId = prefs.getInt('currency_id') ?? 0;
+    });
   }
 
   Color _getStatusTextColor(int statusId) {
@@ -187,8 +195,25 @@ class _OrderCardState extends State<OrderCard> {
   }
 
   String _formatSum(double? sum) {
-    if (sum == null) return '0 сом';
-    return NumberFormat('#,##0 сом', 'ru_RU').format(sum);
+    if (sum == null) sum = 0;
+    String symbol = '₽';
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+    }
+    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
   @override
@@ -225,7 +250,7 @@ Widget build(BuildContext context) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Номер заказа и дата
+          // Номер заказа и дата с иконкой статуса платежа
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -240,16 +265,21 @@ Widget build(BuildContext context) {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              Text(
-                'Создан: ${_formatDate(widget.order.createdAt)}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Text(
+                    'Создан: ${_formatDate(widget.order.createdAt)}',
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  getPaymentStatusStyle(widget.order.paymentStatus, context).content,
+                ],
               ),
             ],
           ),
@@ -328,69 +358,54 @@ Widget build(BuildContext context) {
             ],
           ),
           const SizedBox(height: 18),
-// Способ оплаты, статус платежа и менеджер
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.3 - 8, // 30% ширины минус отступы
-      ),
-      child: IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
-            borderRadius: BorderRadius.circular(4),
+          // Способ оплаты и менеджер
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.45 - 8,
+                ),
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
+                  ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.45 - 8,
+                ),
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE9EDF5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      widget.order.manager?.name ?? 'Система',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
-        ),
-      ),
-    ),
-    ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.3 - 8, // 30% ширины минус отступы
-      ),
-      child: IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: getPaymentStatusStyle(widget.order.paymentStatus, context).backgroundColor,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
-        ),
-      ),
-    ),
-    ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.4 - 8, // 40% ширины минус отступы
-      ),
-      child: IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE9EDF5),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            widget.order.manager?.name ?? 'Система',
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff99A4BA),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
-    ),
-  ],
-),
           const SizedBox(height: 18),
-          // Клиент и номер лида
+          // Клиент и номер телефона
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -422,14 +437,14 @@ Row(
                 widget.order.phone.isNotEmpty
                     ? widget.order.phone
                     : AppLocalizations.of(context)!.translate('no_phone'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

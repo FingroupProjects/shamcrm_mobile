@@ -88,7 +88,7 @@ class MessageBubble extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                         color: Colors.black87,
                       ),
-                      maxLines: 3,
+                      maxLines: 2222,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -269,7 +269,7 @@ class MessageBubble extends StatelessWidget {
               : ChatSmsStyles.receiverMessageTextStyle,
           children: spans,
         ),
-        maxLines: 3,
+        maxLines: 99999999999999999,
         overflow: TextOverflow.ellipsis,
       );
     }

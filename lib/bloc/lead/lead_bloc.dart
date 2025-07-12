@@ -326,6 +326,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
       if (event.email != null) 'email': event.email,
       if (event.description != null) 'description': event.description,
       if (event.waPhone != null) 'wa_phone': event.waPhone,
+      if (event.priceTypeId != null) 'price_type_id': event.priceTypeId, // Добавляем price_type_id
       'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
       'existing_file_ids': event.existingFiles.map((file) => file.id).toList(),

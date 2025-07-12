@@ -59,10 +59,10 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('goods_price_details'),
         'value': variant.variantPrice?.price.toString() ?? '0',
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('start_date'),
-        'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate('not_specified'),
-      },
+      // {
+      //   'label': AppLocalizations.of(context)!.translate('start_date'),
+      //   'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate('not_specified'),
+      // },
       {
         'label': AppLocalizations.of(context)!.translate('status_lead_profile'),
         'value': variant.isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),

@@ -113,13 +113,15 @@ class _HomeScreenState extends State<HomeScreen> {
     // hasAvailableScreens = true;
 
     // Категории 
+    if (await _apiService.hasPermission('product.read')) {
     widgetsGroup2.add(CategoryScreen());
     titleKeysGroup2.add('appbar_categories');
     navBarTitleKeysGroup2.add('appbar_categories');
     activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
     inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
     hasAvailableScreens = true;
-
+    }
+    if (await _apiService.hasPermission('product.read')) {
     // Товары
     widgetsGroup2.add(GoodsScreen());
     titleKeysGroup2.add('appbar_goods');
@@ -127,32 +129,40 @@ class _HomeScreenState extends State<HomeScreen> {
     activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
     inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
     hasAvailableScreens = true;
-
+    }
     // Заказы
+    if (await _apiService.hasPermission('order.read')) {
     widgetsGroup2.add(OrderScreen());
     titleKeysGroup2.add('appbar_orders');
     navBarTitleKeysGroup2.add('appbar_orders');
     activeIconsGroup2.add('assets/icons/MyNavBar/order_off_2.png');
     inactiveIconsGroup2.add('assets/icons/MyNavBar/order_on_2.png');
     hasAvailableScreens = true;
-
+    }
     if (mounted) {
-      setState(() {
-        _widgetOptionsGroup1 = widgetsGroup1;
-        _widgetOptionsGroup2 = widgetsGroup2;
-        _titleKeysGroup1 = titleKeysGroup1;
-        _titleKeysGroup2 = titleKeysGroup2;
-        _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
-        _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
-        _activeIconsGroup1 = activeIconsGroup1;
-        _activeIconsGroup2 = activeIconsGroup2;
-        _inactiveIconsGroup1 = inactiveIconsGroup1;
-        _inactiveIconsGroup2 = inactiveIconsGroup2;
-      });
+    setState(() {
+      _widgetOptionsGroup1 = widgetsGroup1;
+      _widgetOptionsGroup2 = widgetsGroup2;
+      _titleKeysGroup1 = titleKeysGroup1;
+      _titleKeysGroup2 = titleKeysGroup2;
+      _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
+      _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
+      _activeIconsGroup1 = activeIconsGroup1;
+      _activeIconsGroup2 = activeIconsGroup2;
+      _inactiveIconsGroup1 = inactiveIconsGroup1;
+      _inactiveIconsGroup2 = inactiveIconsGroup2;
+      
+      // Если текущий пользователь находится во второй группе, но она пуста,
+      // переключаем на первую группу
+      if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+        _selectedIndexGroup1 = 0;
+        _selectedIndexGroup2 = -1;
+      }
+    });
     }
 
   }
-@override
+  @override
 void didChangeDependencies() {
   super.didChangeDependencies();
   final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -163,8 +173,15 @@ void didChangeDependencies() {
         _selectedIndexGroup1 = args['screenIndex'] ?? 0;
         _selectedIndexGroup2 = -1;
       } else if (args['group'] == 2) {
-        _selectedIndexGroup2 = args['screenIndex'] ?? 0;
-        _selectedIndexGroup1 = -1;
+        // Проверяем, есть ли элементы во второй группе
+        if (_widgetOptionsGroup2.isNotEmpty) {
+          _selectedIndexGroup2 = args['screenIndex'] ?? 0;
+          _selectedIndexGroup1 = -1;
+        } else {
+          // Если нет элементов во второй группе, переключаемся на первую
+          _selectedIndexGroup1 = 0;
+          _selectedIndexGroup2 = -1;
+        }
       }
       _isPushHandled = true;
     });

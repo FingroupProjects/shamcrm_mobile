@@ -51,44 +51,46 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   List<Branch> branches = [];
 
   @override
-  void initState() {
-    super.initState();
-    _phoneController = TextEditingController();
-    _commentController = TextEditingController(text: widget.order.commentToCourier);
-    _items = widget.order.goods.map((good) {
-      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
-          ? good.variantGood!.files[0].path
-          : null;
-      return {
-        'id': good.goodId,
-        'name': good.goodName,
-        'price': good.price,
-        'quantity': good.quantity,
-        'imagePath': imagePath,
-      };
-    }).toList();
-    selectedLead = widget.order.lead.id.toString();
-    selectedManager = widget.order.manager?.id.toString(); // Инициализация менеджера
-    _selectedDeliveryAddress = widget.order.deliveryAddress != null
-        ? DeliveryAddress(
-            id: widget.order.deliveryAddressId ?? 0,
-            address: widget.order.deliveryAddress ?? '',
-            leadId: widget.order.lead.id,
-            isActive: 0,
-            createdAt: '',
-            updatedAt: '',
-          )
+void initState() {
+  super.initState();
+  _phoneController = TextEditingController();
+  _commentController = TextEditingController(text: widget.order.commentToCourier);
+  _items = widget.order.goods.map((good) {
+    final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
+        ? good.variantGood!.files[0].path
         : null;
+    return {
+      'id': good.goodId,
+      'name': good.goodName,
+      'price': good.price,
+      'quantity': good.quantity,
+      'imagePath': imagePath,
+    };
+  }).toList();
+  selectedLead = widget.order.lead.id.toString();
+  selectedManager = widget.order.manager?.id.toString();
+  _selectedDeliveryAddress = widget.order.deliveryAddress != null
+      ? DeliveryAddress(
+          id: widget.order.deliveryAddressId ?? 0,
+          address: widget.order.deliveryAddress ?? '',
+          leadId: widget.order.lead.id,
+          isActive: 0,
+          createdAt: '',
+          updatedAt: '',
+        )
+      : null;
 
-    if (widget.order.branchId != null && widget.order.branchName != null) {
-      _selectedBranch = Branch(
-        id: widget.order.branchId!,
-        name: widget.order.branchName!,
-        address: '',
-      );
-    }
+  if (widget.order.branchId != null && widget.order.branchName != null) {
+    _selectedBranch = Branch(
+      id: widget.order.branchId!,
+      name: widget.order.branchName!,
+      address: '',
+    );
+  }
 
-    String phoneText = widget.order.phone;
+  String phoneText = widget.order.phone;
+  // Проверяем, является ли номер телефона валидным (только цифры и минимум 2 символа)
+  if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
     for (var country in countries) {
       if (phoneText.startsWith(country.dialCode)) {
         selectedDialCode = country.dialCode;
@@ -96,18 +98,20 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         break;
       }
     }
-    if (selectedDialCode == null) {
-      selectedDialCode = '+992';
-      _phoneController.text = phoneText;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeBaseUrl();
-      context.read<BranchBloc>().add(FetchBranches());
-      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
-      context.read<GetAllManagerBloc>().add(GetAllManagerEv()); // Загружаем менеджеров
-    });
   }
+  // Если номер некорректный, устанавливаем значение по умолчанию
+  if (selectedDialCode == null) {
+    selectedDialCode = '+992';
+    _phoneController.text = phoneText;
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initializeBaseUrl();
+    context.read<BranchBloc>().add(FetchBranches());
+    context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  });
+}
 
   @override
   void didChangeDependencies() {

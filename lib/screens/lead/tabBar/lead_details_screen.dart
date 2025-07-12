@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -195,25 +194,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
 
- @override
-void initState() {
-  super.initState();
-  _scrollController = ScrollController();
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
 
-  _checkPermissions().then((_) {
-    context.read<OrganizationBloc>().add(FetchOrganizations());
-    _loadSelectedOrganization();
-    context
-        .read<LeadByIdBloc>()
-        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-    if (_canReadOrders) {
-      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
-    }
-    _loadContactsToCache();
-  });
-  _fetchTutorialProgress();
-  _listenToPrefsChanges();
-}
+    _checkPermissions().then((_) {
+      context.read<OrganizationBloc>().add(FetchOrganizations());
+      _loadSelectedOrganization();
+      context
+          .read<LeadByIdBloc>()
+          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+      if (_canReadOrders) {
+        context
+            .read<OrderByLeadBloc>()
+            .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+      }
+      _loadContactsToCache();
+    });
+    _fetchTutorialProgress();
+    _listenToPrefsChanges();
+  }
 
   Future<void> _loadContactsToCache() async {
     try {
@@ -504,6 +505,7 @@ void initState() {
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
+    final canReadOrder = await _apiService.hasPermission('order.read');
 
     setState(() {
       _canEditLead = canEdit;
@@ -511,6 +513,7 @@ void initState() {
       _canReadNotes = canReadNotes;
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
+      _canReadOrders = canReadOrder;
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
   }
@@ -538,7 +541,6 @@ void initState() {
         'label': '${AppLocalizations.of(context)!.translate('region_details')}',
         'value': lead.region?.name ?? ''
       },
-      
       {
         'label': '${AppLocalizations.of(context)!.translate('source_details')}',
         'value': lead.source?.name ?? ''
@@ -547,16 +549,20 @@ void initState() {
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      
       {
         'label': '${AppLocalizations.of(context)!.translate('email_details')}',
         'value': lead.email ?? ''
       },
-      {
-        'label':
-            '${AppLocalizations.of(context)!.translate('birthday_details')}',
-        'value': formatDate(lead.birthday)
-      },
+      if (lead.phone_verified_at != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+          'value': formatDate(lead.birthday)
+        },
+      if (lead.phone_verified_at != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+          'value': lead.priceType?.name ?? ''
+        },
       {
         'label':
             '${AppLocalizations.of(context)!.translate('description_details_lead')}',
@@ -616,120 +622,125 @@ void initState() {
     );
   }
 
- @override
-Widget build(BuildContext context) {
-  if (!_isTutorialShown) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showTutorial();
-      setState(() {
-        _isTutorialShown = true;
+  @override
+  Widget build(BuildContext context) {
+    if (!_isTutorialShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
+        setState(() {
+          _isTutorialShown = true;
+        });
       });
-    });
-  }
-  return MultiBlocProvider(
-    providers: [
-      BlocProvider<OrderByLeadBloc>(
-        create: (context) => OrderByLeadBloc(context.read<ApiService>()),
-      ),
-    ],
-    child: Scaffold(
-      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_lead')),
-      backgroundColor: Colors.white,
-      body: BlocListener<LeadByIdBloc, LeadByIdState>(
-        listener: (context, state) {
-          if (state is LeadByIdError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showCustomSnackBar(
-                context: context,
-                message: AppLocalizations.of(context)!.translate(state.message),
-                isSuccess: false,
-              );
-            });
-          }
-        },
-        child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-          builder: (context, state) {
-            if (state is LeadByIdLoading) {
-              return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-            } else if (state is LeadByIdLoaded) {
-              LeadById lead = state.lead;
-              _updateDetails(lead);
-              print('LeadDetailsScreen: Lead chats: ${lead.chats}');
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListView(
-                  controller: _scrollController,
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 8),
-                    LeadNavigateToChat(
-                      key: keyLeadNavigateChat,
-                      leadId: int.parse(widget.leadId),
-                      leadName: widget.leadName,
-                      chats: state.lead.chats
-                          .map((chat) => {
-                                'id': chat.id,
-                                'integration': chat.integration != null
-                                    ? {
-                                        'id': chat.integration!.id,
-                                        'name': chat.integration!.name,
-                                        'username': chat.integration!.username,
-                                      }
-                                    : null,
-                              })
-                          .toList(),
-                    ),
-                    const SizedBox(height: 8),
-                    if (selectedOrganization != null)
-                      LeadToC(
-                        leadId: int.parse(widget.leadId),
-                        selectedOrganization: selectedOrganization!,
-                      ),
-                    const SizedBox(height: 8),
-                    ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                    const SizedBox(height: 8),
-                    if (_canReadNotes)
-                      NotesWidget(
-                        leadId: int.parse(widget.leadId),
-                        key: keyLeadNotice,
-                        managerId: lead.manager?.id,
-                      ),
-                    if (_canReadDeal)
-                      DealsWidget(
-                          leadId: int.parse(widget.leadId), key: keyLeadDeal,),
-                          if (_canReadOrders) // Добавляем проверку прав
-    OrdersWidget(
-      leadId: int.parse(widget.leadId),
-      key: GlobalKey(),
-    ),
-                    ContactPersonWidget(
-                        leadId: int.parse(widget.leadId),
-                        key: keyLeadContactPerson),
-                  ],
-                ),
-              );
-            } else if (state is LeadByIdError) {
-              return Center(
-                child: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-              );
+    }
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<OrderByLeadBloc>(
+          create: (context) => OrderByLeadBloc(context.read<ApiService>()),
+        ),
+      ],
+      child: Scaffold(
+        appBar: _buildAppBar(
+            context, AppLocalizations.of(context)!.translate('view_lead')),
+        backgroundColor: Colors.white,
+        body: BlocListener<LeadByIdBloc, LeadByIdState>(
+          listener: (context, state) {
+            if (state is LeadByIdError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
+                  isSuccess: false,
+                );
+              });
             }
-            return Center(child: Text(''));
-         },
+          },
+          child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+            builder: (context, state) {
+              if (state is LeadByIdLoading) {
+                return Center(
+                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              } else if (state is LeadByIdLoaded) {
+                LeadById lead = state.lead;
+                _updateDetails(lead);
+                print('LeadDetailsScreen: Lead chats: ${lead.chats}');
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListView(
+                    controller: _scrollController,
+                    children: [
+                      _buildDetailsList(),
+                      const SizedBox(height: 8),
+                      LeadNavigateToChat(
+                        key: keyLeadNavigateChat,
+                        leadId: int.parse(widget.leadId),
+                        leadName: widget.leadName,
+                        chats: state.lead.chats
+                            .map((chat) => {
+                                  'id': chat.id,
+                                  'integration': chat.integration != null
+                                      ? {
+                                          'id': chat.integration!.id,
+                                          'name': chat.integration!.name,
+                                          'username':
+                                              chat.integration!.username,
+                                        }
+                                      : null,
+                                })
+                            .toList(),
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedOrganization != null)
+                        LeadToC(
+                          leadId: int.parse(widget.leadId),
+                          selectedOrganization: selectedOrganization!,
+                        ),
+                      const SizedBox(height: 8),
+                      ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 8),
+                      if (_canReadNotes)
+                        NotesWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadNotice,
+                          managerId: lead.manager?.id,
+                        ),
+                      if (_canReadDeal)
+                        DealsWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadDeal,
+                        ),
+                      if (_canReadOrders)
+                        OrdersWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: GlobalKey(),
+                        ),
+                      ContactPersonWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadContactPerson),
+                    ],
+                  ),
+                );
+              } else if (state is LeadByIdError) {
+                return Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                );
+              }
+              return Center(child: Text(''));
+            },
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -838,8 +849,11 @@ Widget build(BuildContext context) {
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
                             directoryValues: currentLead!.directoryValues,
-                            files:
-                                currentLead!.files, // Ensure files are passed
+                            files: currentLead!.files,
+                            // phoneVerifiedAt: currentLead!.phone_verified_at,
+                            // verificationCode: currentLead!.verification_code,
+                            priceTypeId: currentLead!.priceType?.id.toString(),
+                            priceTypeName: currentLead!.priceType?.name,
                           ),
                         ),
                       );
@@ -876,19 +890,37 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildDetailsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: details.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            details[index]['label']!,
-            details[index]['value']!,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (currentLead?.verification_code != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Код верификации: ${currentLead!.verification_code}',
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF3935e7),
+              ),
+            ),
           ),
-        );
-      },
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: details.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -987,19 +1019,69 @@ Widget build(BuildContext context) {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(
-                          AppLocalizations.of(context)!.translate('lead')) ||
-                      label.contains(AppLocalizations.of(context)!
-                          .translate('description_details_lead')))
-                  ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value, label),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label == AppLocalizations.of(context)!.translate('lead_name'))
+                    Row(
+                      children: [
+                        _buildExpandableText(
+                            label, value, constraints.maxWidth * 0.7),
+                        if (currentLead?.phone_verified_at != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Image.asset(
+                              'assets/icons/badge.png',
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    Expanded(
+                      child: (label.contains(
+                                  AppLocalizations.of(context)!
+                                      .translate('lead')) ||
+                              label.contains(AppLocalizations.of(context)!
+                                  .translate('description_details_lead')))
+                          ? _buildExpandableText(
+                              label, value, constraints.maxWidth)
+                          : _buildValue(value, label),
+                    ),
+                  if (label == AppLocalizations.of(context)!.translate('phone_use') &&
+                      _canExportContact &&
+                      _isExportContactEnabled)
+                    _isLoadingContacts
+                        ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF1E2E52),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : !_isPhoneInContacts(value)
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: GestureDetector(
+                                  onTap: () => _addContact(widget.leadName, value),
+                                  child: Icon(
+                                    Icons.contacts,
+                                    size: 24,
+                                    color: Color(0xFF1E2E52),
+                                  ),
+                                ),
+                              )
+                            : Container(),
+                ],
+              ),
             ),
           ],
         );
       },
     );
   }
-
 
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
@@ -1046,26 +1128,6 @@ Widget build(BuildContext context) {
               ),
             ),
           ),
-          if (_canExportContact && _isExportContactEnabled)
-            _isLoadingContacts
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF1E2E52),
-                      strokeWidth: 2,
-                    ),
-                  )
-                : !_isPhoneInContacts(value)
-                    ? GestureDetector(
-                        onTap: () => _addContact(widget.leadName, value),
-                        child: Icon(
-                          Icons.contacts,
-                          size: 24,
-                          color: Color(0xFF1E2E52),
-                        ),
-                      )
-                    : Container(),
         ],
       );
     }
@@ -1305,7 +1367,7 @@ Widget build(BuildContext context) {
                     buttonText: AppLocalizations.of(context)!.translate('yes'),
                     onPressed: () {
                       Navigator.of(context).pop(true);
-                    },  
+                    },
                     buttonColor: Color(0xFF1E2E52),
                     textColor: Colors.white,
                   ),
@@ -1357,8 +1419,7 @@ Widget build(BuildContext context) {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles:
-            currentLead!.files ?? [], // Change `existingFiles` to `files ?? []`
+        existingFiles: currentLead!.files ?? [],
       ));
 
       await completer.future;
