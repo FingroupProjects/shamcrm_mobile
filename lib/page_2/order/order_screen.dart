@@ -44,8 +44,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
   bool _canCreateOrderStatus = false;
   final ApiService _apiService = ApiService();
   late OrderBloc _orderBloc;
-  bool _showCustomTabBar = true; // Новая переменная для управления вкладками
-  
+  bool _showCustomTabBar = true;
 
   @override
   void initState() {
@@ -273,24 +272,24 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
                 }
               }
             },
-           clearButtonClickFiltr: (value) {
-  setState(() {
-    _currentFilters = {};
-    _showCustomTabBar = true;
-    _isSearching = false;
-    _searchController.clear();
-  });
-  _orderBloc.add(FetchOrderStatuses());
-},
-onGoodsResetFilters: () {
-  setState(() {
-    _currentFilters = {};
-    _showCustomTabBar = true;
-    _isSearching = false;
-    _searchController.clear();
-  });
-  _orderBloc.add(FetchOrderStatuses());
-},
+            clearButtonClickFiltr: (value) {
+              setState(() {
+                _currentFilters = {};
+                _showCustomTabBar = true;
+                _isSearching = false;
+                _searchController.clear();
+              });
+              _orderBloc.add(FetchOrderStatuses());
+            },
+            onGoodsResetFilters: () {
+              setState(() {
+                _currentFilters = {};
+                _showCustomTabBar = true;
+                _isSearching = false;
+                _searchController.clear();
+              });
+              _orderBloc.add(FetchOrderStatuses());
+            },
             currentFilters: _currentFilters,
             onFilterGoodsSelected: (filters) {
               setState(() {
@@ -310,13 +309,6 @@ onGoodsResetFilters: () {
                 paymentMethod: filters['paymentMethod'],
               ));
             },
-            // onGoodsResetFilters: () {
-            //   setState(() {
-            //     _currentFilters = {};
-            //     _showCustomTabBar = true;
-            //   });
-            //   _orderBloc.add(FetchOrderStatuses());
-            // },
           ),
         ),
         body: isClickAvatarIcon
@@ -374,6 +366,12 @@ onGoodsResetFilters: () {
                         _isInitialLoad = false;
                         _scrollToActiveTab();
                       }
+                    }
+                    // Устанавливаем _isInitialLoad в false после первой загрузки
+                    if (_isInitialLoad) {
+                      setState(() {
+                        _isInitialLoad = false;
+                      });
                     }
                   } else if (state is OrderStatusCreated) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -446,11 +444,18 @@ onGoodsResetFilters: () {
                         duration: const Duration(seconds: 3),
                       ),
                     );
+                    // Устанавливаем _isInitialLoad в false при ошибке, чтобы не показывать загрузку бесконечно
+                    if (_isInitialLoad) {
+                      setState(() {
+                        _isInitialLoad = false;
+                      });
+                    }
                   }
                 },
                 child: BlocBuilder<OrderBloc, OrderState>(
                   builder: (context, state) {
-                    if (_statuses.isEmpty || state is OrderLoading) {
+                    // Показываем индикатор загрузки, если идет начальная загрузка
+                    if (_isInitialLoad || state is OrderLoading) {
                       return const Center(
                         child: PlayStoreImageLoading(
                           size: 80.0,
@@ -458,7 +463,21 @@ onGoodsResetFilters: () {
                         ),
                       );
                     }
-
+                    // Показываем сообщение, если статусы не загружены и список пуст
+                    if (_statuses.isEmpty && state is OrderLoaded) {
+                      return Center(
+                        child: Text(
+                          localizations!.translate('no_order_statuses'),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      );
+                    }
+                    // Основной контент, если есть статусы
                     return RefreshIndicator(
                       color: const Color(0xff1E2E52),
                       backgroundColor: Colors.white,
@@ -530,20 +549,20 @@ onGoodsResetFilters: () {
                       });
                       _tabController.animateTo(newTabIndex);
                       _scrollToActiveTab();
-                    }
-                    _orderBloc.add(FetchOrders(
-                      statusId: newStatusId,
-                      page: 1,
-                      perPage: 20,
-                      forceRefresh: true,
-                    ));
-                    if (newTabIndex != _currentTabIndex) {
                       _orderBloc.add(FetchOrders(
-                        statusId: _statuses[_currentTabIndex].id,
+                        statusId: newStatusId,
                         page: 1,
                         perPage: 20,
                         forceRefresh: true,
                       ));
+                      if (newTabIndex != _currentTabIndex) {
+                        _orderBloc.add(FetchOrders(
+                          statusId: _statuses[_currentTabIndex].id,
+                          page: 1,
+                          perPage: 20,
+                          forceRefresh: true,
+                        ));
+                      }
                     }
                   }
                 },
@@ -649,11 +668,9 @@ onGoodsResetFilters: () {
                 padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                 child: OrderCard(
                   order: order,
-                  // name: order.orderStatus.name,
-                  // statusId: order.orderStatus.id,
                   onStatusUpdated: () => _onStatusUpdated(order.orderStatus.id),
                   onStatusId: (newStatusId) => _onStatusUpdated(newStatusId),
-                   onTabChange: (int p1) {  },
+                  onTabChange: (int p1) {},
                 ),
               );
             },

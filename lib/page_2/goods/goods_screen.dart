@@ -247,14 +247,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         child: GoodsCard(
                           goodsId: goods.id,
                           goodsName: goods.name,
-                          isNew: goods.isNew,
-                          isPopular: goods.isPopular,
-                          isSale: goods.isSale,
                           goodsDescription: goods.description ?? "",
                           goodsCategory: goods.category.name,
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
                           isActive: goods.isActive,
+                          label: goods.label,
                         ),
                       );
                     },

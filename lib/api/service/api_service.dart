@@ -49,6 +49,7 @@ import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
@@ -7163,7 +7164,7 @@ Future<List<Variant>> getVariants({
   }
 }
 
- Future<Map<String, dynamic>> createGoods({
+Future<Map<String, dynamic>> createGoods({
   required String name,
   required int parentId,
   required String description,
@@ -7176,9 +7177,7 @@ Future<List<Variant>> getVariants({
   int? branch,
   double? price,
   int? mainImageIndex,
-  required bool isNew, // Added
-  required bool isPopular, // Added
-  required bool isSale, // Added
+  int? labelId, // Parameter for label ID
 }) async {
   try {
     final token = await getToken();
@@ -7197,9 +7196,11 @@ Future<List<Variant>> getVariants({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
-    request.fields['is_new'] = isNew ? '1' : '0'; // Add label fields
-    request.fields['is_popular'] = isPopular ? '1' : '0';
-    request.fields['is_sale'] = isSale ? '1' : '0';
+
+    // Pass the actual labelId if it exists
+    if (labelId != null) {
+      request.fields['label_id'] = labelId.toString();
+    }
 
     if (price != null) {
       request.fields['price'] = price.toString();
@@ -7266,11 +7267,11 @@ Future<List<Variant>> getVariants({
       };
     }
   } catch (e, stackTrace) {
-    //print('ApiService: Error in createGoods: ');
-    //print('ApiService: Stack trace: $stackTrace');
+    print('ApiService: Error in createGoods: $e');
+    print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
-      'message': 'Произошла ошибка: ',
+      'message': 'Произошла ошибка: $e',
     };
   }
 }
@@ -7290,9 +7291,7 @@ Future<List<Variant>> getVariants({
   int? branch,
   String? comments,
   int? mainImageIndex,
-  required bool isNew, // Added
-  required bool isPopular, // Added
-  required bool isSale, // Added
+int? labelId, // Добавляем параметр для ID метки
 }) async {
   try {
     final token = await getToken();
@@ -7318,9 +7317,9 @@ Future<List<Variant>> getVariants({
     request.fields['description'] = description;
     request.fields['quantity'] = quantity.toString();
     request.fields['is_active'] = isActive ? '1' : '0';
-    request.fields['is_new'] = isNew ? '1' : '0'; // Added
-    request.fields['is_popular'] = isPopular ? '1' : '0'; // Added
-    request.fields['is_sale'] = isSale ? '1' : '0'; // Added
+        request.fields['label_id'] = labelId != null ? labelId.toString() : ''; // Add label fields
+
+
     if (branch != null) {
       request.fields['branches[0][branch_id]'] = branch.toString();
       //print('ApiService: Added branch: $branch');
@@ -7445,6 +7444,27 @@ Future<List<Variant>> getVariants({
     } catch (e) {
       //print('Ошибка удаления товара: ');
       return false;
+    }
+  }
+
+  // Метод для получения меток
+  Future<List<Label>> getLabels() async {
+    final organizationId = await getSelectedOrganization();
+    final path = '/label?organization_id=$organizationId';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((label) => Label.fromJson(label))
+            .toList();
+      } else {
+        throw Exception('Ошибка: поле "result" отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки меток');
     }
   }
 
@@ -8032,6 +8052,8 @@ Future<Map<String, dynamic>> createOrder({
       throw ('Ошибка загрузки календаря!');
     }
   }
+
+
 
   //_________________________________ END_____API_SCREEN__ORDER____________________________________________//
 }

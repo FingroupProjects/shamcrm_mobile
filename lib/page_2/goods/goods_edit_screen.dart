@@ -8,7 +8,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -49,7 +49,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   List<Branch> branches = [];
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
-  List<String> selectedLabels = []; // Added for labels
+  String? selectlabel; // Используем для хранения ID метки
   bool isCategoryValid = true;
   bool isImagesValid = true;
   bool isLoading = false;
@@ -64,30 +64,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   @override
   void initState() {
     super.initState();
-    print(
-        'GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print(
-        'GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-              'id': variant.id,
-              'attributeValues': variant.attributeValues
-                  ?.map((attr) => {
-                        'categoryAttributeId': attr.categoryAttribute?.id,
-                        'attributeName':
-                            attr.categoryAttribute?.attribute?.name,
-                        'value': attr.value,
-                      })
-                  .toList(),
-              'price': variant.variantPrice?.price,
-              'files': variant.files?.map((file) => file.path).toList(),
-            }).toList()}');
-
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
   }
@@ -104,18 +80,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     stockQuantityController =
         TextEditingController(text: widget.goods.quantity?.toString() ?? '');
     commentsController.text = widget.goods.comments ?? '';
-
+    selectlabel = widget.goods.label?.toString(); // Инициализация selectlabel
     isActive = widget.goods.isActive ?? false;
     selectedBranch = null;
     _imagePaths =
         widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
     mainImageIndex = widget.initialMainImageIndex ?? 0;
-    // Initialize labels
-    if (widget.goods.isPopular) selectedLabels.add('hit');
-    if (widget.goods.isSale) selectedLabels.add('promotion');
-    if (widget.goods.isNew) selectedLabels.add('newest');
-    print(
-        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, comments: ${commentsController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -124,16 +94,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      print('GoodsEditScreen: Base URL initialized: $baseUrl');
     } catch (error) {
       baseUrl = 'https://shamcrm.com/storage/';
-      print('GoodsEditScreen: Fallback Base URL used: $baseUrl');
     }
   }
 
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);
-    print('GoodsEditScreen: Loading all data sequentially...');
     try {
       await _initializeBaseUrl();
       if (mounted && widget.sortedFiles.isNotEmpty) {
@@ -141,7 +108,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           _imagePaths = widget.sortedFiles
               .map((file) => '$baseUrl/${file.path}')
               .toList();
-          print('GoodsEditScreen: Initialized _imagePaths: $_imagePaths');
         });
       }
       await fetchSubCategories();
@@ -152,13 +118,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         selectedBranch = branches.firstWhere(
           (branch) => branch.id == goodsBranchId,
         );
-        print(
-            'GoodsEditScreen: Synchronized selectedBranch: ${selectedBranch?.name}');
       }
 
       _initializeFieldsWithData();
     } catch (e) {
-      print('GoodsEditScreen: Error loading all data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -169,7 +132,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
-        print('GoodsEditScreen: Finished loading data, isLoading: $isLoading');
       }
     }
   }
@@ -180,27 +142,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           branches = fetchedBranches;
-          print('GoodsEditScreen: Fetched branches: ${branches.map((branch) => {
-                'id': branch.id,
-                'name': branch.name
-              }).toList()}');
         });
       }
     } catch (e) {
-      print('GoodsEditScreen: Error fetching branches: $e');
       throw e;
     }
   }
 
   void _initializeFieldsWithData() {
-    print('GoodsEditScreen: Initializing fields with data...');
-    print(
-        'GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
-
     Map<String, Map<String, dynamic>> individualAttributesMap = {};
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
       for (var variant in widget.goods.variants!) {
-        print('GoodsEditScreen: Processing variant ID: ${variant.id}');
         if (variant.attributeValues != null) {
           for (var attrValue in variant.attributeValues!) {
             if (attrValue.categoryAttribute?.attribute != null &&
@@ -214,34 +166,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   'isIndividual': true,
                   'value': null,
                 };
-                print(
-                    'GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
-              } else {
-                print(
-                    'GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
               }
-            } else {
-              print(
-                  'GoodsEditScreen: Skipping attribute value - not individual or missing data: ${attrValue.toString()}');
             }
           }
-        } else {
-          print(
-              'GoodsEditScreen: Variant ID ${variant.id} has no attribute values');
         }
       }
-    } else {
-      print('GoodsEditScreen: No variants found in goods');
     }
 
     List<Map<String, dynamic>> individualAttributes =
         individualAttributesMap.values.toList();
-    print(
-        'GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
-              'id': attr['id'],
-              'name': attr['name'],
-              'isIndividual': attr['isIndividual']
-            }).toList()}');
 
     final allAttributes = [
       ...widget.goods.attributes
@@ -260,14 +193,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           )),
     ].toSet().toList();
 
-    print(
-        'GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-
     selectedCategory = subCatAttr.SubCategoryAttributesData(
       id: widget.goods.category.id,
       name: widget.goods.category.name,
@@ -282,40 +207,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               .any((attr) => attr['name'].toLowerCase() == 'price'),
     );
 
-    print(
-        'GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
-
     attributeControllers.clear();
     tableAttributes.clear();
-    print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
 
     for (var attribute
         in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
       attributeControllers[attribute.name] =
           TextEditingController(text: attribute.value ?? '');
-      print(
-          'GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
     }
 
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-      print('GoodsEditScreen: Processing variants to build tableAttributes...');
       for (var variant in widget.goods.variants!) {
-        print('GoodsEditScreen: Processing variant ID ${variant.id}');
-        print(
-            'GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
-                  'categoryAttributeId': attr.categoryAttribute?.id,
-                  'attributeName': attr.categoryAttribute?.attribute?.name,
-                  'value': attr.value,
-                  'id': attr.id,
-                }).toList()}');
-
         Map<String, dynamic> newRow = {
           'id': variant.id,
           'attribute_ids': {},
@@ -324,14 +226,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
         var individualAttrs =
             selectedCategory!.attributes.where((a) => a.isIndividual).toList();
-        if (individualAttrs.isEmpty) {
-          print(
-              'GoodsEditScreen: No individual attributes found in selected category');
-        }
         for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
-          print(
-              'GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
         }
 
         if (variant.attributeValues != null &&
@@ -343,64 +239,26 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 newRow[attrName].text = attrValue.value ?? '';
                 if (attrValue.id != 0) {
                   newRow['attribute_ids'][attrName] = attrValue.id;
-                  print(
-                      'GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}, id: ${attrValue.id}');
-                } else {
-                  print(
-                      'GoodsEditScreen: Attribute $attrName has id 0, skipping id assignment');
                 }
-              } else {
-                print(
-                    'GoodsEditScreen: Attribute $attrName not found in newRow');
               }
-            } else {
-              print(
-                  'GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
             }
           }
-        } else {
-          print(
-              'GoodsEditScreen: No attribute values for variant ID ${variant.id}');
         }
 
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
             text: variant.variantPrice?.price?.toString() ?? '0.0',
           );
-          print(
-              'GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
         }
 
         newRow['images'] =
             variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
                 [];
-        print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
-
         tableAttributes.add(newRow);
-        print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
       }
     } else {
-      print('GoodsEditScreen: No variants found, adding empty row');
       addTableRow();
     }
-
-    print(
-        'GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-              'id': row['id'],
-              'attributes': row.keys
-                  .where((key) =>
-                      key != 'images' &&
-                      key != 'price' &&
-                      key != 'id' &&
-                      key != 'attribute_ids' &&
-                      key != 'is_active')
-                  .map((key) => {key: row[key].text})
-                  .toList(),
-              'attribute_ids': row['attribute_ids'],
-              'price': row['price']?.text,
-              'images': row['images'],
-              'is_active': row['is_active'],
-            }).toList()}');
   }
 
   Future<void> fetchSubCategories() async {
@@ -409,15 +267,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print(
-              'GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
-                    'id': cat.id,
-                    'name': cat.name
-                  }).toList()}');
         });
       }
     } catch (e) {
-      print('GoodsEditScreen: Error fetching subcategories: $e');
       throw e;
     }
   }
@@ -429,16 +281,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       isBranchValid = selectedBranch != null;
       if (_imagePaths.isNotEmpty && mainImageIndex == null) {
         isImagesValid = false;
-        print('GoodsEditScreen: Validation failed - mainImageIndex is null');
       }
-      print(
-          'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid, isBranchValid: $isBranchValid');
     });
   }
 
   void addTableRow({List<String>? images}) {
     if (selectedCategory == null) {
-      print('GoodsEditScreen: Cannot add table row - selectedCategory is null');
       return;
     }
     setState(() {
@@ -449,29 +297,22 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       for (var attr
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
-        print(
-            'GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
       }
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
-        print('GoodsEditScreen: Added empty price controller');
       }
       newRow['images'] = images ?? [];
       tableAttributes.add(newRow);
-      print('GoodsEditScreen: Added new empty row to tableAttributes: $newRow');
     });
   }
 
   void removeTableRow(int index) {
     setState(() {
-      print('GoodsEditScreen: Removing table row at index $index');
       tableAttributes.removeAt(index);
-      print('GoodsEditScreen: Updated tableAttributes: $tableAttributes');
     });
   }
 
   void _showImageListPopup(List<String> images) {
-    print('GoodsEditScreen: Showing image list popup with images: $images');
     showDialog(
       context: context,
       builder: (context) => ImageListPopup(imagePaths: images),
@@ -479,7 +320,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _showImagePickerOptions() async {
-    print('GoodsEditScreen: Showing image picker options');
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -531,39 +371,28 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    print('GoodsEditScreen: Picking image from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         _imagePaths.add(pickedFile.path);
         if (mainImageIndex == null && _imagePaths.isNotEmpty) {
-          mainImageIndex = _imagePaths.length - 1; // Set the new image as main
+          mainImageIndex = _imagePaths.length - 1;
         }
         isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
       });
-    } else {
-      print('GoodsEditScreen: No image picked');
     }
   }
 
   Future<void> _pickMultipleImages() async {
-    print('GoodsEditScreen: Picking multiple images');
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
         if (mainImageIndex == null && _imagePaths.isNotEmpty) {
-          mainImageIndex = _imagePaths.length -
-              pickedFiles.length; // Set the first new image as main
+          mainImageIndex = _imagePaths.length - pickedFiles.length;
         }
         isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
       });
-    } else {
-      print('GoodsEditScreen: No images picked');
     }
   }
 
@@ -577,20 +406,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         mainImageIndex = mainImageIndex! - 1;
       }
       isImagesValid = _imagePaths.isNotEmpty;
-      print(
-          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex, isImagesValid: $isImagesValid');
     });
   }
 
   void _setMainImage(int index) {
     setState(() {
       mainImageIndex = index;
-      print('GoodsEditScreen: Set main image index to: $mainImageIndex');
     });
   }
 
   void _showImagePickerOptionsForRow(int rowIndex) async {
-    print('GoodsEditScreen: Showing image picker options for row $rowIndex');
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -642,40 +467,28 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
-    print(
-        'GoodsEditScreen: Picking image for row $rowIndex from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         tableAttributes[rowIndex]['images'].add(pickedFile.path);
-        print(
-            'GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
-    } else {
-      print('GoodsEditScreen: No image picked for row $rowIndex');
     }
   }
 
   Future<void> _pickMultipleImagesForRow(int rowIndex) async {
-    print('GoodsEditScreen: Picking multiple images for row $rowIndex');
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
         tableAttributes[rowIndex]['images']
             .addAll(pickedFiles.map((file) => file.path));
-        print(
-            'GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
-    } else {
-      print('GoodsEditScreen: No images picked for row $rowIndex');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print('GoodsEditScreen: Building widget tree...');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -769,11 +582,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ],
                     ),
                   const SizedBox(height: 8),
-                  LabelMultiSelectWidget(
-                    selectedLabels: selectedLabels,
-                    onSelectLabels: (List<String> labels) {
+                  LabelWidget(
+                    selectedLabel: selectlabel,
+                    onChanged: (String? newValue) {
                       setState(() {
-                        selectedLabels = labels;
+                        selectlabel = newValue;
                       });
                     },
                   ),
@@ -795,8 +608,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             setState(() {
                               selectedBranch = branch;
                               isBranchValid = true;
-                              print(
-                                  'GoodsEditScreen: Branch selected - ${selectedBranch?.name}, isBranchValid: $isBranchValid');
                             });
                           },
                         ),
@@ -842,8 +653,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           TextEditingController();
                                     }
                                   }
-                                  print(
-                                      'GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
                                 });
                               },
                               subCategories:
@@ -868,13 +677,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   const SizedBox(height: 16),
                   if (selectedCategory != null &&
                       selectedCategory!.attributes.isNotEmpty)
-                    // const SizedBox(height: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 0.0), // Отступы слева и справа
+                          padding: const EdgeInsets.symmetric(horizontal: 0.0),
                           child: Container(
                             decoration: BoxDecoration(
                               border: Border.all(
@@ -902,8 +709,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
-                          print(
-                              'GoodsEditScreen: Rendering non-individual attribute: ${attribute.name}');
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -933,7 +738,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                             const SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
                                 child: Column(
@@ -944,15 +749,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           .where((attr) => attr.isIndividual)
                                           .toSet()
                                           .toList();
-                                      print(
-                                          'GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
-                                      print(
-                                          'GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
-                                      print(
-                                          'GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
 
-                                       List<DataColumn> columns = [
-                                        // Колонка Image теперь первая (как в создании)
+                                      List<DataColumn> columns = [
                                         DataColumn(
                                           label: Text(
                                             AppLocalizations.of(context)!
@@ -965,7 +763,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                           ),
                                         ),
-                                        // Затем динамические атрибуты
                                         ...individualAttrs
                                             .map((attr) => DataColumn(
                                                   label: Text(
@@ -979,7 +776,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                     ),
                                                   ),
                                                 )),
-                                        // Price (если есть)
                                         if (selectedCategory!
                                             .hasPriceCharacteristics)
                                           DataColumn(
@@ -994,7 +790,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               ),
                                             ),
                                           ),
-                                        // Status
                                         DataColumn(
                                           label: Text(
                                             AppLocalizations.of(context)!
@@ -1007,7 +802,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             ),
                                           ),
                                         ),
-                                        // Actions (пустая колонка для удаления)
                                         DataColumn(
                                           label: Text(
                                             '',
@@ -1021,25 +815,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                       ];
 
-                                      print(
-                                          'GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
-
                                       List<DataRow> rows = tableAttributes
                                           .asMap()
                                           .entries
                                           .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
-                                        print(
-                                            'GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {
-                                                  key: row[key]
-                                                          is TextEditingController
-                                                      ? row[key].text
-                                                      : row[key]
-                                                }).toList()}');
 
                                         List<DataCell> cells = [
-                                          // DataCell с изображениями теперь первая
                                           DataCell(
                                             Row(
                                               children: [
@@ -1122,7 +905,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               ],
                                             ),
                                           ),
-                                          // Затем DataCell'ы для динамических атрибутов
                                           ...individualAttrs.map((attr) =>
                                               DataCell(
                                                 SizedBox(
@@ -1156,7 +938,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                   ),
                                                 ),
                                               )),
-                                          // Price DataCell (если есть)
                                           if (selectedCategory!
                                               .hasPriceCharacteristics)
                                             DataCell(
@@ -1193,15 +974,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 ),
                                               ),
                                             ),
-                                          // Status DataCell
                                           DataCell(
                                             Switch(
                                               value: row['is_active'],
                                               onChanged: (value) {
                                                 setState(() {
                                                   row['is_active'] = value;
-                                                  print(
-                                                      'GoodsEditScreen: Toggled is_active for variant $index to: $value');
                                                 });
                                               },
                                               activeColor: const Color.fromARGB(
@@ -1217,7 +995,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                       255, 255, 255, 255),
                                             ),
                                           ),
-                                          // Actions DataCell (удаление)
                                           DataCell(
                                             IconButton(
                                               icon: Icon(Icons.delete,
@@ -1228,13 +1005,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         ];
 
-                                        print(
-                                            'GoodsEditScreen: Row $index cells created');
                                         return DataRow(cells: cells);
                                       }).toList();
-
-                                      print(
-                                          'GoodsEditScreen: DataTable rows created: ${rows.length}');
 
                                       return DataTable(
                                         columnSpacing: 16,
@@ -1449,8 +1221,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       } else if (_imagePaths.isNotEmpty) {
                                         mainImageIndex = 0;
                                       }
-                                      print(
-                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths, mainImageIndex: $mainImageIndex');
                                     });
                                   },
                                 ),
@@ -1514,8 +1284,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               onTap: () {
                                 setState(() {
                                   isActive = !isActive;
-                                  print(
-                                      'GoodsEditScreen: Toggled isActive to: $isActive');
                                 });
                               },
                               child: Container(
@@ -1532,8 +1300,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       onChanged: (value) {
                                         setState(() {
                                           isActive = value;
-                                          print(
-                                              'GoodsEditScreen: Switch changed isActive to: $isActive');
                                         });
                                       },
                                       activeColor: const Color.fromARGB(
@@ -1633,13 +1399,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   void _updateProduct() async {
     setState(() => isLoading = true);
-    print('GoodsEditScreen: Updating product...');
     try {
       List<Map<String, dynamic>> attributes = [];
       List<Map<String, dynamic>> variants = [];
 
       if (selectedCategory != null) {
-        print('GoodsEditScreen: Processing non-individual attributes...');
         for (var attribute
             in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
@@ -1648,17 +1412,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
-            print(
-                'GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
-          } else {
-            print(
-                'GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
           }
         }
 
-        print('GoodsEditScreen: Processing variants...');
         for (var row in tableAttributes) {
-          print('GoodsEditScreen: Processing row: $row');
           Map<String, dynamic> variant = {
             'is_active': row['is_active'],
             'variant_attributes': [],
@@ -1666,7 +1423,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
           if (row['id'] != null && row['id'] != 0) {
             variant['id'] = row['id'];
-            print('GoodsEditScreen: Added variant id: ${row['id']}');
           }
 
           List<String> variantImagePaths = row['images']?.cast<String>() ?? [];
@@ -1676,10 +1432,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               File file = File(path);
               if (await file.exists()) {
                 variantImages.add(file);
-                print('GoodsEditScreen: Added variant image: $path');
-              } else {
-                print(
-                    'GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
@@ -1696,16 +1448,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               if (row['attribute_ids'] != null &&
                   row['attribute_ids'][attr.name] != null) {
                 variantAttribute['id'] = row['attribute_ids'][attr.name];
-                print(
-                    'GoodsEditScreen: Added variant attribute id: ${variantAttribute['id']} for attribute ${attr.name}');
               }
 
               variant['variant_attributes'].add(variantAttribute);
-              print(
-                  'GoodsEditScreen: Added variant attribute - ${variantAttribute.toString()}');
-            } else {
-              print(
-                  'GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
             }
           }
 
@@ -1715,11 +1460,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print(
-                  'GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
-              print('GoodsEditScreen: Set default variant price: 0.0');
             }
           } else {
             variant['price'] = 0.0;
@@ -1727,21 +1469,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
-            print(
-                'GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
             variants.add(variant);
-            print('GoodsEditScreen: Added variant: $variant');
-          } else {
-            print('GoodsEditScreen: Skipped variant - no variant_attributes');
           }
         }
       }
-
-      print('GoodsEditScreen: Final attributes: $attributes');
-      print('GoodsEditScreen: Final variants: $variants');
 
       List<File> generalImages = [];
       for (var path in _imagePaths) {
@@ -1749,15 +1483,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           File file = File(path);
           if (await file.exists()) {
             generalImages.add(file);
-            print('GoodsEditScreen: Added general image: $path');
-          } else {
-            print('GoodsEditScreen: General image not found, skipping: $path');
           }
         }
       }
-      bool isNew = selectedLabels.contains('newest');
-      bool isPopular = selectedLabels.contains('hit');
-      bool isSale = selectedLabels.contains('promotion');
+
+      int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null; // Преобразуем selectlabel в labelId
 
       final response = await _apiService.updateGoods(
         goodId: widget.goods.id,
@@ -1776,12 +1506,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         branch: selectedBranch!.id,
         comments: commentsController.text.trim(),
         mainImageIndex: mainImageIndex ?? 0,
-        isNew: isNew, // Added
-        isPopular: isPopular, // Added
-        isSale: isSale, // Added
+        labelId: labelId, // Передаём labelId
       );
 
-      print('GoodsEditScreen: Update response: $response');
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
@@ -1801,8 +1528,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       }
     } catch (e, stackTrace) {
       setState(() => isLoading = false);
-      print('GoodsEditScreen: Error updating product: $e');
-      print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
         message:
@@ -1827,7 +1552,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
       }
     }
-    print('GoodsEditScreen: Disposed controllers');
     super.dispose();
   }
 }
