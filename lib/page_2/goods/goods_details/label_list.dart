@@ -57,22 +57,42 @@ class _LabelWidgetState extends State<LabelWidget> {
       },
       child: BlocBuilder<LabelBloc, LabelState>(
         builder: (context, state) {
-          // Обновляем данные при успешной загрузке
-          if (state is LabelLoaded) {
-            List<Label> labelsList = state.labels;
+          List<Label> labelsList = state is LabelLoaded ? state.labels : [];
 
-            if (widget.selectedLabel != null && labelsList.isNotEmpty) {
-              try {
-                selectedLabelData = labelsList.firstWhere(
-                  (label) => label.id.toString() == widget.selectedLabel,
-                );
-              } catch (e) {
-                selectedLabelData = null;
-              }
+          // Устанавливаем selectedLabelData при загрузке меток
+          if (state is LabelLoaded && widget.selectedLabel != null && labelsList.isNotEmpty) {
+            try {
+              selectedLabelData = labelsList.firstWhere(
+                (label) => label.id.toString() == widget.selectedLabel,
+                // orElse: () => null,
+              );
+            } catch (e) {
+              selectedLabelData = null;
+              print('LabelWidget: Error finding label: $e');
             }
           }
 
-          // Всегда отображаем поле
+          print('LabelWidget: selectedLabel = ${widget.selectedLabel}, selectedLabelData = ${selectedLabelData?.id}');
+
+          if (state is LabelLoading) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('label'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+              ],
+            );
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -89,7 +109,7 @@ class _LabelWidgetState extends State<LabelWidget> {
               Container(
                 child: CustomDropdown<Label>.search(
                   closeDropDownOnClearFilterSearch: true,
-                  items: state is LabelLoaded ? state.labels : [],
+                  items: labelsList,
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
@@ -132,17 +152,6 @@ class _LabelWidgetState extends State<LabelWidget> {
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    if (state is LabelLoading) {
-                      return Text(
-                        AppLocalizations.of(context)!.translate('select_label'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      );
-                    }
                     return Row(
                       children: [
                         if (selectedItem != null)
@@ -178,7 +187,7 @@ class _LabelWidgetState extends State<LabelWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: (state is LabelLoaded && state.labels.contains(selectedLabelData))
+                  initialItem: selectedLabelData != null && labelsList.contains(selectedLabelData)
                       ? selectedLabelData
                       : null,
                   onChanged: (value) {

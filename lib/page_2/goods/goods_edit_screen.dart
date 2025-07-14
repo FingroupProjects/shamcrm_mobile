@@ -44,6 +44,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController stockQuantityController;
   final TextEditingController commentsController = TextEditingController();
   subCatAttr.SubCategoryAttributesData? selectedCategory;
+  
   Branch? selectedBranch;
   bool isBranchValid = true;
   List<Branch> branches = [];
@@ -68,25 +69,27 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     _loadAllDataSequentially();
   }
 
-  void _initializeFieldsWithDefaults() {
-    goodsNameController = TextEditingController(text: widget.goods.name ?? '');
-    goodsDescriptionController = TextEditingController(
-      text: (widget.goods.description ?? '') == 'null'
-          ? ''
-          : (widget.goods.description ?? ''),
-    );
-    discountPriceController = TextEditingController(
-        text: widget.goods.discountPrice?.toString() ?? '');
-    stockQuantityController =
-        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
-    commentsController.text = widget.goods.comments ?? '';
-    selectlabel = widget.goods.label?.toString(); // Инициализация selectlabel
-    isActive = widget.goods.isActive ?? false;
-    selectedBranch = null;
-    _imagePaths =
-        widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
-    mainImageIndex = widget.initialMainImageIndex ?? 0;
-  }
+ void _initializeFieldsWithDefaults() {
+  goodsNameController = TextEditingController(text: widget.goods.name ?? '');
+  goodsDescriptionController = TextEditingController(
+    text: (widget.goods.description ?? '') == 'null'
+        ? ''
+        : (widget.goods.description ?? ''),
+  );
+  discountPriceController = TextEditingController(
+      text: widget.goods.discountPrice?.toString() ?? '');
+  stockQuantityController =
+      TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+  commentsController.text = widget.goods.comments ?? '';
+  print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
+  selectlabel = widget.goods.label?.id?.toString(); // Исправлено
+  isActive = widget.goods.isActive ?? false;
+  selectedBranch = null;
+  _imagePaths =
+      widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
+  mainImageIndex = widget.initialMainImageIndex ?? 0;
+
+}
 
   Future<void> _initializeBaseUrl() async {
     try {
@@ -534,7 +537,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             .translate('field_required')
                         : null,
                   ),
-                  const SizedBox(height: 8),
+                 
+                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
                     hintText: AppLocalizations.of(context)!
@@ -542,16 +546,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     label: AppLocalizations.of(context)!
                         .translate('goods_description'),
                     maxLines: 5,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                  const SizedBox(height: 8),
-                  CustomTextField(
-                    controller: commentsController,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('please_enter_comment'),
-                    label: AppLocalizations.of(context)!
-                        .translate('comment_client'),
-                    maxLines: 3,
                     keyboardType: TextInputType.multiline,
                   ),
                   if (selectedCategory != null &&
