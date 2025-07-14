@@ -363,9 +363,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         discountPrice: event.discountPrice,
         branch: event.branch,
         mainImageIndex: event.mainImageIndex,
-        isNew: event.isNew,
-        isPopular: event.isPopular,
-        isSale: event.isSale,
+       labelId: event.labelId, // Передаем ID метки
       );
 
       if (response['success'] == true) {
@@ -416,9 +414,7 @@ Future<void> _searchGoods(SearchGoods event, Emitter<GoodsState> emit) async {
         branch: event.branch,
         comments: event.comments, // Передаём комментарии
         mainImageIndex: event.mainImageIndex, // Передаём индекс главного изображения
-        isNew: event.isNew, // Added
-        isPopular: event.isPopular, // Added
-        isSale: event.isSale, // Added
+        labelId: event.labelId, // Передаем ID метки
       );
 
       if (response['success'] == true) {

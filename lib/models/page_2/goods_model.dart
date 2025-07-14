@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/page_2/category_model.dart';
-import 'package:crm_task_manager/models/page_2/branch_model.dart'; // Добавляем импорт модели Branch
+import 'package:crm_task_manager/models/page_2/branch_model.dart';
+import 'package:crm_task_manager/models/page_2/label_list_model.dart'; // Добавляем импорт модели Branch
 
 class Goods {
   final int id;
@@ -17,9 +18,10 @@ class Goods {
   final List<GoodsVariant>? variants;
   final List<Branch>? branches;
   final String? comments;
-  final bool isNew; // Added
-  final bool isPopular; // Added
-  final bool isSale; // Added
+  final bool isNew;
+  final bool isPopular;
+  final bool isSale;
+  final Label? label; // Добавляем поле label
 
   Goods({
     required this.id,
@@ -37,9 +39,10 @@ class Goods {
     this.variants,
     this.branches,
     this.comments,
-    required this.isNew, // Added
-    required this.isPopular, // Added
-    required this.isSale, // Added
+    required this.isNew,
+    required this.isPopular,
+    required this.isSale,
+    this.label, // Добавляем в конструктор
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -73,8 +76,8 @@ class Goods {
 
       int? discountPercent;
       double? discountedPrice;
-      if (json['discounts'] != null && (json['discounts'] as List).isNotEmpty) {
-        final discount = json['discounts'][0];
+      if (json['discount'] != null && (json['discount'] as List).isNotEmpty) {
+        final discount = json['discount'][0];
         discountPercent = discount['percent'] as int? ?? 0;
         if (discountPrice != null && discountPercent != 0) {
           discountedPrice = discountPrice - (discountPrice * discountPercent / 100);
@@ -116,9 +119,10 @@ class Goods {
           return Branch.fromJson(b as Map<String, dynamic>);
         }).toList(),
         comments: json['comments'] as String?,
-        isNew: json['is_new'] == 1 || json['is_new'] == true, // Added
-        isPopular: json['is_popular'] == 1 || json['is_popular'] == true, // Added
-        isSale: json['is_sale'] == 1 || json['is_sale'] == true, // Added
+        isNew: json['is_new'] == 1 || json['is_new'] == true,
+        isPopular: json['is_popular'] == 1 || json['is_popular'] == true,
+        isSale: json['is_sale'] == 1 || json['is_sale'] == true,
+        label: json['label'] != null ? Label.fromJson(json['label']) : null, // Добавляем парсинг label
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Ошибка парсинга товара: $e');

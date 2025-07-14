@@ -1089,7 +1089,11 @@
   "price_type": "Тип цены",
 "price_type_details": "Тип цены:",
 "phone_number_too_long": "Номер телефона слишком длинный",
-"phone_number_too_short": "Номер телефона слишком короткий"
+"phone_number_too_short": "Номер телефона слишком короткий",
+"no_order_statuses": "У вас нет статусов заказа"
+
+
+
 
 
 

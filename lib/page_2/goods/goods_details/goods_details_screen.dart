@@ -335,7 +335,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('label'),
-        'value': labelsValue,
+        'value': goods.label?.name ?? '',
       },
       {
         'label': AppLocalizations.of(context)!.translate('branch_details'),
@@ -883,4 +883,4 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       ),
     );
   }
-}
+} 

@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:crm_task_manager/widgets/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -52,9 +51,9 @@ class _MyNavBarState extends State<MyNavBar> {
     super.initState();
     currentIndexGroup1 = widget.currentIndexGroup1;
     currentIndexGroup2 = widget.currentIndexGroup2;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.currentIndexGroup2 != -1) {
+      if (widget.navBarTitlesGroup2.isNotEmpty && widget.currentIndexGroup2 != -1) {
         _pageController.jumpToPage(1);
       } else {
         _pageController.jumpToPage(0);
@@ -88,9 +87,6 @@ class _MyNavBarState extends State<MyNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    // Для Android используем SafeArea для защиты от системных кнопок
-    // Для iOS используем обычный Container с уже правильной высотой
-    
     Widget navBarContent = Container(
       height: _navBarHeight,
       child: Column(
@@ -98,18 +94,22 @@ class _MyNavBarState extends State<MyNavBar> {
           Expanded(
             child: PageView(
               controller: _pageController,
+              // Disable scrolling if group 2 is empty
+              physics: widget.navBarTitlesGroup2.isEmpty
+                  ? NeverScrollableScrollPhysics()
+                  : AlwaysScrollableScrollPhysics(),
               onPageChanged: (page) {
                 setState(() {
                   if (page == 0) {
-                    currentIndexGroup1 = widget.currentIndexGroup1 != -1 
-                        ? widget.currentIndexGroup1 
+                    currentIndexGroup1 = widget.currentIndexGroup1 != -1
+                        ? widget.currentIndexGroup1
                         : 0;
                     currentIndexGroup2 = -1;
                     widget.onItemSelectedGroup1(currentIndexGroup1);
                   } else {
                     currentIndexGroup1 = -1;
-                    currentIndexGroup2 = widget.currentIndexGroup2 != -1 
-                        ? widget.currentIndexGroup2 
+                    currentIndexGroup2 = widget.currentIndexGroup2 != -1
+                        ? widget.currentIndexGroup2
                         : 0;
                     widget.onItemSelectedGroup2(currentIndexGroup2);
                   }
@@ -142,32 +142,34 @@ class _MyNavBarState extends State<MyNavBar> {
                   curve: Curves.ease,
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                 ),
-                BottomNavyBar(
-                  backgroundColor: Color(0xffF4F7FD),
-                  selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
-                  onItemSelected: (index) {
-                    setState(() {
-                      currentIndexGroup2 = index;
-                      currentIndexGroup1 = -1;
-                      _pageController.jumpToPage(1);
-                    });
-                    widget.onItemSelectedGroup2(index);
-                  },
-                  items: List.generate(
-                    widget.navBarTitlesGroup2.length,
-                    (index) => _buildNavBarItem(
-                      index,
-                      widget.navBarTitlesGroup2[index],
-                      widget.activeIconsGroup2[index],
-                      widget.inactiveIconsGroup2[index],
-                      currentIndexGroup2 == index,
+                // Only include group 2 if it has items
+                if (widget.navBarTitlesGroup2.isNotEmpty)
+                  BottomNavyBar(
+                    backgroundColor: Color(0xffF4F7FD),
+                    selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
+                    onItemSelected: (index) {
+                      setState(() {
+                        currentIndexGroup2 = index;
+                        currentIndexGroup1 = -1;
+                        _pageController.jumpToPage(1);
+                      });
+                      widget.onItemSelectedGroup2(index);
+                    },
+                    items: List.generate(
+                      widget.navBarTitlesGroup2.length,
+                      (index) => _buildNavBarItem(
+                        index,
+                        widget.navBarTitlesGroup2[index],
+                        widget.activeIconsGroup2[index],
+                        widget.inactiveIconsGroup2[index],
+                        currentIndexGroup2 == index,
+                      ),
                     ),
+                    iconSize: _iconSize,
+                    containerHeight: _navBarHeight,
+                    curve: Curves.ease,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                   ),
-                  iconSize: _iconSize,
-                  containerHeight: _navBarHeight,
-                  curve: Curves.ease,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                ),
               ],
             ),
           ),
@@ -175,15 +177,13 @@ class _MyNavBarState extends State<MyNavBar> {
       ),
     );
 
-    // На Android оборачиваем в SafeArea для защиты от системных кнопок
     if (Platform.isAndroid) {
       return SafeArea(
         top: false,
         child: navBarContent,
       );
     }
-    
-    // На iOS возвращаем как есть
+
     return navBarContent;
   }
 }

@@ -64,6 +64,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeo
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
@@ -288,6 +289,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetDirectoryBloc()),
         BlocProvider(create: (context) => OrderByLeadBloc(widget.apiService)),
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
+        BlocProvider(create: (context) => LabelBloc(widget.apiService)),
+
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
