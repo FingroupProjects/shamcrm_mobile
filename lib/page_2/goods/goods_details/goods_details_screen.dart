@@ -16,10 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
   final bool showActions;
+  final bool isFromOrder; // Новый параметр
 
   const GoodsDetailsScreen({
     required this.id,
     this.showActions = true,
+    this.isFromOrder = false, // По умолчанию false
     super.key,
   });
 
@@ -37,13 +39,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   final PageController _pageController = PageController();
   bool _canUpdateProduct = false; // Новая переменная для права product.update
 
-  @override
+ @override
   void initState() {
     super.initState();
-    print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}');
-    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+    print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}, isFromOrder: ${widget.isFromOrder}');
+    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
-    _checkPermissions(); // Проверяем права доступа при инициализации
+    _checkPermissions();
   }
 
   Future<void> _initializeBaseUrl() async {

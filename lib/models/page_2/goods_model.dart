@@ -46,90 +46,106 @@ class Goods {
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
-    try {
-      int? quantity;
-      if (json['quantity'] != null) {
-        if (json['quantity'] is int) {
-          quantity = json['quantity'];
-        } else if (json['quantity'] is String) {
-          quantity = int.tryParse(json['quantity']);
-        }
-      }
+  try {
+    // Если JSON содержит поле "good", используем его для извлечения данных
+    final Map<String, dynamic> data = json.containsKey('good') ? json['good'] : json;
 
-      int? unitId;
-      if (json['unit_id'] != null) {
-        if (json['unit_id'] is int) {
-          unitId = json['unit_id'];
-        } else if (json['unit_id'] is String) {
-          unitId = int.tryParse(json['unit_id']);
-        }
+    int? quantity;
+    if (data['quantity'] != null) {
+      if (data['quantity'] is int) {
+        quantity = data['quantity'];
+      } else if (data['quantity'] is String) {
+        quantity = int.tryParse(data['quantity']);
       }
+    }
 
-      double? discountPrice;
-      if (json['price'] != null) {
-        if (json['price'] is double) {
-          discountPrice = json['price'];
-        } else if (json['price'] is String) {
-          discountPrice = double.tryParse(json['price']);
-        }
+    int? unitId;
+    if (data['unit_id'] != null) {
+      if (data['unit_id'] is int) {
+        unitId = data['unit_id'];
+      } else if (data['unit_id'] is String) {
+        unitId = int.tryParse(data['unit_id']);
       }
+    }
 
-      int? discountPercent;
-      double? discountedPrice;
-      if (json['discount'] != null && (json['discount'] as List).isNotEmpty) {
-        final discount = json['discount'][0];
-        discountPercent = discount['percent'] as int? ?? 0;
-        if (discountPrice != null && discountPercent != 0) {
-          discountedPrice = discountPrice - (discountPrice * discountPercent / 100);
-        }
+    double? discountPrice;
+    if (data['price'] != null) {
+      if (data['price'] is double) {
+        discountPrice = data['price'];
+      } else if (data['price'] is String) {
+        discountPrice = double.tryParse(data['price']);
       }
+    }
 
-      print(
-          'GoodsModel: Парсинг JSON товара - id: ${json['id']}, название: ${json['name']}');
-      return Goods(
-        id: json['id'] as int? ?? 0,
-        name: json['name'] as String? ?? '',
-        category: json['category'] != null
-            ? CategoryData.fromJson(json['category'])
-            : CategoryData(id: 0, name: 'Без категории', subcategories: []),
-        description: json['description'] as String?,
-        unitId: unitId,
-        quantity: quantity,
-        discountPrice: discountPrice,
-        discountedPrice: discountedPrice,
-        discountPercent: discountPercent,
-        isActive: json['is_active'] as bool?,
-        files: (json['files'] as List<dynamic>?)?.map((f) {
-              print('GoodsModel: Парсинг файла - ${f['path']}');
-              return GoodsFile.fromJson(f as Map<String, dynamic>);
-            }).toList() ??
-            [],
-        attributes: (json['attributes'] as List<dynamic>?)?.map((attr) {
+    int? discountPercent;
+    double? discountedPrice;
+    if (data['discounts'] != null && (data['discounts'] as List).isNotEmpty) {
+      final discount = data['discounts'][0];
+      discountPercent = discount['percent'] as int? ?? 0;
+      if (discountPrice != null && discountPercent != 0) {
+        discountedPrice = discountPrice - (discountPrice * discountPercent / 100);
+      }
+    }
+
+    // Обработка is_active: поддержка int (0/1) и bool
+    bool? isActive;
+    if (data['is_active'] != null) {
+      if (data['is_active'] is bool) {
+        isActive = data['is_active'] as bool?;
+      } else if (data['is_active'] is int) {
+        isActive = data['is_active'] == 1;
+      }
+    }
+
+    print('GoodsModel: Парсинг JSON товара - id: ${data['id']}, название: ${data['name']}');
+    return Goods(
+      id: json['id'] as int? ?? data['id'] as int? ?? 0, // Используем id из корня или good
+      name: data['name'] as String? ?? '',
+      category: data['category'] != null
+          ? CategoryData.fromJson(data['category'])
+          : CategoryData(id: 0, name: 'Без категории', subcategories: []),
+      description: data['description'] as String?,
+      unitId: unitId,
+      quantity: quantity,
+      discountPrice: discountPrice,
+      discountedPrice: discountedPrice,
+      discountPercent: discountPercent,
+      isActive: isActive,
+      files: (data['files'] as List<dynamic>?)?.map((f) {
+            print('GoodsModel: Парсинг файла - ${f['path']}');
+            return GoodsFile.fromJson(f as Map<String, dynamic>);
+          }).toList() ??
+          [],
+      attributes: json['attribute_values'] != null
+          ? (json['attribute_values'] as List<dynamic>).map((attr) {
+              print('GoodsModel: Парсинг атрибута - ${attr['value']}');
+              return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
+            }).toList()
+          : (data['attributes'] as List<dynamic>?)?.map((attr) {
               print('GoodsModel: Парсинг атрибута - ${attr['value']}');
               return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
             }).toList() ??
-            [],
-        variants: (json['variants'] as List<dynamic>?)?.map((v) {
-          print('GoodsModel: Парсинг варианта - id: ${v['id']}');
-          return GoodsVariant.fromJson(v as Map<String, dynamic>);
-        }).toList(),
-        branches: (json['branches'] as List<dynamic>?)?.map((b) {
-          print(
-              'GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
-          return Branch.fromJson(b as Map<String, dynamic>);
-        }).toList(),
-        comments: json['comments'] as String?,
-        isNew: json['is_new'] == 1 || json['is_new'] == true,
-        isPopular: json['is_popular'] == 1 || json['is_popular'] == true,
-        isSale: json['is_sale'] == 1 || json['is_sale'] == true,
-        label: json['label'] != null ? Label.fromJson(json['label']) : null, // Добавляем парсинг label
-      );
-    } catch (e, stackTrace) {
-      print('GoodsModel: Ошибка парсинга товара: $e');
-      print(stackTrace);
-      rethrow;
-    }
+              [],
+      variants: (data['variants'] as List<dynamic>?)?.map((v) {
+        print('GoodsModel: Парсинг варианта - id: ${v['id']}');
+        return GoodsVariant.fromJson(v as Map<String, dynamic>);
+      }).toList(),
+      branches: (data['branches'] as List<dynamic>?)?.map((b) {
+        print('GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
+        return Branch.fromJson(b as Map<String, dynamic>);
+      }).toList(),
+      comments: data['comments'] as String?,
+      isNew: data['is_new'] == 1 || data['is_new'] == true,
+      isPopular: data['is_popular'] == 1 || data['is_popular'] == true,
+      isSale: data['is_sale'] == 1 || data['is_sale'] == true,
+      label: data['label'] != null ? Label.fromJson(data['label']) : null,
+    );
+  } catch (e, stackTrace) {
+    print('GoodsModel: Ошибка парсинга товара: $e');
+    print(stackTrace);
+    rethrow;
   }
+}
 }
 
 class GoodsFile {

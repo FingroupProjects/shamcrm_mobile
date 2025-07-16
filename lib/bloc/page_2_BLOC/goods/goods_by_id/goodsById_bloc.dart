@@ -17,7 +17,10 @@ class GoodsByIdBloc extends Bloc<GoodsByIdEvent, GoodsByIdState> {
   ) async {
     emit(GoodsByIdLoading());
     try {
-      final goodsList = await apiService.getGoodsById(event.goodsId);
+      final goodsList = await apiService.getGoodsById(
+        event.goodsId,
+        isFromOrder: event.isFromOrder, // Передаем параметр
+      );
       if (goodsList.isEmpty) {
         emit(GoodsByIdEmpty());
       } else {
