@@ -7122,23 +7122,26 @@ Future<List<Variant>> getVariants({
 }
 
 
-  Future<List<Goods>> getGoodsById(int goodsId) async {
-    final organizationId = await getSelectedOrganization();
-    final String path = '/good/$goodsId?organization_id=$organizationId';
+ Future<List<Goods>> getGoodsById(int goodsId, {bool isFromOrder = false}) async {
+  final organizationId = await getSelectedOrganization();
+  // Выбираем эндпоинт в зависимости от контекста
+  final String path = isFromOrder
+      ? '/good/variant-by-id/$goodsId?organization_id=$organizationId'
+      : '/good/$goodsId?organization_id=$organizationId';
 
-    final response = await _getRequest(path);
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result')) {
-        return [Goods.fromJson(data['result'] as Map<String, dynamic>)];
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result')) {
+      return [Goods.fromJson(data['result'] as Map<String, dynamic>)];
     } else {
-      throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
+      throw Exception('Ошибка: Неверный формат данных');
     }
+  } else {
+    throw Exception('Ошибка загрузки просмотра товаров: ${response.statusCode}');
   }
+}
 
   Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
   final organizationId = await getSelectedOrganization();
@@ -7666,7 +7669,7 @@ Future<Map<String, dynamic>> createOrder({
       'organization_id': organizationId,
       'status_id': statusId,
       'comment_to_courier': commentToCourier,
-      'paymentType': 'ALIF',
+      'payment_type': 'cash',
       'manager_id': managerId,
     };
 
@@ -7754,7 +7757,7 @@ Future<Map<String, dynamic>> createOrder({
           }).toList(),
       'organization_id': organizationId.toString(),
       'comment_to_courier': commentToCourier,
-      'paymentType': 'cash',
+      'payment_type': 'cash',
       'manager_id': managerId?.toString(),
     };
 
