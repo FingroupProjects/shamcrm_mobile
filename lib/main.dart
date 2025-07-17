@@ -69,6 +69,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_blo
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/pricce_type/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
@@ -290,6 +291,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => OrderByLeadBloc(widget.apiService)),
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
+        BlocProvider(create: (context) => VariantBloc(widget.apiService)),
+        
 
       ],
       child: MaterialApp(

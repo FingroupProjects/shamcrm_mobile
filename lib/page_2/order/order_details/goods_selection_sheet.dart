@@ -211,7 +211,7 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            AppLocalizations.of(context)!.translate('add_variant'),
+            AppLocalizations.of(context)!.translate('add_product'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -347,19 +347,19 @@ class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
-        Text(
-          'ID: ${variant.id}',
-          style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff99A4BA)),
-        ),
+        // const SizedBox(height: 4),
+        // Text(
+        //   'ID: ${variant.id}',
+        //   style: const TextStyle(
+        //       fontSize: 12,
+        //       fontFamily: 'Gilroy',
+        //       fontWeight: FontWeight.w500,
+        //       color: Color(0xff99A4BA)),
+        // ),
         const SizedBox(height: 4),
         // Отображаем атрибуты варианта
         ...variant.attributeValues.map((attr) => Text(
-              '${attr.categoryAttribute?.attribute?.name ?? 'Атрибут'}: ${attr.value}',
+              '${attr.categoryAttribute?.attribute?.name ?? ''}: ${attr.value}',
               style: const TextStyle(
                   fontSize: 12,
                   fontFamily: 'Gilroy',

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -240,44 +241,18 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 }
 
   Row _buildTitleRow(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.start, // Выравнивание заголовка слева
+    children: [
+      Text(
+        title,
+        style: TaskCardStyles.titleStyle.copyWith(
+          fontWeight: FontWeight.w500,
         ),
-        TextButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => VariantSelectionSheet(order: widget.order),
-            );
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: const Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            AppLocalizations.of(context)!.translate('add'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }
 
 class DeleteGoodsDialog extends StatelessWidget {
