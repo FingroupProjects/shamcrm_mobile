@@ -84,7 +84,7 @@ void initState() {
     _selectedBranch = Branch(
       id: widget.order.branchId!,
       name: widget.order.branchName!,
-      address: '',
+      address: '', isActive: 0,
     );
   }
 

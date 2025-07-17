@@ -18,12 +18,10 @@ class BranchRadioGroupWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<BranchRadioGroupWidget> createState() =>
-      _BranchRadioGroupWidgetState();
+  State<BranchRadioGroupWidget> createState() => _BranchRadioGroupWidgetState();
 }
 
-class _BranchRadioGroupWidgetState
-    extends State<BranchRadioGroupWidget> {
+class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
   List<Branch> statusList = [];
   Branch? selectedStatusData;
 
@@ -55,28 +53,58 @@ class _BranchRadioGroupWidgetState
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
+                      AppLocalizations.of(context)!.translate(state.message),
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
               });
+              return const SizedBox();
             }
 
             if (state is BranchLoaded) {
-              statusList = state.branches;
+              // Фильтруем филиалы с isActive = 1
+              statusList = state.branches.where((branch) => branch.isActive == 1).toList();
 
+              // Если список пуст, показываем сообщение
+              if (statusList.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('branches'),
+                      style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          width: 1,
+                          color: const Color(0xFFF4F7FD),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('no_active_branches'),
+                        style: statusTextStyle.copyWith(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              // Логика выбора филиала
               if (statusList.length == 1 && selectedStatusData == null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   widget.onSelectStatus(statusList[0]);
@@ -84,14 +112,14 @@ class _BranchRadioGroupWidgetState
                     selectedStatusData = statusList[0];
                   });
                 });
-              } else if (widget.selectedStatus != null &&
-                  statusList.isNotEmpty) {
+              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
                 try {
                   selectedStatusData = statusList.firstWhere(
                     (status) => status.id.toString() == widget.selectedStatus,
+                    orElse: () => statusList[0], // Выбираем первый активный филиал, если указанный не найден
                   );
                 } catch (e) {
-                  selectedStatusData = null;
+                  selectedStatusData = statusList[0]; // Дефолт на первый активный
                 }
               }
 
@@ -131,8 +159,7 @@ class _BranchRadioGroupWidgetState
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return Text(
                           item.name,
                           style: statusTextStyle,
