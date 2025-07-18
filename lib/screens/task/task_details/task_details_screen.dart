@@ -16,6 +16,7 @@ import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_copy_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
@@ -890,138 +891,158 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
-    if (!_isTutorialShown) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
-        setState(() {
-          _isTutorialShown = true;
-        });
+  // В методе _buildAppBar в TaskDetailsScreen
+AppBar _buildAppBar(BuildContext context, String title) {
+  if (!_isTutorialShown) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showTutorial();
+      setState(() {
+        _isTutorialShown = true;
       });
-    }
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      centerTitle: false,
-      leadingWidth: 40,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 40,
-              height: 40,
-            ),
-            onPressed: () {
-              Navigator.pop(context, widget.statusId);
-            },
-          ),
-        ),
-      ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      ),
-      actions: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_canEditTask)
-              IconButton(
-                key: keyTaskEdit,
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () async {
-                  // print(
-                  //     'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
-                  // print(
-                  //     'Передача directoryValues в TaskEditScreen: ${currentTask!.directoryValues}');
-                  final createdAtString = currentTask?.createdAt != null &&
-                          currentTask!.createdAt!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentTask!.createdAt!))
-                      : null;
-
-                  if (currentTask != null) {
-                    final shouldUpdate = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TaskEditScreen(
-                          taskId: currentTask!.id,
-                          taskName: currentTask!.name,
-                          priority: currentTask!.priority,
-                          taskStatus:
-                              currentTask!.taskStatus?.taskStatus.toString() ??
-                                  '',
-                          project: currentTask!.project?.id.toString(),
-                          user: currentTask!.user != null &&
-                                  currentTask!.user!.isNotEmpty
-                              ? currentTask!.user!
-                                  .map((user) => user.id)
-                                  .toList()
-                              : null,
-                          statusId: currentTask!.taskStatus?.id ?? 0,
-                          description: currentTask!.description,
-                          startDate: currentTask!.startDate,
-                          endDate: currentTask!.endDate,
-                          createdAt: createdAtString,
-                          taskCustomFields: currentTask!.taskCustomFields,
-                          files: currentTask!.files,
-                          directoryValues: currentTask!.directoryValues,
-                        ),
-                      ),
-                    );
-                    if (shouldUpdate == true) {
-                      context
-                          .read<TaskByIdBloc>()
-                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                      context.read<TaskBloc>().add(FetchTaskStatuses());
-                      context.read<CalendarBloc>().add(FetchCalendarEvents(
-                          widget.initialDate?.month ?? DateTime.now().month,
-                          widget.initialDate?.year ?? DateTime.now().year));
-                    }
-                  }
-                },
-              ),
-            if (_canDeleteTask)
-              IconButton(
-                key: keyTaskDelete,
-                padding: EdgeInsets.only(right: 8),
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/delete.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) =>
-                        DeleteTaskDialog(taskId: currentTask!.id),
-                  );
-                },
-              ),
-          ],
-        ),
-      ],
-    );
+    });
   }
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    centerTitle: false,
+    leadingWidth: 40,
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 0),
+      child: Transform.translate(
+        offset: const Offset(0, -2),
+        child: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 40,
+            height: 40,
+          ),
+          onPressed: () {
+            Navigator.pop(context, widget.statusId);
+          },
+        ),
+      ),
+    ),
+    title: Transform.translate(
+      offset: const Offset(-10, 0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: Color(0xff1E2E52),
+        ),
+      ),
+    ),
+    actions: [
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+           if (_canEditTask)
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/copy.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                if (currentTask != null) {
+                  final shouldUpdate = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TaskCopyScreen(
+                        task: currentTask!,
+                        statusId: currentTask!.taskStatus?.id ?? widget.statusId ?? 0,
+                      ),
+                    ),
+                  );
+                  if (shouldUpdate == true) {
+                    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                    context.read<CalendarBloc>().add(FetchCalendarEvents(
+                        widget.initialDate?.month ?? DateTime.now().month,
+                        widget.initialDate?.year ?? DateTime.now().year));
+                  }
+                }
+              },
+            ),
+          if (_canEditTask)
+            IconButton(
+              key: keyTaskEdit,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                final createdAtString = currentTask?.createdAt != null &&
+                        currentTask!.createdAt!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentTask!.createdAt!))
+                    : null;
+
+                if (currentTask != null) {
+                  final shouldUpdate = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TaskEditScreen(
+                        taskId: currentTask!.id,
+                        taskName: currentTask!.name,
+                        priority: currentTask!.priority,
+                        taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
+                        project: currentTask!.project?.id.toString(),
+                        user: currentTask!.user != null && currentTask!.user!.isNotEmpty
+                            ? currentTask!.user!.map((user) => user.id).toList()
+                            : null,
+                        statusId: currentTask!.taskStatus?.id ?? 0,
+                        description: currentTask!.description,
+                        startDate: currentTask!.startDate,
+                        endDate: currentTask!.endDate,
+                        createdAt: createdAtString,
+                        taskCustomFields: currentTask!.taskCustomFields,
+                        files: currentTask!.files,
+                        directoryValues: currentTask!.directoryValues,
+                      ),
+                    ),
+                  );
+                  if (shouldUpdate == true) {
+                    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                    context.read<CalendarBloc>().add(FetchCalendarEvents(
+                        widget.initialDate?.month ?? DateTime.now().month,
+                        widget.initialDate?.year ?? DateTime.now().year));
+                  }
+                }
+              },
+            ),
+         
+          if (_canDeleteTask)
+            IconButton(
+              key: keyTaskDelete,
+              padding: EdgeInsets.only(right: 8),
+              constraints: BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/delete.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
+                );
+              },
+            ),
+        ],
+      ),
+    ],
+  );
+}
 
   // Построение списка деталей задачи
   Widget _buildDetailsList() {

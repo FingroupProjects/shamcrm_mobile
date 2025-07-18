@@ -40,6 +40,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
@@ -79,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final GlobalKey keyToggleFeature = GlobalKey();
   final GlobalKey keyUpdateWidget1C = GlobalKey();
   final GlobalKey keySupportChat = GlobalKey();
-
+final GlobalKey keyPhoneCall = GlobalKey();
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
 
@@ -588,6 +589,7 @@ Widget build(BuildContext context) {
                             ProfileEdit(key: keyProfileEdit),
                             LanguageButtonWidget(key: keyLanguageButton),
                             PinChangeWidget(key: keyPinChange),
+                            // PhoneCallWidget(key: keyPhoneCall),
                             LogoutButtonWidget(key: keyLogoutButton),
                             if (_hasPermissionToAddLeadAndSwitch)
                               ToggleFeatureButton(key: keyToggleFeature),

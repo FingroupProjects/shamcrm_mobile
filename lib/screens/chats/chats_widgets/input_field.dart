@@ -1,3 +1,4 @@
+
 import 'dart:io';
 
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -12,7 +13,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:social_media_recorder/audio_encoder_type.dart';
 import 'package:social_media_recorder/screen/social_media_recorder.dart';
 
-class InputField extends StatelessWidget {
+class InputField extends StatefulWidget {
   final Function onSend;
   final VoidCallback onAttachFile;
   final Function onRecordVoice;
@@ -33,51 +34,129 @@ class InputField extends StatelessWidget {
   });
 
   @override
+  _InputFieldState createState() => _InputFieldState();
+}
+
+class _InputFieldState extends State<InputField> with SingleTickerProviderStateMixin {
+  final Map<String, String> templates = {
+    '/1С Строительство': 'Уточните, пожалуйста, детали проекта. Мы свяжемся с вами в течение 24 часов.',
+    '/shamCRM': 'Наш разработчик подготовит демонстрацию. Ожидайте звонка.',
+    '/Общий запрос': 'Спасибо за обращение! Мы обработаем ваш запрос и ответим скоро.',
+    '/Техподдержка': 'Проблема зафиксирована. Ожидайте решение в течение 48 часов.',
+    '/Консультация': 'Запишитесь на консультацию через форму на сайте.',
+    '/Обновление': 'Новый релиз shamCRM доступен. Хотите обновить?',
+    '/Ошибка 1С': 'Опишите ошибку подробнее, приложите скриншот.',
+    '/Срочный запрос': 'Пожалуйста, укажите срочность и детали задачи.',
+    '/Документация': 'Высылаем документацию на ваш email.',
+    '/Тестирование': 'Тестирование shamCRM завершено, готовы к демонстрации.',
+    '/Цена': 'Уточните бюджет, чтобы мы подобрали решение.',
+    '/Интеграция': 'Интеграция с 1С возможна, обсудим детали.',
+    '/Установка': 'Установка займет 2-3 дня, согласуем дату.',
+    '/Обучение': 'Предлагаем обучение по shamCRM, запишитесь сейчас.',
+    '/Поддержка 24/7': 'Обращайтесь в любое время для экстренной помощи.',
+  };
+
+  OverlayEntry? _overlayEntry;
+  bool _showTemplates = false;
+  String _currentQuery = '';
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 200),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _handleTextChange(String text) {
+    setState(() {
+      if (text.startsWith('/')) {
+        _currentQuery = text.substring(1).toLowerCase();
+        _showTemplates = true;
+        _updateOverlay();
+        _animationController.forward();
+      } else {
+        _showTemplates = false;
+        _animationController.reverse().then((_) => _removeOverlay());
+      }
+    });
+  }
+
+  void _updateOverlay() {
+    _removeOverlay();
+    if (_showTemplates) {
+      _overlayEntry = _createOverlayEntry();
+      Overlay.of(context)!.insert(_overlayEntry!);
+    }
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: offset.dx,
+        right: MediaQuery.of(context).size.width - (offset.dx + size.width),
+        top: offset.dy - 210, // Позиционируем на 210 пикселей выше поля ввода
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: TemplateSuggestions(
+              templates: templates,
+              query: _currentQuery,
+              onTemplateSelected: (templateText) {
+                widget.messageController.text = templateText;
+                setState(() {
+                  _showTemplates = false;
+                  _animationController.reverse().then((_) => _removeOverlay());
+                });
+                widget.focusNode.requestFocus();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final messagingCubit = context.read<MessagingCubit>();
-    final editingMessage =
-        context.watch<MessagingCubit>().state is EditingMessageState
-            ? (context.read<MessagingCubit>().state as EditingMessageState).editingMessage
-            : null;
+    final editingMessage = context.watch<MessagingCubit>().state is EditingMessageState
+        ? (context.read<MessagingCubit>().state as EditingMessageState).editingMessage
+        : null;
 
-    final replyingToMessage =
-        context.watch<MessagingCubit>().state is ReplyingToMessageState
-            ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
-            : null;
+    final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMessageState
+        ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
+        : null;
 
     final String? replyMsgId = replyingToMessage?.id.toString();
 
-    if (editingMessage != null && messageController.text.isEmpty) {
-      messageController.text = editingMessage.text;
-    }
-
-  // Маппинг шаблонов
-final Map<String, String> templates = {
-  '/1С Строительство': 'Уточните, пожалуйста, детали проекта. Мы свяжемся с вами в течение 24 часов.',
-  '/shamCRM': 'Наш разработчик подготовит демонстрацию. Ожидайте звонка.',
-  '/Общий запрос': 'Спасибо за обращение! Мы обработаем ваш запрос и ответим скоро.',
-  '/Техподдержка': 'Проблема зафиксирована. Ожидайте решение в течение 48 часов.',
-  '/Консультация': 'Запишитесь на консультацию через форму на сайте.',
-  '/Обновление': 'Новый релиз shamCRM доступен. Хотите обновить?',
-  '/Ошибка 1С': 'Опишите ошибку подробнее, приложите скриншот.',
-  '/Срочный запрос': 'Пожалуйста, укажите срочность и детали задачи.',
-  '/Документация': 'Высылаем документацию на ваш email.',
-  '/Тестирование': 'Тестирование shamCRM завершено, готовы к демонстрации.',
-  '/Цена': 'Уточните бюджет, чтобы мы подобрали решение.',
-  '/Интеграция': 'Интеграция с 1С возможна, обсудим детали.',
-  '/Установка': 'Установка займет 2-3 дня, согласуем дату.',
-  '/Обучение': 'Предлагаем обучение по shamCRM, запишитесь сейчас.',
-  '/Поддержка 24/7': 'Обращайтесь в любое время для экстренной помощи.',
-};
-
-    // Обработка ввода для автоматической подстановки шаблона
-    void handleTemplateInput(String text) {
-      for (var command in templates.keys) {
-        if (text.trim() == command) {
-          messageController.text = templates[command]!;
-          break;
-        }
-      }
+    if (editingMessage != null && widget.messageController.text.isEmpty) {
+      widget.messageController.text = editingMessage.text;
     }
 
     return Container(
@@ -152,8 +231,7 @@ final Map<String, String> templates = {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close,
-                        color: Colors.red, size: 28),
+                        icon: const Icon(Icons.close, color: Colors.red, size: 28),
                         padding: EdgeInsets.only(bottom: 20),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -208,7 +286,7 @@ final Map<String, String> templates = {
                     constraints: const BoxConstraints(),
                     onPressed: () {
                       messagingCubit.clearEditingMessage();
-                      messageController.clear();
+                      widget.messageController.clear();
                     },
                   ),
                 ],
@@ -223,40 +301,42 @@ final Map<String, String> templates = {
                     (context.watch<ListenSenderFileCubit>().state)
                         ? Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
+                            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                           )
                         : Container(
                             height: 50,
                             child: Container(
-                                padding: const EdgeInsets.only(left: 16),
-                                child: TextField(
-                                  controller: messageController,
-                                  focusNode: focusNode,
-                                  onChanged: handleTemplateInput,
-                                  decoration: InputDecoration(
-                                    hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
-                                    hintStyle: TextStyle(
-                                      fontSize: 14,
-                                      color: ChatSmsStyles.hintTextColor,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                    fillColor: ChatSmsStyles.inputBackgroundColor,
-                                    filled: true,
-                                    contentPadding: isLeadChat ? EdgeInsets.only(left: 10, right: 65) : EdgeInsets.only(left: 10, right: 40),
-                                    border: OutlineInputBorder(
-                                      borderRadius: ChatSmsStyles.inputBorderRadius,
-                                      borderSide: BorderSide.none,
-                                    ),
+                              padding: const EdgeInsets.only(left: 16),
+                              child: TextField(
+                                controller: widget.messageController,
+                                focusNode: widget.focusNode,
+                                onChanged: _handleTextChange,
+                                decoration: InputDecoration(
+                                  hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
+                                  hintStyle: TextStyle(
+                                    fontSize: 14,
+                                    color: ChatSmsStyles.hintTextColor,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
                                   ),
-                                  keyboardType: TextInputType.multiline,
-                                  minLines: 1, 
-                                  maxLines: 5, 
-                                  style: ChatSmsStyles.messageTextStyle,
-                                )),
+                                  fillColor: ChatSmsStyles.inputBackgroundColor,
+                                  filled: true,
+                                  contentPadding: widget.isLeadChat
+                                      ? EdgeInsets.only(left: 10, right: 65)
+                                      : EdgeInsets.only(left: 10, right: 40),
+                                  border: OutlineInputBorder(
+                                    borderRadius: ChatSmsStyles.inputBorderRadius,
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                keyboardType: TextInputType.multiline,
+                                minLines: 1,
+                                maxLines: 5,
+                                style: ChatSmsStyles.messageTextStyle,
+                              ),
+                            ),
                           ),
-                    if (isLeadChat)
+                    if (widget.isLeadChat)
                       Positioned(
                         right: 35,
                         child: IconButton(
@@ -267,59 +347,60 @@ final Map<String, String> templates = {
                         ),
                       ),
                     Positioned(
-                      right: isLeadChat ? 0 : 0,
+                      right: widget.isLeadChat ? 0 : 0,
                       child: IconButton(
                         icon: Image.asset('assets/icons/chats/file.png', width: 24, height: 24),
-                        onPressed: onAttachFile,
+                        onPressed: widget.onAttachFile,
                       ),
                     ),
                   ],
                 ),
               ),
               SizedBox(width: 8),
-            (context.watch<ListenSenderVoiceCubit>().state)
-    ? Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-          ),
-        ],
-      )
-    : isLeadChat 
-        ? SizedBox.shrink() 
-        : MediaQuery(
-            data: MediaQueryData(
-              size: Size(330, 400),
-            ),
-            child: SocialMediaRecorder(
-              maxRecordTimeInSecond: 180,
-              initRecordPackageWidth: 48,
-              fullRecordPackageHeight: 48, 
-              startRecording: () {},
-              stopRecording: (_time) {},
-              sendRequestFunction: sendRequestFunction,
-              cancelText: AppLocalizations.of(context)!.translate('cancel'),
-              cancelTextStyle: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500),
-              slideToCancelText: AppLocalizations.of(context)!.translate('cancel_chat_sms'),
-              slideToCancelTextStyle: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500),
-              recordIconBackGroundColor: Color(0xfff4F40EC),
-              counterTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500),
-              encode: AudioEncoderType.AAC,
-              radius: BorderRadius.circular(8),
-            ),
-          ),
+              (context.watch<ListenSenderVoiceCubit>().state)
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                        ),
+                      ],
+                    )
+                  : widget.isLeadChat
+                      ? SizedBox.shrink()
+                      : MediaQuery(
+                          data: MediaQueryData(size: Size(330, 400)),
+                          child: SocialMediaRecorder(
+                            maxRecordTimeInSecond: 180,
+                            initRecordPackageWidth: 48,
+                            fullRecordPackageHeight: 48,
+                            startRecording: () {},
+                            stopRecording: (_time) {},
+                            sendRequestFunction: widget.sendRequestFunction,
+                            cancelText: AppLocalizations.of(context)!.translate('cancel'),
+                            cancelTextStyle: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                            ),
+                            slideToCancelText: AppLocalizations.of(context)!.translate('cancel_chat_sms'),
+                            slideToCancelTextStyle: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                            ),
+                            recordIconBackGroundColor: Color(0xfff4F40EC),
+                            counterTextStyle: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                            ),
+                            encode: AudioEncoderType.AAC,
+                            radius: BorderRadius.circular(8),
+                          ),
+                        ),
               (context.watch<ListenSenderTextCubit>().state)
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -327,8 +408,7 @@ final Map<String, String> templates = {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(
-                              color: Color(0xff1E2E52)),
+                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                         ),
                       ],
                     )
@@ -348,14 +428,18 @@ final Map<String, String> templates = {
                         ),
                       ),
                       onPressed: () {
-                        if (messageController.text.isNotEmpty) {
+                        if (widget.messageController.text.isNotEmpty) {
                           if (editingMessage != null) {
-                            messagingCubit.editMessage(messageController.text);
+                            messagingCubit.editMessage(widget.messageController.text);
                           } else {
-                            onSend(messageController.text, replyMsgId);
+                            widget.onSend(widget.messageController.text, replyMsgId);
                             messagingCubit.clearReplyMessage();
                           }
-                          messageController.clear();
+                          widget.messageController.clear();
+                          setState(() {
+                            _showTemplates = false;
+                            _animationController.reverse().then((_) => _removeOverlay());
+                          });
                         }
                       },
                     ),
@@ -373,10 +457,90 @@ final Map<String, String> templates = {
       backgroundColor: Colors.transparent,
       builder: (context) => TemplatesPanel(
         onTemplateSelected: (text) {
-          messageController.text = text;
-          Navigator.pop(context); // Закрываем панель после выбора
+          widget.messageController.text = text;
+          Navigator.pop(context);
         },
       ),
+    );
+  }
+}
+
+class TemplateSuggestions extends StatelessWidget {
+  final Map<String, String> templates;
+  final String query;
+  final Function(String) onTemplateSelected;
+
+  const TemplateSuggestions({
+    Key? key,
+    required this.templates,
+    required this.query,
+    required this.onTemplateSelected,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredTemplates = templates.entries
+        .where((entry) => entry.key.toLowerCase().contains(query))
+        .toList();
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: 200),
+      width: double.infinity, // Соответствует ширине TextField
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: filteredTemplates.isEmpty
+          ? Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                AppLocalizations.of(context)!.translate('no_templates_found'),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              itemCount: filteredTemplates.length,
+              itemBuilder: (context, index) {
+                final entry = filteredTemplates[index];
+                return Column(
+                  children: [
+                    ListTile(
+                      title: Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      subtitle: Text(
+                        entry.value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      onTap: () {
+                        onTemplateSelected(entry.value);
+                      },
+                    ),
+                    if (index < filteredTemplates.length - 1)
+                      Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
+                  ],
+                );
+              },
+            ),
     );
   }
 }
@@ -419,14 +583,14 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
     return SlideTransition(
       position: _animation,
       child: GestureDetector(
-        onTap: () => Navigator.pop(context), // Закрытие при тапе вне панели
+        onTap: () => Navigator.pop(context),
         child: Container(
           color: Colors.black.withOpacity(0.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Container(
-                constraints: BoxConstraints(maxHeight: 500), // Ограничение высоты
+                constraints: BoxConstraints(maxHeight: 500),
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -435,7 +599,15 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Шаблоны', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      AppLocalizations.of(context)!.translate('templates'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
                     SizedBox(height: 10),
                     Expanded(
                       child: _buildTemplateList(),
@@ -475,12 +647,21 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
         return Column(
           children: [
             ListTile(
-              title: Text(templates[index]),
+              title: Text(
+                templates[index],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
               onTap: () {
                 widget.onTemplateSelected(templates[index].split(': ')[1]);
               },
             ),
-            if (index < templates.length - 1) Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
+            if (index < templates.length - 1)
+              Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
           ],
         );
       },

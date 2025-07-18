@@ -1103,7 +1103,9 @@
 "price_type_details": "Narx turi:",
 "phone_number_too_long": "Telefon raqami juda uzun",
 "phone_number_too_short": "Telefon raqami juda qisqa",
-"no_order_statuses": "Sizda buyurtma holatlari mavjud emas"
+"no_order_statuses": "Sizda buyurtma holatlari mavjud emas",
+"copy_task": "Vazifani nusxalash"
+
 
 
 

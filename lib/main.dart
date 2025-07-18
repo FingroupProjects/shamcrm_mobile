@@ -94,6 +94,9 @@ import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/phone_verification_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -344,6 +347,10 @@ class _MyAppState extends State<MyApp> {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/pin_screen': (context) => PinScreen(),
+          // '/phone_verification': (context) => PhoneVerificationScreen(),
+          // '/phone_call': (context) => PhoneCallScreen(),
+          '/profile': (context) => ProfileScreen(),
+
         },
       ),
     );
