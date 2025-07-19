@@ -71,7 +71,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         subCategories = categories;
       });
     } catch (e) {
-      print('Error fetching subcategories: $e');
+      //print('Error fetching subcategories: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -230,7 +230,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           BlocListener<GoodsBloc, GoodsState>(
             listener: (context, state) {
               if (state is GoodsSuccess) {
-                print('GoodsAddScreen: GoodsSuccess received - ${state.message}');
+                //print('GoodsAddScreen: GoodsSuccess received - ${state.message}');
                 setState(() => isLoading = false); // Сбрасываем isLoading
                 showCustomSnackBar(
                   context: context,
@@ -239,7 +239,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 );
                 Navigator.pop(context); // Закрываем экран
               } else if (state is GoodsError) {
-                print('GoodsAddScreen: GoodsError received - ${state.message}');
+                //print('GoodsAddScreen: GoodsError received - ${state.message}');
                 setState(() => isLoading = false);
                 showCustomSnackBar(
                   context: context,
@@ -247,7 +247,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   isSuccess: false,
                 );
               } else if (state is GoodsLoading) {
-                print('GoodsAddScreen: GoodsLoading state');
+                //print('GoodsAddScreen: GoodsLoading state');
                 setState(() => isLoading = true);
               }
             },
@@ -1025,7 +1025,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       }
 
       setState(() => isLoading = true);
-      print('GoodsAddScreen: Starting product creation');
+      //print('GoodsAddScreen: Starting product creation');
 
       try {
         List<Map<String, dynamic>> attributes = [];
@@ -1054,7 +1054,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             if (await file.exists()) {
               variantImages.add(file);
             } else {
-              print('File not found, skipping: $path');
+              //print('File not found, skipping: $path');
             }
           }
 
@@ -1098,7 +1098,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         }
 
         int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null;
-        print('GoodsAddScreen: Creating product with labelId: $labelId');
+        //print('GoodsAddScreen: Creating product with labelId: $labelId');
 
         context.read<GoodsBloc>().add(
               CreateGoods(
@@ -1120,8 +1120,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ),
             );
       } catch (e, stackTrace) {
-        print('GoodsAddScreen: Error creating product - $e');
-        print(stackTrace);
+        //print('GoodsAddScreen: Error creating product - $e');
+        //print(stackTrace);
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,

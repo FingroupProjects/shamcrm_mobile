@@ -152,26 +152,26 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
   }
   Future<void> _fetchOrderDetails(
       FetchOrderDetails event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _fetchOrderDetails для orderId=${event.orderId}');
+    // //print('OrderBloc: Начало _fetchOrderDetails для orderId=${event.orderId}');
     emit(OrderLoading());
     try {
       final statuses = await apiService.getOrderStatuses();
-      print(
-          'OrderBloc: Получены статусы для деталей заказа: ${statuses.map((s) => s.toJson()).toList()}');
+      // //print(
+      //     'OrderBloc: Получены статусы для деталей заказа: ${statuses.map((s) => s.toJson()).toList()}');
       final orderDetails = await apiService.getOrderDetails(event.orderId);
-      print('OrderBloc: Получены детали заказа: ${orderDetails.toJson()}');
+      //print('OrderBloc: Получены детали заказа: ${orderDetails.toJson()}');
       emit(OrderLoaded(statuses, orderDetails: orderDetails));
-      print('OrderBloc: Выдано состояние OrderLoaded с деталями заказа');
+      //print('OrderBloc: Выдано состояние OrderLoaded с деталями заказа');
     } catch (e) {
       if (state is! OrderStatusCreated) {
-        print('OrderBloc: Ошибка при загрузке деталей заказа: $e');
+        //print('OrderBloc: Ошибка при загрузке деталей заказа: $e');
         emit(OrderError('Не удалось загрузить детали заказа: ${e.toString()}'));
       }
     }
   }
 
 Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
-  print('OrderBloc: Начало _createOrder');
+  //print('OrderBloc: Начало _createOrder');
   emit(OrderLoading());
   try {
     final Map<String, dynamic> body = {
@@ -194,7 +194,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       }
     }
 
-    print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
+    //print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
     final result = await apiService.createOrder(
       phone: event.phone,
@@ -209,27 +209,27 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
     );
-    print('OrderBloc: Результат создания заказа: $result');
+    //print('OrderBloc: Результат создания заказа: $result');
 
     if (result['success']) {
       final statusId = result['statusId'] ?? event.statusId;
-      print('OrderBloc: Новый заказ создан, statusId=$statusId');
+      //print('OrderBloc: Новый заказ создан, statusId=$statusId');
 
       // Эмитируем успех без создания объекта Order
       emit(OrderSuccess(statusId: statusId));
-      print('OrderBloc: Выдано состояние OrderSuccess');
+      //print('OrderBloc: Выдано состояние OrderSuccess');
     } else {
-      print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
+      //print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
       emit(OrderError('Не удалось создать заказ:'));
     }
   } catch (e, stackTrace) {
-    print('OrderBloc: Ошибка при создании заказа: $e');
-    print('OrderBloc: StackTrace: $stackTrace');
+    //print('OrderBloc: Ошибка при создании заказа: $e');
+    //print('OrderBloc: StackTrace: $stackTrace');
     emit(OrderError('Ошибка создания заказа'));
   }
 }
 Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
-  print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
+  //print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
   emit(OrderLoading());
   try {
     final Map<String, dynamic> body = {
@@ -253,7 +253,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       }
     }
 
-    print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+    //print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
     final response = await apiService.updateOrder(
       orderId: event.orderId,
@@ -268,58 +268,58 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
     );
-    print('OrderBloc: Ответ сервера на обновление заказа: $response');
+    //print('OrderBloc: Ответ сервера на обновление заказа: $response');
 
     if (response['success']) {
-      print('OrderBloc: Заказ успешно обновлен');
+      //print('OrderBloc: Заказ успешно обновлен');
       emit(OrderSuccess()); // Эмитируем успех без данных
     } else {
-      print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
+      //print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
       emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
     }
   } catch (e, stackTrace) {
-    print('OrderBloc: Ошибка при обновлении заказа: $e');
-    print('OrderBloc: StackTrace: $stackTrace');
+    //print('OrderBloc: Ошибка при обновлении заказа: $e');
+    //print('OrderBloc: StackTrace: $stackTrace');
     emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
   }
 }
   Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
-    print('OrderBloc: Начало _deleteOrder для orderId=${event.orderId}');
+    //print('OrderBloc: Начало _deleteOrder для orderId=${event.orderId}');
     emit(OrderLoading());
     try {
       final success = await apiService.deleteOrder(
         orderId: event.orderId,
         organizationId: event.organizationId,
       );
-      print('OrderBloc: Результат удаления заказа: $success');
+      //print('OrderBloc: Результат удаления заказа: $success');
       if (success) {
-        print('OrderBloc: Заказ успешно удален');
+        //print('OrderBloc: Заказ успешно удален');
         emit(OrderSuccess());
       } else {
-        print('OrderBloc: Ошибка сервера при удалении заказа');
+        //print('OrderBloc: Ошибка сервера при удалении заказа');
         emit(OrderError('Не удалось удалить заказ'));
       }
     } catch (e) {
-      print('OrderBloc: Ошибка при удалении заказа: $e');
+      //print('OrderBloc: Ошибка при удалении заказа: $e');
       emit(OrderError('Ошибка удаления заказа: $e'));
     }
   }
 
   Future<void> _bushOrderStatus(
       ChangeOrderStatus event, Emitter<OrderState> emit) async {
-    print(
-        'OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
+    // //print(
+    //     'OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
     try {
       final success = await apiService.changeOrderStatus(
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
       );
-      print('OrderBloc: Результат смены статуса заказа: $success');
+      // //print('OrderBloc: Результат смены статуса заказа: $success');
       if (success) {
         final statuses = await apiService.getOrderStatuses();
-        print(
-            'OrderBloc: Получены статусы после смены статуса: ${statuses.map((s) => s.toJson()).toList()}');
+        // //print(
+        //     'OrderBloc: Получены статусы после смены статуса: ${statuses.map((s) => s.toJson()).toList()}');
         if (state is OrderLoaded) {
           final currentState = state as OrderLoaded;
           final updatedOrders = currentState.orders.map((order) {
@@ -332,35 +332,35 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
             }
             return order;
           }).toList();
-          print(
-              'OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
+          // //print(
+          //     'OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
           emit(OrderLoaded(
             statuses,
             orders: updatedOrders,
             pagination: currentState.pagination,
           ));
-          print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
+          //print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
         } else {
           emit(OrderLoaded(statuses));
-          print('OrderBloc: Выдано состояние OrderLoaded с новыми статусами');
+          //print('OrderBloc: Выдано состояние OrderLoaded с новыми статусами');
         }
       } else {
-        print('OrderBloc: Ошибка сервера при смене статуса заказа');
+        //print('OrderBloc: Ошибка сервера при смене статуса заказа');
         emit(OrderError(
             'Не удалось сменить статус заказа: сервер вернул ошибку'));
       }
     } catch (e) {
-      print('OrderBloc: Ошибка при смене статуса заказа: $e');
+      //print('OrderBloc: Ошибка при смене статуса заказа: $e');
       emit(OrderError('Ошибка смены статуса заказа: $e'));
     }
   }
 
   Future<void> _createOrderStatus(
       CreateOrderStatus event, Emitter<OrderState> emit) async {
-    print(
-        'OrderBloc: Начало _createOrderStatus с параметрами: title=${event.title}, notificationMessage=${event.notificationMessage}, isSuccess=${event.isSuccess}, isFailed=${event.isFailed}');
+    // //print(
+    //     'OrderBloc: Начало _createOrderStatus с параметрами: title=${event.title}, notificationMessage=${event.notificationMessage}, isSuccess=${event.isSuccess}, isFailed=${event.isFailed}');
     emit(OrderLoading());
-    print('OrderBloc: Установлено состояние OrderLoading');
+    //print('OrderBloc: Установлено состояние OrderLoading');
 
     try {
       final response = await apiService.createOrderStatus(
@@ -369,12 +369,12 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
         isSuccess: event.isSuccess,
         isFailed: event.isFailed,
       );
-      print(
-          'OrderBloc: Ответ сервера на создание статуса: statusCode=${response.statusCode}, body=${response.body}');
+      // //print(
+      //     'OrderBloc: Ответ сервера на создание статуса: statusCode=${response.statusCode}, body=${response.body}');
 
       final statusCode = response.statusCode;
-      print('Статус ответа! $statusCode');
-      print('Тело ответа! ${response.body}');
+      //print('Статус ответа! $statusCode');
+      //print('Тело ответа! ${response.body}');
 
       if (statusCode == 200 || statusCode == 201 || statusCode == 204) {
         int? newStatusId;
@@ -383,24 +383,24 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
           try {
             final data = jsonDecode(response.body);
             newStatusId = data['id'];
-            print('OrderBloc: Получен newStatusId из ответа: $newStatusId');
+            //print('OrderBloc: Получен newStatusId из ответа: $newStatusId');
           } catch (e) {
-            print('OrderBloc: Ошибка декодирования тела ответа: $e');
+            //print('OrderBloc: Ошибка декодирования тела ответа: $e');
           }
         }
 
         if (newStatusId == null) {
-          print(
-              'OrderBloc: newStatusId не получен из ответа, запрашиваем FetchOrderStatuses');
+          // //print(
+          //     'OrderBloc: newStatusId не получен из ответа, запрашиваем FetchOrderStatuses');
           final statuses = await apiService.getOrderStatuses();
-          print(
-              'OrderBloc: Получены статусы после FetchOrderStatuses: ${statuses.map((s) => s.toJson()).toList()}');
+          // //print(
+          //     'OrderBloc: Получены статусы после FetchOrderStatuses: ${statuses.map((s) => s.toJson()).toList()}');
           if (statuses.isNotEmpty) {
             newStatusId = statuses.last.id;
-            print(
-                'OrderBloc: Выбран последний статус как newStatusId: $newStatusId');
+            // //print(
+            //     'OrderBloc: Выбран последний статус как newStatusId: $newStatusId');
           } else {
-            print('OrderBloc: Статусы пусты после FetchOrderStatuses');
+            //print('OrderBloc: Статусы пусты после FetchOrderStatuses');
             emit(OrderError('Не удалось определить ID нового статуса'));
             return;
           }
@@ -410,35 +410,35 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
           'Статус заказа успешно создан',
           newStatusId: newStatusId,
         ));
-        print(
-            'OrderBloc: Выдано состояние OrderStatusCreated с newStatusId=$newStatusId');
+        // //print(
+        //     'OrderBloc: Выдано состояние OrderStatusCreated с newStatusId=$newStatusId');
 
         await Future.delayed(Duration(milliseconds: 500));
-        print(
-            'OrderBloc: Задержка завершена, добавляем событие FetchOrderStatuses');
+        // //print(
+        //     'OrderBloc: Задержка завершена, добавляем событие FetchOrderStatuses');
 
         add(FetchOrderStatuses());
-        print('OrderBloc: Добавлено событие FetchOrderStatuses');
+        //print('OrderBloc: Добавлено событие FetchOrderStatuses');
       } else if (statusCode == 422) {
-        print('OrderBloc: Ошибка валидации данных (422)');
+        //print('OrderBloc: Ошибка валидации данных (422)');
         emit(OrderError('Ошибка валидации данных: проверьте введенные данные'));
       } else if (statusCode == 500) {
-        print('OrderBloc: Ошибка сервера (500)');
+        //print('OrderBloc: Ошибка сервера (500)');
         emit(OrderError('Ошибка сервера: попробуйте позже'));
       } else {
-        print('OrderBloc: Неожиданный код ответа: $statusCode');
+        //print('OrderBloc: Неожиданный код ответа: $statusCode');
         emit(OrderError('Ошибка создания статуса заказа: код $statusCode'));
       }
     } catch (e) {
-      print('OrderBloc: Ошибка при создании статуса заказа: $e');
+      //print('OrderBloc: Ошибка при создании статуса заказа: $e');
       emit(OrderError('Ошибка создания статуса заказа: $e'));
     }
   }
 
   Future<void> _updateOrderStatus(
       UpdateOrderStatus event, Emitter<OrderState> emit) async {
-    print(
-        'OrderBloc: Начало _updateOrderStatus для statusId=${event.statusId}');
+    // //print(
+    //     'OrderBloc: Начало _updateOrderStatus для statusId=${event.statusId}');
     emit(OrderLoading());
 
     try {
@@ -466,14 +466,14 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     }
   }
    Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
-  print('OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
+  // //print('OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
   try {
     final success = await apiService.changeOrderStatus(
       orderId: event.orderId,
       statusId: event.statusId,
       organizationId: event.organizationId,
     );
-    print('OrderBloc: Результат смены статуса заказа: $success');
+    //print('OrderBloc: Результат смены статуса заказа: $success');
     if (success) {
       if (state is OrderLoaded) {
         final currentState = state as OrderLoaded;
@@ -493,14 +493,14 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
         // Добавляем обновлённый заказ в список
         updatedOrders.add(updatedOrder);
 
-        print('OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
+        //print('OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
         emit(OrderLoaded(
           currentState.statuses,
           orders: updatedOrders,
           pagination: currentState.pagination,
           orderDetails: currentState.orderDetails,
         ));
-        print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
+        //print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
 
         // Запускаем событие для обновления вкладки с новым статусом
         add(FetchOrders(
@@ -512,21 +512,21 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       } else {
         // Если текущее состояние не OrderLoaded, просто эмитируем успех
         emit(OrderSuccess(statusId: event.statusId));
-        print('OrderBloc: Выдано состояние OrderSuccess');
+        //print('OrderBloc: Выдано состояние OrderSuccess');
       }
     } else {
-      print('OrderBloc: Ошибка сервера при смене статуса заказа');
+      //print('OrderBloc: Ошибка сервера при смене статуса заказа');
       emit(OrderError('Не удалось сменить статус заказа: сервер вернул ошибку'));
     }
   } catch (e) {
-    print('OrderBloc: Ошибка при смене статуса заказа: $e');
+    //print('OrderBloc: Ошибка при смене статуса заказа: $e');
     emit(OrderError('Ошибка смены статуса заказа: $e'));
   }
 }
   Future<void> _deleteOrderStatus(
       DeleteOrderStatus event, Emitter<OrderState> emit) async {
-    print(
-        'OrderBloc: Начало _deleteOrderStatus для statusId=${event.statusId}');
+    // //print(
+    //     'OrderBloc: Начало _deleteOrderStatus для statusId=${event.statusId}');
     emit(OrderLoading());
 
     try {

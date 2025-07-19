@@ -624,7 +624,7 @@ Widget _buildNoticeHistoryItem(HistoryItem item) {
         }
       }
       return value?.toString() ??
-          AppLocalizations.of(context)!.translate('not_specified');
+          AppLocalizations.of(context)!.translate('');
     }
 
     return body.entries.map((entry) {

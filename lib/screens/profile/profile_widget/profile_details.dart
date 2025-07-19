@@ -157,7 +157,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         _loadSelectedOrganization(),
       ]);
     } catch (e) {
-      print('Error loading initial data: $e');
+      //print('Error loading initial data: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -204,7 +204,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         _userImage = userProfile.image ?? '';
       });
     } catch (e) {
-      print('Ошибка при загрузке данных из API: $e');
+      //print('Ошибка при загрузке данных из API: $e');
     }
   }
 

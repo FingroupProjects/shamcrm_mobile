@@ -86,51 +86,51 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
             .map((item) => LeadData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
-      print('Loaded filter state: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
+      ////print('Loaded filter state: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    print('Saving filter state...');
+    ////print('Saving filter state...');
     if (_fromDate != null) {
       await prefs.setInt('order_from_date', _fromDate!.millisecondsSinceEpoch);
-      print('Saved order_from_date: ${_fromDate!.millisecondsSinceEpoch}');
+      ////print('Saved order_from_date: ${_fromDate!.millisecondsSinceEpoch}');
     } else {
       await prefs.remove('order_from_date');
-      print('Removed order_from_date');
+      ////print('Removed order_from_date');
     }
     if (_toDate != null) {
       await prefs.setInt('order_to_date', _toDate!.millisecondsSinceEpoch);
-      print('Saved order_to_date: ${_toDate!.millisecondsSinceEpoch}');
+      ////print('Saved order_to_date: ${_toDate!.millisecondsSinceEpoch}');
     } else {
       await prefs.remove('order_to_date');
-      print('Removed order_to_date');
+      ////print('Removed order_to_date');
     }
     await prefs.setString('order_client', _clientController.text);
-    print('Saved order_client: ${_clientController.text}');
+    ////print('Saved order_client: ${_clientController.text}');
     if (_selectedStatus != null) {
       await prefs.setString('order_status', _selectedStatus!);
-      print('Saved order_status: $_selectedStatus');
+      ////print('Saved order_status: $_selectedStatus');
     } else {
       await prefs.remove('order_status');
-      print('Removed order_status');
+      ////print('Removed order_status');
     }
     if (_selectedPaymentMethod != null) {
       await prefs.setString('order_payment_method', _selectedPaymentMethod!);
-      print('Saved order_payment_method: $_selectedPaymentMethod');
+      ////print('Saved order_payment_method: $_selectedPaymentMethod');
     } else {
       await prefs.remove('order_payment_method');
-      print('Removed order_payment_method');
+      ////print('Removed order_payment_method');
     }
     await prefs.setString('order_managers', jsonEncode(_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()));
-    print('Saved order_managers: ${_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()}');
+    ////print('Saved order_managers: ${_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()}');
     await prefs.setString('order_leads', jsonEncode(_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()));
-    print('Saved order_leads: ${_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()}');
+    ////print('Saved order_leads: ${_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()}');
   }
 
   void _resetFilters() {
-    print('Resetting filters...');
+    ////print('Resetting filters...');
     setState(() {
       _fromDate = null;
       _toDate = null;
@@ -142,7 +142,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       _paymentDropdownKey = UniqueKey();
       _statusDropdownKey = UniqueKey();
       _managerSelectKey = UniqueKey();
-      print('After reset: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
+      ////print('After reset: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -196,7 +196,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   void _applyFilters() async {
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
-      print('No filters selected, resetting filters');
+      ////print('No filters selected, resetting filters');
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({

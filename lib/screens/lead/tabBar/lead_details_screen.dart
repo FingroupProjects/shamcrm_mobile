@@ -589,8 +589,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         },
     ];
     for (var field in lead.leadCustomFields) {
-      print(
-          'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
+      // print(
+      //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value});
     }
     for (var dirValue in lead.directoryValues) {
@@ -663,7 +663,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdLoaded) {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
-                print('LeadDetailsScreen: Lead chats: ${lead.chats}');
+                // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
                 return Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

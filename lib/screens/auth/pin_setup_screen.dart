@@ -70,15 +70,15 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       await prefs.setInt('currency_id', settings.currencyId);
       
       if (kDebugMode) {
-        print('MiniAppSettings: currency_id сохранён: ${settings.currencyId}');
+        //print('MiniAppSettings: currency_id сохранён: ${settings.currencyId}');
       }
     }
   } catch (e) {
-    print('Error fetching mini-app settings: $e');
+    //print('Error fetching mini-app settings: $e');
     final prefs = await SharedPreferences.getInstance();
     final savedCurrencyId = prefs.getInt('currency_id');
     if (savedCurrencyId != null) {
-      print('MiniAppSettings: currency_id загружен из кэша: $savedCurrencyId');
+      //print('MiniAppSettings: currency_id загружен из кэша: $savedCurrencyId');
     }
   }
 }
@@ -104,7 +104,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         }
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
     }
   }
 
@@ -119,11 +119,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         await prefs.setBool('department_enabled', response['result']['department'] ?? false);
         await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
         if (kDebugMode) {
-          print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
+          //print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
         }
       }
     } catch (e) {
-      print('Error fetching settings: $e');
+      //print('Error fetching settings: $e');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('integration_with_1C', false);
     }
@@ -210,7 +210,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         isPermissionsLoaded = true;
       });
     } catch (e) {
-      print('Error loading user role: $e');
+      //print('Error loading user role: $e');
       setState(() {
         userRoleId = 0;
       });

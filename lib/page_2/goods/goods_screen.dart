@@ -28,8 +28,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
   late ScrollController _scrollController;
   String _lastSearchQuery = '';
   Map<String, dynamic> _currentFilters = {};
-  bool _canCreateProduct = false; // Новая переменная для права product.create
-  final ApiService _apiService = ApiService(); // Экземпляр ApiService
+  bool _canCreateProduct = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -44,30 +44,30 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
-    _checkPermissions(); // Проверяем права доступа при инициализации
+    _checkPermissions();
   }
 
- Future<void> _checkPermissions() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
-    final bool canCreate = await _apiService.hasPermission('product.create');
+  Future<void> _checkPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+      final bool canCreate = await _apiService.hasPermission('product.create');
 
-    setState(() {
-      _canCreateProduct = canCreate && !integrationWith1C;
-      if (kDebugMode) {
-        print('GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
-      }
-    });
-  } catch (e) {
-    setState(() {
-      _canCreateProduct = false;
-      if (kDebugMode) {
-        print('GoodsScreen: Ошибка при проверке прав: $e');
-      }
-    });
+      setState(() {
+        _canCreateProduct = canCreate && !integrationWith1C;
+        if (kDebugMode) {
+          print('GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _canCreateProduct = false;
+        if (kDebugMode) {
+          print('GoodsScreen: Ошибка при проверке прав: $e');
+        }
+      });
+    }
   }
-}
 
   void _onScroll() {
     if (_scrollController.position.pixels ==
@@ -180,6 +180,9 @@ class _GoodsScreenState extends State<GoodsScreen> {
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
           currentFilters: _currentFilters,
+          initialLabels: _currentFilters['label_id'] != null // Изменено на label_id
+              ? List<String>.from(_currentFilters['label_id'])
+              : null,
         ),
       ),
       body: isClickAvatarIcon
@@ -252,7 +255,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
                           isActive: goods.isActive,
-                          label: goods.label,
+                          label: goods.label, // Проверить, соответствует ли это новому формату
                         ),
                       );
                     },

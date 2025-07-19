@@ -44,12 +44,12 @@ class _GoodsCardState extends State<GoodsCard> {
 
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        print('GoodsCard: baseUrl set to $baseUrl');
+        //print('GoodsCard: baseUrl set to $baseUrl');
       });
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
-        print('GoodsCard: Error initializing baseUrl: $error');
+        //print('GoodsCard: Error initializing baseUrl: $error');
       });
     }
   }
@@ -61,7 +61,7 @@ class _GoodsCardState extends State<GoodsCard> {
   }
 
   void _navigateToGoodsDetails() {
-    print('GoodsCard: Navigating to GoodsDetailsScreen for ID ${widget.goodsId}');
+    //print('GoodsCard: Navigating to GoodsDetailsScreen for ID ${widget.goodsId}');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -74,7 +74,7 @@ class _GoodsCardState extends State<GoodsCard> {
 
   GoodsFile? _getMainImage() {
     if (widget.goodsFiles.isEmpty) {
-      print('GoodsCard: No images available for goods ID ${widget.goodsId}');
+      //print('GoodsCard: No images available for goods ID ${widget.goodsId}');
       return null;
     }
 
@@ -83,7 +83,7 @@ class _GoodsCardState extends State<GoodsCard> {
       orElse: () => widget.goodsFiles.first,
     );
 
-    print('GoodsCard: Selected image for goods ID ${widget.goodsId}: ${mainImage.path} (isMain: ${mainImage.isMain})');
+    //print('GoodsCard: Selected image for goods ID ${widget.goodsId}: ${mainImage.path} (isMain: ${mainImage.isMain})');
     return mainImage;
   }
 
@@ -96,7 +96,7 @@ class _GoodsCardState extends State<GoodsCard> {
         height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('GoodsCard: Image load error for ${file.path}: $error');
+          //print('GoodsCard: Image load error for ${file.path}: $error');
           return Container(
             width: 100,
             height: 100,
@@ -131,7 +131,7 @@ class _GoodsCardState extends State<GoodsCard> {
 
     // Отображаем метку, если она существует, независимо от showOnMain
     if (widget.label != null) {
-      print('GoodsCard: Displaying label, name=${widget.label!.name}, color=${widget.label!.color}, showOnMain=${widget.label!.showOnMain}');
+      //print('GoodsCard: Displaying label, name=${widget.label!.name}, color=${widget.label!.color}, showOnMain=${widget.label!.showOnMain}');
       String colorString = widget.label!.color;
       Color labelColor;
       try {
@@ -143,7 +143,7 @@ class _GoodsCardState extends State<GoodsCard> {
         }
         labelColor = Color(int.parse(colorString, radix: 16));
       } catch (e) {
-        print('GoodsCard: Invalid color format for label: ${widget.label!.color}, error: $e');
+        //print('GoodsCard: Invalid color format for label: ${widget.label!.color}, error: $e');
         labelColor = Colors.grey;
       }
 
@@ -179,7 +179,7 @@ class _GoodsCardState extends State<GoodsCard> {
         ),
       );
     } else {
-      print('GoodsCard: No label to display');
+      //print('GoodsCard: No label to display');
     }
 
     return labels;

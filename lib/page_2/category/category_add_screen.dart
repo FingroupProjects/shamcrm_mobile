@@ -446,6 +446,7 @@ class CategoryAddBottomSheet {
     List<CustomField> customFields,
     String selectedType,
     bool isAffectingPrice,
+
   ) async {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
@@ -467,6 +468,7 @@ class CategoryAddBottomSheet {
         image: isActive ? null : image, // Передаем null для изображения, если isActive = true
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
+        isParent: isActive, // Передаём isActive как isParent
       ));
     } catch (e) {
       showCustomSnackBar(

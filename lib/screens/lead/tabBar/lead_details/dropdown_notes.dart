@@ -162,11 +162,11 @@ class _NotesWidgetState extends State<NotesWidget> {
     final formattedDate = note.date != null
         ? DateFormat('dd.MM.yyyy HH:mm')
             .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
-        : AppLocalizations.of(context)!.translate('not_specified');
+        : AppLocalizations.of(context)!.translate('');
     final createDate = note.createDate != null
         ? DateFormat('dd.MM.yyyy HH:mm')
             .format(DateTime.parse(note.createDate!).add(Duration(hours: 5)))
-        : AppLocalizations.of(context)!.translate('not_specified');
+        : AppLocalizations.of(context)!.translate('');
     return GestureDetector(
       onTap: _canUpdateNotes ? () => _showEditNoteDialog(note) : null,
       child: Padding(

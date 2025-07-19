@@ -58,16 +58,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? 'null';
-      print('Loaded currentUserId: $userId'); // Логируем значение
+      //print('Loaded currentUserId: $userId'); // Логируем значение
       if (mounted) {
         setState(() {
           currentUserId = userId;
-          print(
-              'State updated: currentUserId = $currentUserId'); // Логируем обновление состояния
+          // //print(
+          //     'State updated: currentUserId = $currentUserId'); // Логируем обновление состояния
         });
       }
     } catch (e) {
-      print('Error loading current user ID: $e');
+      //print('Error loading current user ID: $e');
     }
   }
 
@@ -97,7 +97,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         filteredContacts = contacts;
       });
     } catch (e) {
-      print("Ошибка при загрузке контактов: $e");
+      //print("Ошибка при загрузке контактов: $e");
     }
   }
 
@@ -945,7 +945,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                       AppLocalizations.of(context)!
                           .translate('error_contacts_sent'),
                       Colors.red);
-                  print('Error sending contacts: $e');
+                  //print('Error sending contacts: $e');
                 }
               },
               backgroundColor: Color(0xff1E2E52),

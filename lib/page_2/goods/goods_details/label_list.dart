@@ -68,11 +68,11 @@ class _LabelWidgetState extends State<LabelWidget> {
               );
             } catch (e) {
               selectedLabelData = null;
-              print('LabelWidget: Error finding label: $e');
+              //print('LabelWidget: Error finding label: $e');
             }
           }
 
-          print('LabelWidget: selectedLabel = ${widget.selectedLabel}, selectedLabelData = ${selectedLabelData?.id}');
+          //print('LabelWidget: selectedLabel = ${widget.selectedLabel}, selectedLabelData = ${selectedLabelData?.id}');
 
           if (state is LabelLoading) {
             return Column(

@@ -296,7 +296,6 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
         
-
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

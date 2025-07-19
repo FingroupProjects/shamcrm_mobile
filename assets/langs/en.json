@@ -1090,7 +1090,12 @@
 "phone_number_too_long": "Phone number is too long",
 "phone_number_too_short": "Phone number is too short",
 "no_order_statuses": "You have no order statuses",
-"copy_task": "Copy task"
+"copy_task": "Copy task",
+"labels": "Labels",
+"select_labels": "Select labels",
+"selected_labels": "Selected labels"
+
+
 
 
 

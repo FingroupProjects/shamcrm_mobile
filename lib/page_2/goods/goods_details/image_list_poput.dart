@@ -379,8 +379,8 @@ class _ImageListPopupState extends State<ImageListPopup>
                                                     fit: BoxFit.cover,
                                                     onError: (exception,
                                                         stackTrace) {
-                                                      print(
-                                                          'Error loading image: $exception');
+                                                      // print(
+                                                      //     'Error loading image: $exception');
                                                     },
                                                   ),
                                                   border: Border.all(

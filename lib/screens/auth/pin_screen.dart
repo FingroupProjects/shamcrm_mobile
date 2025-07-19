@@ -135,17 +135,17 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         await prefs.setBool('identify_by_phone', settings.identifyByPhone == 1);
         
         if (kDebugMode) {
-          print('MiniAppSettings сохранены: ${settings.name}, ${settings.phone}, currency_id: ${settings.currencyId}');
+          //print('MiniAppSettings сохранены: ${settings.name}, ${settings.phone}, currency_id: ${settings.currencyId}');
         }
       }
     } catch (e) {
-      print('Error fetching mini-app settings: $e');
+      //print('Error fetching mini-app settings: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedSettings = prefs.getString('mini_app_settings');
       if (savedSettings != null) {
         final settings = MiniAppSettings.fromJson(json.decode(savedSettings));
         await prefs.setInt('currency_id', settings.currencyId); // Сохраняем currency_id из кэша
-        print('MiniAppSettings загружены из кэша: ${settings.name}, currency_id: ${settings.currencyId}');
+        //print('MiniAppSettings загружены из кэша: ${settings.name}, currency_id: ${settings.currencyId}');
       }
     }
   }
@@ -161,11 +161,11 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         await prefs.setBool('department_enabled', response['result']['department'] ?? false);
         await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
         if (kDebugMode) {
-          print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
+          //print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
         }
       }
     } catch (e) {
-      print('Error fetching settings: $e');
+      //print('Error fetching settings: $e');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('integration_with_1C', false);
     }
@@ -179,16 +179,16 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         tutorialProgress = progress['result'];
       });
       await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      print('Tutorial progress updated from server: $tutorialProgress');
+      //print('Tutorial progress updated from server: $tutorialProgress');
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      //print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        print('Tutorial progress loaded from cache: $tutorialProgress');
+        //print('Tutorial progress loaded from cache: $tutorialProgress');
       }
     }
   }
@@ -226,7 +226,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         });
       }
     } catch (e) {
-      print('Error loading user role: $e');
+      //print('Error loading user role: $e');
       if (mounted) {
         setState(() {
           userRoleId = 0;
@@ -257,7 +257,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? '';
       
-      print('userID : $UUID');
+      //print('userID : $UUID');
 
       UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
 
@@ -273,7 +273,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         });
       }
     } catch (e) {
-      print('Ошибка при загрузке данных с сервера: $e');
+      //print('Ошибка при загрузке данных с сервера: $e');
       if (mounted) {
         setState(() {
           _userName = 'Не найдено';
@@ -342,7 +342,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     } on PlatformException catch (e) {
       if (mounted) {
-        print('Ошибка биометрической аутентификации: $e');
+        //print('Ошибка биометрической аутентификации: $e');
       }
     }
   }

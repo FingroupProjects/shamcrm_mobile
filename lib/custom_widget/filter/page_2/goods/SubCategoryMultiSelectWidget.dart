@@ -37,8 +37,8 @@ class _SubCategoryMultiSelectWidgetState
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print(
-          'SubCategoryMultiSelectWidget: Инициализация, начальные ID: ${widget.initialSubCategoryIds}');
+      // print(
+      //     'SubCategoryMultiSelectWidget: Инициализация, начальные ID: ${widget.initialSubCategoryIds}');
     }
   }
 
@@ -48,7 +48,7 @@ class _SubCategoryMultiSelectWidgetState
       selectedSubCategories = [];
       allSelected = false;
       if (kDebugMode) {
-        print('SubCategoryMultiSelectWidget: Подкатегории сброшены');
+        // print('SubCategoryMultiSelectWidget: Подкатегории сброшены');
       }
     });
     widget.onSelectSubCategories(selectedSubCategories);
@@ -62,8 +62,8 @@ class _SubCategoryMultiSelectWidgetState
           builder: (context, state) {
             if (state is GoodsError) {
               if (kDebugMode) {
-                print(
-                    'SubCategoryMultiSelectWidget: Ошибка загрузки подкатегорий: ${state.message}');
+                // print(
+                //     'SubCategoryMultiSelectWidget: Ошибка загрузки подкатегорий: ${state.message}');
               }
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -74,8 +74,8 @@ class _SubCategoryMultiSelectWidgetState
                   ElevatedButton(
                     onPressed: () {
                       if (kDebugMode) {
-                        print(
-                            'SubCategoryMultiSelectWidget: Повторная попытка загрузки подкатегорий');
+                        // print(
+                        //     'SubCategoryMultiSelectWidget: Повторная попытка загрузки подкатегорий');
                       }
                       context.read<GoodsBloc>().add(FetchSubCategories());
                     },
@@ -88,8 +88,8 @@ class _SubCategoryMultiSelectWidgetState
             if (state is GoodsDataLoaded) {
               subCategoriesList = state.subCategories;
               if (kDebugMode) {
-                print(
-                    'SubCategoryMultiSelectWidget: Загружено подкатегорий: ${subCategoriesList.length}');
+                // print(
+                //     'SubCategoryMultiSelectWidget: Загружено подкатегорий: ${subCategoriesList.length}');
               }
               if (widget.initialSubCategoryIds != null &&
                   subCategoriesList.isNotEmpty &&
@@ -101,8 +101,8 @@ class _SubCategoryMultiSelectWidgetState
                 allSelected =
                     selectedSubCategories.length == subCategoriesList.length;
                 if (kDebugMode) {
-                  print(
-                      'SubCategoryMultiSelectWidget: Инициализировано выбранных подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
+                  // print(
+                  //     'SubCategoryMultiSelectWidget: Инициализировано выбранных подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
                 }
               }
               return Column(
@@ -203,8 +203,8 @@ class _SubCategoryMultiSelectWidgetState
                                     widget
                                         .onSelectSubCategories(selectedSubCategories);
                                     if (kDebugMode) {
-                                      print(
-                                          'SubCategoryMultiSelectWidget: Выбрано всех: $allSelected, подкатегорий: ${selectedSubCategories.length}');
+                                      // print(
+                                      //     'SubCategoryMultiSelectWidget: Выбрано всех: $allSelected, подкатегорий: ${selectedSubCategories.length}');
                                     }
                                   });
                                 },
@@ -253,8 +253,8 @@ class _SubCategoryMultiSelectWidgetState
                             allSelected = false;
                           }
                           if (kDebugMode) {
-                            print(
-                                'SubCategoryMultiSelectWidget: Изменён список подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
+                            // print(
+                            //     'SubCategoryMultiSelectWidget: Изменён список подкатегорий: ${selectedSubCategories.length}, allSelected: $allSelected');
                           }
                         });
                         widget.onSelectSubCategories(selectedSubCategories);
@@ -277,7 +277,7 @@ class _SubCategoryMultiSelectWidgetState
             }
             if (state is GoodsLoading) {
               if (kDebugMode) {
-                print('SubCategoryMultiSelectWidget: Загрузка подкатегорий');
+                // print('SubCategoryMultiSelectWidget: Загрузка подкатегорий');
               }
               return const Center(child: CircularProgressIndicator());
             }
@@ -333,8 +333,8 @@ class _SubCategoryMultiSelectWidgetState
         onItemSelect();
         FocusScope.of(context).unfocus();
         if (kDebugMode) {
-          print(
-              'SubCategoryMultiSelectWidget: Выбрана подкатегория: ${item.name}, ID: ${item.id}');
+          // print(
+          //     'SubCategoryMultiSelectWidget: Выбрана подкатегория: ${item.name}, ID: ${item.id}');
         }
       },
     );

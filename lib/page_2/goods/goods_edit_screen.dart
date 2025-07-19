@@ -81,7 +81,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   stockQuantityController =
       TextEditingController(text: widget.goods.quantity?.toString() ?? '');
   commentsController.text = widget.goods.comments ?? '';
-  print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
+  //print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
   selectlabel = widget.goods.label?.id?.toString(); // Исправлено
   isActive = widget.goods.isActive ?? false;
   selectedBranch = null;

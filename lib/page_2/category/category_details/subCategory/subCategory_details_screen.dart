@@ -58,13 +58,13 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
       setState(() {
         _canUpdateCategory = canUpdate;
         _canCreateCategory = canCreate;
-        print('SubCategoryDetailsScreen: _canUpdateCategory установлен в $canUpdate, _canCreateCategory установлен в $canCreate');
+        //print('SubCategoryDetailsScreen: _canUpdateCategory установлен в $canUpdate, _canCreateCategory установлен в $canCreate');
       });
     } catch (e) {
       setState(() {
         _canUpdateCategory = false;
         _canCreateCategory = false;
-        print('SubCategoryDetailsScreen: Ошибка при проверке прав: $e');
+        //print('SubCategoryDetailsScreen: Ошибка при проверке прав: $e');
       });
     }
   }
@@ -74,7 +74,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
       final file = await urlToFile('$baseUrl/$imageUrl');
       setState(() {
         _cachedImageFile = file;
-        print('SubCategoryDetailsScreen: Изображение загружено: $imageUrl');
+        //print('SubCategoryDetailsScreen: Изображение загружено: $imageUrl');
       });
     }
   }
@@ -86,12 +86,12 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        print('SubCategoryDetailsScreen: baseUrl установлен в $baseUrl');
+        //print('SubCategoryDetailsScreen: baseUrl установлен в $baseUrl');
       });
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
-        print('SubCategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
+        //print('SubCategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
       });
     }
   }
@@ -120,7 +120,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
           'value': _currentCategory.parent!.name
         },
     ];
-    print('SubCategoryDetailsScreen: Детали обновлены, количество: ${details.length}');
+    //print('SubCategoryDetailsScreen: Детали обновлены, количество: ${details.length}');
   }
 
   @override
@@ -130,7 +130,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         BlocListener<CategoryBloc, CategoryState>(
           listener: (context, state) {
             if (state is CategorySuccess) {
-              print('SubCategoryDetailsScreen: Успешное действие с категорией, обновление данных');
+              //print('SubCategoryDetailsScreen: Успешное действие с категорией, обновление данных');
               context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
             }
           },
@@ -150,7 +150,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                   _cachedImageFile = null;
                 }
                 _updateDetails();
-                print('SubCategoryDetailsScreen: Подкатегория обновлена: ${_currentCategory.name}');
+                //print('SubCategoryDetailsScreen: Подкатегория обновлена: ${_currentCategory.name}');
               });
             }
           },
@@ -165,12 +165,12 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         body: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
           builder: (context, state) {
             if (state is CategoryByIdLoading) {
-              print('SubCategoryDetailsScreen: Состояние загрузки');
+              //print('SubCategoryDetailsScreen: Состояние загрузки');
               return Center(child: CircularProgressIndicator());
             }
 
             if (state is CategoryByIdError) {
-              print('SubCategoryDetailsScreen: Ошибка: ${state.message}');
+              //print('SubCategoryDetailsScreen: Ошибка: ${state.message}');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -179,7 +179,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        print('SubCategoryDetailsScreen: Повторная попытка загрузки данных');
+                        //print('SubCategoryDetailsScreen: Повторная попытка загрузки данных');
                         context.read<CategoryByIdBloc>().add(
                               FetchCategoryByIdEvent(categoryId: widget.ctgId),
                             );
@@ -213,7 +213,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                                 height: 200,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
-                                  print('SubCategoryDetailsScreen: Ошибка загрузки изображения: $error');
+                                  //print('SubCategoryDetailsScreen: Ошибка загрузки изображения: $error');
                                   return Container(
                                     width: double.infinity,
                                     height: 200,
@@ -223,7 +223,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                                 },
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
-                                  print('SubCategoryDetailsScreen: Загрузка изображения...');
+                                  //print('SubCategoryDetailsScreen: Загрузка изображения...');
                                   return Container(
                                     width: double.infinity,
                                     height: 200,
@@ -426,7 +426,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   void _navigateToSubCategoryDetails(CategoryDataById category) {
-    print('SubCategoryDetailsScreen: Переход к деталям подкатегории: ${category.name}');
+    //print('SubCategoryDetailsScreen: Переход к деталям подкатегории: ${category.name}');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -453,7 +453,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         if (_canCreateCategory) // Условное отображение кнопки добавления
           TextButton(
             onPressed: () {
-              print('SubCategoryDetailsScreen: Нажата кнопка добавления подкатегории');
+              //print('SubCategoryDetailsScreen: Нажата кнопка добавления подкатегории');
               SubCategoryAddBottomSheet.show(context, _currentCategory.id);
             },
             style: TextButton.styleFrom(
@@ -539,7 +539,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
               height: 24,
             ),
             onPressed: () async {
-              print('SubCategoryDetailsScreen: Нажата кнопка "Назад"');
+              //print('SubCategoryDetailsScreen: Нажата кнопка "Назад"');
               Navigator.pop(context);
             },
           ),
@@ -569,14 +569,16 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       height: 24,
                     ),
                     onPressed: () async {
-                      print('SubCategoryDetailsScreen: Нажата кнопка редактирования');
-                      await SubCategoryEditBottomSheet.show(
-                        context,
-                        initialSubCategoryId: widget.category.id,
-                        initialName: _currentCategory.name,
-                        initialImage: _cachedImageFile,
-                        initialAttributes: _currentCategory.attributes,
-                      );
+                      //print('SubCategoryDetailsScreen: Нажата кнопка редактирования');
+                     await SubCategoryEditBottomSheet.show(
+  context,
+  initialSubCategoryId: widget.category.id,
+  initialName: _currentCategory.name,
+  initialImage: _cachedImageFile,
+  initialAttributes: _currentCategory.attributes,
+  initialDisplayType: _currentCategory.displayType ?? 'a', // Убедимся, что поле существует
+  initialHasPriceCharacteristics: _currentCategory.hasPriceCharacteristics,
+);
                     },
                   ),
                   IconButton(
@@ -588,13 +590,13 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       height: 24,
                     ),
                     onPressed: () {
-                      print('SubCategoryDetailsScreen: Нажата кнопка удаления');
+                      //print('SubCategoryDetailsScreen: Нажата кнопка удаления');
                       showDialog(
                         context: context,
                         builder: (context) => DeleteSubCategoryDialog(categoryId: widget.category.id),
                       ).then((deleted) {
                         if (deleted == true) {
-                          print('SubCategoryDetailsScreen: Подкатегория удалена, обновление данных');
+                          //print('SubCategoryDetailsScreen: Подкатегория удалена, обновление данных');
                           context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
                           Navigator.of(context).pop(true);
                         }
@@ -609,7 +611,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    print('SubCategoryDetailsScreen: Построение списка деталей с ${details.length} элементами');
+    //print('SubCategoryDetailsScreen: Построение списка деталей с ${details.length} элементами');
     return ListView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -638,7 +640,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
               child: label == AppLocalizations.of(context)!.translate('description_details')
                   ? GestureDetector(
                       onTap: () {
-                        print('SubCategoryDetailsScreen: Нажато на элемент деталей: $label');
+                        //print('SubCategoryDetailsScreen: Нажато на элемент деталей: $label');
                         _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
                       },
                       child: _buildValue(value, label, maxLines: 2),
@@ -665,7 +667,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) {
-      print('SubCategoryDetailsScreen: Пустое значение для $label');
+      //print('SubCategoryDetailsScreen: Пустое значение для $label');
       return Container();
     }
     return Text(
@@ -685,7 +687,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    print('SubCategoryDetailsScreen: Отображение диалога полного текста для: $title');
+    //print('SubCategoryDetailsScreen: Отображение диалога полного текста для: $title');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -730,7 +732,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
-                    print('SubCategoryDetailsScreen: Закрытие диалога полного текста');
+                    //print('SubCategoryDetailsScreen: Закрытие диалога полного текста');
                     Navigator.pop(context);
                   },
                   buttonColor: Color(0xff1E2E52),
@@ -748,7 +750,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   void dispose() {
     super.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('SubCategoryDetailsScreen: Очистка временных файлов');
+      //print('SubCategoryDetailsScreen: Очистка временных файлов');
       cleanTempFiles();
     });
   }

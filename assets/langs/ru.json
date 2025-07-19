@@ -1091,7 +1091,11 @@
 "phone_number_too_long": "Номер телефона слишком длинный",
 "phone_number_too_short": "Номер телефона слишком короткий",
 "no_order_statuses": "У вас нет статусов заказа",
-"copy_task": "Копирование задачи"
+"copy_task": "Копирование задачи",
+"labels": "Метки",
+"select_labels": "Выберите метки",
+"selected_labels": "Выбраны метки"
+
 
 
 

@@ -344,7 +344,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       }
     } catch (e) {
-      print('Error checking overdue tasks: $e');
+      //print('Error checking overdue tasks: $e');
     }
   }
 
@@ -364,7 +364,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       await _audioPlayer.setAsset('assets/audio/get.mp3');
       await _audioPlayer.play();
     } catch (e) {
-      print('Error playing sound: $e');
+      //print('Error playing sound: $e');
     }
   }
 
@@ -398,8 +398,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     );
 
     String userId = prefs.getString('unique_id') ?? '';
-    print('userID--------------------------------------------------popopop-p : $userId');
-      print(userId);
+    //print('userID--------------------------------------------------popopop-p : $userId');
+      //print(userId);
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -439,10 +439,10 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     try {
       await socketClient.connect();
-      print('Socket connection SUCCESSS');
+      //print('Socket connection SUCCESSS');
     } catch (e) {
       if (kDebugMode) {
-        print('Socket connection error!');
+        //print('Socket connection error!');
       }
     }
   }
@@ -481,7 +481,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       }
     } catch (e) {
-      print('Ошибка при загрузке изображения!');
+      //print('Ошибка при загрузке изображения!');
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;

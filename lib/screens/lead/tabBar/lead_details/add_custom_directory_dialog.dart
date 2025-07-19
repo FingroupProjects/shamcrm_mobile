@@ -84,7 +84,7 @@ class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
                         organizationId: organizationId.toString(),
                       );
                     } catch (e) {
-                      print('Ошибка при связывании справочника: $e');
+                      //print('Ошибка при связывании справочника: $e');
                     }
                     Navigator.of(context).pop();
                   }

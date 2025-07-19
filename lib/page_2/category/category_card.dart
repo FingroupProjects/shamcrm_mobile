@@ -139,7 +139,7 @@ class _CategoryCardState extends State<CategoryCard> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: RichText(
-                          maxLines: 1,
+                          maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                           text: TextSpan(
                             children: [

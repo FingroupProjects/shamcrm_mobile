@@ -104,7 +104,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла!');
+      //print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),
@@ -618,7 +618,7 @@ List<String> fileSizes = [];
       });
     }
   } catch (e) {
-    print('Ошибка при выборе файла!');
+    //print('Ошибка при выборе файла!');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

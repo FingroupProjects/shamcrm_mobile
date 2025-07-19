@@ -436,7 +436,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла!');
+      //print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),

@@ -229,34 +229,34 @@ Widget _buildActionItem(String item) {
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     String formatDate(String? dateString) {
-      if (dateString == null || dateString == AppLocalizations.of(context)!.translate('not_specified')) {
-        return AppLocalizations.of(context)!.translate('not_specified');
+      if (dateString == null || dateString == AppLocalizations.of(context)!.translate('')) {
+        return AppLocalizations.of(context)!.translate('');
       }
       try {
         DateTime date = DateTime.parse(dateString);
         return DateFormat('dd.MM.yyyy').format(date);
       } catch (e) {
-        return AppLocalizations.of(context)!.translate('not_specified');
+        return AppLocalizations.of(context)!.translate('');
       }
     }
 
     String formatDateTime(DateTime? dateTime) {
-      if (dateTime == null) return AppLocalizations.of(context)!.translate('not_specified');
+      if (dateTime == null) return AppLocalizations.of(context)!.translate('');
       return DateFormat('dd.MM.yyyy').format(dateTime);
     }
 
     if (changes != null) {
       if (changes.dealStatusNewValue != null || changes.dealStatusPreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.dealStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.dealStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.dealStatusPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.dealStatusNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.leadNewValue != null || changes.leadPreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('lead_deal_card')}${changes.leadPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.leadNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('lead_deal_card')}${changes.leadPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.leadNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('manager_details')}${changes.managerPreviousValue?.toString() ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.managerNewValue?.toString() ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('manager_details')}${changes.managerPreviousValue?.toString() ?? AppLocalizations.of(context)!.translate('')} > ${changes.managerNewValue?.toString() ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
         actionDetail += '\n${AppLocalizations.of(context)!.translate('start_date_history')}${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
@@ -265,10 +265,10 @@ Widget _buildActionItem(String item) {
         actionDetail += '\n${AppLocalizations.of(context)!.translate('end_date_history')}${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
       }
       if (changes.sumNewValue != null || changes.sumPreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('summa_history')}${changes.sumPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.sumNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('summa_history')}${changes.sumPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.sumNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
-        actionDetail += '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       if (changes.statusUpdateDateNewValue != null || changes.statusUpdateDatePreviousValue != null) {
         actionDetail += '\n${AppLocalizations.of(context)!.translate('date_update_status_history')}${formatDateTime(changes.statusUpdateDatePreviousValue)} > ${formatDateTime(changes.statusUpdateDateNewValue)}';

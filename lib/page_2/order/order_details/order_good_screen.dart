@@ -41,7 +41,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
     } catch (error) {
-      print('Error initializing baseUrl: $error');
+      //print('Error initializing baseUrl: $error');
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
       });
@@ -157,7 +157,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   Widget _buildImageWidget(Good good) {
     if (baseUrl == null) {
-      print('Base URL is null for ${good.goodName}');
+      //print('Base URL is null for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -168,11 +168,11 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       files = good.variantGood!.files;
     }
 
-    print('Good files for ${good.goodName}: ${good.good.files}');
-    print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
+    //print('Good files for ${good.goodName}: ${good.good.files}');
+    //print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
 
     if (files.isEmpty) {
-      print('No files found for ${good.goodName}');
+      //print('No files found for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -184,7 +184,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
         height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('Image loading error for ${good.goodName}: $error');
+          //print('Image loading error for ${good.goodName}: $error');
           return _buildPlaceholderImage();
         },
         loadingBuilder: (context, child, loadingProgress) {
@@ -213,13 +213,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   void _navigateToGoodsDetails(Good good) {
   int correctGoodId = good.getCorrectGoodId();
   
-  print('Navigating to good details');
-  print('Good name: ${good.getCorrectGoodName()}');
-  print('Using good ID: $correctGoodId');
-  print('Has variant: ${good.variantGood != null}');
-  
   if (correctGoodId == 0) {
-    print('Error: Unable to determine correct good ID');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Ошибка: Не удалось определить ID товара'),
@@ -234,7 +228,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     MaterialPageRoute(
       builder: (context) => GoodsDetailsScreen(
         id: correctGoodId,
-        isFromOrder: true, // Добавляем флаг
+        isFromOrder: true,
       ),
     ),
   );
