@@ -10,6 +10,8 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,7 @@ class UserProfileScreen extends StatelessWidget {
   UserProfileScreen({
     required this.chatId,
   });
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -111,55 +114,82 @@ class UserProfileScreen extends StatelessWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.symmetric( vertical: 16, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                       child: Column(
                         children: [
-                          buildInfoRow( AppLocalizations.of(context)!.translate('name'),
-                              profile.name,
-                              Icons.person,
-                              null),
+                          buildInfoRow(
+                            context, // Передаём context
+                            profile, // Передаём profile
+                            AppLocalizations.of(context)!.translate('name'),
+                            profile.name,
+                            Icons.person,
+                            null,
+                          ),
                           buildDivider(),
                           buildInfoRow(
-                              AppLocalizations.of(context)!.translate('phone'),
-                              profile.phone?.isNotEmpty == true
-                                  ? profile.phone!
-                                  : AppLocalizations.of(context)!.translate('not_specified'),
-                              Icons.phone,
-                              null,
-                            ),
-                          buildDivider(),
-                          buildInfoRow( AppLocalizations.of(context)!.translate('instagram'),
-                              profile.instaLogin ?? AppLocalizations.of(context)!.translate('not_specified'),
-                              null,
-                              'assets/icons/leads/instagram.png'),
-                          buildDivider(),
-                          buildInfoRow( AppLocalizations.of(context)!.translate('telegram'),
-                              profile.tgNick ?? AppLocalizations.of(context)!.translate('not_specified'),
-                              null,
-                              'assets/icons/leads/telegram.png'),
-                          buildDivider(),
-                          buildInfoRow( AppLocalizations.of(context)!.translate('whatsApp'),
-                              profile.waPhone ?? AppLocalizations.of(context)!.translate('not_specified'),
-                              null,
-                              'assets/icons/leads/whatsapp.png'),
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('phone'),
+                            profile.phone?.isNotEmpty == true
+                                ? profile.phone!
+                                : AppLocalizations.of(context)!.translate(''),
+                            Icons.phone,
+                            null,
+                          ),
                           buildDivider(),
                           buildInfoRow(
-                              AppLocalizations.of(context)!.translate('facebook'),
-                              profile.facebookLogin ?? AppLocalizations.of(context)!.translate('not_specified'),
-                              null,
-                              'assets/icons/leads/facebook.png'),
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('instagram'),
+                            profile.instaLogin ?? AppLocalizations.of(context)!.translate(''),
+                            null,
+                            'assets/icons/leads/instagram.png',
+                          ),
                           buildDivider(),
                           buildInfoRow(
-                              AppLocalizations.of(context)!.translate('description_list'),
-                              profile.description ?? AppLocalizations.of(context)!.translate('not_specified'),
-                              Icons.description,
-                              null),
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('telegram'),
+                            profile.tgNick ?? AppLocalizations.of(context)!.translate(''),
+                            null,
+                            'assets/icons/leads/telegram.png',
+                          ),
                           buildDivider(),
                           buildInfoRow(
-                              AppLocalizations.of(context)!.translate('creation_date_lead'),
-                              formattedDate,
-                              Icons.calendar_today,
-                              null),
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('whatsApp'),
+                            profile.waPhone ?? AppLocalizations.of(context)!.translate(''),
+                            null,
+                            'assets/icons/leads/whatsapp.png',
+                          ),
+                          buildDivider(),
+                          buildInfoRow(
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('facebook'),
+                            profile.facebookLogin ?? AppLocalizations.of(context)!.translate(''),
+                            null,
+                            'assets/icons/leads/facebook.png',
+                          ),
+                          buildDivider(),
+                          buildInfoRow(
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('description_list'),
+                            profile.description ?? AppLocalizations.of(context)!.translate(''),
+                            Icons.description,
+                            null,
+                          ),
+                          buildDivider(),
+                          buildInfoRow(
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('creation_date_lead'),
+                            formattedDate,
+                            Icons.calendar_today,
+                            null,
+                          ),
                           buildDivider(),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -191,165 +221,164 @@ class UserProfileScreen extends StatelessWidget {
                                       )
                                     else
                                       Padding(
-                                      padding: EdgeInsets.only(left: 0,),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () async {
-                                                 bool? confirm = await showDialog<bool>(
-                                               context: context,
-                                               builder: (BuildContext context) {
-                                                 return AlertDialog(
-                                                   backgroundColor: Colors.white,
-                                                   title: Center(
-                                                     child: Text(
-                                                       AppLocalizations.of(context)!.translate('confirm_manager_title'),
-                                                       style: TextStyle(
-                                                         fontSize: 20,
-                                                         fontFamily: 'Gilroy',
-                                                         fontWeight: FontWeight.w600,
-                                                         color: Color(0xFF1E2E52),
-                                                       ),
-                                                     ),
-                                                   ),
-                                                   content: Text(
-                                                     AppLocalizations.of(context)!.translate('confirm_manager_message'),
-                                                     style: TextStyle(
-                                                       fontSize: 16,
-                                                       fontFamily: 'Gilroy',
-                                                       fontWeight: FontWeight.w500,
-                                                       color: Color(0xFF1E2E52),
-                                                     ),
-                                                   ),
-                                                   actions: [
-                                                     Row(
-                                                       mainAxisAlignment: MainAxisAlignment.end,
-                                                       children: [
-                                                         Expanded(
-                                                           child: CustomButton(
-                                                             buttonText: AppLocalizations.of(context)!.translate('no'),
-                                                             onPressed: () {
-                                                               Navigator.of(context).pop(false);
-                                                             },
-                                                             buttonColor: Colors.red,
-                                                             textColor: Colors.white,
-                                                           ),
-                                                         ),
-                                                         SizedBox(width: 8),
-                                                         Expanded(
-                                                           child: CustomButton(
-                                                             buttonText: AppLocalizations.of(context)!.translate('yes'),
-                                                             onPressed: () {
-                                                               Navigator.of(context).pop(true);
-                                                             },
-                                                             buttonColor: Color(0xFF1E2E52),
-                                                             textColor: Colors.white,
-                                                           ),
-                                                         ),
-                                                       ],
-                                                     ),
-                                                   ],
-                                                 );
-                                               },
-                                             );
+                                        padding: EdgeInsets.only(left: 0),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () async {
+                                                bool? confirm = await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (BuildContext context) {
+                                                    return AlertDialog(
+                                                      backgroundColor: Colors.white,
+                                                      title: Center(
+                                                        child: Text(
+                                                          AppLocalizations.of(context)!.translate('confirm_manager_title'),
+                                                          style: TextStyle(
+                                                            fontSize: 20,
+                                                            fontFamily: 'Gilroy',
+                                                            fontWeight: FontWeight.w600,
+                                                            color: Color(0xFF1E2E52),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      content: Text(
+                                                        AppLocalizations.of(context)!.translate('confirm_manager_message'),
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontFamily: 'Gilroy',
+                                                          fontWeight: FontWeight.w500,
+                                                          color: Color(0xFF1E2E52),
+                                                        ),
+                                                      ),
+                                                      actions: [
+                                                        Row(
+                                                          mainAxisAlignment: MainAxisAlignment.end,
+                                                          children: [
+                                                            Expanded(
+                                                              child: CustomButton(
+                                                                buttonText: AppLocalizations.of(context)!.translate('no'),
+                                                                onPressed: () {
+                                                                  Navigator.of(context).pop(false);
+                                                                },
+                                                                buttonColor: Colors.red,
+                                                                textColor: Colors.white,
+                                                              ),
+                                                            ),
+                                                            SizedBox(width: 8),
+                                                            Expanded(
+                                                              child: CustomButton(
+                                                                buttonText: AppLocalizations.of(context)!.translate('yes'),
+                                                                onPressed: () {
+                                                                  Navigator.of(context).pop(true);
+                                                                },
+                                                                buttonColor: Color(0xFF1E2E52),
+                                                                textColor: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
 
-                                             if (confirm != true) {
-                                               return;
-                                             }
+                                                if (confirm != true) {
+                                                  return;
+                                                }
 
-                                             if (profile.phone == null || profile!.phone!.isEmpty) {
-                                               showCustomSnackBar(
-                                                 context: context,
-                                                 message: AppLocalizations.of(context)!.translate('phone_required'),
-                                                 isSuccess: false,
-                                               );
-                                               return;
-                                             }
+                                                if (profile.phone == null || profile.phone!.isEmpty) {
+                                                  showCustomSnackBar(
+                                                    context: context,
+                                                    message: AppLocalizations.of(context)!.translate('phone_required'),
+                                                    isSuccess: false,
+                                                  );
+                                                  return;
+                                                }
 
-                                             try {
-                                               SharedPreferences prefs = await SharedPreferences.getInstance();
-                                               String? userID = prefs.getString('userID');
-                                               if (userID == null || userID.isEmpty) {
-                                                 return;
-                                               }
-                                               int? parsedUserId = int.tryParse(userID);
+                                                try {
+                                                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                  String? userID = prefs.getString('userID');
+                                                  if (userID == null || userID.isEmpty) {
+                                                    return;
+                                                  }
+                                                  int? parsedUserId = int.tryParse(userID);
 
-                                               final completer = Completer<void>();
-                                               final leadBloc = context.read<LeadBloc>();
+                                                  final completer = Completer<void>();
+                                                  final leadBloc = context.read<LeadBloc>();
 
-                                               final listener = context.read<LeadBloc>().stream.listen((state) {
-                                                 if (state is LeadSuccess) {
-                                                   completer.complete();
-                                                 } else if (state is LeadError) {
-                                                   completer.completeError(Exception(state.message));
-                                                 }
-                                               });
+                                                  final listener = context.read<LeadBloc>().stream.listen((state) {
+                                                    if (state is LeadSuccess) {
+                                                      completer.complete();
+                                                    } else if (state is LeadError) {
+                                                      completer.completeError(Exception(state.message));
+                                                    }
+                                                  });
 
-                                               final localizations = AppLocalizations.of(context)!;
-                                               leadBloc.add(UpdateLead(
-                                                 leadId: profile.id,
-                                                 name: profile.name,
-                                                 phone: profile.phone ?? "",
-                                                 managerId: parsedUserId,
-                                                 leadStatusId: profile.leadStatus?.id ?? 0,
-                                                 localizations: localizations,
-                                                //  files: profile.files ?? [],
-                                                  existingFiles: [], // Changed from existingFiles
-                                               ));
+                                                  final localizations = AppLocalizations.of(context)!;
+                                                  leadBloc.add(UpdateLead(
+                                                    leadId: profile.id,
+                                                    name: profile.name,
+                                                    phone: profile.phone ?? "",
+                                                    managerId: parsedUserId,
+                                                    leadStatusId: profile.leadStatus?.id ?? 0,
+                                                    localizations: localizations,
+                                                    existingFiles: [],
+                                                  ));
 
-                                               await completer.future;
-                                               listener.cancel();
+                                                  await completer.future;
+                                                  listener.cancel();
 
-                                               context.read<ChatProfileBloc>().add(FetchChatProfile(chatId));
+                                                  context.read<ChatProfileBloc>().add(FetchChatProfile(chatId));
 
-                                               context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
-                                               context.read<LeadBloc>().add(FetchLeadStatuses());
-                                               showCustomSnackBar(
-                                                 context: context,
-                                                 message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
-                                                 isSuccess: true,
-                                               );
-                                             } catch (e) {
-                                               showCustomSnackBar(
-                                                 context: context,
-                                                 message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
-                                                 isSuccess: false,
-                                               );
-                                             }
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: Color(0xff1E2E52),
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.person_add_alt_1,
-                                                    color: Colors.white,
-                                                    size: 20,
-                                                  ),
-                                                  SizedBox(width: 12),
-                                                  Text(
-                                                    AppLocalizations.of(context)!.translate('become_manager'),
-                                                    textAlign: TextAlign.center,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontFamily: 'Gilroy',
-                                                      fontWeight: FontWeight.w500,
+                                                  context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
+                                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+                                                  showCustomSnackBar(
+                                                    context: context,
+                                                    message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
+                                                    isSuccess: true,
+                                                  );
+                                                } catch (e) {
+                                                  showCustomSnackBar(
+                                                    context: context,
+                                                    message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
+                                                    isSuccess: false,
+                                                  );
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Color(0xff1E2E52),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.person_add_alt_1,
                                                       color: Colors.white,
+                                                      size: 20,
                                                     ),
-                                                  ),
-                                                ],
+                                                    SizedBox(width: 12),
+                                                    Text(
+                                                      AppLocalizations.of(context)!.translate('become_manager'),
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontFamily: 'Gilroy',
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    )
                                   ],
                                 ),
                               ),
@@ -357,10 +386,13 @@ class UserProfileScreen extends StatelessWidget {
                           ),
                           buildDivider(),
                           buildInfoRow(
-                              AppLocalizations.of(context)!.translate('status_lead_profile'),
-                              profile.leadStatus?.title ?? 'Не указано',
-                              Icons.assignment,
-                              null),
+                            context,
+                            profile,
+                            AppLocalizations.of(context)!.translate('status_lead_profile'),
+                            profile.leadStatus?.title ?? 'Не указано',
+                            Icons.assignment,
+                            null,
+                          ),
                         ],
                       ),
                     ),
@@ -378,7 +410,13 @@ class UserProfileScreen extends StatelessWidget {
   }
 
   Widget buildInfoRow(
-    String title, String value, IconData? icon, String? customIconPath) {
+    BuildContext context, // Добавляем context как параметр
+    dynamic profile, // Добавляем profile как параметр
+    String title,
+    String value,
+    IconData? icon,
+    String? customIconPath,
+  ) {
     Widget content;
 
     final clickableStyle = TextStyle(
@@ -396,27 +434,51 @@ class UserProfileScreen extends StatelessWidget {
       color: Color(0xff1E2E52),
     );
 
-    if (title == "Телефон" && value != 'Не указано') {
+    if (title == AppLocalizations.of(context)!.translate('name')) {
+      content = GestureDetector(
+        onTap: () {
+          if (profile.id != null && profile.name.isNotEmpty) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: profile.id.toString(),
+                  leadName: profile.name,
+                  leadStatus: profile.leadStatus?.title ?? '',
+                  statusId: profile.leadStatus?.id ?? 0,
+                ),
+              ),
+            );
+          } else {
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('lead_data_missing'),
+              isSuccess: false,
+            );
+          }
+        },
+        child: Text(value, style: clickableStyle),
+      );
+    } else if (title == AppLocalizations.of(context)!.translate('phone') && value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _makePhoneCall(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == "WhatsApp" && value != 'Не указано') {
+    } else if (title == AppLocalizations.of(context)!.translate('whatsApp') && value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openWhatsApp(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == "Telegram" && value != 'Не указано') {
+    } else if (title == AppLocalizations.of(context)!.translate('telegram') && value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openTelegram(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == "Instagram" && value != 'Не указано') {
+    } else if (title == AppLocalizations.of(context)!.translate('instagram') && value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openInstagram(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == "Facebook" && value != 'Не указано') {
+    } else if (title == AppLocalizations.of(context)!.translate('facebook') && value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openFacebook(value),
         child: Text(value, style: clickableStyle),
@@ -460,9 +522,4 @@ class UserProfileScreen extends StatelessWidget {
       height: 24,
     );
   }
-
-  Future<void> _assignManager() async {
- 
-  }
 }
-

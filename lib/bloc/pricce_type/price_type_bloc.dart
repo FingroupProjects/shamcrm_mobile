@@ -21,7 +21,7 @@ class PriceTypeBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
         allPriceTypesFetched = priceTypes.isEmpty;
         emit(PriceTypeLoaded(priceTypes));
       } catch (e) {
-        print('Ошибка при загрузке типов цен!'); // Для отладки
+        // print('Ошибка при загрузке типов цен!'); // Для отладки
         emit(PriceTypeError('Не удалось загрузить список типов цен!'));
       }
     } else {

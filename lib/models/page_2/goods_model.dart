@@ -97,7 +97,7 @@ class Goods {
       }
     }
 
-    print('GoodsModel: Парсинг JSON товара - id: ${data['id']}, название: ${data['name']}');
+    //print('GoodsModel: Парсинг JSON товара - id: ${data['id']}, название: ${data['name']}');
     return Goods(
       id: json['id'] as int? ?? data['id'] as int? ?? 0, // Используем id из корня или good
       name: data['name'] as String? ?? '',
@@ -112,26 +112,26 @@ class Goods {
       discountPercent: discountPercent,
       isActive: isActive,
       files: (data['files'] as List<dynamic>?)?.map((f) {
-            print('GoodsModel: Парсинг файла - ${f['path']}');
+            //print('GoodsModel: Парсинг файла - ${f['path']}');
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
           [],
       attributes: json['attribute_values'] != null
           ? (json['attribute_values'] as List<dynamic>).map((attr) {
-              print('GoodsModel: Парсинг атрибута - ${attr['value']}');
+              //print('GoodsModel: Парсинг атрибута - ${attr['value']}');
               return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
             }).toList()
           : (data['attributes'] as List<dynamic>?)?.map((attr) {
-              print('GoodsModel: Парсинг атрибута - ${attr['value']}');
+              //print('GoodsModel: Парсинг атрибута - ${attr['value']}');
               return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
             }).toList() ??
               [],
       variants: (data['variants'] as List<dynamic>?)?.map((v) {
-        print('GoodsModel: Парсинг варианта - id: ${v['id']}');
+        //print('GoodsModel: Парсинг варианта - id: ${v['id']}');
         return GoodsVariant.fromJson(v as Map<String, dynamic>);
       }).toList(),
       branches: (data['branches'] as List<dynamic>?)?.map((b) {
-        print('GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
+        //print('GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
         return Branch.fromJson(b as Map<String, dynamic>);
       }).toList(),
       comments: data['comments'] as String?,
@@ -141,8 +141,8 @@ class Goods {
       label: data['label'] != null ? Label.fromJson(data['label']) : null,
     );
   } catch (e, stackTrace) {
-    print('GoodsModel: Ошибка парсинга товара: $e');
-    print(stackTrace);
+    //print('GoodsModel: Ошибка парсинга товара: $e');
+    //print(stackTrace);
     rethrow;
   }
 }
@@ -194,11 +194,11 @@ class GoodsAttribute {
               'Неизвестная характеристика';
     } else {
       attributeName = 'Неизвестная характеристика';
-      print(
-          'GoodsModel: Missing category_attribute or attribute in JSON: $json');
+      // //print(
+      //     'GoodsModel: Missing category_attribute or attribute in JSON: $json');
     }
-    print(
-        'GoodsModel: Attribute name: $attributeName, value: ${json['value']}');
+    // //print(
+    //     'GoodsModel: Attribute name: $attributeName, value: ${json['value']}');
 
     return GoodsAttribute(
       id: json['attribute_id'] as int? ?? 0,
@@ -229,16 +229,16 @@ class GoodsVariant {
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
-    print('GoodsModel: Parsing variant attributes for variant ${json['id']}');
+    //print('GoodsModel: Parsing variant attributes for variant ${json['id']}');
     final attributeValues =
         (json['attribute_values'] as List<dynamic>?)?.map((v) {
-              print(
-                  'GoodsModel: Parsing attribute value - id: ${v['id']}, value: ${v['value']}');
+              // //print(
+              //     'GoodsModel: Parsing attribute value - id: ${v['id']}, value: ${v['value']}');
               return AttributeValue.fromJson(v as Map<String, dynamic>);
             }).toList() ??
             [];
-    print(
-        'GoodsModel: Parsed ${attributeValues.length} attribute values for variant ${json['id']}');
+    // //print(
+    //     'GoodsModel: Parsed ${attributeValues.length} attribute values for variant ${json['id']}');
 
     return GoodsVariant(
       id: json['id'] as int? ?? 0,
@@ -248,7 +248,7 @@ class GoodsVariant {
       variantPrice:
           json['price'] != null ? VariantPrice.fromJson(json['price']) : null,
       files: (json['files'] as List<dynamic>?)?.map((f) {
-            print('GoodsModel: Parsing variant file - ${f['path']}');
+            //print('GoodsModel: Parsing variant file - ${f['path']}');
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
           [],
@@ -274,12 +274,12 @@ class AttributeValue {
   });
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
-    print(
-        'GoodsModel: Parsing AttributeValue - category_attribute_id: ${json['category_attribute_id']}, value: ${json['value']}');
+    //print(
+        // 'GoodsModel: Parsing AttributeValue - category_attribute_id: ${json['category_attribute_id']}, value: ${json['value']}');
     if (json['category_attribute'] == null) {
-      print(
+      // //print(
         
-          'GoodsModel: Warning: category_attribute is null for value ${json['value']}');
+      //     'GoodsModel: Warning: category_attribute is null for value ${json['value']}');
           
     }
     return AttributeValue(
@@ -308,11 +308,11 @@ class CategoryAttribute {
   });
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
-    print(
-        'GoodsModel: Parsing CategoryAttribute - id: ${json['id']}, is_individual: ${json['is_individual']}');
+    //print(
+        // 'GoodsModel: Parsing CategoryAttribute - id: ${json['id']}, is_individual: ${json['is_individual']}');
     if (json['attribute'] == null) {
-      print(
-          'GoodsModel: Warning: attribute is null for category_attribute_id ${json['id']}');
+      // //print(
+      //     'GoodsModel: Warning: attribute is null for category_attribute_id ${json['id']}');
     }
     return CategoryAttribute(
       id: json['id'] as int? ?? 0,
@@ -334,8 +334,8 @@ class Attribute {
   });
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
-    print(
-        'GoodsModel: Parsing Attribute - id: ${json['id']}, name: ${json['name']}');
+    // //print(
+    //     'GoodsModel: Parsing Attribute - id: ${json['id']}, name: ${json['name']}');
     return Attribute(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? 'Неизвестная характеристика',
@@ -367,7 +367,7 @@ class VariantPrice {
         price = double.tryParse(json['price']) ?? 0.0;
       }
     }
-    print('GoodsModel: Parsing VariantPrice - price: $price');
+    //print('GoodsModel: Parsing VariantPrice - price: $price');
 
     return VariantPrice(
       id: json['id'] as int? ?? 0,

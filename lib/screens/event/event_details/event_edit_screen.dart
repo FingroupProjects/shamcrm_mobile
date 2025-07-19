@@ -276,7 +276,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   }
 Future<void> _pickFile() async {
   try {
-    print('NoticeEditScreen: Starting file picker');
+    //print('NoticeEditScreen: Starting file picker');
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: true,
@@ -285,7 +285,7 @@ Future<void> _pickFile() async {
       for (var file in result.files) {
         if (file.path != null && file.name != null) {
           final filePath = file.path!;
-          print('NoticeEditScreen: Picked file path: $filePath');
+          //print('NoticeEditScreen: Picked file path: $filePath');
           final fileObject = File(filePath);
           if (await fileObject.exists()) {
             final fileName = file.name;
@@ -293,8 +293,8 @@ Future<void> _pickFile() async {
             if (!existingFiles.any((f) => f.name == fileName) &&
                 !newFiles.contains(filePath)) {
               final fileSize = await fileObject.length();
-              print(
-                  'NoticeEditScreen: Adding new file, name: $fileName, size: $fileSize bytes');
+              // //print(
+              //     'NoticeEditScreen: Adding new file, name: $fileName, size: $fileSize bytes');
               setState(() {
                 newFiles.add(filePath); // Добавляем в newFiles
                 fileNames.add(fileName);
@@ -302,7 +302,7 @@ Future<void> _pickFile() async {
                 selectedFiles.add(filePath); // Для отображения в UI
               });
             } else {
-              print('NoticeEditScreen: File $fileName already exists, skipping');
+              //print('NoticeEditScreen: File $fileName already exists, skipping');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -327,7 +327,7 @@ Future<void> _pickFile() async {
               );
             }
           } else {
-            print('NoticeEditScreen: File does not exist at path: $filePath');
+            //print('NoticeEditScreen: File does not exist at path: $filePath');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -352,16 +352,16 @@ Future<void> _pickFile() async {
             );
           }
         } else {
-          print(
-              'NoticeEditScreen: File path or name is null for file: ${file.name}');
+          // //print(
+          //     'NoticeEditScreen: File path or name is null for file: ${file.name}');
         }
       }
     } else {
-      print('NoticeEditScreen: File picker cancelled or no files selected');
+      //print('NoticeEditScreen: File picker cancelled or no files selected');
     }
   } catch (e, stackTrace) {
-    print('NoticeEditScreen: Error picking file: $e');
-    print('Stack trace: $stackTrace');
+    //print('NoticeEditScreen: Error picking file: $e');
+    //print('Stack trace: $stackTrace');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

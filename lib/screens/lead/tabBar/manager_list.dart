@@ -57,9 +57,9 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
           currentUserId = userId;
         });
       }
-      print('Current userID: $userId');
+      //print('Current userID: $userId');
     } catch (e) {
-      print('Error getting current user ID: $e');
+      //print('Error getting current user ID: $e');
     }
   }
 

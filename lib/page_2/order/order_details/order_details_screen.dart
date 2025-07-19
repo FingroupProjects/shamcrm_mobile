@@ -87,14 +87,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       case 'payme':
         return 'PAYME';
       default:
-        return AppLocalizations.of(context)!.translate('not_specified');
+        return AppLocalizations.of(context)!.translate('');
     }
   }
 
   void _updateDetails(Order order) {
     String formattedDate = order.lead.createdAt != null
         ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-        : AppLocalizations.of(context)!.translate('not_specified');
+        : AppLocalizations.of(context)!.translate('');
 
     details = [
       {
@@ -127,9 +127,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             : AppLocalizations.of(context)!.translate('branch_order'),
         'value': order.delivery
             ? (order.deliveryAddress ??
-                AppLocalizations.of(context)!.translate('not_specified'))
+                AppLocalizations.of(context)!.translate(''))
             : (order.branchName ??
-                AppLocalizations.of(context)!.translate('not_specified')),
+                AppLocalizations.of(context)!.translate('')),
       },
       {
         'label': AppLocalizations.of(context)!.translate('comment_client'),

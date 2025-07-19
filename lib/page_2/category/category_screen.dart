@@ -45,12 +45,12 @@ Future<void> _checkPermissions() async {
 
     setState(() {
       _canCreateCategory = canCreate && !integrationWith1C;
-      print('CategoryScreen: _canCreateCategory установлен в $_canCreateCategory (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
+      //print('CategoryScreen: _canCreateCategory установлен в $_canCreateCategory (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
     });
   } catch (e) {
     setState(() {
       _canCreateCategory = false;
-      print('CategoryScreen: Ошибка при проверке прав: $e');
+      //print('CategoryScreen: Ошибка при проверке прав: $e');
     });
   }
 }
@@ -76,7 +76,7 @@ Future<void> _checkPermissions() async {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    print('CategoryScreen: Очистка ресурсов');
+    //print('CategoryScreen: Очистка ресурсов');
     super.dispose();
   }
 
@@ -93,7 +93,7 @@ Future<void> _checkPermissions() async {
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
-              print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
+              //print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
             });
           },
           clearButtonClickFiltr: (isSearching) {},
@@ -121,19 +121,19 @@ Future<void> _checkPermissions() async {
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: true,
                   );
-                  print('CategoryScreen: Успех: ${state.message}');
+                  //print('CategoryScreen: Успех: ${state.message}');
                 } else if (state is CategoryError) {
                   showCustomSnackBar(
                     context: context,
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: false,
                   );
-                  print('CategoryScreen: Ошибка: ${state.message}');
+                  //print('CategoryScreen: Ошибка: ${state.message}');
                 }
               },
               builder: (context, state) {
                 if (state is CategoryLoading) {
-                  print('CategoryScreen: Состояние загрузки');
+                  //print('CategoryScreen: Состояние загрузки');
                   return const Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -141,7 +141,7 @@ Future<void> _checkPermissions() async {
                     ),
                   );
                 } else if (state is CategoryError) {
-                  print('CategoryScreen: Ошибка загрузки категорий: ${state.message}');
+                  //print('CategoryScreen: Ошибка загрузки категорий: ${state.message}');
                   context.read<CategoryBloc>().add(FetchCategories());
                   return const Center(
                     child: PlayStoreImageLoading(
@@ -150,7 +150,7 @@ Future<void> _checkPermissions() async {
                     ),
                   );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
-                  print('CategoryScreen: Список категорий пуст');
+                  //print('CategoryScreen: Список категорий пуст');
                   return Center(
                     child: Text(
                       _isSearching
@@ -166,7 +166,7 @@ Future<void> _checkPermissions() async {
                   );
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
-                  print('CategoryScreen: Загружено категорий: ${categories.length}');
+                  //print('CategoryScreen: Загружено категорий: ${categories.length}');
                   return ListView.builder(
                     padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
                     itemCount: categories.length,
@@ -185,7 +185,7 @@ Future<void> _checkPermissions() async {
                     },
                   );
                 }
-                print('CategoryScreen: Неизвестное состояние');
+                //print('CategoryScreen: Неизвестное состояние');
                 return const Center(
                   child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                 );
@@ -194,7 +194,7 @@ Future<void> _checkPermissions() async {
       floatingActionButton: _canCreateCategory
           ? FloatingActionButton(
               onPressed: () {
-                print('CategoryScreen: Нажата кнопка добавления категории');
+                //print('CategoryScreen: Нажата кнопка добавления категории');
                 CategoryAddBottomSheet.show(context);
               },
               backgroundColor: const Color(0xff1E2E52),

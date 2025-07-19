@@ -42,7 +42,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
  @override
   void initState() {
     super.initState();
-    print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}, isFromOrder: ${widget.isFromOrder}');
+    //print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}, isFromOrder: ${widget.isFromOrder}');
     context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
     _checkPermissions();
@@ -56,12 +56,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
       });
-      print('GoodsDetailsScreen: baseUrl set to $baseUrl');
+      //print('GoodsDetailsScreen: baseUrl set to $baseUrl');
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
       });
-      print('GoodsDetailsScreen: Error initializing baseUrl: $error');
+      //print('GoodsDetailsScreen: Error initializing baseUrl: $error');
     }
   }
 
@@ -73,12 +73,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
     setState(() {
       _canUpdateProduct = canUpdate && !integrationWith1C;
-      print('GoodsDetailsScreen: _canUpdateProduct установлен в $_canUpdateProduct (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
+      //print('GoodsDetailsScreen: _canUpdateProduct установлен в $_canUpdateProduct (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
     });
   } catch (e) {
     setState(() {
       _canUpdateProduct = false;
-      print('GoodsDetailsScreen: Ошибка при проверке прав: $e');
+      //print('GoodsDetailsScreen: Ошибка при проверке прав: $e');
     });
   }
 }
@@ -87,13 +87,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
-    print('GoodsDetailsScreen: Disposed timer and page controller');
+    //print('GoodsDetailsScreen: Disposed timer and page controller');
     super.dispose();
   }
 
   void _startAutoScroll(int itemCount) {
     if (itemCount <= 1) {
-      print('GoodsDetailsScreen: Auto-scroll not started, itemCount: $itemCount');
+      //print('GoodsDetailsScreen: Auto-scroll not started, itemCount: $itemCount');
       return;
     }
     
@@ -103,7 +103,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     void scrollToNextPage() {
       if (!_isAutoScrollEnabled) {
         _timer?.cancel();
-        print('GoodsDetailsScreen: Auto-scroll stopped due to manual interaction');
+        //print('GoodsDetailsScreen: Auto-scroll stopped due to manual interaction');
         return;
       }
       
@@ -117,7 +117,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           );
           _isAutoScrollEnabled = false;
           _timer?.cancel();
-          print('GoodsDetailsScreen: Auto-scroll completed one cycle, returned to page 0 and stopped');
+          //print('GoodsDetailsScreen: Auto-scroll completed one cycle, returned to page 0 and stopped');
           return;
         } else {
           _currentPage++;
@@ -126,19 +126,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-          print('GoodsDetailsScreen: Auto-scroll to page $_currentPage');
+          //print('GoodsDetailsScreen: Auto-scroll to page $_currentPage');
           _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
         }
       });
     }
 
     _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
-    print('GoodsDetailsScreen: Auto-scroll started for $itemCount items');
+    //print('GoodsDetailsScreen: Auto-scroll started for $itemCount items');
   }
 
   Widget _buildImageSlider(List<GoodsFile> files) {
     if (baseUrl == null) {
-      print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
+      //print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -147,19 +147,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     if (mainImageIndex != -1) {
       final mainImage = sortedFiles.removeAt(mainImageIndex);
       sortedFiles.insert(0, mainImage);
-      print('GoodsDetailsScreen: Main image (ID: ${mainImage.id}) moved to index 0');
+      //print('GoodsDetailsScreen: Main image (ID: ${mainImage.id}) moved to index 0');
     } else {
-      print('GoodsDetailsScreen: No main image found, using original order');
+      //print('GoodsDetailsScreen: No main image found, using original order');
     }
 
     final multipleMainImages = sortedFiles.where((file) => file.isMain).length > 1;
     if (multipleMainImages) {
-      print('GoodsDetailsScreen: Warning: Multiple images with isMain == true detected');
+      //print('GoodsDetailsScreen: Warning: Multiple images with isMain == true detected');
     }
 
     _startAutoScroll(sortedFiles.length);
 
-    print('GoodsDetailsScreen: Building image slider with ${sortedFiles.length} files');
+    //print('GoodsDetailsScreen: Building image slider with ${sortedFiles.length} files');
     return Column(
       children: [
         Container(
@@ -174,13 +174,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 _isAutoScrollEnabled = false;
                 _timer?.cancel();
               });
-              print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id}) manually');
+              //print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id}) manually');
             },
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${sortedFiles[index].path}';
-              print('GoodsDetailsScreen: Loading image $imageUrl');
+              //print('GoodsDetailsScreen: Loading image $imageUrl');
               if (sortedFiles[index].path.isEmpty) {
-                print('GoodsDetailsScreen: Empty image path at index $index');
+                //print('GoodsDetailsScreen: Empty image path at index $index');
                 return _buildPlaceholder();
               }
               return ClipRRect(
@@ -190,7 +190,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+                    //print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
                     return _buildPlaceholder();
                   },
                 ),
@@ -218,7 +218,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
-    print('GoodsDetailsScreen: Displaying image placeholder');
+    //print('GoodsDetailsScreen: Displaying image placeholder');
     return Container(
       color: Colors.grey[200],
       child: const Center(
@@ -228,7 +228,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    print('GoodsDetailsScreen: Building AppBar with title $title');
+    //print('GoodsDetailsScreen: Building AppBar with title $title');
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -243,7 +243,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
             onPressed: () {
-              print('GoodsDetailsScreen: Back button pressed');
+              //print('GoodsDetailsScreen: Back button pressed');
               Navigator.pop(context);
             },
           ),
@@ -265,7 +265,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     ? [
         BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
           builder: (context, state) {
-            print('GoodsDetailsScreen: Building AppBar actions, state: $state');
+            //print('GoodsDetailsScreen: Building AppBar actions, state: $state');
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -275,7 +275,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
                   onPressed: state is GoodsByIdLoaded
                       ? () async {
-                          print('GoodsDetailsScreen: Edit button pressed');
+                          //print('GoodsDetailsScreen: Edit button pressed');
                           final sortedFiles = List<GoodsFile>.from(state.goods.files);
                           final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
                           if (mainImageIndex != -1) {
@@ -293,7 +293,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                             ),
                           );
                           if (result == true) {
-                            print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
+                            //print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
                             context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
                           }
                         }
@@ -321,7 +321,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     }
     String labelsValue = labels.isNotEmpty
         ? labels.join(', ')
-        : AppLocalizations.of(context)!.translate('not_specified');
+        : AppLocalizations.of(context)!.translate('');
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('goods_name_details'),
@@ -343,7 +343,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('branch_details'),
         'value': goods.branches != null && goods.branches!.isNotEmpty
             ? goods.branches!.map((branch) => branch.name).join(', ')
-            : AppLocalizations.of(context)!.translate('not_specified'),
+            : AppLocalizations.of(context)!.translate(''),
       },
       if (goods.discountPrice != null && goods.discountPrice != 0)
         {
@@ -376,7 +376,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         },
     ];
 
-    print('GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
+    //print('GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,7 +442,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantsSection(Goods goods) {
-    print('GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
+    //print('GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,7 +471,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
     final price = variant.variantPrice?.price ?? 0.0;
-    print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
+    //print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
 
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
@@ -480,18 +480,18 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             AppLocalizations.of(context)!.translate('unknown_characteristic');
         final value = attrValue.value.isNotEmpty
             ? attrValue.value
-            : AppLocalizations.of(context)!.translate('not_specified');
+            : AppLocalizations.of(context)!.translate('');
         uniqueAttributes.add({
           'name': attrName,
           'value': value,
         });
-        print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
+        //print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
       }
     } else {
-      print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
+      //print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
       uniqueAttributes.add({
         'name': AppLocalizations.of(context)!.translate('no_name_chat'),
-        'value': AppLocalizations.of(context)!.translate('not_specified'),
+        'value': AppLocalizations.of(context)!.translate(''),
       });
     }
 
@@ -500,17 +500,17 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     String? imageUrl;
     if (variant.files != null && variant.files!.isNotEmpty) {
       imageUrl = '$baseUrl/${variant.files!.first.path}';
-      print('GoodsDetailsScreen: Using variant image: $imageUrl');
+      //print('GoodsDetailsScreen: Using variant image: $imageUrl');
     } else if (goodsFiles.isNotEmpty) {
       imageUrl = '$baseUrl/${goodsFiles.first.path}';
-      print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
+      //print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
     } else {
-      print('GoodsDetailsScreen: No images available for variant ${variant.id}');
+      //print('GoodsDetailsScreen: No images available for variant ${variant.id}');
     }
 
     return GestureDetector(
       onTap: () {
-        print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
+        //print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -609,7 +609,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildVariantImage(String? imageUrl) {
     if (imageUrl == null) {
-      print('GoodsDetailsScreen: No image URL, showing placeholder');
+      //print('GoodsDetailsScreen: No image URL, showing placeholder');
       return Container(
         color: Colors.grey[200],
         child: const Center(
@@ -623,7 +623,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
+          //print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
           return Container(
             color: Colors.grey[200],
             child: const Center(
@@ -649,7 +649,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             detail['value'] == value &&
             !expandableFields.contains(label));
 
-    print('GoodsDetailsScreen: Building detail item - label: $label, value: $value');
+    //print('GoodsDetailsScreen: Building detail item - label: $label, value: $value');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -659,7 +659,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           child: isExpandable
               ? GestureDetector(
                   onTap: () {
-                    print('GoodsDetailsScreen: Detail item tapped - $label');
+                    //print('GoodsDetailsScreen: Detail item tapped - $label');
                     _showFullTextDialog(label.replaceAll(':', ''), value);
                   },
                   child: _buildValue(value, label, maxLines: 1),
@@ -685,7 +685,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Widget _buildValue(String value, String label, {int? maxLines}) {
     if (label == AppLocalizations.of(context)!.translate('goods_description_details') &&
         value == 'null') {
-      print('GoodsDetailsScreen: Empty description for $label');
+      //print('GoodsDetailsScreen: Empty description for $label');
       return const Text(
         '',
         style: TextStyle(
@@ -700,7 +700,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     }
 
     if (value.isEmpty) {
-      print('GoodsDetailsScreen: Empty value for $label');
+      //print('GoodsDetailsScreen: Empty value for $label');
       return Container();
     }
     return Text(
@@ -720,7 +720,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    print('GoodsDetailsScreen: Showing full text dialog - title: $title');
+    //print('GoodsDetailsScreen: Showing full text dialog - title: $title');
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -762,7 +762,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('close'),
                 onPressed: () {
-                  print('GoodsDetailsScreen: Closing full text dialog');
+                  //print('GoodsDetailsScreen: Closing full text dialog');
                   Navigator.pop(context);
                 },
                 buttonColor: const Color(0xff1E2E52),
@@ -783,7 +783,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   void _updateDetails() {
     details = [];
-    print('GoodsDetailsScreen: Details reset');
+    //print('GoodsDetailsScreen: Details reset');
   }
 
   @override
@@ -797,12 +797,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            print('GoodsDetailsScreen: Error state - ${state.message}');
+            //print('GoodsDetailsScreen: Error state - ${state.message}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
           } else if (state is GoodsByIdDeleted) {
-            print('GoodsDetailsScreen: Goods deleted successfully');
+            //print('GoodsDetailsScreen: Goods deleted successfully');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppLocalizations.of(context)!.translate('product_deleted'))),
             );
@@ -811,13 +811,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         },
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
-            print('GoodsDetailsScreen: Loading state');
+            //print('GoodsDetailsScreen: Loading state');
             return const Center(
               child: CircularProgressIndicator(color: Color(0xff1E2E52)),
             );
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
-            print('GoodsDetailsScreen: Loaded goods ID ${goods.id}, name: ${goods.name}');
+            //print('GoodsDetailsScreen: Loaded goods ID ${goods.id}, name: ${goods.name}');
             details = [
               {
                 'label': AppLocalizations.of(context)!.translate('goods_name_details'),
@@ -844,7 +844,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 'label': AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
-                    : AppLocalizations.of(context)!.translate('not_specified'),
+                    : AppLocalizations.of(context)!.translate(''),
               },
               ...goods.attributes
                   .where((attr) =>
@@ -861,7 +861,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     : AppLocalizations.of(context)!.translate('inactive_swtich'),
               },
             ];
-            print('GoodsDetailsScreen: Details populated with ${details.length} items');
+            //print('GoodsDetailsScreen: Details populated with ${details.length} items');
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -874,12 +874,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               ),
             );
           } else if (state is GoodsByIdEmpty) {
-            print('GoodsDetailsScreen: Empty state');
+            //print('GoodsDetailsScreen: Empty state');
             return Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
           } else if (state is GoodsByIdError) {
             return Center(child: Text(state.message));
           }
-          print('GoodsDetailsScreen: Default loading state');
+          //print('GoodsDetailsScreen: Default loading state');
           return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),

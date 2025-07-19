@@ -53,7 +53,7 @@ class Notice {
               ?.map((item) => NoticeFiles.fromJson(item))
               .toList() ??
           []; // Парсим файлы
-      print('Notice: Parsed files: $files');
+      //print('Notice: Parsed files: $files');
 
       return Notice(
         id: json['id'] as int? ?? 0,
@@ -80,7 +80,7 @@ class Notice {
         files: files, // Добавляем файлы
       );
     } catch (e) {
-      print('Error parsing Notice: $e');
+      //print('Error parsing Notice: $e');
       rethrow;
     }
   }
@@ -208,13 +208,13 @@ class NoticeFiles {
   });
 
   factory NoticeFiles.fromJson(Map<String, dynamic> json) {
-    print('NoticeFiles: Parsing JSON for file ID: ${json['id']}');
+    //print('NoticeFiles: Parsing JSON for file ID: ${json['id']}');
     final file = NoticeFiles(
       id: json['id'] is int ? json['id'] : 0,
       name: json['name'] is String ? json['name'] : '',
       path: json['path'] is String ? json['path'] : '',
     );
-    print('NoticeFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
+    //print('NoticeFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
     return file;
   }
 }

@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/labels_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/status.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
@@ -17,7 +18,7 @@ class GoodsFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final List<int>? initialCategoryIds;
   final double? initialDiscountPercent;
-  final List<String>? initialLabels;
+  final List<String>? initialLabels; // Оставляем List<String> для label_id
   final bool? initialIsActive;
 
   const GoodsFilterScreen({
@@ -37,9 +38,9 @@ class GoodsFilterScreen extends StatefulWidget {
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   final TextEditingController discountPercentController = TextEditingController();
   List<SubCategoryAttributesData> selectedCategories = [];
-  List<String> selectedLabels = [];
+  List<String> selectedLabels = []; // Храним label_id как строки
   bool isCategoryValid = true;
-  bool? isActive; // Может быть null, если оба флага включены
+  bool? isActive;
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       print('GoodsFilterScreen: Инициализация экрана фильтров');
       print(
           'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, '
-          'discount_percent: ${widget.initialDiscountPercent}, labels: ${widget.initialLabels}, '
+          'discount_percent: ${widget.initialDiscountPercent}, label_id: ${widget.initialLabels}, '
           'is_active: ${widget.initialIsActive}');
     }
 
@@ -65,7 +66,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (widget.initialLabels != null) {
       selectedLabels = List.from(widget.initialLabels!);
       if (kDebugMode) {
-        print('GoodsFilterScreen: Установлены начальные метки: $selectedLabels');
+        print('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
       }
     }
 
@@ -127,7 +128,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 selectedLabels = [];
                 discountPercentController.clear();
                 isCategoryValid = true;
-                isActive = null; // Сбрасываем isActive до null
+                isActive = null;
               });
             },
             style: TextButton.styleFrom(
@@ -161,10 +162,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         .map((category) => category.id.toString())
                         .toList()
                     : [],
-                'labels': selectedLabels.isNotEmpty ? selectedLabels : [],
+                'label_id': selectedLabels.isNotEmpty ? selectedLabels : [], // Изменено на label_id
               };
 
-              // Добавляем is_active только если он не null
               if (isActive != null) {
                 filters['is_active'] = isActive;
               }
@@ -189,7 +189,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
 
               if (filters['category_id'].isNotEmpty ||
                   filters.containsKey('discount_percent') ||
-                  filters['labels'].isNotEmpty ||
+                  filters['label_id'].isNotEmpty ||
                   filters.containsKey('is_active')) {
                 widget.onSelectedDataFilter?.call(filters);
               } else {
@@ -329,14 +329,14 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: LabelMultiSelectWidget(
+                            child: LabelsMultiSelectWidget(
                               selectedLabels: selectedLabels,
-                              onSelectLabels: (labels) {
+                              onSelectLabels: (labelIds) { // Изменено на labelIds
                                 setState(() {
-                                  selectedLabels = labels;
+                                  selectedLabels = labelIds;
                                   if (kDebugMode) {
                                     print(
-                                        'GoodsFilterScreen: Выбраны метки: $labels');
+                                        'GoodsFilterScreen: Выбраны label_id: $labelIds');
                                   }
                                 });
                               },

@@ -63,32 +63,33 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   }
 
   Future<void> _createCategory(CreateCategory event, Emitter<CategoryState> emit) async {
-    emit(CategoryLoading());
+  emit(CategoryLoading());
 
-    if (await _checkInternetConnection()) {
-      try {
-        final response = await apiService.createCategory(
-          name: event.name,
-          parentId: event.parentId,
-          attributes: event.attributes,
-          image: event.image,
-          displayType: event.displayType,
-          hasPriceCharacteristics: event.hasPriceCharacteristics,
-        );
+  if (await _checkInternetConnection()) {
+    try {
+      final response = await apiService.createCategory(
+        name: event.name,
+        parentId: event.parentId,
+        attributes: event.attributes,
+        image: event.image,
+        displayType: event.displayType,
+        hasPriceCharacteristics: event.hasPriceCharacteristics,
+        isParent: event.isParent, // Добавляем новый параметр
+      );
 
-        if (response['success'] == true) {
-          add(FetchCategories());
-          emit(CategorySuccess("Категория успешно создана"));
-        } else {
-          emit(CategoryCreateError(response['message'] ?? 'Неизвестная ошибка'));
-        }
-      } catch (e) {
-        emit(CategoryCreateError('Не удалось создать категорию: ${e.toString()}'));
+      if (response['success'] == true) {
+        add(FetchCategories());
+        emit(CategorySuccess("Категория успешно создана"));
+      } else {
+        emit(CategoryCreateError(response['message'] ?? 'Неизвестная ошибка'));
       }
-    } else {
-      emit(CategoryCreateError('Нет подключения к интернету'));
+    } catch (e) {
+      emit(CategoryCreateError('Не удалось создать категорию: ${e.toString()}'));
     }
+  } else {
+    emit(CategoryCreateError('Нет подключения к интернету'));
   }
+}
 
   Future<void> _updateCategory(UpdateCategory event, Emitter<CategoryState> emit) async {
     emit(CategoryLoading());

@@ -45,6 +45,7 @@ import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -55,6 +56,7 @@ import 'package:crm_task_manager/screens/profile/profile_widget/profile_logout.d
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io' show Platform; // Добавляем импорт для проверки платформы
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -135,7 +137,29 @@ final GlobalKey keyPhoneCall = GlobalKey();
       context.read<OrganizationBloc>().add(FetchOrganizations());
     }
   }
+Future<void> _openAppStoreLink() async {
+    const androidUrl = 'https://play.google.com/store/apps/details?id=com.softtech.crm_task_manager';
+    const iosUrl = 'https://apps.apple.com/tj/app/shamcrm/id6745598713';
+    final url = Platform.isAndroid ? androidUrl : iosUrl;
 
+    try {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      } else {
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('failed_to_open_link'),
+          isSuccess: false,
+        );
+      }
+    } catch (e) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('failed_to_open_link'),
+        isSuccess: false,
+      );
+    }
+  }
   void _initTutorialTargets() {
     // Сбрасываем список целей
     targets = [];
@@ -546,112 +570,113 @@ final GlobalKey keyPhoneCall = GlobalKey();
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  return Scaffold(
-    body: SafeArea( // SafeArea обеспечивает отступы от системных элементов
-      child: Stack(
-        children: [
-          // Основной контент
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 80), // Место для версии
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  BlocBuilder<OrganizationBloc, OrganizationState>(
-                    builder: (context, state) {
-                      if (state is OrganizationLoading) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: PlayStoreImageLoading(
-                                size: 80.0, duration: Duration(milliseconds: 1000)),
-                          ),
-                        );
-                      } else if (state is OrganizationLoaded) {
-                        final selectedOrg = _selectedOrganization != null
-                            ? state.organizations.firstWhere(
-                                (org) => org.id.toString() == _selectedOrganization,
-                                orElse: () => state.organizations.first,
-                              )
-                            : state.organizations.first;
+@override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return Scaffold(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 80),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    BlocBuilder<OrganizationBloc, OrganizationState>(
+                      builder: (context, state) {
+                        if (state is OrganizationLoading) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: PlayStoreImageLoading(
+                                  size: 80.0, duration: Duration(milliseconds: 1000)),
+                            ),
+                          );
+                        } else if (state is OrganizationLoaded) {
+                          final selectedOrg = _selectedOrganization != null
+                              ? state.organizations.firstWhere(
+                                  (org) => org.id.toString() == _selectedOrganization,
+                                  orElse: () => state.organizations.first,
+                                )
+                              : state.organizations.first;
 
-                        return Column(
-                          children: [
-                            OrganizationWidget(
-                              key: keyOrganizationWidget,
-                              selectedOrganization: _selectedOrganization,
-                              onChanged: _onOrganizationChanged,
+                          return Column(
+                            children: [
+                              OrganizationWidget(
+                                key: keyOrganizationWidget,
+                                selectedOrganization: _selectedOrganization,
+                                onChanged: _onOrganizationChanged,
+                              ),
+                              ProfileEdit(key: keyProfileEdit),
+                              LanguageButtonWidget(key: keyLanguageButton),
+                              PinChangeWidget(key: keyPinChange),
+                              // PhoneCallWidget(key: keyPhoneCall),
+                              LogoutButtonWidget(key: keyLogoutButton),
+                              if (_hasPermissionToAddLeadAndSwitch)
+                                ToggleFeatureButton(key: keyToggleFeature),
+                              if (_hasPermissionForOneC)
+                                UpdateWidget1C(organization: selectedOrg),
+                            ],
+                          );
+                        } else if (state is OrganizationError) {
+                          if (state.message.contains(
+                              localizations.translate("unauthorized_access"))) {
+                            ApiService().logout().then((_) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => LoginScreen()),
+                                (Route<dynamic> route) => false,
+                              );
+                            });
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 20),
+                            child: Center(
+                              child: Text(
+                                '${state.message}',
+                                style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black),
+                              ),
                             ),
-                            ProfileEdit(key: keyProfileEdit),
-                            LanguageButtonWidget(key: keyLanguageButton),
-                            PinChangeWidget(key: keyPinChange),
-                            // PhoneCallWidget(key: keyPhoneCall),
-                            LogoutButtonWidget(key: keyLogoutButton),
-                            if (_hasPermissionToAddLeadAndSwitch)
-                              ToggleFeatureButton(key: keyToggleFeature),
-                            if (_hasPermissionForOneC)
-                              UpdateWidget1C(organization: selectedOrg),
-                          ],
-                        );
-                      } else if (state is OrganizationError) {
-                        if (state.message.contains(
-                            localizations.translate("unauthorized_access"))) {
-                          ApiService().logout().then((_) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => LoginScreen()),
-                              (Route<dynamic> route) => false,
-                            );
-                          });
+                          );
                         }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: Center(
-                            child: Text(
-                              '${state.message}',
-                              style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black),
-                            ),
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Версия прикреплена к низу SafeArea
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                '${AppLocalizations.of(context)!.translate('version_mobile')}: 1.0.0',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color.fromARGB(255, 6, 44, 231),
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: GestureDetector(
+                  onTap: _openAppStoreLink, // Добавляем обработчик нажатий
+                  child: Text(
+                    '${AppLocalizations.of(context)!.translate('version_mobile')}: 2.0.0',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color.fromARGB(255, 6, 44, 231),
+                      decoration: TextDecoration.underline, // Подчёркивание для кликабельности
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -163,6 +163,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   TaskById? currentTask;
   bool _canEditTask = false;
   bool _canDeleteTask = false;
+  bool _canCreateTask = false;
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   bool _isDownloading = false;
@@ -377,9 +378,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('task.update');
     final canDelete = await _apiService.hasPermission('task.delete');
+    final canCreate = await _apiService.hasPermission('task.create');
     setState(() {
       _canEditTask = canEdit;
       _canDeleteTask = canDelete;
+      _canCreateTask = canCreate;
     });
   }
 
@@ -939,7 +942,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-           if (_canEditTask)
+           if (_canCreateTask)
             IconButton(
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(),

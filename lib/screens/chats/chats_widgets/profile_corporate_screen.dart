@@ -106,8 +106,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     // Проверяем, является ли чат типом support
     bool isSupportChat =
         widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
-    print(
-        'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
+    // print(
+    //     'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
 
     if (isLoading) {
       return Scaffold(

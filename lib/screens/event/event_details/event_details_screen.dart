@@ -181,12 +181,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      //print('Tutorial already in progress, skipping');
+      ////print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      //print('No targets available for tutorial, skipping');
+      ////print('No targets available for tutorial, skipping');
       return;
     }
 
@@ -198,7 +198,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         tutorialProgress!['notices']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      //print('Tutorial conditions not met');
+      ////print('Tutorial conditions not met');
       return;
     }
 
@@ -228,16 +228,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       focusAnimationDuration: Duration(milliseconds: 300),
       pulseAnimationDuration: Duration(milliseconds: 500),
       onClickTarget: (target) {
-        //print("Target clicked: ${target.identify}");
+        ////print("Target clicked: ${target.identify}");
       },
       onClickOverlay: (target) {
-        //print("Overlay clicked: ${target.identify}");
+        ////print("Overlay clicked: ${target.identify}");
       },
       onSkip: () {
-        //print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+        ////print(AppLocalizations.of(context)!.translate('tutorial_skip'));
         prefs.setBool('isTutorialShownNoticeDetails', true);
         _apiService.markPageCompleted("notices", "view").catchError((e) {
-          //print('Error marking page completed on skip: $e');
+          ////print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -246,10 +246,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         return true;
       },
       onFinish: () {
-        //print("Tutorial finished");
+        ////print("Tutorial finished");
         prefs.setBool('isTutorialShownNoticeDetails', true);
         _apiService.markPageCompleted("notices", "view").catchError((e) {
-          //print('Error marking page completed on finish: $e');
+          ////print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -352,7 +352,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         showTutorial();
       }
     } catch (e) {
-      //print('Error fetching tutorial progress: $e');
+      ////print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -549,11 +549,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
 Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
   // Логирование входных параметров
-  print('Voice Player: recordUrl="$recordUrl", callDuration=$callDuration');
+  //print('Voice Player: recordUrl="$recordUrl", callDuration=$callDuration');
 
   // Проверка валидности URL
   if (!Uri.parse(recordUrl!).isAbsolute) {
-    print('Voice Player: Invalid URL format: $recordUrl');
+    //print('Voice Player: Invalid URL format: $recordUrl');
     return const Text(
       'Некорректный URL записи',
       style: TextStyle(
@@ -601,18 +601,18 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                     setState(() {
                       _isPlaying = false;
                     });
-                    print('Voice Player: Audio paused');
+                    //print('Voice Player: Audio paused');
                   } else {
-                    print('Voice Player: Attempting to play audio from $recordUrl');
+                    //print('Voice Player: Attempting to play audio from $recordUrl');
                     await _audioPlayer.setSourceUrl(recordUrl);
                     await _audioPlayer.resume();
                     setState(() {
                       _isPlaying = true;
                     });
-                    print('Voice Player: Audio playing');
+                    //print('Voice Player: Audio playing');
                   }
                 } catch (e) {
-                  print('Voice Player: Error playing audio: $e');
+                  //print('Voice Player: Error playing audio: $e');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -669,9 +669,9 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                     setState(() {
                       _position = newPosition;
                     });
-                    print('Voice Player: Seek to ${formatDuration(newPosition)}');
+                    //print('Voice Player: Seek to ${formatDuration(newPosition)}');
                   } catch (e) {
-                    print('Voice Player: Error seeking audio: $e');
+                    //print('Voice Player: Error seeking audio: $e');
                   }
                 },
               ),
@@ -998,7 +998,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       'label': AppLocalizations.of(context)!.translate('date'),
       'value': notice.date != null
           ? formatDate(notice.date.toString())
-          : AppLocalizations.of(context)!.translate('not_specified'),
+          : AppLocalizations.of(context)!.translate(''),
     },
     {
       'label': AppLocalizations.of(context)!.translate('assignee'),
@@ -1010,7 +1010,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       'label': AppLocalizations.of(context)!.translate('author_details'),
       'value': notice.author != null
           ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-          : AppLocalizations.of(context)!.translate('not_specified'),
+          : AppLocalizations.of(context)!.translate(''),
     },
     {
       'label': AppLocalizations.of(context)!.translate('created_at_details'),
@@ -1038,13 +1038,13 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       'call_data': {
         'caller': notice.call!.caller,
         'internal_number': notice.call!.internalNumber ??
-            AppLocalizations.of(context)!.translate('not_specified'),
+            AppLocalizations.of(context)!.translate(''),
         'call_duration': notice.call!.callDuration != null
             ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
+            : AppLocalizations.of(context)!.translate(''),
         'call_ringing_duration': notice.call!.callRingingDuration != null
             ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
+            : AppLocalizations.of(context)!.translate(''),
         'call_recording': '', // Пустое значение для обработки в _buildDetailItem
       },
     });

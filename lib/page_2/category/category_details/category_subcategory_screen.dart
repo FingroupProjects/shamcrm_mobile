@@ -44,12 +44,12 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        print('CategorySubCategoryScreen: baseUrl установлен в $baseUrl');
+        //print('CategorySubCategoryScreen: baseUrl установлен в $baseUrl');
       });
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
-        print('CategorySubCategoryScreen: Ошибка при инициализации baseUrl: $error');
+        //print('CategorySubCategoryScreen: Ошибка при инициализации baseUrl: $error');
       });
     }
   }
@@ -59,12 +59,12 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
       final canCreate = await _apiService.hasPermission('category.create');
       setState(() {
         _canCreateCategory = canCreate;
-        print('CategorySubCategoryScreen: _canCreateCategory установлен в $canCreate');
+        //print('CategorySubCategoryScreen: _canCreateCategory установлен в $canCreate');
       });
     } catch (e) {
       setState(() {
         _canCreateCategory = false;
-        print('CategorySubCategoryScreen: Ошибка при проверке прав: $e');
+        //print('CategorySubCategoryScreen: Ошибка при проверке прав: $e');
       });
     }
   }
@@ -76,7 +76,7 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
         if (isCreateSubCatgeory && state is CategorySuccess) {
           setState(() {
             isCreateSubCatgeory = false;
-            print('CategorySubCategoryScreen: Подкатегория создана, обновление списка');
+            //print('CategorySubCategoryScreen: Подкатегория создана, обновление списка');
           });
           context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.categoryId));
         }
@@ -84,16 +84,16 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
       child: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
         builder: (context, state) {
           if (state is CategoryByIdLoading) {
-            print('CategorySubCategoryScreen: Состояние загрузки');
+            //print('CategorySubCategoryScreen: Состояние загрузки');
             return Center(child: CircularProgressIndicator(color: const Color(0xff1E2E52)));
           } else if (state is CategoryByIdError) {
-            print('CategorySubCategoryScreen: Ошибка: ${state.message}');
+            //print('CategorySubCategoryScreen: Ошибка: ${state.message}');
             return Center(child: Text(state.message));
           } else if (state is CategoryByIdLoaded) {
-            print('CategorySubCategoryScreen: Загружено подкатегорий: ${state.category.categories.length}');
+            //print('CategorySubCategoryScreen: Загружено подкатегорий: ${state.category.categories.length}');
             return _buildSubCategoryList(state.category.categories);
           } else {
-            print('CategorySubCategoryScreen: Нет данных для отображения');
+            //print('CategorySubCategoryScreen: Нет данных для отображения');
             return Center(child: Text(AppLocalizations.of(context)!.translate("no_data_to_display")));
           }
         },
@@ -270,7 +270,7 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
   }
 
   void _navigateToSubCategoryDetails(CategoryDataById category) {
-    print('CategorySubCategoryScreen: Переход к деталям подкатегории: ${category.name}');
+    //print('CategorySubCategoryScreen: Переход к деталям подкатегории: ${category.name}');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -295,7 +295,7 @@ class _CategorySubCategoryState extends State<CategorySubCategoryScreen> {
         if (_canCreateCategory) // Условное отображение кнопки
           TextButton(
             onPressed: () {
-              print('CategorySubCategoryScreen: Нажата кнопка добавления подкатегории');
+              //print('CategorySubCategoryScreen: Нажата кнопка добавления подкатегории');
               SubCategoryAddBottomSheet.show(context, widget.categoryId);
               setState(() {
                 isCreateSubCatgeory = true;

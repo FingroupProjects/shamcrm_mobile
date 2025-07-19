@@ -86,7 +86,7 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
         });
       }
     } catch (e) {
-      print('Ошибка!');
+      //print('Ошибка!');
     }
   }
 

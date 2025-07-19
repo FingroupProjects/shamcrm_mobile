@@ -114,13 +114,13 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       case 'payme':
         return 'PAYME';
       default:
-        return AppLocalizations.of(context)!.translate('not_specified');
+        return AppLocalizations.of(context)!.translate('');
     }
   }
 Widget _buildOrderItem(Order order) {
   String formattedDate = order.createdAt != null
       ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
-      : AppLocalizations.of(context)!.translate('not_specified');
+      : AppLocalizations.of(context)!.translate('');
 
   return GestureDetector(
     onTap: () {

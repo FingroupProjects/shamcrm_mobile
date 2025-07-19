@@ -106,15 +106,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _fetchAndAddCustomFields() async {
-    print('Начало загрузки справочных полей');
+    //print('Начало загрузки справочных полей');
     try {
       final directoryLinkData = await _apiService.getTaskDirectoryLinks();
-      print('Получены directoryLinkData: ${directoryLinkData.data}');
+      //print('Получены directoryLinkData: ${directoryLinkData.data}');
       if (directoryLinkData.data != null) {
         setState(() {
           customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-            print(
-                'Добавление справочного поля: ${link.directory.name}, id: ${link.directory.id}');
+            // //print(
+            //     'Добавление справочного поля: ${link.directory.name}, id: ${link.directory.id}');
             return CustomField(
               fieldName: link.directory.name,
               controller: TextEditingController(),
@@ -126,7 +126,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка при получении данных справочников: $e');
+      //print('Ошибка при получении данных справочников: $e');
     }
   }
 
@@ -183,8 +183,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
     selectedPriority = widget.priority ?? 1;
 
-    print(
-        'Инициализация customFields из taskCustomFields: ${widget.taskCustomFields}');
+    // //print(
+    //     'Инициализация customFields из taskCustomFields: ${widget.taskCustomFields}');
     for (var customField in widget.taskCustomFields) {
       final controller = TextEditingController(text: customField.value);
       customFields.add(CustomField(
@@ -195,7 +195,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       ));
     }
 
-    print('Инициализация directoryValues: ${widget.directoryValues}');
+    //print('Инициализация directoryValues: ${widget.directoryValues}');
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       // Удаляем дубликаты по directoryId и entryId
       final seen = <String>{};
@@ -205,8 +205,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }).toList();
 
       for (var dirValue in uniqueDirectoryValues) {
-        print(
-            'Обработка directoryValue: ${dirValue.entry.directory.name}, entryId: ${dirValue.entry.id}, value: ${dirValue.entry.values['value']}');
+        // //print(
+        //     'Обработка directoryValue: ${dirValue.entry.directory.name}, entryId: ${dirValue.entry.id}, value: ${dirValue.entry.values['value']}');
         final controller =
             TextEditingController(text: dirValue.entry.values['value'] ?? '');
         customFields.add(CustomField(
@@ -219,7 +219,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         ));
       }
     } else {
-      print('directoryValues пустой или null');
+      //print('directoryValues пустой или null');
     }
   }
 
@@ -230,15 +230,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   void _addCustomField(String fieldName,
       {bool isDirectory = false, int? directoryId, String? type}) {
-    print(
-        'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
+    // //print(
+    //     'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
     if (isDirectory && directoryId != null) {
       // Проверяем, существует ли уже поле с таким directoryId
       bool directoryExists = customFields.any((field) =>
           field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        print(
-            'Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+        // //print(
+        //     'Справочник с directoryId: $directoryId уже добавлен, пропускаем');
         return; // Игнорируем добавление, если справочник уже существует
       }
     }
@@ -671,7 +671,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         _checkAdditionalFields();
       }
     } catch (e) {
-      print('Ошибка при выборе файла: $e');
+      //print('Ошибка при выборе файла: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),
@@ -882,7 +882,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               itemCount: customFields.length,
                               itemBuilder: (context, index) {
                                 final field = customFields[index];
-                                // print( 'Построение поля: ${field.fieldName}, isDirectoryField: ${field.isDirectoryField}, entryId: ${field.entryId}');
+                                // //print( 'Построение поля: ${field.fieldName}, isDirectoryField: ${field.isDirectoryField}, entryId: ${field.entryId}');
                                 return Container(
                                   key: ValueKey(field.uniqueId),
                                   child: field.isDirectoryField &&

@@ -26,7 +26,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
   Future<void> _fetchVariants(FetchVariants event, Emitter<VariantState> emit) async {
     emit(VariantLoading());
     if (kDebugMode) {
-      print('VariantBloc: Загрузка вариантов, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
+      // print('VariantBloc: Загрузка вариантов, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
     }
 
     if (await _checkInternetConnection()) {

@@ -28,7 +28,7 @@ class OrderHistory {
         changes: _parseChanges(json['changes']),
       );
     } catch (e) {
-      print('Ошибка при парсинге OrderHistory: $e');
+      //print('Ошибка при парсинге OrderHistory: $e');
       return OrderHistory(
         id: 0,
         user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),

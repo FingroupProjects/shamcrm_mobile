@@ -240,8 +240,8 @@ List<String> _buildHistoryItems(List<OrderHistory> history) {
 
     if (changes != null && changes.body != null) {
       changes.body!.forEach((key, value) {
-        final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
-        final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
+        final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('');
+        final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('');
 
         // Перевод для deliveryType
         String translatedKey = key;

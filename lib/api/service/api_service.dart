@@ -6774,75 +6774,73 @@ Future<List<CategoryData>> getCategory({String? search}) async {
     }
   }
 
-  Future<Map<String, dynamic>> createCategory({
-    required String name,
-    required int parentId,
-    required List<Map<String, dynamic>> attributes, // Обновлено
-    File? image,
-    required String displayType,
-    required bool hasPriceCharacteristics,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
+ Future<Map<String, dynamic>> createCategory({
+  required String name,
+  required int parentId,
+  required List<Map<String, dynamic>> attributes,
+  File? image,
+  required String displayType,
+  required bool hasPriceCharacteristics,
+  required bool isParent, // Добавляем новый параметр
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      if (parentId != 0) {
-        request.fields['parent_id'] = parentId.toString();
-      }
-      request.fields['display_type'] = displayType;
-      request.fields['has_price_characteristics'] =
-          hasPriceCharacteristics ? '1' : '0';
+    request.fields['name'] = name;
+    if (parentId != 0) {
+      request.fields['parent_id'] = parentId.toString();
+    }
+    request.fields['display_type'] = displayType;
+    request.fields['has_price_characteristics'] = hasPriceCharacteristics ? '1' : '0';
+    request.fields['is_parent'] = isParent ? '1' : '0'; // Добавляем поле is_parent
 
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
-        request.fields['attributes[$i][is_individual]'] = attributes[i]
-                ['is_individual']
-            ? '1'
-            : '0'; // Отправляем "1" или "0"
-      }
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
+      request.fields['attributes[$i][is_individual]'] =
+          attributes[i]['is_individual'] ? '1' : '0';
+    }
 
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
+    if (image != null) {
+      final imageFile = await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      final responseBody = json.decode(response.body);
+    final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'category_created_successfully',
-          'data': CategoryData.fromJson(responseBody),
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to create category',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'category_created_successfully',
+        'data': CategoryData.fromJson(responseBody),
+      };
+    } else {
       return {
         'success': false,
-        'message': 'An error occurred: ',
+        'message': responseBody['message'] ?? 'Failed to create category',
+        'error': responseBody,
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: ',
+    };
   }
+}
 
   Future<Map<String, dynamic>> updateCategory({
     required int categoryId,
@@ -7002,35 +7000,32 @@ Future<List<Goods>> getGoods({
       path += '&discount=${filters['discount_percent']}';
     }
 
-    if (filters.containsKey('labels') &&
-        filters['labels'] is List &&
-        (filters['labels'] as List).isNotEmpty) {
-      final labels = filters['labels'] as List<String>;
-      if (labels.contains('new')) {
-        path += '&is_new=1';
+    if (filters.containsKey('label_id') &&
+        filters['label_id'] is List &&
+        (filters['label_id'] as List).isNotEmpty) {
+      final labelIds = filters['label_id'] as List<String>;
+      for (var labelId in labelIds) {
+        path += '&label_id[]=$labelId';
       }
-      if (labels.contains('hit')) {
-        path += '&is_popular=1';
-      }
-      if (labels.contains('promotion')) {
-        path += '&is_sale=1';
+      if (kDebugMode) {
+        print('ApiService: Добавлены label_id: $labelIds');
       }
     }
 
     if (filters.containsKey('is_active')) {
       path += '&is_active=${filters['is_active'] ? 1 : 0}';
       if (kDebugMode) {
-        //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+        print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
       }
     }
   }
 
   if (kDebugMode) {
-    //print('ApiService: Формирование запроса товаров: $path');
+    print('ApiService: Формирование запроса товаров: $path');
   }
   final response = await _getRequest(path);
   if (kDebugMode) {
-    //print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+    print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
   }
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
@@ -7041,22 +7036,22 @@ Future<List<Goods>> getGoods({
       final total = data['result']['total'] ?? goods.length;
       final totalPages = data['result']['total_pages'] ?? (goods.length < perPage ? page : page + 1);
       if (kDebugMode) {
-        //print('ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
+        print('ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
       }
       return goods;
     } else {
       if (kDebugMode) {
-        //print('ApiService: Ошибка формата данных: $data');
+        print('ApiService: Ошибка формата данных: $data');
       }
       throw Exception('Ошибка: Неверный формат данных');
     }
   } else {
     if (kDebugMode) {
-      //print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+      print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
     }
     throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
-} 
+}
 
 Future<List<Variant>> getVariants({
   int page = 1,
@@ -7270,8 +7265,8 @@ Future<Map<String, dynamic>> createGoods({
       };
     }
   } catch (e, stackTrace) {
-    print('ApiService: Error in createGoods: $e');
-    print('ApiService: Stack trace: $stackTrace');
+    // print('ApiService: Error in createGoods: $e');
+    // print('ApiService: Stack trace: $stackTrace');
     return {
       'success': false,
       'message': 'Произошла ошибка: $e',
@@ -7332,7 +7327,7 @@ int? labelId, // Добавляем параметр для ID метки
       //print('ApiService: Added comments: $comments');
     }
     if (discountPrice != null) {
-      request.fields['discount_price'] = discountPrice.toString();
+      request.fields['price'] = discountPrice.toString();
       //print('ApiService: Added discount_price: $discountPrice');
     }
 
@@ -7621,8 +7616,8 @@ Future<OrderResponse> getOrdersByLead({
 
       final response = await _getRequest(url);
       if (kDebugMode) {
-        print('Request URL: $url');
-        print('Response status: ${response.statusCode}');
+        // print('Request URL: $url');
+        // print('Response status: ${response.statusCode}');
       }
 
       if (response.statusCode == 200) {
@@ -7633,7 +7628,7 @@ Future<OrderResponse> getOrdersByLead({
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Ошибка загрузки заказов по лиду: $e');
+        // print('Ошибка загрузки заказов по лиду: $e');
       }
       throw Exception('Ошибка загрузки заказов: $e');
     }

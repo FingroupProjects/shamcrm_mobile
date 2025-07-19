@@ -170,9 +170,9 @@ class _DealsWidgetState extends State<DealsWidget> {
   try {
     formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
         ? DateFormat('dd.MM.yyyy').format(DateTime.parse(deal.lastseen!))
-        : AppLocalizations.of(context)!.translate('not_specified');
+        : AppLocalizations.of(context)!.translate('');
   } catch (e) {
-    formattedDate = AppLocalizations.of(context)!.translate('not_specified'); 
+    formattedDate = AppLocalizations.of(context)!.translate(''); 
       }
 
   return GestureDetector(

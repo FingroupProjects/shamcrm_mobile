@@ -139,7 +139,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       showTutorial(); // Запускаем туториал
     }
   } catch (e) {
-    print('Error fetching tutorial progress: $e');
+    //print('Error fetching tutorial progress: $e');
     final prefs = await SharedPreferences.getInstance();
     final savedProgress = prefs.getString('tutorial_progress');
     if (savedProgress != null) {
@@ -226,12 +226,12 @@ int _tutorialStep = 0; // Добавляем шаг туториала
 
   void showTutorial() async {
   if (_isTutorialInProgress) {
-    print('Tutorial already in progress, skipping');
+    //print('Tutorial already in progress, skipping');
     return;
   }
 
   if (targets.isEmpty) {
-    print('No targets available for tutorial, skipping');
+    //print('No targets available for tutorial, skipping');
     return;
   }
 
@@ -242,7 +242,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       tutorialProgress!['notices']?['index'] == true ||
       isTutorialShown ||
       _isTutorialShown) {
-    print('Tutorial conditions not met');
+    //print('Tutorial conditions not met');
     return;
   }
 
@@ -314,7 +314,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       if (isLastStep) {
         prefs.setBool('isTutorialShownNoticeIndex', true);
         _apiService.markPageCompleted("notices", "index").catchError((e) {
-          print('Error marking page completed on finish: $e');
+          //print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -331,7 +331,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
     onSkip: () {
       prefs.setBool('isTutorialShownNoticeIndex', true);
       _apiService.markPageCompleted("notices", "index").catchError((e) {
-        print('Error marking page completed on skip: $e');
+        //print('Error marking page completed on skip: $e');
       });
       setState(() {
         _isTutorialShown = true;

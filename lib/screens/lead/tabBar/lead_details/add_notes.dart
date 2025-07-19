@@ -95,7 +95,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла: $e');
+      ////print('Ошибка при выборе файла: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

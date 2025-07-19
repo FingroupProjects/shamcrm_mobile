@@ -19,12 +19,12 @@ void OrderDropdownBottomSheet(
   int? selectedStatusId = order.orderStatus.id;
 
   final currentState = context.read<OrderBloc>().state;
-  print('Состояние перед открытием BottomSheet: $currentState');
+  //print('Состояние перед открытием BottomSheet: $currentState');
   if (currentState is! OrderLoaded || currentState.statuses.isEmpty) {
     context.read<OrderBloc>().add(FetchOrderStatuses());
-    print('Отправлено событие FetchOrderStatuses');
+    //print('Отправлено событие FetchOrderStatuses');
   } else {
-    print('Статусы уже загружены: ${currentState.statuses.length}');
+    //print('Статусы уже загружены: ${currentState.statuses.length}');
   }
 
   showModalBottomSheet(
@@ -36,7 +36,7 @@ void OrderDropdownBottomSheet(
     builder: (BuildContext context) {
       return BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
-          print('Текущее состояние в BlocBuilder: $state');
+          //print('Текущее состояние в BlocBuilder: $state');
 
           if (currentState is OrderLoaded && currentState.statuses.isNotEmpty) {
             final orderStatuses = currentState.statuses;
@@ -119,7 +119,7 @@ void OrderDropdownBottomSheet(
                               onTabChange(newTabIndex);
                             }
                           } else {
-                            print('Статус не выбран');
+                            //print('Статус не выбран');
                           }
                         },
                       ),

@@ -78,8 +78,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
          manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       );
     } catch (e) {
-      print('Error parsing Order: $e');
-      print('JSON: $json');
+      //print('Error parsing Order: $e');
+      //print('JSON: $json');
       rethrow;
     }
   }
@@ -224,7 +224,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     }
   }
 
-  class Good {
+class Good {
   final GoodItem good;
   final GoodItem? variantGood;
   final int goodId;
@@ -241,59 +241,41 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     required this.price,
   });
 
-  // НОВЫЙ МЕТОД для получения корректного ID товара
+  // Метод для получения корректного ID товара
   int getCorrectGoodId() {
-    // Если good.id не равен 0, используем его
+    if (variantGood != null && variantGood!.id != 0) {
+      return variantGood!.id; // Приоритет variantGood.id (19)
+    }
     if (good.id != 0) {
       return good.id;
     }
-    
-    // Если good.id равен 0, но есть variantGood, используем его ID
-    if (variantGood != null && variantGood!.id != 0) {
-      return variantGood!.id;
-    }
-    
-    // В крайнем случае используем goodId
     return goodId;
   }
 
-  // НОВЫЙ МЕТОД для получения корректного названия товара
+  // Метод для получения корректного названия товара
   String getCorrectGoodName() {
-    // Если есть variantGood, используем его название
     if (variantGood != null && variantGood!.name.isNotEmpty) {
       return variantGood!.name;
     }
-    
-    // Если нет variantGood, используем название основного товара
     if (good.name.isNotEmpty) {
       return good.name;
     }
-    
-    // В крайнем случае используем goodName
     return goodName;
   }
 
-  // НОВЫЙ МЕТОД для получения корректных файлов
+  // Метод для получения корректных файлов
   List<GoodFile> getCorrectFiles() {
-    // Сначала проверяем файлы основного товара
     if (good.files.isNotEmpty) {
       return good.files;
     }
-    
-    // Если файлов нет в основном товаре, проверяем варианты
     if (variantGood != null && variantGood!.files.isNotEmpty) {
       return variantGood!.files;
     }
-    
-    // Возвращаем пустой список, если файлов нет
     return [];
   }
 
   factory Good.fromJson(Map<String, dynamic> json) {
-    // Парсим good
     final goodItem = GoodItem.fromJson(json['good'] ?? {});
-    
-    // Парсим variant.good, если variant существует
     final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
         ? GoodItem.fromJson(json['variant']['good'])
         : null;
@@ -301,7 +283,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     return Good(
       good: goodItem,
       variantGood: variantGoodItem,
-      goodId: json['good_id'] ?? json['good']?['id'] ?? 0,
+      goodId: json['variant_id'] ?? json['good_id'] ?? json['good']?['id'] ?? 0,
       goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
       quantity: json['quantity'] ?? 0,
       price: double.tryParse(
@@ -311,10 +293,11 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
           0.0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
-      'good_id': goodId,
-      'good_name': goodName,
+      'variant_id': getCorrectGoodId(),
+      'good_name': getCorrectGoodName(),
       'quantity': quantity,
       'price': price,
     };

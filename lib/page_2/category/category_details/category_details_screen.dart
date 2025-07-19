@@ -53,12 +53,12 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
 
     setState(() {
       _canUpdateCategory = canUpdate && !integrationWith1C;
-      print('CategoryDetailsScreen: _canUpdateCategory установлен в $_canUpdateCategory (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
+      //print('CategoryDetailsScreen: _canUpdateCategory установлен в $_canUpdateCategory (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
     });
   } catch (e) {
     setState(() {
       _canUpdateCategory = false;
-      print('CategoryDetailsScreen: Ошибка при проверке прав: $e');
+      //print('CategoryDetailsScreen: Ошибка при проверке прав: $e');
     });
   }
 }
@@ -68,7 +68,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
       final file = await urlToFile('$baseUrl/$imageUrl');
       setState(() {
         _cachedImageFile = file;
-        print('CategoryDetailsScreen: Изображение загружено: $imageUrl');
+        //print('CategoryDetailsScreen: Изображение загружено: $imageUrl');
       });
     }
   }
@@ -80,12 +80,12 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
       String? enteredDomain = enteredDomainMap['enteredDomain'];
       setState(() {
         baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        print('CategoryDetailsScreen: baseUrl установлен в $baseUrl');
+        //print('CategoryDetailsScreen: baseUrl установлен в $baseUrl');
       });
     } catch (error) {
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
-        print('CategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
+        //print('CategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
       });
     }
   }
@@ -100,7 +100,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
     details = [
       {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': currentName},
     ];
-    print('CategoryDetailsScreen: Детали обновлены, количество: ${details.length}');
+    //print('CategoryDetailsScreen: Детали обновлены, количество: ${details.length}');
   }
 
   @override
@@ -133,7 +133,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                           height: 200,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            print('CategoryDetailsScreen: Ошибка загрузки изображения: $error');
+                            //print('CategoryDetailsScreen: Ошибка загрузки изображения: $error');
                             return Container(
                               width: double.infinity,
                               height: 200,
@@ -143,7 +143,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                           },
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            print('CategoryDetailsScreen: Загрузка изображения...');
+                            //print('CategoryDetailsScreen: Загрузка изображения...');
                             return Container(
                               width: double.infinity,
                               height: 200,
@@ -188,7 +188,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
               height: 24,
             ),
             onPressed: () async {
-              print('CategoryDetailsScreen: Нажата кнопка "Назад"');
+              //print('CategoryDetailsScreen: Нажата кнопка "Назад"');
               Navigator.pop(context);
             },
           ),
@@ -220,7 +220,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                       height: 24,
                     ),
                     onPressed: () async {
-                      print('CategoryDetailsScreen: Нажата кнопка редактирования');
+                      //print('CategoryDetailsScreen: Нажата кнопка редактирования');
                       final result = await CategoryEditBottomSheet.show(
                         context,
                         initialCategoryId: widget.categoryId,
@@ -236,7 +236,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                             _cachedImageFile = null;
                           }
                           _updateDetails();
-                          print('CategoryDetailsScreen: Категория отредактирована, новое имя: $currentName');
+                          //print('CategoryDetailsScreen: Категория отредактирована, новое имя: $currentName');
                         });
                       }
                     },
@@ -250,13 +250,13 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                       height: 24,
                     ),
                     onPressed: () {
-                      print('CategoryDetailsScreen: Нажата кнопка удаления');
+                      //print('CategoryDetailsScreen: Нажата кнопка удаления');
                       showDialog(
                         context: context,
                         builder: (context) => DeleteCategoryDialog(categoryId: widget.categoryId),
                       ).then((deleted) {
                         if (deleted == true) {
-                          print('CategoryDetailsScreen: Категория удалена, возврат на предыдущий экран');
+                          //print('CategoryDetailsScreen: Категория удалена, возврат на предыдущий экран');
                           Navigator.of(context).pop(true);
                         }
                       });
@@ -270,7 +270,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    print('CategoryDetailsScreen: Построение списка деталей с ${details.length} элементами');
+    //print('CategoryDetailsScreen: Построение списка деталей с ${details.length} элементами');
     return ListView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -299,7 +299,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
               child: label == AppLocalizations.of(context)!.translate('description_details')
                   ? GestureDetector(
                       onTap: () {
-                        print('CategoryDetailsScreen: Нажато на элемент деталей: $label');
+                        //print('CategoryDetailsScreen: Нажато на элемент деталей: $label');
                         _showFullTextDialog(
                             AppLocalizations.of(context)!.translate('description_details'), value);
                       },
@@ -327,7 +327,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
     if (value.isEmpty) {
-      print('CategoryDetailsScreen: Пустое значение для $label');
+      //print('CategoryDetailsScreen: Пустое значение для $label');
       return Container();
     }
     return Text(
@@ -347,7 +347,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    print('CategoryDetailsScreen: Отображение диалога полного текста для: $title');
+    //print('CategoryDetailsScreen: Отображение диалога полного текста для: $title');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -392,7 +392,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
-                    print('CategoryDetailsScreen: Закрытие диалога полного текста');
+                    //print('CategoryDetailsScreen: Закрытие диалога полного текста');
                     Navigator.pop(context);
                   },
                   buttonColor: Color(0xff1E2E52),
@@ -410,7 +410,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   void dispose() {
     super.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('CategoryDetailsScreen: Очистка временных файлов');
+      //print('CategoryDetailsScreen: Очистка временных файлов');
       cleanTempFiles();
     });
   }
