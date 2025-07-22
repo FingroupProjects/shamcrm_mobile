@@ -5,13 +5,13 @@ import 'package:flutter_svg/svg.dart';
 
 class PinnedMessageWidget extends StatelessWidget {
   final String message;
-  final VoidCallback onUnpin;
+  final VoidCallback? onUnpin;
   final VoidCallback? onTap; // Добавляем обработчик нажатия
 
   const PinnedMessageWidget({
     Key? key,
-    required this.message,
-    required this.onUnpin,
+   required this.message,
+     this.onUnpin,
     this.onTap, // Передаем обработчик нажатия
   }) : super(key: key);
 
@@ -26,7 +26,7 @@ class PinnedMessageWidget extends StatelessWidget {
           border: Border.all(
             color: Colors.grey.shade200,
             width: 1,
-          ),
+          ),//Обращение на аккаунта
         ),
         child: Row(
           children: [

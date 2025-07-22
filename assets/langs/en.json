@@ -578,7 +578,7 @@
     "notice_created_successfully": "Event successfully created",
     "error_notice_create": "Error creating event",
     "no_events_in_section": "No Event s in this status",
-    "": "Event successfully updated!",
+   "events_updated_successfully": "Events updated successfully!",
     "select_subject": "Enter title",
     "subject": "Topic",
     "deadline": "Deadline ",
@@ -1093,7 +1093,9 @@
 "copy_task": "Copy task",
 "labels": "Labels",
 "select_labels": "Select labels",
-"selected_labels": "Selected labels"
+"selected_labels": "Selected labels",
+"account_request": "Account request"
+
 
 
 
