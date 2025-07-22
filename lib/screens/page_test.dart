@@ -40,6 +40,7 @@ class _EmptyScreenState extends State<PlaceHolderTest> {
           showFilterTaskIcon: false,
           showFilterIcon: false,
           showMyTaskIcon: true,
+          showCallCenter: true,
           showEvent: false,
           showSeparateMyTasks: true,
           showMenuIcon: false,

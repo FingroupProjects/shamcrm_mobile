@@ -1094,7 +1094,14 @@
 "labels": "Labels",
 "select_labels": "Select labels",
 "selected_labels": "Selected labels",
-"account_request": "Account request"
+"account_request": "Channel request",
+"templates": "Templates",
+"date_of_call": "Call date:",
+"call_center": "Call center",
+"call_center_details": "Call center",
+"call_center_number": "Call center number:",
+"call_center_email": "Call center email:"
+
 
 
 

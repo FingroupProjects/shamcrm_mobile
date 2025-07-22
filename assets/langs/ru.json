@@ -1095,7 +1095,27 @@
 "labels": "Метки",
 "select_labels": "Выберите метки",
 "selected_labels": "Выбраны метки",
-  "account_request": "Обращение на аккаунт"
+  "account_request": "Обращение на канал",
+  "call_details": "Детали звонка",
+"phone_number": "Номер телефона:",
+"call_type": "Тип звонка:",
+"no_recording_available": "Запись отсутствует",
+"audio_playback_error": "Ошибка воспроизведения аудио",
+"call_duration_title": "Длительность звонка:",
+"comment": "Комментарий:",
+"write_comment": "Напишите комментарий",
+"grade": "Оценка",
+"rating": "Оценка:",
+"select_rating": "Выберите оценку",
+"rate_call": "Оценить звонок",
+"templates": "Шаблоны",
+"date_of_call": "Дата звонка:",
+"call_center": "Колл центр",
+"call_center_details": "Колл центр",
+"call_center_number": "Номер колл-центра:",
+"call_center_email": "Электронная почта колл-центра:"
+
+
 
 
 

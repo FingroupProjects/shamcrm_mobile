@@ -600,6 +600,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectTask: !_showCustomTabBar,
             showFilterIcon: false,
+            showCallCenter: true,
             showMyTaskIcon: true,
             showFilterIconDeal: false,
             showEvent: false,

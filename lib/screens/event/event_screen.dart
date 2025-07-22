@@ -483,6 +483,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
           focusNode: focusNode,
           showFilterTaskIcon: false,
           showMyTaskIcon: false,
+          showCallCenter: true,
           showEvent: false,
           showMenuIcon: false,
           showNotification: false,

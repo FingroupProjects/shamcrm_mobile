@@ -133,6 +133,7 @@ flutter:
     - assets/icons/Profile/support_chat.png
     - assets/audio/
     - assets/page_2/icons/
+    - assets/audio/voice_operator.mp3
 
   fonts:
     - family: Gilroy
