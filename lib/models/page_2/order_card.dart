@@ -242,16 +242,19 @@ class Good {
   });
 
   // Метод для получения корректного ID товара
-  int getCorrectGoodId() {
-    if (variantGood != null && variantGood!.id != 0) {
-      return variantGood!.id; // Приоритет variantGood.id (19)
-    }
-    if (good.id != 0) {
-      return good.id;
-    }
-    return goodId;
+  // Возвращает ID товара с приоритетом variant_id из order_goods
+int getCorrectGoodId() {
+  if (goodId != 0) {
+    return goodId; // variant_id из order_goods
   }
-
+  if (variantGood != null && variantGood!.id != 0) {
+    return variantGood!.id; // ID из variant.good
+  }
+  if (good.id != 0) {
+    return good.id; // ID из good
+  }
+  return 0;
+}
   // Метод для получения корректного названия товара
   String getCorrectGoodName() {
     if (variantGood != null && variantGood!.name.isNotEmpty) {
@@ -275,24 +278,24 @@ class Good {
   }
 
   factory Good.fromJson(Map<String, dynamic> json) {
-    final goodItem = GoodItem.fromJson(json['good'] ?? {});
-    final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
-        ? GoodItem.fromJson(json['variant']['good'])
-        : null;
+  final goodItem = GoodItem.fromJson(json['good'] ?? {});
+  final variantGoodItem = json['variant'] != null && json['variant']['good'] != null
+      ? GoodItem.fromJson(json['variant']['good'])
+      : null;
 
-    return Good(
-      good: goodItem,
-      variantGood: variantGoodItem,
-      goodId: json['variant_id'] ?? json['good_id'] ?? json['good']?['id'] ?? 0,
-      goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
-      quantity: json['quantity'] ?? 0,
-      price: double.tryParse(
-              json['variant']?['price']?['price']?.toString() ??
-                  json['good']?['good_price']?['price']?.toString() ??
-                  '0') ??
-          0.0,
-    );
-  }
+  return Good(
+    good: goodItem,
+    variantGood: variantGoodItem,
+    goodId: json['variant_id'] ?? json['good_id'] ?? json['good']?['id'] ?? 0,
+    goodName: json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
+    quantity: json['quantity'] ?? 0,
+    price: double.tryParse(
+            json['variant']?['price']?['price']?.toString() ??
+                json['good']?['good_price']?['price']?.toString() ??
+                '0') ??
+        0.0,
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {

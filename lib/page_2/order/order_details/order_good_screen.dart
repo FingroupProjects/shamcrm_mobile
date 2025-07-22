@@ -212,6 +212,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
   int correctGoodId = good.getCorrectGoodId();
+  print('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
   
   if (correctGoodId == 0) {
     ScaffoldMessenger.of(context).showSnackBar(

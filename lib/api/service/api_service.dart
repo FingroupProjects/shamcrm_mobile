@@ -28,6 +28,7 @@ import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
+import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
@@ -4592,7 +4593,34 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       throw Exception('close sokcet!');
     }
   }
+Future<IntegrationForLead> getIntegrationForLead(int chatId) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
 
+  final url = '$baseUrl/chat/get-integration/$chatId?organization_id=$organizationId';
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    debugPrint('API response: $data'); // Лог для отладки
+    if (data['result'] != null) {
+      return IntegrationForLead.fromJson(data['result']); // Парсим весь result
+    } else {
+      debugPrint('Integration not found in response: $data');
+      throw Exception('Интеграция не найдена в ответе');
+    }
+  } else {
+    debugPrint('API error: ${response.statusCode}, body: ${response.body}');
+    throw Exception('Ошибка ${response.statusCode}: Не удалось получить интеграцию');
+  }
+}
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
       {String? replyMessageId}) async {

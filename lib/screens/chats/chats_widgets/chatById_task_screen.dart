@@ -114,7 +114,7 @@ class TaskByIdScreen extends StatelessWidget {
                           buildInfoRow(
                               AppLocalizations.of(context)!
                                   .translate('status_lead_profile'),
-                              task.taskStatus.taskStatus!.name ?? "",
+                              task.taskStatus.taskStatus!.name ?? "no_comment",
                               Icons.assignment,
                               null),
                           buildDivider(),

@@ -578,7 +578,7 @@
   "notice_created_successfully": "Voqea muvaffaqiyatli yaratildi",
   "error_notice_create": "Voqeani yaratishda xatolik",
   "no_events_in_section": "Bu holatda hech qanday Voqealar yo‘q",
-  "": "Voqealar muvaffaqiyatli yangilandi!",
+"events_updated_successfully": "Voqealar muvaffaqiyatli yangilandi!",
   "select_subject": "Sarlavhani kiriting",
   "subject": "Mavzu",
   "deadline": "Muddat ",
@@ -1107,7 +1107,9 @@
 "copy_task": "Vazifani nusxalash",
 "labels": "Yorliqlar",
 "select_labels": "Yorliqlarni tanlang",
-"selected_labels": "Tanlangan yorliqlar"
+"selected_labels": "Tanlangan yorliqlar",
+"account_request": "Hisobga murojaat"
+
 
 
 

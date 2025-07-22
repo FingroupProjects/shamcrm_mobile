@@ -582,7 +582,7 @@
   "notice_created_successfully": "События успешно создан",
   "error_notice_create": "Ошибка создания события",
   "no_events_in_section": "Нет заметок в этом статусе",
-  "": "События успешно обновлен!",
+  "events_updated_successfully": "События успешно обновлены!",
   "select_subject": "Введите название",
   "subject": "Тематика",
   "deadline": "Дедлайн",
@@ -1094,7 +1094,8 @@
 "copy_task": "Копирование задачи",
 "labels": "Метки",
 "select_labels": "Выберите метки",
-"selected_labels": "Выбраны метки"
+"selected_labels": "Выбраны метки",
+  "account_request": "Обращение на аккаунт"
 
 
 
