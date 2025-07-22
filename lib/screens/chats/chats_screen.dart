@@ -438,6 +438,7 @@ await socketClient.connect();
             showFilterTaskIcon: false,
             showMyTaskIcon: false,
             showMenuIcon: false,
+            showCallCenter: true,
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;

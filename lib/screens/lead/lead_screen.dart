@@ -481,6 +481,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           showFilterIconOnSelectLead: !_showCustomTabBar,
           showFilterTaskIcon: false,
           showMyTaskIcon: true,
+          showCallCenter: true,
           showFilterIconDeal: false,
           showEvent: true,
           clearButtonClick: (value) {

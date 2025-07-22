@@ -1108,7 +1108,14 @@
 "labels": "Yorliqlar",
 "select_labels": "Yorliqlarni tanlang",
 "selected_labels": "Tanlangan yorliqlar",
-"account_request": "Hisobga murojaat"
+"account_request": "Kanalga murojaat",
+"templates": "Shablonlar",
+"date_of_call": "Qabul qiluvchi vaqti:",
+"call_center": "Call center",
+"call_center_details": "Call center",
+"call_center_number": "Call center number:",
+"call_center_email": "Call center email:"
+
 
 
 

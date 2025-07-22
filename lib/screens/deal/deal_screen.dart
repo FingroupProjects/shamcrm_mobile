@@ -515,6 +515,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           showFilterIconDeal: true,
           showEvent: true,
           showMyTaskIcon: true,
+          showCallCenter: true,
           clearButtonClick: (value) {
             if (value == false) {
               setState(() {

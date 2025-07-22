@@ -623,6 +623,7 @@ void _initAdminTutorialTargets() {
           showFilterTaskIcon: false,
           showFilterIcon: false,
           showMyTaskIcon: true,
+          showCallCenter: true,
           showEvent: false,
           showSeparateMyTasks: true,
           showMenuIcon: false,
