@@ -1,18 +1,6 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-
-// Модель для оценки
-class Rating {
-  final String id;
-  final String name;
-
-  Rating({required this.id, required this.name});
-
-  @override
-  String toString() => name;
-}
 
 class CallRatingDialog extends StatefulWidget {
   final String? initialRating;
@@ -32,45 +20,61 @@ class CallRatingDialog extends StatefulWidget {
 
 class _CallRatingDialogState extends State<CallRatingDialog> {
   final TextEditingController _commentController = TextEditingController();
-    final TextEditingController conclusionController = TextEditingController();
+  final TextEditingController conclusionController = TextEditingController();
 
   String? _selectedRating;
-  Rating? _selectedRatingData;
   bool _hasValidationError = false;
   String? _errorText;
 
-  // Локальный список оценок
-  final List<Rating> ratingsList = [
-    Rating(id: '5', name: '5 - Отлично'),
-    Rating(id: '4', name: '4 - Хорошо'),
-    Rating(id: '3', name: '3 - Нормально'),
-    Rating(id: '2', name: '2 - Плохо'),
-    Rating(id: '1', name: '1 - Очень плохо'),
-  ];
-//  conclusionController.clear();
+  bool hasValidationError = false;
+  String? errorText;
 
-    bool hasValidationError = false;
-    String? errorText;
   @override
   void initState() {
     super.initState();
     _selectedRating = widget.initialRating;
     _commentController.text = widget.initialComment ?? '';
-    if (_selectedRating != null) {
-      try {
-        _selectedRatingData = ratingsList.firstWhere(
-          (rating) => rating.id == _selectedRating,
-        );
-      } catch (e) {
-        _selectedRatingData = null;
-      }
-    }
   }
 
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  // Виджет для отображения звездочек
+  Widget _buildStarRating() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        int starNumber = index + 1;
+        bool isSelected = _selectedRating != null && 
+                         int.parse(_selectedRating!) >= starNumber;
+        
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedRating = starNumber.toString();
+              // Сбрасываем ошибку валидации при выборе
+              if (_hasValidationError) {
+                _hasValidationError = false;
+                _errorText = null;
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Image.asset(
+              isSelected 
+                ? 'assets/icons/AppBar/star_on.png'
+                : 'assets/icons/AppBar/star_off.png',
+              width: 36,
+              height: 36,
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   @override
@@ -103,7 +107,7 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
             ),
             const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)!.translate('rating'),
+              AppLocalizations.of(context)!.translate('rating_stars'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -111,136 +115,49 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                 color: Color(0xff1E2E52),
               ),
             ),
+            const SizedBox(height: 12),
+            // Звездочки вместо dropdown
+            _buildStarRating(),
             const SizedBox(height: 4),
-            CustomDropdown<Rating>.search(
-              closeDropDownOnClearFilterSearch: true,
-              items: ratingsList,
-              searchHintText: AppLocalizations.of(context)!.translate('search'),
-              overlayHeight: 200,
-              enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(
-                  color: Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name,
+            // Показываем ошибку валидации если есть
+            if (_hasValidationError && _errorText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _errorText!,
                   style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.red,
+                    fontSize: 12,
                     fontFamily: 'Gilroy',
                   ),
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                return Text(
-                  selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_rating'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_rating'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
                 ),
               ),
-              excludeSelected: false,
-              initialItem: _selectedRatingData,
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedRating = value.id;
-                    _selectedRatingData = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
+            const SizedBox(height: 16),
+            // Поле для комментария
+            Container(
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              child: CustomTextFieldNoLabel(
+                controller: _commentController,
+                hintText: AppLocalizations.of(context)!
+                    .translate('write_comment'),
+                maxLines: 5,
+                keyboardType: TextInputType.multiline,
+                errorText: errorText,
+                hasError: hasValidationError,
+                onChanged: (value) {
+                  // Сбрасываем ошибку при изменении текста
+                  if (hasValidationError) {
+                    setState(() {
+                      hasValidationError = false;
+                      errorText = null;
+                    });
+                  }
+                },
+              ),
             ),
             const SizedBox(height: 16),
-                    // Using the new CustomTextFieldNoLabel component
-                    Container(
-                      margin: EdgeInsets.zero,
-                      padding: EdgeInsets.zero,
-                      child: CustomTextFieldNoLabel(
-                        controller: _commentController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('write_comment'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                        errorText: errorText, // Display validation error
-                        hasError: hasValidationError, // Set error state
-                        onChanged: (value) {
-                          // Clear error when user types
-                          if (hasValidationError) {
-                            setState(() {
-                              hasValidationError = false;
-                              errorText = null;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-            const SizedBox(height: 4),
-            // TextField(
-            //   controller: _commentController,
-            //   maxLines: 4,
-            //   decoration: InputDecoration(
-            //     hintText: AppLocalizations.of(context)!.translate('write_comment'),
-            //     hintStyle: const TextStyle(
-            //       fontSize: 14,
-            //       fontWeight: FontWeight.w500,
-            //       fontFamily: 'Gilroy',
-            //       color: Color(0xff99A4BA),
-            //     ),
-            //     border: OutlineInputBorder(
-            //       borderRadius: BorderRadius.circular(12),
-            //       borderSide: const BorderSide(color: Color(0xffF4F7FD)),
-            //     ),
-            //     enabledBorder: OutlineInputBorder(
-            //       borderRadius: BorderRadius.circular(12),
-            //       borderSide: const BorderSide(color: Color(0xffF4F7FD)),
-            //     ),
-            //     focusedBorder: OutlineInputBorder(
-            //       borderRadius: BorderRadius.circular(12),
-            //       borderSide: const BorderSide(color: Color(0xff1E2E52)),
-            //     ),
-            //     errorText: _hasValidationError ? _errorText : null,
-            //   ),
-            //   style: const TextStyle(
-            //     fontSize: 14,
-            //     fontWeight: FontWeight.w500,
-            //     fontFamily: 'Gilroy',
-            //     color: Color(0xff1E2E52),
-            //   ),
-            //   onChanged: (value) {
-            //     if (_hasValidationError) {
-            //       setState(() {
-            //         _hasValidationError = false;
-            //         _errorText = null;
-            //       });
-            //     }
-            //   },
-            // ),
-            const SizedBox(height: 16),
+            // Кнопки
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -276,6 +193,7 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                       ),
                     ),
                     onPressed: () {
+                      // Валидация: проверяем выбран ли рейтинг
                       if (_selectedRating == null) {
                         setState(() {
                           _hasValidationError = true;

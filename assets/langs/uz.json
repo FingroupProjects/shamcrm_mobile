@@ -1114,7 +1114,28 @@
 "call_center": "Call center",
 "call_center_details": "Call center",
 "call_center_number": "Call center number:",
-"call_center_email": "Call center email:"
+"call_center_email": "Call center email:",
+"call_type": "Qo'ng'iroq turi",
+"select_call_type": "Qo'ng'iroq turini tanlang",
+"operator": "Operator",
+"select_operator": "Operatorni tanlang",
+"rating": "Baholash",
+"select_rating": "Baho tanlang",
+"remark": "Izoh",
+"select_remark": "Izohni tanlang",
+"call_details": "Qo‘ng‘iroq tafsilotlari",
+"phone_number": "Telefon raqami:",
+"no_recording_available": "Yozuv mavjud emas",
+"audio_playback_error": "Audio ijro xatosi",
+"call_duration_title": "Qo‘ng‘iroq davomiyligi:",
+"comment": "Izoh:",
+"write_comment": "Izoh yozing",
+"grade": "Baholash",
+
+"rate_call": "Qo‘ng‘iroqni baholang",
+"rating_stars": "Bahoni kiriting",
+"call_type_filter": "Qo‘ng‘iroq turi",
+"rating_title": "Baho"
 
 
 
