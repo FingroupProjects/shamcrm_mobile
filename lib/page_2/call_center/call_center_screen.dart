@@ -1,6 +1,13 @@
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';
 import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -15,11 +22,29 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   List<CallLogEntry> _allCalls = [];
   List<CallLogEntry> _filteredCalls = [];
   CallType? _selectedFilter;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isSearching = false;
+
+  List<CallTypeData> _selectedCallTypes = [];
+  List<OperatorData> _selectedOperators = [];
+  List<StatusData> _selectedStatuses = [];
+  List<RatingData> _selectedRatings = [];
+  final TextEditingController _remarkController = TextEditingController();
+
+
+
+
+
 
   @override
   void initState() {
     super.initState();
     _loadMockData();
+    _searchController.addListener(() {
+      _onSearch(_searchController.text);
+    });
   }
 
   void _loadMockData() {
@@ -69,11 +94,43 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _filterCalls(CallType? filter) {
     setState(() {
       _selectedFilter = filter;
-      if (filter == null) {
-        _filteredCalls = List.from(_allCalls);
-      } else {
-        _filteredCalls = _allCalls.where((call) => call.callType == filter).toList();
-      }
+      _applyFilters();
+    });
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      _searchQuery = query;
+      _isSearching = query.isNotEmpty;
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    _filteredCalls = _allCalls.where((call) {
+      bool matchesSearch = _searchQuery.isEmpty ||
+          call.leadName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          call.phoneNumber.contains(_searchQuery);
+      bool matchesCallType =
+          _selectedFilter == null || call.callType == _selectedFilter;
+      return matchesSearch && matchesCallType;
+    }).toList();
+  }
+
+  void _onFiltersSelected(Map filters) {
+    setState(() {
+      _selectedFilter = filters['callType'] as CallType?;
+      _applyFilters();
+    });
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _selectedFilter = null;
+      _searchQuery = '';
+      _searchController.clear();
+      _isSearching = false;
+      _applyFilters();
     });
   }
 
@@ -114,9 +171,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Колл центр',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.translate('call_center'),
+          style: const TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             fontSize: 20,
@@ -128,6 +185,92 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Поле поиска (показывается при _isSearching)
+          if (_isSearching)
+            Container(
+              width: 150,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _focusNode,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 16, color: Colors.black),
+                autofocus: true,
+              ),
+            ),
+          // Иконка поиска
+          IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            constraints: const BoxConstraints(),
+            icon: _isSearching
+                ? const Icon(Icons.close, color: Colors.black)
+                : Image.asset(
+                    'assets/icons/AppBar/search.png',
+                    width: 24,
+                    height: 24,
+                  ),
+            tooltip: AppLocalizations.of(context)!.translate('search'),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (_isSearching) {
+                  _focusNode.requestFocus();
+                } else {
+                  _searchController.clear();
+                  _focusNode.unfocus();
+                  _resetFilters();
+                }
+              });
+            },
+          ),
+          // Иконка Dashboard
+          IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/MyNavBar/dashboard_call.png',
+              width: 24,
+              height: 24,
+            ),
+            tooltip: AppLocalizations.of(context)!.translate('dashboard'),
+            onPressed: () {
+              // TODO: Реализовать переход на Dashboard
+              Navigator.pushNamed(context, '/dashboard'); // Пример маршрута
+            },
+          ),
+          // Иконка фильтра
+            // Иконка фильтра
+          IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+            ),
+            tooltip: AppLocalizations.of(context)!.translate('filter'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CallCenterFilterScreen(
+                    onSelectedDataFilter: _onFiltersSelected,
+                    onResetFilters: _resetFilters,
+                    initialCallTypes: _selectedCallTypes.map((callType) => callType.id.toString()).toList(),
+                    initialOperators: _selectedOperators.map((operator) => operator.id.toString()).toList(),
+                    initialStatuses: _selectedStatuses.map((status) => status.id.toString()).toList(),
+                    initialRatings: _selectedRatings.map((rating) => rating.id.toString()).toList(),
+                    initialRemark: _remarkController.text,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -152,7 +295,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             ),
           ),
           Container(height: 1, color: Colors.grey.shade200),
-
           Expanded(
             child: items.isEmpty
                 ? _buildEmptyState()
@@ -220,7 +362,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           Icon(Icons.call, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
-            'Звонков не найдено',
+            AppLocalizations.of(context)!.translate('no_calls_found'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
@@ -233,12 +375,19 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     );
   }
 
-void _onCallTap(CallLogEntry call) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => CallDetailsScreen(callEntry: call),
-    ),
-  );
-}
+  void _onCallTap(CallLogEntry call) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CallDetailsScreen(callEntry: call),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 }

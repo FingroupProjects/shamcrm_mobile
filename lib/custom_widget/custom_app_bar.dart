@@ -137,6 +137,9 @@ class CustomAppBar extends StatefulWidget {
       initialDirectoryValuesTask; // Добавляем начальные значения справочников
       
 
+  final bool showDashboardIcon; // Новый параметр
+  final VoidCallback? onDashboardPressed; // Обработчик для Dashboard
+
   CustomAppBar({
     super.key,
     this.menuIconKey,
@@ -174,6 +177,9 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
     this.initialDirectoryValuesTask, // Добавляем в конструктор
+
+this.showDashboardIcon = false,
+    this.onDashboardPressed,
 
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -705,6 +711,39 @@ class _CustomAppBarState extends State<CustomAppBar>
                 ),
               ),
             ),
+            if (widget.showDashboardIcon)
+          Transform.translate(
+            offset: const Offset(10, 0),
+            child: Tooltip(
+              message: AppLocalizations.of(context)!.translate('dashboard'),
+              preferBelow: false,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              textStyle: TextStyle(
+                fontSize: 12,
+                color: Colors.black,
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/MyNavBar/dashboard_OFF.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: widget.onDashboardPressed,
+              ),
+            ),
+          ),
           if (widget.showNotification)
             Transform.translate(
               offset: const Offset(10, 0),
@@ -977,6 +1016,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                 ),
               ),
             ),
+
+            
           if (widget.showCalendarDashboard && _canReadCalendar)
             Transform.translate(
               offset: const Offset(6, 0),

@@ -36,6 +36,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   String? _selectedRating;
   String? _ratingComment;
   double _selectedSpeed = 1.0;
+  
   final List<PlaybackSpeed> _playbackSpeeds = [
     PlaybackSpeed(speed: 0.5, name: '0.5x'),
     PlaybackSpeed(speed: 1.0, name: '1.0x'),
@@ -284,7 +285,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
             ],
           ),
           if (_ratingComment != null && _ratingComment!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

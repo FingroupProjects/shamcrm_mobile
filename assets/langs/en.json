@@ -1058,14 +1058,6 @@
 "file_already_exists": "File already exists",
 "file_not_found": "File not found",
 "error_picking_file": "Error picking file",
-"enter_textfield_text": "Maydon qiymatini kiriting",
-"enter_valid_number": "To‘g‘ri raqamni kiriting",
-"enter_valid_date": "To‘g‘ri sanani kiriting",
-"enter_valid_datetime": "To‘g‘ri sana va vaqtni kiriting",
-"enter_number": "Raqam kiriting",
-"enter_date": "Sanani kiriting",
-"enter_datetime": "Sana va vaqtni kiriting",
-"error_picking_file": "Error picking file",
 "field_type_text": "Text",
 "field_type_number": "Number",
 "field_type_date": "Date",
@@ -1100,7 +1092,30 @@
 "call_center": "Call center",
 "call_center_details": "Call center",
 "call_center_number": "Call center number:",
-"call_center_email": "Call center email:"
+"call_center_email": "Call center email:",
+"call_type": "Call Type",
+"select_call_type": "Select call type",
+"operator": "Operator",
+"select_operator": "Select operator",
+"rating": "Rating",
+"select_rating": "Select rating",
+"remark": "Remark",
+"select_remark": "Select remark",
+"payment_status_title": "Payment status:",
+"call_details": "Call details",
+"phone_number": "Phone number:",
+"no_recording_available": "No recording available",
+"audio_playback_error": "Audio playback error",
+"call_duration_title": "Call duration:",
+"comment": "Comment:",
+"write_comment": "Write a remark",
+"grade": "Rate",
+"rate_call": "Rate the call",
+"rating_stars": "Give a rating",
+"call_type_filter": "Call type",
+"rating_title": "Rating"
+
+
 
 
 

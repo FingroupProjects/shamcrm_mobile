@@ -1103,8 +1103,8 @@
 "audio_playback_error": "Ошибка воспроизведения аудио",
 "call_duration_title": "Длительность звонка:",
 "comment": "Комментарий:",
-"write_comment": "Напишите комментарий",
-"grade": "Оценка",
+"write_comment": "Напишите замечание",
+"grade": "Оценить",
 "rating": "Оценка:",
 "select_rating": "Выберите оценку",
 "rate_call": "Оценить звонок",
@@ -1113,7 +1113,15 @@
 "call_center": "Колл центр",
 "call_center_details": "Колл центр",
 "call_center_number": "Номер колл-центра:",
-"call_center_email": "Электронная почта колл-центра:"
+"call_center_email": "Электронная почта колл-центра:",
+"rating_stars": "Поставьте оценку",
+"call_type_filter": "Тип звонка",
+"select_call_type": "Выберите тип звонка",
+"operator": "Оператор",
+"select_operator": "Выберите оператора",
+"rating_title": "Оценка",
+"remark": "Замечание",
+"select_remark": "Выберите замечание"
 
 
 
