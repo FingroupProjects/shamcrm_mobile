@@ -181,7 +181,11 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
             AppLocalizations.of(context)!.translate('date_of_call') as String,
         'value': formatDate(call.callDate) as String,
       },
-      {
+   {
+        'label': AppLocalizations.of(context)!.translate('operator'),
+        'value': call.operatorName ?? AppLocalizations.of(context)!.translate('not_specified'),
+      },
+       {
         'label': AppLocalizations.of(context)!.translate('call_type') as String,
         'value': _getCallTypeText(call.callType) as String,
       },

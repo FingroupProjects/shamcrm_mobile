@@ -82,6 +82,19 @@ class CallLogItem extends StatelessWidget {
                         ),
                       ),
 
+                      const SizedBox(height: 2),
+
+                      // Имя оператора
+                      Text(
+                        'Оператор: ${callEntry.operatorName ?? 'Не указан'}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+
                       const SizedBox(height: 4),
 
                       // Время и длительность
@@ -123,7 +136,7 @@ class CallLogItem extends StatelessWidget {
                   ),
                 ),
 
-                // Кнопка повторного звонка
+                // Кнопка деталей
                 IconButton(
                   onPressed: () {
                     Navigator.push(
@@ -192,7 +205,6 @@ class CallLogItem extends StatelessWidget {
   }
 
   void _makeCall(String phoneNumber) {
-    // Здесь будет логика для совершения звонка
     print('Calling $phoneNumber');
   }
 }

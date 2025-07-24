@@ -130,10 +130,23 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
- Widget _buildAvatar(String avatar) {
-  // //print('Avatar path: $avatar');
+Widget _buildAvatar(String avatar) {
+  // print('Avatar path: $avatar');
   bool isLeadsSection = endPointInTab == 'lead';
   bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+  bool isTaskSection = endPointInTab == 'task'; // Проверка на task
+
+  // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
+  if (isTaskSection && !avatar.contains('<svg')) {
+    return CircleAvatar(
+      backgroundImage: AssetImage('assets/images/AvatarTask.png'),
+      radius: 24,
+      backgroundColor: Colors.white,
+      onBackgroundImageError: (exception, stackTrace) {
+        // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+      },
+    );
+  }
 
   // Проверяем, если это "Лиды" и аватар пуст или не задан, используем AvatarChat.png
   if (isLeadsSection && (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
@@ -142,7 +155,7 @@ class ChatListItem extends StatelessWidget {
       radius: 24,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        //print('Error loading asset image: assets/images/AvatarChat.png, $exception');
+        // print('Error loading asset image: assets/images/AvatarChat.png, $exception');
       },
     );
   }
@@ -237,13 +250,13 @@ class ChatListItem extends StatelessWidget {
       radius: 24,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        //print('Error loading asset image: $avatar, $exception');
+        // print('Error loading asset image: $avatar, $exception');
       },
     );
   } catch (e) {
-    //print('Fallback avatar due to error: $e');
+    // print('Fallback avatar due to error: $e');
     return CircleAvatar(
-      backgroundImage: AssetImage('assets/images/AvatarChat.png'),
+      backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
       radius: 24,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
     );

@@ -9,6 +9,7 @@ class CallLogEntry {
   final DateTime callDate;
   final CallType callType;
   final Duration? duration;
+  final String? operatorName; // Добавьте это поле
 
   CallLogEntry({
     required this.id,
@@ -17,6 +18,7 @@ class CallLogEntry {
     required this.callDate,
     required this.callType,
     this.duration,
+    this.operatorName,
   });
 }
 
