@@ -1113,7 +1113,17 @@
 "rate_call": "Rate the call",
 "rating_stars": "Give a rating",
 "call_type_filter": "Call type",
-"rating_title": "Rating"
+"rating_title": "Rating",
+"dashboard": "Dashboard",
+"statistics": "Statistics",
+"reports": "Reports",
+"no_reports_found": "No reports found",
+
+"not_called": "Not called",
+"waiting_response": "Client waiting for response",
+"called_during": "Called during peak time"
+
+
 
 
 

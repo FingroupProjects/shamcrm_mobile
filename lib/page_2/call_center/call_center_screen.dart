@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_s
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';
 import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
+import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -33,11 +34,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   List<RatingData> _selectedRatings = [];
   final TextEditingController _remarkController = TextEditingController();
 
-
-
-
-
-
   @override
   void initState() {
     super.initState();
@@ -47,50 +43,54 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     });
   }
 
-  void _loadMockData() {
-    _allCalls = [
-      CallLogEntry(
-        id: '1',
-        leadName: 'Алексей Иванов',
-        phoneNumber: '+7 (999) 123-45-67',
-        callDate: DateTime.now().subtract(const Duration(minutes: 15)),
-        callType: CallType.incoming,
-        duration: const Duration(minutes: 2, seconds: 28),
-      ),
-      CallLogEntry(
-        id: '2',
-        leadName: 'Мария Петрова',
-        phoneNumber: '+7 (999) 987-65-43',
-        callDate: DateTime.now().subtract(const Duration(hours: 2)),
-        callType: CallType.missed,
-      ),
-      CallLogEntry(
-        id: '3',
-        leadName: 'Дмитрий Сидоров',
-        phoneNumber: '+7 (999) 555-44-33',
-        callDate: DateTime.now().subtract(const Duration(hours: 5)),
-        callType: CallType.outgoing,
-        duration: const Duration(minutes: 12, seconds: 45),
-      ),
-      CallLogEntry(
-        id: '4',
-        leadName: 'Елена Козлова',
-        phoneNumber: '+7 (999) 777-88-99',
-        callDate: DateTime.now().subtract(const Duration(days: 1)),
-        callType: CallType.incoming,
-        duration: const Duration(minutes: 3, seconds: 12),
-      ),
-      CallLogEntry(
-        id: '5',
-        leadName: 'Сергей Морозов',
-        phoneNumber: '+7 (999) 222-11-00',
-        callDate: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
-        callType: CallType.missed,
-      ),
-    ];
-    _filteredCalls = List.from(_allCalls);
-  }
-
+void _loadMockData() {
+  _allCalls = [
+    CallLogEntry(
+      id: '1',
+      leadName: 'Алексей Иванов',
+      phoneNumber: '+7 (999) 123-45-67',
+      callDate: DateTime.now().subtract(const Duration(minutes: 15)),
+      callType: CallType.incoming,
+      duration: const Duration(minutes: 2, seconds: 28),
+      operatorName: 'Анна Кузнецова', // Имя оператора
+    ),
+    CallLogEntry(
+      id: '2',
+      leadName: 'Мария Петрова',
+      phoneNumber: '+7 (999) 987-65-43',
+      callDate: DateTime.now().subtract(const Duration(hours: 2)),
+      callType: CallType.missed,
+      operatorName: 'Игорь Соколов', // Имя оператора
+    ),
+    CallLogEntry(
+      id: '3',
+      leadName: 'Дмитрий Сидоров',
+      phoneNumber: '+7 (999) 555-44-33',
+      callDate: DateTime.now().subtract(const Duration(hours: 5)),
+      callType: CallType.outgoing,
+      duration: const Duration(minutes: 12, seconds: 45),
+      operatorName: 'Ольга Иванова', // Имя оператора
+    ),
+    CallLogEntry(
+      id: '4',
+      leadName: 'Елена Козлова',
+      phoneNumber: '+7 (999) 777-88-99',
+      callDate: DateTime.now().subtract(const Duration(days: 1)),
+      callType: CallType.incoming,
+      duration: const Duration(minutes: 3, seconds: 12),
+      operatorName: 'Павел Лебедев', // Имя оператора
+    ),
+    CallLogEntry(
+      id: '5',
+      leadName: 'Сергей Морозов',
+      phoneNumber: '+7 (999) 222-11-00',
+      callDate: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+      callType: CallType.missed,
+      operatorName: 'Екатерина Орлова', // Имя оператора
+    ),
+  ];
+  _filteredCalls = List.from(_allCalls);
+}
   void _filterCalls(CallType? filter) {
     setState(() {
       _selectedFilter = filter;
@@ -140,7 +140,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     DateTime? lastDate;
 
     for (var call in calls) {
-      final dateOnly = DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
+      final dateOnly =
+          DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
       if (lastDate == null || dateOnly != lastDate) {
         result.add(_formatDateHeader(call.callDate));
         lastDate = dateOnly;
@@ -195,7 +196,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 controller: _searchController,
                 focusNode: _focusNode,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 16, color: Colors.black),
@@ -238,12 +240,14 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             ),
             tooltip: AppLocalizations.of(context)!.translate('dashboard'),
             onPressed: () {
-              // TODO: Реализовать переход на Dashboard
-              Navigator.pushNamed(context, '/dashboard'); // Пример маршрута
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DashboardScreen()),
+              );
             },
           ),
           // Иконка фильтра
-            // Иконка фильтра
+          // Иконка фильтра
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -260,10 +264,18 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                   builder: (context) => CallCenterFilterScreen(
                     onSelectedDataFilter: _onFiltersSelected,
                     onResetFilters: _resetFilters,
-                    initialCallTypes: _selectedCallTypes.map((callType) => callType.id.toString()).toList(),
-                    initialOperators: _selectedOperators.map((operator) => operator.id.toString()).toList(),
-                    initialStatuses: _selectedStatuses.map((status) => status.id.toString()).toList(),
-                    initialRatings: _selectedRatings.map((rating) => rating.id.toString()).toList(),
+                    initialCallTypes: _selectedCallTypes
+                        .map((callType) => callType.id.toString())
+                        .toList(),
+                    initialOperators: _selectedOperators
+                        .map((operator) => operator.id.toString())
+                        .toList(),
+                    initialStatuses: _selectedStatuses
+                        .map((status) => status.id.toString())
+                        .toList(),
+                    initialRatings: _selectedRatings
+                        .map((rating) => rating.id.toString())
+                        .toList(),
                     initialRemark: _remarkController.text,
                   ),
                 ),

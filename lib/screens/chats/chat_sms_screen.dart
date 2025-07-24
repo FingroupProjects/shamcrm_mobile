@@ -351,79 +351,95 @@ void _scrollToMessageIndex(DateTime selectedDate) {
     return "${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}";
   }
 
-  Widget _buildAvatar(String avatar) {
-    // //print('Avatar path: $avatar'); // Отладочный вывод
-    if (avatar.contains('<svg')) {
-      final imageUrl = extractImageUrlFromSvg(avatar);
-      if (imageUrl != null) {
+ Widget _buildAvatar(String avatar) {
+  // print('Avatar path: $avatar'); // Отладочный вывод
+  bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+  bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
+
+  // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
+  if (isTaskSection && !avatar.contains('<svg')) {
+    return CircleAvatar(
+      backgroundImage: AssetImage('assets/images/AvatarTask.png'),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: Colors.white,
+      onBackgroundImageError: (exception, stackTrace) {
+        // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+      },
+    );
+  }
+
+  // Обработка SVG-аватарок
+  if (avatar.contains('<svg')) {
+    final imageUrl = extractImageUrlFromSvg(avatar);
+    if (imageUrl != null) {
+      return Container(
+        width: ChatSmsStyles.avatarRadius * 2,
+        height: ChatSmsStyles.avatarRadius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      final text = extractTextFromSvg(avatar);
+      final backgroundColor = extractBackgroundColorFromSvg(avatar);
+      if (text != null && backgroundColor != null) {
         return Container(
           width: ChatSmsStyles.avatarRadius * 2,
           height: ChatSmsStyles.avatarRadius * 2,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
+            color: backgroundColor,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         );
       } else {
-        final text = extractTextFromSvg(avatar);
-        final backgroundColor = extractBackgroundColorFromSvg(avatar);
-        if (text != null && backgroundColor != null) {
-          return Container(
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: backgroundColor,
-              border: Border.all(
-                color: Colors.white,
-                width: 1,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        } else {
-          return SvgPicture.string(
-            avatar,
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            placeholderBuilder: (context) => CircularProgressIndicator(),
-          );
-        }
+        return SvgPicture.string(
+          avatar,
+          width: ChatSmsStyles.avatarRadius * 2,
+          height: ChatSmsStyles.avatarRadius * 2,
+          placeholderBuilder: (context) => CircularProgressIndicator(),
+        );
       }
     }
-    // Проверяем, является ли это аватарка чата поддержки
-    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-    try {
-      return CircleAvatar(
-        backgroundImage: AssetImage(avatar),
-        radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-        onBackgroundImageError: (exception, stackTrace) {
-          //print('Error loading asset image: $avatar, $exception');
-        },
-      );
-    } catch (e) {
-      //print('Fallback avatar due to error: $e');
-      return CircleAvatar(
-        backgroundImage: AssetImage('assets/images/AvatarChat.png'),
-        radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-      );
-    }
   }
+
+  // Обработка остальных случаев (локальные изображения)
+  try {
+    return CircleAvatar(
+      backgroundImage: AssetImage(avatar),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+      onBackgroundImageError: (exception, stackTrace) {
+        // print('Error loading asset image: $avatar, $exception');
+      },
+    );
+  } catch (e) {
+    // print('Fallback avatar due to error: $e');
+    return CircleAvatar(
+      backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+    );
+  }
+}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {

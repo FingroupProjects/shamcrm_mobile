@@ -1135,7 +1135,16 @@
 "rate_call": "Qo‘ng‘iroqni baholang",
 "rating_stars": "Bahoni kiriting",
 "call_type_filter": "Qo‘ng‘iroq turi",
-"rating_title": "Baho"
+"rating_title": "Baho",
+"dashboard": "Boshqaruv paneli",
+"statistics": "Statistika",
+"reports": "Hisobotlar",
+"no_reports_found": "Hisobotlar topilmadi",
+"not_called": "Qo‘ng‘iroq qilinmagan",
+"waiting_response": "Mijoz javobni kutmoqda",
+"called_during": "Yuqori vaqtda qo‘ng‘iroq qilindi"
+
+
 
 
 

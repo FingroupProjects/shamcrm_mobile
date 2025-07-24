@@ -1121,7 +1121,16 @@
 "select_operator": "Выберите оператора",
 "rating_title": "Оценка",
 "remark": "Замечание",
-"select_remark": "Выберите замечание"
+"select_remark": "Выберите замечание",
+"dashboard": "Дашборд",
+"statistics": "Статистика",
+"reports": "Отчеты",
+"no_reports_found": "Отчеты не найдены",
+"not_called": "Не позвонили",
+"waiting_response": "Клиент ждёт ответа",
+"called_during": "Позвонили в разгар"
+
+
 
 
 
