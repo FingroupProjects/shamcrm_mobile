@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
@@ -435,7 +434,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('status_details'),
-       'value': task.taskStatus?.taskStatus?.name ?? '', // Safe access
+        'value': task.taskStatus?.taskStatus?.name ?? '', // Safe access
       },
       {
         'label': AppLocalizations.of(context)!.translate('author_details'),
@@ -540,7 +539,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(),
-                    Row(
+                   Row(
                       children: [
                         Expanded(
                           key: keyTaskNavigateChat,
@@ -552,318 +551,102 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           ),
                         ),
                         if (task.isFinished == 0) ...[
-                          SizedBox(
-                            width: 8,
-                            height: 60,
-                          ),
+                          SizedBox(width: 8, height: 60),
                           Expanded(
                             key: keyTaskForReview,
                             flex: 45,
                             child: ElevatedButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext dialogContext) =>
-                                      AlertDialog(
-                                    contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 20),
-                                    title: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('confirm_task_completion'),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    content: Container(
-                                      width: double.maxFinite,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(dialogContext),
-                                              child: Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('cancel'),
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontFamily: 'Gilroy',
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                              style: TextButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                minimumSize: Size(80, 48),
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 16),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  title: Text(
+                                    AppLocalizations.of(context)!.translate('confirm_task_completion'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
+                                  ),
+                                  content: Container(
+                                    width: double.maxFinite,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: TextButton(
+                                            onPressed: () => Navigator.pop(dialogContext),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              minimumSize: Size(80, 48),
+                                              padding: EdgeInsets.symmetric(horizontal: 16),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                            child: Text(
+                                              AppLocalizations.of(context)!.translate('cancel'),
+                                              style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
                                             ),
                                           ),
-                                          SizedBox(width: 16),
-                                          Expanded(
-                                            child: StatefulBuilder(
-                                              builder: (BuildContext context,
-                                                  StateSetter setState) {
-                                                return TextButton(
-                                                  onPressed: _isLoading
-                                                      ? null
-                                                      : () async {
-                                                          setState(() {
-                                                            _isLoading = true;
-                                                          });
-
-                                                          final taskId =
-                                                              int.parse(widget
-                                                                  .taskId);
-                                                          try {
-                                                            final result =
-                                                                await context
-                                                                    .read<
-                                                                        ApiService>()
-                                                                    .finishTask(
-                                                                        taskId);
-                                                            if (result[
-                                                                    'success'] ==
-                                                                true) {
-                                                              Navigator.pop(
-                                                                  dialogContext);
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                  content: Text(
-                                                                    result['message'] ??
-                                                                        '',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontFamily:
-                                                                          'Gilroy',
-                                                                      fontSize:
-                                                                          16,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500,
-                                                                      color: Colors
-                                                                          .white,
-                                                                    ),
-                                                                  ),
-                                                                  behavior:
-                                                                      SnackBarBehavior
-                                                                          .floating,
-                                                                  margin: EdgeInsets
-                                                                      .symmetric(
-                                                                    horizontal:
-                                                                        16,
-                                                                    vertical: 8,
-                                                                  ),
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            12),
-                                                                  ),
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .green,
-                                                                  elevation: 3,
-                                                                  padding:
-                                                                      EdgeInsets
-                                                                          .symmetric(
-                                                                    vertical:
-                                                                        12,
-                                                                    horizontal:
-                                                                        16,
-                                                                  ),
-                                                                  duration:
-                                                                      Duration(
-                                                                          seconds:
-                                                                              2),
-                                                                ),
-                                                              );
-                                                              context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                                                  widget.initialDate
-                                                                          ?.month ??
-                                                                      DateTime.now()
-                                                                          .month,
-                                                                  widget.initialDate
-                                                                          ?.year ??
-                                                                      DateTime.now()
-                                                                          .year));
-                                                              context
-                                                                  .read<
-                                                                      TaskBloc>()
-                                                                  .add(
-                                                                      FetchTaskStatuses());
-                                                            } else {
-                                                              Navigator.pop(
-                                                                  dialogContext);
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                  content: Text(
-                                                                    result['message'] ??
-                                                                        '',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontFamily:
-                                                                          'Gilroy',
-                                                                      fontSize:
-                                                                          16,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500,
-                                                                      color: Colors
-                                                                          .white,
-                                                                    ),
-                                                                  ),
-                                                                  behavior:
-                                                                      SnackBarBehavior
-                                                                          .floating,
-                                                                  margin: EdgeInsets
-                                                                      .symmetric(
-                                                                    horizontal:
-                                                                        16,
-                                                                    vertical: 8,
-                                                                  ),
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            12),
-                                                                  ),
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .red,
-                                                                  elevation: 3,
-                                                                  padding:
-                                                                      EdgeInsets
-                                                                          .symmetric(
-                                                                    vertical:
-                                                                        12,
-                                                                    horizontal:
-                                                                        16,
-                                                                  ),
-                                                                  duration:
-                                                                      Duration(
-                                                                          seconds:
-                                                                              2),
-                                                                ),
-                                                              );
-                                                            }
-                                                          } catch (e) {
-                                                            Navigator.pop(
-                                                                dialogContext);
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                  e.toString(),
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontFamily:
-                                                                        'Gilroy',
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500,
-                                                                    color: Colors
-                                                                        .white,
-                                                                  ),
-                                                                ),
-                                                                backgroundColor:
-                                                                    Colors.red,
-                                                              ),
-                                                            );
-                                                          } finally {
-                                                            setState(() {
-                                                              _isLoading =
-                                                                  false;
-                                                            });
-                                                          }
-                                                        },
-                                                  child: _isLoading
-                                                      ? SizedBox(
-                                                          width: 20,
-                                                          height: 20,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                            color: Colors.white,
-                                                            strokeWidth: 2,
-                                                          ),
-                                                        )
-                                                      : Text(
-                                                          AppLocalizations.of(
-                                                                  context)!
-                                                              .translate(
-                                                                  'confirm'),
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontFamily:
-                                                                'Gilroy',
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                  style: TextButton.styleFrom(
-                                                    backgroundColor:
-                                                        Color(0xff1E2E52),
-                                                    minimumSize: Size(130, 48),
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            horizontal: 16),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
+                                        ),
+                                        SizedBox(width: 16),
+                                        Expanded(
+                                          child: StatefulBuilder(
+                                            builder: (context, setState) => TextButton(
+                                              onPressed: _isLoading ? null : () async {
+                                                setState(() => _isLoading = true);
+                                                final taskId = int.parse(widget.taskId);
+                                                try {
+                                                  final result = await context.read<ApiService>().finishTask(taskId);
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                                                      elevation: 3,
+                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      duration: Duration(seconds: 2),
                                                     ),
-                                                  ),
-                                                );
+                                                  );
+                                                  if (result['success'] == true) {
+                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
+                                                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                                                  }
+                                                } catch (e) {
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
+                                                  );
+                                                } finally {
+                                                  setState(() => _isLoading = false);
+                                                }
                                               },
+                                              style: TextButton.styleFrom(
+                                                backgroundColor: Color(0xff1E2E52),
+                                                minimumSize: Size(130, 48),
+                                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: _isLoading 
+                                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                                : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    backgroundColor:
-                                        Color.fromARGB(255, 255, 255, 255),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: Color(0xFF1E2E52),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Color(0xFF1E2E52),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
                               child: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('for_review'),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Gilroy',
-                                ),
+                                AppLocalizations.of(context)!.translate('for_review'),
+                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
                               ),
                             ),
                           ),
@@ -895,157 +678,168 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   // В методе _buildAppBar в TaskDetailsScreen
-AppBar _buildAppBar(BuildContext context, String title) {
-  if (!_isTutorialShown) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showTutorial();
-      setState(() {
-        _isTutorialShown = true;
+  AppBar _buildAppBar(BuildContext context, String title) {
+    if (!_isTutorialShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
+        setState(() {
+          _isTutorialShown = true;
+        });
       });
-    });
-  }
-  return AppBar(
-    backgroundColor: Colors.white,
-    forceMaterialTransparency: true,
-    elevation: 0,
-    centerTitle: false,
-    leadingWidth: 40,
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 0),
-      child: Transform.translate(
-        offset: const Offset(0, -2),
-        child: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 40,
-            height: 40,
+    }
+    return AppBar(
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      centerTitle: false,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 40,
+              height: 40,
+            ),
+            onPressed: () {
+              Navigator.pop(context, widget.statusId);
+            },
           ),
-          onPressed: () {
-            Navigator.pop(context, widget.statusId);
-          },
         ),
       ),
-    ),
-    title: Transform.translate(
-      offset: const Offset(-10, 0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
-    ),
-    actions: [
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-           if (_canCreateTask)
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/copy.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                if (currentTask != null) {
-                  final shouldUpdate = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskCopyScreen(
-                        task: currentTask!,
-                        statusId: currentTask!.taskStatus?.id ?? widget.statusId ?? 0,
+      actions: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canCreateTask)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/copy.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  if (currentTask != null) {
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskCopyScreen(
+                          task: currentTask!,
+                          statusId: currentTask!.taskStatus?.id ??
+                              widget.statusId ??
+                              0,
+                        ),
                       ),
-                    ),
-                  );
-                  if (shouldUpdate == true) {
-                    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                    context.read<TaskBloc>().add(FetchTaskStatuses());
-                    context.read<CalendarBloc>().add(FetchCalendarEvents(
-                        widget.initialDate?.month ?? DateTime.now().month,
-                        widget.initialDate?.year ?? DateTime.now().year));
+                    );
+                    if (shouldUpdate == true) {
+                      context
+                          .read<TaskByIdBloc>()
+                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<CalendarBloc>().add(FetchCalendarEvents(
+                          widget.initialDate?.month ?? DateTime.now().month,
+                          widget.initialDate?.year ?? DateTime.now().year));
+                    }
                   }
-                }
-              },
-            ),
-          if (_canEditTask)
-            IconButton(
-              key: keyTaskEdit,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
+                },
               ),
-              onPressed: () async {
-                final createdAtString = currentTask?.createdAt != null &&
-                        currentTask!.createdAt!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentTask!.createdAt!))
-                    : null;
+            if (_canEditTask && _canCreateTask)
+              IconButton(
+                key: keyTaskEdit,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  final createdAtString = currentTask?.createdAt != null &&
+                          currentTask!.createdAt!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                          .format(DateTime.parse(currentTask!.createdAt!))
+                      : null;
 
-                if (currentTask != null) {
-                  final shouldUpdate = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskEditScreen(
-                        taskId: currentTask!.id,
-                        taskName: currentTask!.name,
-                        priority: currentTask!.priority,
-                        taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
-                        project: currentTask!.project?.id.toString(),
-                        user: currentTask!.user != null && currentTask!.user!.isNotEmpty
-                            ? currentTask!.user!.map((user) => user.id).toList()
-                            : null,
-                        statusId: currentTask!.taskStatus?.id ?? 0,
-                        description: currentTask!.description,
-                        startDate: currentTask!.startDate,
-                        endDate: currentTask!.endDate,
-                        createdAt: createdAtString,
-                        taskCustomFields: currentTask!.taskCustomFields,
-                        files: currentTask!.files,
-                        directoryValues: currentTask!.directoryValues,
+                  if (currentTask != null) {
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskEditScreen(
+                          taskId: currentTask!.id,
+                          taskName: currentTask!.name,
+                          priority: currentTask!.priority,
+                          taskStatus:
+                              currentTask!.taskStatus?.taskStatus.toString() ??
+                                  '',
+                          project: currentTask!.project?.id.toString(),
+                          user: currentTask!.user != null &&
+                                  currentTask!.user!.isNotEmpty
+                              ? currentTask!.user!
+                                  .map((user) => user.id)
+                                  .toList()
+                              : null,
+                          statusId: currentTask!.taskStatus?.id ?? 0,
+                          description: currentTask!.description,
+                          startDate: currentTask!.startDate,
+                          endDate: currentTask!.endDate,
+                          createdAt: createdAtString,
+                          taskCustomFields: currentTask!.taskCustomFields,
+                          files: currentTask!.files,
+                          directoryValues: currentTask!.directoryValues,
+                        ),
                       ),
-                    ),
-                  );
-                  if (shouldUpdate == true) {
-                    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                    context.read<TaskBloc>().add(FetchTaskStatuses());
-                    context.read<CalendarBloc>().add(FetchCalendarEvents(
-                        widget.initialDate?.month ?? DateTime.now().month,
-                        widget.initialDate?.year ?? DateTime.now().year));
+                    );
+                    if (shouldUpdate == true) {
+                      context
+                          .read<TaskByIdBloc>()
+                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<CalendarBloc>().add(FetchCalendarEvents(
+                          widget.initialDate?.month ?? DateTime.now().month,
+                          widget.initialDate?.year ?? DateTime.now().year));
+                    }
                   }
-                }
-              },
-            ),
-         
-          if (_canDeleteTask)
-            IconButton(
-              key: keyTaskDelete,
-              padding: EdgeInsets.only(right: 8),
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                },
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
-                );
-              },
-            ),
-        ],
-      ),
-    ],
-  );
-}
+            if (_canDeleteTask)
+              IconButton(
+                key: keyTaskDelete,
+                padding: EdgeInsets.only(right: 8),
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        DeleteTaskDialog(taskId: currentTask!.id),
+                  );
+                },
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 
   // Построение списка деталей задачи
   Widget _buildDetailsList() {
@@ -1341,7 +1135,6 @@ AppBar _buildAppBar(BuildContext context, String title) {
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
- 
   void _showUsersDialog(String users) {
     List<String> userList =
         users.split(',').map((user) => user.trim()).toList();

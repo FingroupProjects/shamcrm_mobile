@@ -14,7 +14,7 @@ class OperatorDetailsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '$operatorName ${AppLocalizations.of(context)!.translate('details')}',
+          '$operatorName',
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
