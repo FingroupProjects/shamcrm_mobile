@@ -55,6 +55,16 @@ class _OperatorChart3State extends State<OperatorChart3> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Эффективности работы',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 24),
           _buildInteractiveLegend(),
           const SizedBox(height: 20),
           Stack(
