@@ -145,71 +145,147 @@ class StatisticChart1 extends StatelessWidget {
                 minY: 0,
                 maxY: 110,
                 lineBarsData: [
-
-  LineChartBarData(
-    spots: [
-      FlSpot(0, 18),
-      FlSpot(2, 43),
-      FlSpot(4, 66),
-      FlSpot(6, 93),
-      FlSpot(8, 58),
-      FlSpot(10, 83),
-      FlSpot(12, 47),
-      FlSpot(14, 33),
-    ],
-    isCurved: true,
-    color: const Color(0xFF6C5CE7),
-    barWidth: 2,
-    dotData: FlDotData(show: false),
-    belowBarData: BarAreaData(
-      show: true,
-      color: const Color(0xFF6C5CE7).withOpacity(0.2),
-    ),
-  ),
-  LineChartBarData(
-    spots: [
-      FlSpot(0, 28),
-      FlSpot(2, 54),
-      FlSpot(4, 76),
-      FlSpot(6, 74),
-      FlSpot(8, 87),
-      FlSpot(10, 62),
-      FlSpot(12, 42),
-      FlSpot(14, 23),
-    ],
-    isCurved: true,
-    color: const Color(0xFF00C48C),
-    barWidth: 2,
-    dotData: FlDotData(show: false),
-    belowBarData: BarAreaData(
-      show: true,
-      color: const Color(0xFF00C48C).withOpacity(0.2),
-    ),
-  ),
-  LineChartBarData(
-    spots: [
-      FlSpot(0, 12),
-      FlSpot(2, 27),
-      FlSpot(4, 53),
-      FlSpot(6, 58),
-      FlSpot(8, 43),
-      FlSpot(10, 68),
-      FlSpot(12, 29),
-      FlSpot(14, 52),
-    ],
-    isCurved: true,
-    color: const Color(0xFFFD9843),
-    barWidth: 2,
-    dotData: FlDotData(show: false),
-    belowBarData: BarAreaData(
-      show: true,
-      color: const Color(0xFFFD9843).withOpacity(0.2),
-    ),
-  ),
-
-
+                  LineChartBarData(
+                    spots: [
+                      FlSpot(0, 18),
+                      FlSpot(2, 43),
+                      FlSpot(4, 66),
+                      FlSpot(6, 93),
+                      FlSpot(8, 58),
+                      FlSpot(10, 83),
+                      FlSpot(12, 47),
+                      FlSpot(14, 33),
+                    ],
+                    isCurved: true,
+                    color: const Color(0xFF6C5CE7),
+                    barWidth: 2,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFF6C5CE7).withOpacity(0.2),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: [
+                      FlSpot(0, 28),
+                      FlSpot(2, 54),
+                      FlSpot(4, 76),
+                      FlSpot(6, 74),
+                      FlSpot(8, 87),
+                      FlSpot(10, 62),
+                      FlSpot(12, 42),
+                      FlSpot(14, 23),
+                    ],
+                    isCurved: true,
+                    color: const Color(0xFF00C48C),
+                    barWidth: 2,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFF00C48C).withOpacity(0.2),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: [
+                      FlSpot(0, 12),
+                      FlSpot(2, 27),
+                      FlSpot(4, 53),
+                      FlSpot(6, 58),
+                      FlSpot(8, 43),
+                      FlSpot(10, 68),
+                      FlSpot(12, 29),
+                      FlSpot(14, 52),
+                    ],
+                    isCurved: true,
+                    color: const Color(0xFFFD9843),
+                    barWidth: 2,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFFFD9843).withOpacity(0.2),
+                    ),
+                  ),
                 ],
-                lineTouchData: LineTouchData(enabled: false),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    // tooltipBgColor: Colors.white.withOpacity(0.9),
+                    tooltipRoundedRadius: 8,
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    tooltipMargin: 10,
+                    getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                      return touchedSpots.map((LineBarSpot touchedSpot) {
+                        final int xValue = touchedSpot.x.toInt();
+                        String month;
+                        switch (xValue) {
+                          case 0:
+                            month = 'Янв';
+                            break;
+                          case 2:
+                            month = 'Февр';
+                            break;
+                          case 4:
+                            month = 'Март';
+                            break;
+                          case 6:
+                            month = 'Апр';
+                            break;
+                          case 8:
+                            month = 'Май';
+                            break;
+                          case 10:
+                            month = 'Июн';
+                            break;
+                          case 12:
+                            month = 'Июл';
+                            break;
+                          default:
+                            month = '';
+                        }
+
+                        String operatorName;
+                        Color textColor;
+                        if (touchedSpot.barIndex == 0) {
+                          operatorName = 'Оператор 1';
+                          textColor = const Color(0xFF6C5CE7);
+                        } else if (touchedSpot.barIndex == 1) {
+                          operatorName = 'Оператор 2';
+                          textColor = const Color(0xFF00C48C);
+                        } else {
+                          operatorName = 'Оператор 3';
+                          textColor = const Color(0xFFFD9843);
+                        }
+
+                        return LineTooltipItem(
+                          '$month: ${touchedSpot.y.toInt()} ($operatorName)',
+                          TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            color: textColor,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                  getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                    return spotIndexes.map((index) {
+                      return TouchedSpotIndicatorData(
+                        FlLine(color: barData.color, strokeWidth: 2),
+                        FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 4,
+                            color: barData.color ?? Colors.black,
+                            strokeWidth: 2,
+                            strokeColor: Colors.white,
+                          ),
+                        ),
+                      );
+                    }).toList();
+                  },
+                  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {},
+                ),
               ),
             ),
           ),

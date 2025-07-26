@@ -1128,7 +1128,9 @@
 "no_reports_found": "Отчеты не найдены",
 "not_called": "Не позвонили",
 "waiting_response": "Клиент ждёт ответа",
-"called_during": "Позвонили в разгар"
+"called_during": "Позвонили в разгар",
+"remarks": "Замечания",
+"date_range": "Диапазон дат"
 
 
 

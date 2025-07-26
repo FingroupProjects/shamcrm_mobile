@@ -67,7 +67,10 @@ class CallLogItem extends StatelessWidget {
                           fontSize: 16,
                           color: Colors.black,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+
 
                       const SizedBox(height: 4),
 
@@ -80,6 +83,8 @@ class CallLogItem extends StatelessWidget {
                           fontSize: 14,
                           color: Colors.grey.shade600,
                         ),
+                               maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
 
                       const SizedBox(height: 2),
@@ -93,6 +98,8 @@ class CallLogItem extends StatelessWidget {
                           fontSize: 12,
                           color: Colors.grey.shade500,
                         ),
+                               maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
 
                       const SizedBox(height: 4),

@@ -2,60 +2,82 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/page_2/call_center/operator_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
-class CallReportList extends StatelessWidget {
-  const CallReportList({Key? key}) : super(key: key);
+class CallReportList extends StatefulWidget {
+  final String searchQuery;
+
+  const CallReportList({Key? key, required this.searchQuery}) : super(key: key);
+
+  @override
+  _CallReportListState createState() => _CallReportListState();
+}
+
+class _CallReportListState extends State<CallReportList> {
+  final List<Map<String, String>> callReports = [
+    {
+      'name': 'Алексей Петров Баришкинов',
+      'phone': '+7 (999) 123-45-67',
+      'date': '24.07.2025 14:37',
+      'status': 'Позвонили',
+      'rating': '4',
+      'operatorName': 'Алексей Петров Баришкинов',
+    },
+    {
+      'name': 'Мария Смирнова Алексеевна',
+      'phone': '+7 (999) 234-56-78',
+      'date': '23.07.2025 09:15',
+      'status': 'Не отвечено',
+      'rating': '2',
+      'operatorName': 'Мария Смирнова Алексеевна',
+    },
+    {
+      'name': 'Дмитрий Козлов',
+      'phone': '+7 (999) 345-67-89',
+      'date': '22.07.2025 16:20',
+      'status': 'Позвонили',
+      'rating': '5',
+      'operatorName': 'Ольга Иванова',
+    },
+    {
+      'name': 'Елена Иванова',
+      'phone': '+7 (999) 456-78-90',
+      'date': '21.07.2025 11:30',
+      'status': 'В процессе',
+      'rating': '3',
+      'operatorName': 'Павел Лебедев',
+    },
+    {
+      'name': 'Сергей Волков',
+      'phone': '+7 (999) 567-89-01',
+      'date': '20.07.2025 13:45',
+      'status': 'Не отвечено',
+      'rating': '1',
+      'operatorName': 'Екатерина Орлова',
+    },
+  ];
+
+  List<Map<String, String>> _getFilteredReports() {
+    if (widget.searchQuery.isEmpty) {
+      return callReports;
+    }
+    return callReports.where((report) {
+      final name = report['name']!.toLowerCase();
+      final phone = report['phone']!.toLowerCase();
+      final operatorName = report['operatorName']!.toLowerCase();
+      final query = widget.searchQuery.toLowerCase();
+      return name.contains(query) || phone.contains(query) || operatorName.contains(query);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> callReports = [
-      {
-        'name': 'Алексей Петров',
-        'phone': '+7 (999) 123-45-67',
-        'date': '24.07.2025 14:37',
-        'status': 'Позвонили',
-        'rating': '4',
-        'operatorName': 'Анна Кузнецова', // Добавлено имя оператора
-      },
-      {
-        'name': 'Мария Смирнова',
-        'phone': '+7 (999) 234-56-78',
-        'date': '23.07.2025 09:15',
-        'status': 'Не отвечено',
-        'rating': '2',
-        'operatorName': 'Игорь Соколов', // Добавлено имя оператора
-      },
-      {
-        'name': 'Дмитрий Козлов',
-        'phone': '+7 (999) 345-67-89',
-        'date': '22.07.2025 16:20',
-        'status': 'Позвонили',
-        'rating': '5',
-        'operatorName': 'Ольга Иванова', // Добавлено имя оператора
-      },
-      {
-        'name': 'Елена Иванова',
-        'phone': '+7 (999) 456-78-90',
-        'date': '21.07.2025 11:30',
-        'status': 'В процессе',
-        'rating': '3',
-        'operatorName': 'Павел Лебедев', // Добавлено имя оператора
-      },
-      {
-        'name': 'Сергей Волков',
-        'phone': '+7 (999) 567-89-01',
-        'date': '20.07.2025 13:45',
-        'status': 'Не отвечено',
-        'rating': '1',
-        'operatorName': 'Екатерина Орлова', // Добавлено имя оператора
-      },
-    ];
+    final filteredReports = _getFilteredReports();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView.builder(
-        itemCount: callReports.length,
+        itemCount: filteredReports.length,
         itemBuilder: (context, index) {
-          final report = callReports[index];
+          final report = filteredReports[index];
           final int rating = int.parse(report['rating']!);
           return InkWell(
             onTap: report['operatorName'] != null
@@ -65,6 +87,7 @@ class CallReportList extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => OperatorDetailsScreen(
                           operatorName: report['operatorName']!,
+                          rating: rating,
                         ),
                       ),
                     );
@@ -101,6 +124,7 @@ class CallReportList extends StatelessWidget {
                     fontSize: 18,
                     color: Colors.black,
                   ),
+                  maxLines: 1,
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,30 +165,6 @@ class CallReportList extends StatelessWidget {
                     ),
                   ],
                 ),
-                // trailing: Container(
-                //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                //   decoration: BoxDecoration(
-                //     color: report['status'] == 'Позвонили'
-                //         ? Colors.green.withOpacity(0.1)
-                //         : report['status'] == 'Не отвечено'
-                //             ? Colors.red.withOpacity(0.1)
-                //             : Colors.yellow.withOpacity(0.1),
-                //     borderRadius: BorderRadius.circular(12),
-                //   ),
-                //   child: Text(
-                //     report['status']!,
-                //     style: TextStyle(
-                //       fontFamily: 'Gilroy',
-                //       fontWeight: FontWeight.w500,
-                //       fontSize: 12,
-                //       color: report['status'] == 'Позвонили'
-                //           ? Colors.green
-                //           : report['status'] == 'Не отвечено'
-                //               ? Colors.red
-                //               : Colors.yellow.shade800,
-                //     ),
-                //   ),
-                // ),
               ),
             ),
           );

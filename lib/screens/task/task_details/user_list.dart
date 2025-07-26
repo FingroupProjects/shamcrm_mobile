@@ -22,6 +22,7 @@ class UserMultiSelectWidget extends StatefulWidget {
 class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
+  List<UserData> displayUsersList = []; // Список для отображения, включая "Выбрать всех"
 
   final TextStyle userTextStyle = const TextStyle(
     fontSize: 16,
@@ -30,10 +31,29 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     color: Color(0xff1E2E52),
   );
 
+  // Фиктивный элемент для "Выбрать всех"
+  final UserData selectAllItem = UserData(
+    id: -1,
+    name: 'select_all', // Имя будет переведено в listItemBuilder
+    lastname: '',
+  );
+
   @override
   void initState() {
     super.initState();
     context.read<GetAllClientBloc>().add(GetAllClientEv());
+  }
+
+  // Метод для выбора/снятия выбора всех пользователей
+  void _toggleSelectAll() {
+    setState(() {
+      if (selectedUsersData.length == usersList.length) {
+        selectedUsersData = [];
+      } else {
+        selectedUsersData = List.from(usersList);
+      }
+      widget.onSelectUsers(selectedUsersData);
+    });
   }
 
   @override
@@ -70,19 +90,19 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 builder: (context, state) {
                   if (state is GetAllClientSuccess) {
                     usersList = state.dataUser.result ?? [];
+                    // Добавляем "Выбрать всех" в начало списка для отображения
+                    displayUsersList = [selectAllItem, ...usersList];
                     if (widget.selectedUsers != null && usersList.isNotEmpty) {
                       selectedUsersData = usersList
-                          .where((user) => widget.selectedUsers!
-                              .contains(user.id.toString()))
+                          .where((user) => widget.selectedUsers!.contains(user.id.toString()))
                           .toList();
                     }
                   }
 
                   return CustomDropdown<UserData>.multiSelectSearch(
-                    items: usersList,
+                    items: displayUsersList,
                     initialItems: selectedUsersData,
-                    searchHintText:
-                        AppLocalizations.of(context)!.translate('search'),
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: const Color(0xffF4F7FD),
@@ -98,58 +118,64 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
-                        return ListTile(
-                         onTap: () {
-                           onItemSelect();
-                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                             FocusScope.of(context).unfocus();
-                           });
-                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                             FocusScope.of(context).unfocus();
-                           });
-                         },
-                          minTileHeight: 1,
-                          minVerticalPadding: 2,
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          title: Padding(
-                            padding: EdgeInsets.zero,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Color(0xff1E2E52), width: 1),
-                                    color: isSelected
-                                        ? Color(0xff1E2E52)
-                                        : Colors.transparent,
-                                  ),
-                                  child: isSelected
-                                      ? Icon(Icons.check,
-                                          color: Colors.white, size: 16)
-                                      : null,
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      // Проверяем, является ли элемент "Выбрать всех"
+                      final isSelectAll = item.id == -1;
+                      final allSelected = selectedUsersData.length == usersList.length;
+
+                      return ListTile(
+                        onTap: () {
+                          if (isSelectAll) {
+                            _toggleSelectAll();
+                          } else {
+                            onItemSelect();
+                          }
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            FocusScope.of(context).unfocus();
+                          });
+                        },
+                        minTileHeight: 1,
+                        minVerticalPadding: 2,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: Padding(
+                          padding: EdgeInsets.zero,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                                  color: isSelectAll
+                                      ? (allSelected ? const Color(0xff1E2E52) : Colors.transparent)
+                                      : (isSelected ? const Color(0xff1E2E52) : Colors.transparent),
                                 ),
-                                const SizedBox(width: 10),
-                                Text('${item.name} ${item.lastname ?? ''}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    )),
-                              ],
-                            ),
+                                child: (isSelectAll && allSelected) || (!isSelectAll && isSelected)
+                                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                    : null,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                isSelectAll
+                                    ? AppLocalizations.of(context)!.translate('select_all')
+                                    : '${item.name} ${item.lastname ?? ''}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ],
                           ),
-                       
-                        );
-                      },
+                        ),
+                      );
+                    },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedUsersNames = selectedUsersData.isEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('select_assignees_list')
+                          ? AppLocalizations.of(context)!.translate('select_assignees_list')
                           : selectedUsersData
                               .map((e) => '${e.name} ${e.lastname ?? ''}')
                               .join(', ');
@@ -162,20 +188,20 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!
-                          .translate('select_assignees_list'),
+                      AppLocalizations.of(context)!.translate('select_assignees_list'),
                       style: userTextStyle.copyWith(
                         fontSize: 14,
                         color: const Color(0xFF6B7280),
                       ),
                     ),
                     onListChanged: (values) {
-                      widget.onSelectUsers(values);
+                      // Фильтруем фиктивный элемент "Выбрать всех" из выбранных
+                      final filteredValues = values.where((user) => user.id != -1).toList();
+                      widget.onSelectUsers(filteredValues);
                       setState(() {
-                        selectedUsersData = values;
+                        selectedUsersData = filteredValues;
                       });
-                      field.didChange(values);
-                      // FocusScope.of(context).unfocus();
+                      field.didChange(filteredValues);
                     },
                   );
                 },

@@ -6,15 +6,20 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 class OperatorDetailsScreen extends StatelessWidget {
   final String operatorName;
+  final int rating;
 
-  const OperatorDetailsScreen({Key? key, required this.operatorName}) : super(key: key);
+  const OperatorDetailsScreen({
+    Key? key,
+    required this.operatorName,
+    required this.rating,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '$operatorName ${AppLocalizations.of(context)!.translate('details')}',
+          operatorName,
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
@@ -28,17 +33,39 @@ class OperatorDetailsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Row(
+              children: List.generate(5, (starIndex) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 2.0),
+                  child: Image.asset(
+                    starIndex < rating && rating > 0
+                        ? 'assets/icons/AppBar/star_on.png'
+                        : 'assets/icons/AppBar/star_off.png',
+                    width: 20,
+                    height: 20,
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children:  [
             OperatorChartRating(),
+            Divider(thickness: 1, color: Colors.grey[300]),
             SizedBox(height: 16),
             OperatorChart2(),
+            Divider(thickness: 1, color: Colors.grey[300]),
             SizedBox(height: 16),
             OperatorChart3(),
+
           ],
         ),
       ),

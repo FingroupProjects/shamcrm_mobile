@@ -1,8 +1,6 @@
-
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/remark_text_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
@@ -10,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:intl/intl.dart';
 
 class CallCenterFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
@@ -19,8 +18,9 @@ class CallCenterFilterScreen extends StatefulWidget {
   final List<String>? initialStatuses;
   final List<String>? initialRatings;
   final String? initialRemark;
-    final List<String>? initialRemarks; // Изменено с String? на List<String>?
-
+  final bool? initialRemarkStatus;
+  final String? initialStartDate;
+  final String? initialEndDate;
 
   const CallCenterFilterScreen({
     Key? key,
@@ -29,12 +29,12 @@ class CallCenterFilterScreen extends StatefulWidget {
     this.initialCallTypes,
     this.initialOperators,
     this.initialStatuses,
-        this.initialRemarks, // Изменено
-
     this.initialRatings,
     this.initialRemark,
+    this.initialRemarkStatus,
+    this.initialStartDate,
+    this.initialEndDate,
   }) : super(key: key);
-
 
   @override
   _CallCenterFilterScreenState createState() => _CallCenterFilterScreenState();
@@ -45,14 +45,18 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
   List<OperatorData> _selectedOperators = [];
   List<StatusData> _selectedStatuses = [];
   List<RatingData> _selectedRatings = [];
-    List<RemarkData> _selectedRemarks = []; // Изменено с TextEditingController
+  bool? selectedRemarkStatus;
   List _selectedLeads = [];
+  DateTime? startDate;
+  DateTime? endDate;
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
 
   Key _callTypeSelectKey = UniqueKey();
   Key _operatorSelectKey = UniqueKey();
   Key _statusSelectKey = UniqueKey();
   Key _ratingSelectKey = UniqueKey();
-   Key _remarkSelectKey = UniqueKey(); // Добавлен ключ для замечаний
+  Key _remarkSelectKey = UniqueKey();
 
   @override
   void initState() {
@@ -73,10 +77,27 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
             ?.map((id) => RatingData(id: int.parse(id), name: ''))
             .toList() ??
         [];
-    _selectedRemarks = widget.initialRemarks
-            ?.map((id) => RemarkData(id: int.parse(id), name: ''))
-            .toList() ??
-        []; // Изменено
+    selectedRemarkStatus = widget.initialRemarkStatus;
+    if (widget.initialStartDate != null) {
+      startDate = DateTime.tryParse(widget.initialStartDate!);
+      _startDateController.text = startDate != null
+          ? DateFormat('dd.MM.yyyy').format(startDate!)
+          : '';
+    }
+    if (widget.initialEndDate != null) {
+      endDate = DateTime.tryParse(widget.initialEndDate!);
+      _endDateController.text = endDate != null
+          ? DateFormat('dd.MM.yyyy').format(endDate!)
+          : '';
+    }
+    _loadFilterState();
+  }
+
+  @override
+  void dispose() {
+    _startDateController.dispose();
+    _endDateController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFilterState() async {
@@ -86,8 +107,8 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       final operatorsJson = prefs.getString('call_center_operators');
       final statusesJson = prefs.getString('call_center_statuses');
       final ratingsJson = prefs.getString('call_center_ratings');
-      final remarksJson = prefs.getString('call_center_remarks'); // Изменено
-
+      final startDateString = prefs.getString('call_center_start_date');
+      final endDateString = prefs.getString('call_center_end_date');
 
       if (callTypesJson != null) {
         _selectedCallTypes = (jsonDecode(callTypesJson) as List)
@@ -109,6 +130,20 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
             .map((item) => RatingData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
+      selectedRemarkStatus = prefs.getBool('call_center_remark_status');
+      if (startDateString != null) {
+        startDate = DateTime.tryParse(startDateString);
+        _startDateController.text = startDate != null
+            ? DateFormat('dd.MM.yyyy').format(startDate!)
+            : '';
+      }
+      if (endDateString != null) {
+        endDate = DateTime.tryParse(endDateString);
+        _endDateController.text = endDate != null
+            ? DateFormat('dd.MM.yyyy').format(endDate!)
+            : '';
+      }
+      _remarkSelectKey = UniqueKey();
     });
   }
 
@@ -126,9 +161,22 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
     await prefs.setString(
         'call_center_ratings',
         jsonEncode(_selectedRatings.map((r) => {'id': r.id, 'name': r.name}).toList()));
-     await prefs.setString(
-        'call_center_remarks',
-        jsonEncode(_selectedRemarks.map((r) => {'id': r.id, 'name': r.name}).toList())); // Изменено
+    
+    if (selectedRemarkStatus != null) {
+      await prefs.setBool('call_center_remark_status', selectedRemarkStatus!);
+    } else {
+      await prefs.remove('call_center_remark_status');
+    }
+    if (startDate != null) {
+      await prefs.setString('call_center_start_date', startDate!.toIso8601String());
+    } else {
+      await prefs.remove('call_center_start_date');
+    }
+    if (endDate != null) {
+      await prefs.setString('call_center_end_date', endDate!.toIso8601String());
+    } else {
+      await prefs.remove('call_center_end_date');
+    }
   }
 
   void _resetFilters() {
@@ -137,13 +185,16 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       _selectedOperators.clear();
       _selectedStatuses.clear();
       _selectedRatings.clear();
-      _selectedRemarks.clear(); // Изменено
+      selectedRemarkStatus = null;
+      startDate = null;
+      endDate = null;
+      _startDateController.clear();
+      _endDateController.clear();
       _callTypeSelectKey = UniqueKey();
       _operatorSelectKey = UniqueKey();
       _statusSelectKey = UniqueKey();
       _ratingSelectKey = UniqueKey();
-            _remarkSelectKey = UniqueKey(); // Добавлено
-
+      _remarkSelectKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -154,7 +205,52 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
         _selectedOperators.isNotEmpty ||
         _selectedStatuses.isNotEmpty ||
         _selectedRatings.isNotEmpty ||
-         _selectedRemarks.isNotEmpty; // Изменено
+        selectedRemarkStatus != null ||
+        startDate != null ||
+        endDate != null;
+  }
+
+  void _handleRemarkStatusChanged(bool? status) {
+    setState(() {
+      selectedRemarkStatus = status;
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blueAccent,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          startDate = picked;
+          _startDateController.text = DateFormat('dd.MM.yyyy').format(picked);
+        } else {
+          endDate = picked;
+          _endDateController.text = DateFormat('dd.MM.yyyy').format(picked);
+        }
+      });
+    }
   }
 
   void _applyFilters() async {
@@ -175,9 +271,11 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
         'ratings': _selectedRatings.isNotEmpty
             ? _selectedRatings.map((rating) => rating.id.toString()).toList()
             : null,
-           'remarks': _selectedRemarks.isNotEmpty
-            ? _selectedRemarks.map((remark) => remark.id.toString()).toList()
-            : null, // Изменено
+        'remarks': selectedRemarkStatus != null 
+            ? [selectedRemarkStatus == true ? "1" : "0"] 
+            : null,
+        'startDate': startDate != null ? startDate!.toIso8601String() : null,
+        'endDate': endDate != null ? endDate!.toIso8601String() : null,
       });
     }
     Navigator.pop(context);
@@ -259,19 +357,106 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: LeadMultiSelectWidget(
-                          selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
-                          onSelectLeads: (List<LeadData> selectedUsersData) {
-                            setState(() {
-                              _selectedLeads = selectedUsersData;
-                              //print("Selected Leads updated: $_selectedLeads");
-                            });
-                          },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('date_range'),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _startDateController,
+                                    readOnly: true,
+                                    onTap: () => _selectDate(context, true),
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context)!.translate('from'),
+                                      labelStyle: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                      suffixIcon: const Icon(
+                                        Icons.calendar_today,
+                                        color: Colors.blueAccent,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(color: Colors.grey),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(color: Colors.blueAccent),
+                                      ),
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _endDateController,
+                                    readOnly: true,
+                                    onTap: () => _selectDate(context, false),
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context)!.translate('to'),
+                                      labelStyle: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                      suffixIcon: const Icon(
+                                        Icons.calendar_today,
+                                        color: Colors.blueAccent,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(color: Colors.grey),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(color: Colors.blueAccent),
+                                      ),
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            LeadMultiSelectWidget(
+                              selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
+                              onSelectLeads: (List<LeadData> selectedUsersData) {
+                                setState(() {
+                                  _selectedLeads = selectedUsersData;
+                                });
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -291,7 +476,6 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                         ),
                       ),
                     ),
-                    
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -355,20 +539,30 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: RemarkMultiSelectWidget(
-                          key: _remarkSelectKey,
-                          selectedRemarks: _selectedRemarks
-                              .map((remark) => remark.id.toString())
-                              .toList(),
-                          onSelectRemarks: (List<RemarkData> selectedRemarks) {
-                            setState(() {
-                              _selectedRemarks = selectedRemarks;
-                            });
-                          },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('remarks'),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            RemarkStatusSelector(
+                              key: _remarkSelectKey,
+                              initialStatus: selectedRemarkStatus,
+                              onStatusChanged: _handleRemarkStatusChanged,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -379,6 +573,101 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class RemarkStatusSelector extends StatefulWidget {
+  final Function(bool?) onStatusChanged;
+  final bool? initialStatus;
+
+  const RemarkStatusSelector({
+    Key? key,
+    required this.onStatusChanged,
+    this.initialStatus,
+  }) : super(key: key);
+
+  @override
+  _RemarkStatusSelectorState createState() => _RemarkStatusSelectorState();
+}
+
+class _RemarkStatusSelectorState extends State<RemarkStatusSelector> {
+  bool? selectedStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedStatus = widget.initialStatus;
+  }
+
+  @override
+  void didUpdateWidget(covariant RemarkStatusSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStatus != oldWidget.initialStatus) {
+      setState(() {
+        selectedStatus = widget.initialStatus;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Checkbox(
+                value: selectedStatus == true,
+                onChanged: (bool? value) {
+                  setState(() {
+                    selectedStatus = value == true ? true : null;
+                  });
+                  widget.onStatusChanged(selectedStatus);
+                },
+                activeColor: Colors.blueAccent,
+                checkColor: Colors.white,
+              ),
+              Text(
+                AppLocalizations.of(context)!.translate('yes'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Row(
+            children: [
+              Checkbox(
+                value: selectedStatus == false,
+                onChanged: (bool? value) {
+                  setState(() {
+                    selectedStatus = value == true ? false : null;
+                  });
+                  widget.onStatusChanged(selectedStatus);
+                },
+                activeColor: Colors.blueAccent,
+                checkColor: Colors.white,
+              ),
+              Text(
+                AppLocalizations.of(context)!.translate('no'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
