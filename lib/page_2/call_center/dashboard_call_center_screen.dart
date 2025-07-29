@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
+// lib/page_2/call_center/dashboard_screen.dart
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
+import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart'; // Added import
 import 'package:crm_task_manager/page_2/call_center/call_log_item.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_not_called.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_called.dart';
-import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart';
+import 'package:crm_task_manager/page_2/call_center/pie_chart_waiting.dart';
+import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart'; // Added import
+import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -12,23 +17,25 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isSearchActive = false;
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      setState(() {}); // Синхронизируем состояние при переключении вкладок
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(() {}); // Удаляем слушатель
+    _tabController.removeListener(() {});
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -39,7 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 48), // Высота AppBar + TabBar
+        preferredSize: const Size.fromHeight(kToolbarHeight + 48),
         child: StatefulBuilder(
           builder: (BuildContext context, StateSetter appBarSetState) {
             return AppBar(
@@ -50,7 +57,8 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                       controller: _searchController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.translate('search'),
+                        hintText:
+                            AppLocalizations.of(context)!.translate('search'),
                         border: InputBorder.none,
                         hintStyle: TextStyle(
                           fontFamily: 'Gilroy',
@@ -66,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                         color: Colors.black,
                       ),
                       onChanged: (value) {
-                        setState(() {}); // Обновляем основной state для фильтрации
+                        setState(() {});
                       },
                     )
                   : Text(
@@ -85,7 +93,9 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               actions: [
                 IconButton(
                   icon: Icon(
-                    _isSearchActive && _tabController.index == 1 ? Icons.close : Icons.search,
+                    _isSearchActive && _tabController.index == 1
+                        ? Icons.close
+                        : Icons.search,
                     color: Colors.black,
                   ),
                   onPressed: () {
@@ -93,12 +103,12 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                       if (!_isSearchActive) {
                         _isSearchActive = true;
                         if (_tabController.index != 1) {
-                          _tabController.animateTo(1); // Переключаемся на "Отчеты"
+                          _tabController.animateTo(1);
                         }
                       } else {
                         _isSearchActive = false;
                         _searchController.clear();
-                        setState(() {}); // Обновляем основной state для сброса фильтрации
+                        setState(() {});
                       }
                     });
                   },
@@ -121,7 +131,9 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                 indicatorColor: const Color(0xFF6C5CE7),
                 indicatorWeight: 3,
                 tabs: [
-                  Tab(text: AppLocalizations.of(context)!.translate('statistics')),
+                  Tab(
+                      text: AppLocalizations.of(context)!
+                          .translate('statistics')),
                   Tab(text: AppLocalizations.of(context)!.translate('reports')),
                 ],
               ),
@@ -146,10 +158,88 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const StatisticChart1(),
-            Divider(thickness: 1, color: Colors.grey[300]),
-            const PieChartNotCalled(),
-            const PieChartCalled(),
+            // Added StatisticChart1
+            FutureBuilder<CallStatistics>(
+              future: _apiService.getCallStatistics(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Ошибка загрузки данных: ${snapshot.error}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
+                  );
+                } else if (snapshot.hasData &&
+                    snapshot.data!.result.isNotEmpty) {
+                  return StatisticChart1(statistics: snapshot.data!);
+                } else {
+                  return const Center(
+                    child: Text(
+                      'Нет данных для отображения',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            const Divider(thickness: 1, color: Colors.grey),
+            // Existing pie charts
+            FutureBuilder<CallAnalytics>(
+              future: _apiService.getCallAnalytics(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Ошибка загрузки данных: ${snapshot.error}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
+                  );
+                } else if (snapshot.hasData &&
+                    snapshot.data!.result.isNotEmpty) {
+                  return Column(
+                    children: [
+                      
+                      PieChartNotCalled(statistics: snapshot.data!.result),
+                      Divider(thickness: 1, color: Colors.grey[300]),
+                      PieChartAllCalls(statistics: snapshot.data!.result),
+                      Divider(thickness: 1, color: Colors.grey[300]),
+                      PieChartCalled(statistics: snapshot.data!.result),
+                    ],
+                  );
+                } else {
+                  return const Center(
+                    child: Text(
+                      'Нет данных для отображения',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ),

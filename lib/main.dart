@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -296,6 +297,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
+        BlocProvider(create: (context) => CallCenterBloc(ApiService()),
+        ),
         
       ],
       child: MaterialApp(

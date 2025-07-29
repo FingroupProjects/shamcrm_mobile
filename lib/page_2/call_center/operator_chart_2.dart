@@ -1,8 +1,14 @@
+
+import 'package:crm_task_manager/api/service/api_service.dart' show ApiService;
+import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+
 class OperatorChart2 extends StatefulWidget {
-  const OperatorChart2({Key? key}) : super(key: key);
+  final int operatorId; // Добавляем operatorId для возможной будущей интеграции
+
+  const OperatorChart2({Key? key, required this.operatorId}) : super(key: key);
 
   @override
   State<OperatorChart2> createState() => _OperatorChart2State();
@@ -10,12 +16,15 @@ class OperatorChart2 extends StatefulWidget {
 
 class _OperatorChart2State extends State<OperatorChart2> {
   int? selectedSectionIndex;
+  CallSummaryStats? summaryStats;
+  bool isLoading = true;
+  String? errorMessage;
 
   final List<Color> sectionColors = [
-    const Color(0xFF3B82F6), // Синий
-    const Color(0xFF10B981), // Зеленый  
-    const Color(0xFFF59E0B), // Оранжевый
-    const Color(0xFFEF4444), // Красный
+    const Color(0xFF3B82F6), // Входящие - синий
+    const Color(0xFF10B981), // Исходящие - зеленый
+    const Color(0xFFF59E0B), // Без ответа - оранжевый
+    const Color(0xFFEF4444), // Пропущенные - красный
   ];
 
   final List<String> sectionLabels = [
@@ -25,11 +34,69 @@ class _OperatorChart2State extends State<OperatorChart2> {
     'Пропущенные'
   ];
 
-  final List<double> sectionValues = [40, 35, 10, 15];
-  final List<int> actualCounts = [50, 43, 12, 19];
+  @override
+  void initState() {
+    super.initState();
+    _fetchSummaryStats();
+  }
+
+  Future<void> _fetchSummaryStats() async {
+    try {
+      final apiService = ApiService();
+      final stats = await apiService.getCallSummaryStats();
+      setState(() {
+        summaryStats = stats;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
+
+  List<double> _getSectionValues() {
+    if (summaryStats == null || summaryStats!.result.totalCalls == 0) {
+      return [25.0, 25.0, 25.0, 25.0]; // Фаллбэк для пустых данных
+    }
+    final counts = summaryStats!.result.countsByType;
+    final total = summaryStats!.result.totalCalls.toDouble();
+    return [
+      (counts.incoming / total * 100),
+      (counts.outgoing / total * 100),
+      (counts.unanswered / total * 100),
+      (counts.missed / total * 100),
+    ];
+  }
+
+  List<int> _getActualCounts() {
+    if (summaryStats == null) {
+      return [0, 0, 0, 0]; // Фаллбэк для пустых данных
+    }
+    final counts = summaryStats!.result.countsByType;
+    return [
+      counts.incoming,
+      counts.outgoing,
+      counts.unanswered,
+      counts.missed,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errorMessage != null) {
+      return Center(child: Text(errorMessage!));
+    }
+
+    final totalCalls = summaryStats!.result.totalCalls;
+    final sectionValues = _getSectionValues();
+    final actualCounts = _getActualCounts();
+
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
@@ -46,9 +113,9 @@ class _OperatorChart2State extends State<OperatorChart2> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Количество разговора',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -68,7 +135,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                               selectedSectionIndex! >= 0 &&
                               selectedSectionIndex! < sectionLabels.length)
                           ? sectionLabels[selectedSectionIndex!]
-                          : 'В среднем в день',
+                          : 'Всего звонков',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
@@ -88,7 +155,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                                 selectedSectionIndex! >= 0 &&
                                 selectedSectionIndex! < actualCounts.length)
                             ? actualCounts[selectedSectionIndex!].toString()
-                            : '124',
+                            : totalCalls.toString(),
                         key: ValueKey(selectedSectionIndex),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
@@ -108,7 +175,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                         selectedSectionIndex! < sectionValues.length) ...[
                       const SizedBox(height: 8),
                       Text(
-                        '${sectionValues[selectedSectionIndex!].toInt()}% от общего',
+                        '${sectionValues[selectedSectionIndex!].toStringAsFixed(1)}% от общего',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
@@ -162,6 +229,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
   }
 
   List<PieChartSectionData> _buildInteractivePieChartSections() {
+    final sectionValues = _getSectionValues();
     return sectionValues.asMap().entries.map((entry) {
       final index = entry.key;
       final value = entry.value;
@@ -170,7 +238,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
       return PieChartSectionData(
         color: sectionColors[index],
         value: value,
-        title: isSelected ? '${value.toInt()}%' : '',
+        title: isSelected ? '${value.toStringAsFixed(1)}%' : '',
         radius: isSelected ? 32 : 25,
         titleStyle: const TextStyle(
           fontFamily: 'Gilroy',
@@ -184,6 +252,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
   }
 
   Widget _buildInteractiveLegend() {
+    final actualCounts = _getActualCounts();
     return Wrap(
       spacing: 24,
       runSpacing: 12,

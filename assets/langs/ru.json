@@ -1128,9 +1128,12 @@
 "no_reports_found": "Отчеты не найдены",
 "not_called": "Не позвонили",
 "waiting_response": "Клиент ждёт ответа",
-"called_during": "Позвонили в разгар",
+"called_during": "Пользователи в разговоре",
 "remarks": "Замечания",
-"date_range": "Диапазон дат"
+"date_range": "Диапазон дат",
+"all_calls": "Все звонки",
+"outgoing": "Исходящие",
+"missed": "Пропущенные"
 
 
 

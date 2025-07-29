@@ -87,7 +87,7 @@ class _CallReportListState extends State<CallReportList> {
                       MaterialPageRoute(
                         builder: (context) => OperatorDetailsScreen(
                           operatorName: report['operatorName']!,
-                          rating: rating,
+                          rating: rating, operatorId: 1,
                         ),
                       ),
                     );

@@ -7,11 +7,13 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 class OperatorDetailsScreen extends StatelessWidget {
   final String operatorName;
   final int rating;
+  final int operatorId;
 
   const OperatorDetailsScreen({
     Key? key,
     required this.operatorName,
     required this.rating,
+    required this.operatorId,
   }) : super(key: key);
 
   @override
@@ -58,13 +60,14 @@ class OperatorDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:  [
-            OperatorChartRating(),
+            OperatorChartRating(operatorId: operatorId),
             Divider(thickness: 1, color: Colors.grey[300]),
             SizedBox(height: 16),
-            OperatorChart2(),
+            OperatorChart2(operatorId: operatorId),
             Divider(thickness: 1, color: Colors.grey[300]),
             SizedBox(height: 16),
-            OperatorChart3(),
+            OperatorChart3(operatorId: operatorId),
+            
 
           ],
         ),
