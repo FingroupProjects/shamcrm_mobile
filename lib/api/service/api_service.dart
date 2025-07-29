@@ -46,12 +46,18 @@ import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_mo
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
+import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
+import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
+import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
+import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
+import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
@@ -574,6 +580,8 @@ class ApiService {
 //     final permissions = await getPermissions();
 //     return permissions.contains(permission); // Проверяем наличие права
 //   }
+
+
 
   Future<List<String>> fetchPermissionsByRoleId() async {
     final organizationId = await getSelectedOrganization();
@@ -8084,9 +8092,264 @@ Future<Map<String, dynamic>> createOrder({
 
   //_________________________________ END_____API_SCREEN__ORDER____________________________________________//
 
+ Future<Map<String, dynamic>> getAllCalls({
+  required int page,
+  required int perPage,
+  String? searchQuery,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/calls?organization_id=$organizationId&page=$page&per_page=$perPage';
+  if (searchQuery != null && searchQuery.isNotEmpty) {
+    path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
+  }
+
+  print("API Request: getAllCalls with path: $path");
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print("API response for getAllCalls: $data");
+    if (data['result']['data'] != null) {
+      final calls = (data['result']['data'] as List)
+          .map((json) => CallLogEntry.fromJson(json))
+          .toList();
+      final pagination = data['result']['pagination'] as Map<String, dynamic>;
+      return {
+        'calls': calls,
+        'pagination': pagination,
+      };
+    } else {
+      throw Exception('Нет данных о звонках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки звонков: ${response.statusCode}');
+  }
+}
+
+Future<Map<String, dynamic>> getIncomingCalls({
+  required int page,
+  required int perPage,
+  String? searchQuery,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/calls?incoming=1&missed=0&organization_id=$organizationId&page=$page&per_page=$perPage';
+  if (searchQuery != null && searchQuery.isNotEmpty) {
+    path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
+  }
+
+  print("API Request: getIncomingCalls with path: $path");
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      final calls = (data['result']['data'] as List)
+          .map((json) => CallLogEntry.fromJson(json))
+          .toList();
+      final pagination = data['result']['pagination'] as Map<String, dynamic>;
+      return {
+        'calls': calls,
+        'pagination': pagination,
+      };
+    } else {
+      throw Exception('Нет данных о входящих звонках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки входящих звонков: ${response.statusCode}');
+  }
+}
+
+Future<Map<String, dynamic>> getOutgoingCalls({
+  required int page,
+  required int perPage,
+  String? searchQuery,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/calls?incoming=0&missed=0&organization_id=$organizationId&page=$page&per_page=$perPage';
+  if (searchQuery != null && searchQuery.isNotEmpty) {
+    path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
+  }
+
+  print("API Request: getOutgoingCalls with path: $path");
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      final calls = (data['result']['data'] as List)
+          .map((json) => CallLogEntry.fromJson(json))
+          .toList();
+      final pagination = data['result']['pagination'] as Map<String, dynamic>;
+      return {
+        'calls': calls,
+        'pagination': pagination,
+      };
+    } else {
+      throw Exception('Нет данных об исходящих звонках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки исходящих звонков: ${response.statusCode}');
+  }
+}
+
+Future<Map<String, dynamic>> getMissedCalls({
+  required int page,
+  required int perPage,
+  String? searchQuery,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/calls?missed=1&organization_id=$organizationId&page=$page&per_page=$perPage';
+  if (searchQuery != null && searchQuery.isNotEmpty) {
+    path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
+  }
+
+  print("API Request: getMissedCalls with path: $path");
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      final calls = (data['result']['data'] as List)
+          .map((json) => CallLogEntry.fromJson(json))
+          .toList();
+      final pagination = data['result']['pagination'] as Map<String, dynamic>;
+      return {
+        'calls': calls,
+        'pagination': pagination,
+      };
+    } else {
+      throw Exception('Нет данных о пропущенных звонках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки пропущенных звонков: ${response.statusCode}');
+  }
+}
 
 
+  Future<CallById> getCallById({
+  required int callId,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/calls/$callId?organization_id=$organizationId';
 
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print("API response for getCallById: $data");
+    if (data['result'] != null && data['result'] is Map<String, dynamic>) {
+      return CallById.fromJson(data['result'] as Map<String, dynamic>);
+    } else {
+      throw Exception('Invalid or missing call data in response');
+    }
+  } else {
+    throw Exception('Failed to load call data: ${response.statusCode}');
+  }
+}
+
+Future<CallStatistics> getCallStatistics() async {
+  final organizationId = await getSelectedOrganization();
+
+  String path =
+      '/calls/statistic/get-call-statistics${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+  try {
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
+        return CallStatistics.fromJson(jsonData);
+      } else {
+        throw ('Нет данных статистики звонков в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных статистики звонков');
+    }
+  } catch (e) {
+    throw ('Ошибка получения данных статистики звонков: $e');
+  }
+}
+
+Future<CallAnalytics> getCallAnalytics() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/calls/statistic/get-call-analytics${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['result'] != null) {
+          return CallAnalytics.fromJson(jsonData);
+        } else {
+          throw ('Нет данных статистики звонков в ответе');
+        }
+      } else if (response.statusCode == 500) {
+        throw ('Ошибка сервера: 500');
+      } else {
+        throw ('Ошибка загрузки данных статистики звонков');
+      }
+    } catch (e) {
+      throw ('Ошибка получения данных статистики звонков: $e');
+    }
+  }
+  Future<MonthlyCallStats> getMonthlyCallStats(int operatorId) async {
+  final organizationId = await getSelectedOrganization();
+
+  String path = '/calls/statistic/monthly-stats?operator=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
+
+  try {
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
+        return MonthlyCallStats.fromJson(jsonData);
+      } else {
+        throw ('Нет данных месячной статистики звонков в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных месячной статистики звонков');
+    }
+  } catch (e) {
+    throw ('Ошибка получения данных месячной статистики звонков: $e');
+  }
+}
+
+Future<CallSummaryStats> getCallSummaryStats() async {
+  final organizationId = await getSelectedOrganization();
+
+  String path = '/calls/statistic/summary${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+  try {
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null) {
+        return CallSummaryStats.fromJson(jsonData);
+      } else {
+        throw ('Нет данных сводной статистики звонков в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных сводной статистики звонков');
+    }
+  } catch (e) {
+    throw ('Ошибка получения данных сводной статистики звонков: $e');
+  }
+}
 
 
 }
+
+
+

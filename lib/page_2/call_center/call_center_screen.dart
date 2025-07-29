@@ -1,8 +1,11 @@
+import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
+import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
+import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';
@@ -10,6 +13,7 @@ import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class CallCenterScreen extends StatefulWidget {
@@ -20,13 +24,12 @@ class CallCenterScreen extends StatefulWidget {
 }
 
 class _CallCenterScreenState extends State<CallCenterScreen> {
-  List<CallLogEntry> _allCalls = [];
-  List<CallLogEntry> _filteredCalls = [];
   CallType? _selectedFilter;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
+  final ScrollController _scrollController = ScrollController();
 
   List<CallTypeData> _selectedCallTypes = [];
   List<OperatorData> _selectedOperators = [];
@@ -37,117 +40,106 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMockData();
+    print("Initializing CallCenterScreen");
+    context.read<CallCenterBloc>().add(LoadCalls(callType: null));
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _scrollController.addListener(_onScroll);
+      }
+    });
   }
 
-void _loadMockData() {
-  _allCalls = [
-    CallLogEntry(
-      id: '1',
-      leadName: 'Алексей Иванов',
-      phoneNumber: '+7 (999) 123-45-67',
-      callDate: DateTime.now().subtract(const Duration(minutes: 15)),
-      callType: CallType.incoming,
-      duration: const Duration(minutes: 2, seconds: 28),
-      operatorName: 'Анна Кузнецова', // Имя оператора
-    ),
-    CallLogEntry(
-      id: '2',
-      leadName: 'Мария Петрова',
-      phoneNumber: '+7 (999) 987-65-43',
-      callDate: DateTime.now().subtract(const Duration(hours: 2)),
-      callType: CallType.missed,
-      operatorName: 'Игорь Соколов', // Имя оператора
-    ),
-    CallLogEntry(
-      id: '3',
-      leadName: 'Дмитрий Сидоров',
-      phoneNumber: '+7 (999) 555-44-33',
-      callDate: DateTime.now().subtract(const Duration(hours: 5)),
-      callType: CallType.outgoing,
-      duration: const Duration(minutes: 12, seconds: 45),
-      operatorName: 'Ольга Иванова', // Имя оператора
-    ),
-    CallLogEntry(
-      id: '4',
-      leadName: 'Елена Козлова',
-      phoneNumber: '+7 (999) 777-88-99',
-      callDate: DateTime.now().subtract(const Duration(days: 1)),
-      callType: CallType.incoming,
-      duration: const Duration(minutes: 3, seconds: 12),
-      operatorName: 'Павел Лебедев', // Имя оператора
-    ),
-    CallLogEntry(
-      id: '5',
-      leadName: 'Сергей Морозов',
-      phoneNumber: '+7 (999) 222-11-00',
-      callDate: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
-      callType: CallType.missed,
-      operatorName: 'Екатерина Орлова', // Имя оператора
-    ),
-  ];
-  _filteredCalls = List.from(_allCalls);
-}
+  void _onScroll() {
+    final pixels = _scrollController.position.pixels;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if (pixels >= maxExtent - 100) {
+      print("Near end of scroll, checking for LoadMoreCalls");
+      final bloc = context.read<CallCenterBloc>();
+      final state = bloc.state;
+      if (state is CallCenterLoaded && !bloc.allCallsFetched && !bloc.isLoadingMore) {
+        if (state.currentPage < state.totalPages) {
+          print("Triggering LoadMoreCalls for page ${state.currentPage + 1}");
+          bloc.add(LoadMoreCalls(
+            callType: _selectedFilter,
+            currentPage: state.currentPage,
+          ));
+        } else {
+          print("All pages fetched");
+        }
+      }
+    }
+  }
+
   void _filterCalls(CallType? filter) {
     setState(() {
+      print("Filtering calls with type: $filter");
       _selectedFilter = filter;
-      _applyFilters();
+      context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
     });
   }
 
   void _onSearch(String query) {
     setState(() {
+      print("Search query: $query");
       _searchQuery = query;
       _isSearching = query.isNotEmpty;
-      _applyFilters();
+      context.read<CallCenterBloc>().add(LoadCalls(
+        callType: _selectedFilter,
+        page: 1,
+        searchQuery: query,
+      ));
     });
-  }
-
-  void _applyFilters() {
-    _filteredCalls = _allCalls.where((call) {
-      bool matchesSearch = _searchQuery.isEmpty ||
-          call.leadName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          call.phoneNumber.contains(_searchQuery);
-      bool matchesCallType =
-          _selectedFilter == null || call.callType == _selectedFilter;
-      return matchesSearch && matchesCallType;
-    }).toList();
   }
 
   void _onFiltersSelected(Map filters) {
     setState(() {
+      print("Filters selected: $filters");
       _selectedFilter = filters['callType'] as CallType?;
-      _applyFilters();
+      _selectedCallTypes = filters['callTypes'] as List<CallTypeData>? ?? [];
+      _selectedOperators = filters['operators'] as List<OperatorData>? ?? [];
+      _selectedStatuses = filters['statuses'] as List<StatusData>? ?? [];
+      _selectedRatings = filters['ratings'] as List<RatingData>? ?? [];
+      context.read<CallCenterBloc>().add(LoadCalls(callType: _selectedFilter));
     });
   }
 
   void _resetFilters() {
     setState(() {
+      print("Resetting filters");
       _selectedFilter = null;
       _searchQuery = '';
       _searchController.clear();
       _isSearching = false;
-      _applyFilters();
+      _selectedCallTypes = [];
+      _selectedOperators = [];
+      _selectedStatuses = [];
+      _selectedRatings = [];
+      _remarkController.clear();
+      context.read<CallCenterBloc>().add(LoadCalls(callType: null));
     });
   }
 
   List<Object> _buildListWithHeaders(List<CallLogEntry> calls) {
+    print("Building list with headers, call count: ${calls.length}");
     calls.sort((a, b) => b.callDate.compareTo(a.callDate));
     final List<Object> result = [];
     DateTime? lastDate;
 
     for (var call in calls) {
-      final dateOnly =
-          DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
+      final dateOnly = DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
       if (lastDate == null || dateOnly != lastDate) {
-        result.add(_formatDateHeader(call.callDate));
+        final header = _formatDateHeader(call.callDate);
+        print("Adding header: $header");
+        result.add(header);
         lastDate = dateOnly;
       }
+      print("Adding call: ${call.id}");
       result.add(call);
     }
+    print("List built, total items: ${result.length}");
     return result;
   }
 
@@ -165,8 +157,6 @@ void _loadMockData() {
 
   @override
   Widget build(BuildContext context) {
-    final items = _buildListWithHeaders(_filteredCalls);
-
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -187,7 +177,6 @@ void _loadMockData() {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Поле поиска (показывается при _isSearching)
           if (_isSearching)
             Container(
               width: 150,
@@ -196,15 +185,13 @@ void _loadMockData() {
                 controller: _searchController,
                 focusNode: _focusNode,
                 decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 16, color: Colors.black),
                 autofocus: true,
               ),
             ),
-          // Иконка поиска
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -229,7 +216,6 @@ void _loadMockData() {
               });
             },
           ),
-          // Иконка Dashboard
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -246,8 +232,6 @@ void _loadMockData() {
               );
             },
           ),
-          // Иконка фильтра
-          // Иконка фильтра
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -286,7 +270,6 @@ void _loadMockData() {
       ),
       body: Column(
         children: [
-          // Фильтры
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -308,13 +291,47 @@ void _loadMockData() {
           ),
           Container(height: 1, color: Colors.grey.shade200),
           Expanded(
-            child: items.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    itemCount: items.length,
+            child: BlocBuilder<CallCenterBloc, CallCenterState>(
+              builder: (context, state) {
+                print("Building UI with state: $state");
+                if (state is CallCenterLoading) {
+                  return const Center(child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: PlayStoreImageLoading(
+                                size: 80.0,
+                                duration: const Duration(milliseconds: 1000),
+                              ),
+                            ),);
+                } else if (state is CallCenterLoaded) {
+                  print("CallCenterLoaded: calls=${state.calls.length}, currentPage=${state.currentPage}, totalPages=${state.totalPages}");
+                  final items = _buildListWithHeaders(state.calls);
+                  if (items.isEmpty) {
+                    print("No items to display after building list");
+                    return _buildEmptyState();
+                  }
+                  return ListView.builder(
+                    controller: _scrollController,
+                    itemCount: items.length + (state.currentPage < state.totalPages && context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index >= items.length) {
+                        if (state.currentPage < state.totalPages && context.read<CallCenterBloc>().isLoadingMore) {
+                          print("Rendering loading indicator for page ${state.currentPage + 1}");
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: PlayStoreImageLoading(
+                                size: 80.0,
+                                duration: const Duration(milliseconds: 1000),
+                              ),
+                            ),
+                          );
+                        }
+                        print("Index $index out of bounds, returning empty widget");
+                        return const SizedBox.shrink();
+                      }
                       final item = items[index];
                       if (item is String) {
+                        print("Rendering header: $item");
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                           child: Text(
@@ -328,15 +345,40 @@ void _loadMockData() {
                           ),
                         );
                       } else if (item is CallLogEntry) {
+                        print("Rendering call item: ${item.id}");
                         return CallLogItem(
                           callEntry: item,
                           onTap: () => _onCallTap(item),
                         );
                       } else {
+                        print("Unknown item type at index $index");
                         return const SizedBox.shrink();
                       }
                     },
-                  ),
+                  );
+                } else if (state is CallCenterError) {
+                  print("CallCenterError: ${state.message}");
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
+                  );
+                } else if (state is CallByIdLoaded) {
+                  print("CallByIdLoaded: call=${state.call.id}, no action needed");
+                  return const Center(child: PlayStoreImageLoading(
+                                size: 80.0,
+                                duration: const Duration(milliseconds: 1000),
+                              ),);
+                }
+                print("Default case: rendering empty state");
+                return _buildEmptyState();
+              },
+            ),
           ),
         ],
       ),
@@ -388,18 +430,40 @@ void _loadMockData() {
   }
 
   void _onCallTap(CallLogEntry call) {
+    print("Navigating to CallDetailsScreen for call: ${call.id}");
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CallDetailsScreen(callEntry: call),
       ),
-    );
+    ).then((_) {
+      print("Returning to CallCenterScreen, restoring state");
+      final currentState = context.read<CallCenterBloc>().state;
+      int page = 1;
+      if (currentState is CallCenterLoaded) {
+        page = currentState.currentPage;
+        print("Restoring from CallCenterLoaded, page: $page");
+      } else {
+        print("Current state is $currentState, using default page: $page");
+      }
+      context.read<CallCenterBloc>().add(LoadCalls(
+        callType: _selectedFilter,
+        page: page,
+        searchQuery: _searchQuery,
+      ));
+    });
   }
 
   @override
   void dispose() {
+    print("Disposing CallCenterScreen");
+    if (_scrollController.hasListeners) {
+      _scrollController.removeListener(_onScroll);
+    }
     _searchController.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
 }

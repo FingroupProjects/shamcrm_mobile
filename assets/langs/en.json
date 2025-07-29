@@ -1121,7 +1121,11 @@
 
 "not_called": "Not called",
 "waiting_response": "Client waiting for response",
-"called_during": "Called during peak time"
+"called_during": "Called during peak time",
+"all_calls": "All calls",
+"outgoing": "Outgoing",
+"missed": "Missed"
+
 
 
 

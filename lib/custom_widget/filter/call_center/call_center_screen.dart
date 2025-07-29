@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
@@ -57,6 +58,8 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
   Key _statusSelectKey = UniqueKey();
   Key _ratingSelectKey = UniqueKey();
   Key _remarkSelectKey = UniqueKey();
+    bool _isOverdue = false;
+
 
   @override
   void initState() {
@@ -280,7 +283,24 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
     }
     Navigator.pop(context);
   }
-
+  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+    return SwitchListTile(
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.black54,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeColor: const Color.fromARGB(255, 255, 255, 255),
+      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -352,130 +372,157 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('date_range'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _startDateController,
-                                    readOnly: true,
-                                    onTap: () => _selectDate(context, true),
-                                    decoration: InputDecoration(
-                                      labelText: AppLocalizations.of(context)!.translate('from'),
-                                      labelStyle: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                      suffixIcon: const Icon(
-                                        Icons.calendar_today,
-                                        color: Colors.blueAccent,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: const BorderSide(color: Colors.grey),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: const BorderSide(color: Colors.blueAccent),
-                                      ),
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _endDateController,
-                                    readOnly: true,
-                                    onTap: () => _selectDate(context, false),
-                                    decoration: InputDecoration(
-                                      labelText: AppLocalizations.of(context)!.translate('to'),
-                                      labelStyle: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                      suffixIcon: const Icon(
-                                        Icons.calendar_today,
-                                        color: Colors.blueAccent,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: const BorderSide(color: Colors.grey),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: const BorderSide(color: Colors.blueAccent),
-                                      ),
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            LeadMultiSelectWidget(
-                              selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
-                              onSelectLeads: (List<LeadData> selectedUsersData) {
-                                setState(() {
-                                  _selectedLeads = selectedUsersData;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: CallTypeMultiSelectWidget(
-                          key: _callTypeSelectKey,
-                          selectedCallTypes: _selectedCallTypes
-                              .map((callType) => callType.id.toString())
-                              .toList(),
-                          onSelectCallTypes: (List<CallTypeData> selectedCallTypes) {
-                            setState(() {
-                              _selectedCallTypes = selectedCallTypes;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    // Карточка для выбора диапазона дат
+Card(
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  color: Colors.white,
+  child: Padding(
+    padding: const EdgeInsets.all(8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('date_range'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _startDateController,
+                readOnly: true,
+                onTap: () => _selectDate(context, true),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.translate('from'),
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.calendar_today,
+                    color: Colors.blueAccent,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _endDateController,
+                readOnly: true,
+                onTap: () => _selectDate(context, false),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.translate('to'),
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.calendar_today,
+                    color: Colors.blueAccent,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  ),
+),
+
+const SizedBox(height: 4),
+
+// Отдельная карточка для мультиселекта лидов
+Card(
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  color: Colors.white,
+  child: Padding(
+    padding: const EdgeInsets.all(8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text(
+        //   AppLocalizations.of(context)!.translate('select_leads'),
+        //   style: const TextStyle(
+        //     fontSize: 16,
+        //     fontWeight: FontWeight.w500,
+        //     fontFamily: 'Gilroy',
+        //     color: Color(0xff1E2E52),
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
+        LeadMultiSelectWidget(
+          selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
+          onSelectLeads: (List<LeadData> selectedUsersData) {
+            setState(() {
+              _selectedLeads = selectedUsersData;
+            });
+          },
+        ),
+      ],
+    ),
+  ),
+),
+
+                    // const SizedBox(height: 8),
+                    // Card(
+                    //   shape: RoundedRectangleBorder(
+                    //       borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(8),
+                    //     child: CallTypeMultiSelectWidget(
+                    //       key: _callTypeSelectKey,
+                    //       selectedCallTypes: _selectedCallTypes
+                    //           .map((callType) => callType.id.toString())
+                    //           .toList(),
+                    //       onSelectCallTypes: (List<CallTypeData> selectedCallTypes) {
+                    //         setState(() {
+                    //           _selectedCallTypes = selectedCallTypes;
+                    //         });
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -496,26 +543,26 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: StatusMultiSelectWidget(
-                          key: _statusSelectKey,
-                          selectedStatuses: _selectedStatuses
-                              .map((status) => status.id.toString())
-                              .toList(),
-                          onSelectStatuses: (List<StatusData> selectedStatuses) {
-                            setState(() {
-                              _selectedStatuses = selectedStatuses;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(height: 8),
+                    // Card(
+                    //   shape: RoundedRectangleBorder(
+                    //       borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(8),
+                    //     child: StatusMultiSelectWidget(
+                    //       key: _statusSelectKey,
+                    //       selectedStatuses: _selectedStatuses
+                    //           .map((status) => status.id.toString())
+                    //           .toList(),
+                    //       onSelectStatuses: (List<StatusData> selectedStatuses) {
+                    //         setState(() {
+                    //           _selectedStatuses = selectedStatuses;
+                    //         });
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -539,31 +586,16 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('remarks'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            RemarkStatusSelector(
-                              key: _remarkSelectKey,
-                              initialStatus: selectedRemarkStatus,
-                              onStatusChanged: _handleRemarkStatusChanged,
-                            ),
-                          ],
-                        ),
+                      child: Column(
+                        children: [
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!.translate('remark'),
+                            _isOverdue,
+                            (value) => setState(() => _isOverdue = value),
+                          ),
+                        ],
                       ),
                     ),
                   ],

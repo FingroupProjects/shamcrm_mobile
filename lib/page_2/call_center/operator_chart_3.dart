@@ -1,8 +1,12 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class OperatorChart3 extends StatefulWidget {
-  const OperatorChart3({Key? key}) : super(key: key);
+  final int operatorId;
+
+  const OperatorChart3({Key? key, required this.operatorId}) : super(key: key);
 
   @override
   State<OperatorChart3> createState() => _OperatorChart3State();
@@ -11,6 +15,9 @@ class OperatorChart3 extends StatefulWidget {
 class _OperatorChart3State extends State<OperatorChart3> {
   int? selectedBarIndex;
   int? selectedSegmentIndex;
+  List<MonthlyCallStat>? monthlyStats;
+  bool isLoading = true;
+  String? errorMessage;
 
   // Оригинальные цвета
   final List<Color> segmentColors = [
@@ -27,18 +34,43 @@ class _OperatorChart3State extends State<OperatorChart3> {
     'Пропущенные'
   ];
 
-  // Данные диаграммы
-  final List<List<int>> chartData = [
-    [45, 13, 10, 21], // 89
-    [57, 23, 15, 7],  // 102
-    [41, 20, 15, 25], // 101
-    [67, 8, 15, 13],  // 103
-    [21, 14, 21, 22], // 78
-    [43, 27, 14, 8],  // 92
+  final List<String> monthNames = [
+    'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+    'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fetchMonthlyStats();
+  }
+
+  Future<void> _fetchMonthlyStats() async {
+    try {
+      final apiService = ApiService();
+      final stats = await apiService.getMonthlyCallStats(widget.operatorId);
+      setState(() {
+        monthlyStats = stats.result;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errorMessage != null) {
+      return Center(child: Text(errorMessage!));
+    }
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -55,9 +87,9 @@ class _OperatorChart3State extends State<OperatorChart3> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Эффективности работы',
-            style: const TextStyle(
+          const Text(
+            'Эффективность работы',
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -74,7 +106,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceEvenly,
-                    maxY: 115,
+                    maxY: _getMaxY(),
                     barTouchData: BarTouchData(
                       enabled: true,
                       touchCallback: (FlTouchEvent event, barTouchResponse) {
@@ -93,17 +125,21 @@ class _OperatorChart3State extends State<OperatorChart3> {
                           showTitles: true,
                           reservedSize: 25,
                           getTitlesWidget: (value, meta) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'День ${value.toInt() + 1}',
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 10,
-                                  color: Color(0xFF9CA3AF),
+                            final monthIndex = value.toInt();
+                            if (monthIndex >= 0 && monthIndex < monthNames.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  monthNames[monthIndex],
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 10,
+                                    color: Color(0xFF9CA3AF),
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
+                            return const SizedBox.shrink();
                           },
                         ),
                       ),
@@ -111,9 +147,9 @@ class _OperatorChart3State extends State<OperatorChart3> {
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 35,
-                          interval: 20,
+                          interval: _getYAxisInterval(),
                           getTitlesWidget: (value, meta) {
-                            if (value > 100) return const SizedBox.shrink();
+                            if (value > _getMaxY()) return const SizedBox.shrink();
                             return Text(
                               value.toInt().toString(),
                               style: const TextStyle(
@@ -132,12 +168,12 @@ class _OperatorChart3State extends State<OperatorChart3> {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      horizontalInterval: 20,
+                      horizontalInterval: _getYAxisInterval(),
                       getDrawingHorizontalLine: (value) {
-                        if (value > 100) return const FlLine(color: Colors.transparent);
+                        if (value > _getMaxY()) return const FlLine(color: Colors.transparent);
                         return FlLine(
-                          color: const Color(0xFFF3F4F6),
-                          strokeWidth: 1,
+                          color: const Color(0xFFF8F9FA),
+                          strokeWidth: 0.5,
                         );
                       },
                     ),
@@ -155,8 +191,48 @@ class _OperatorChart3State extends State<OperatorChart3> {
     );
   }
 
-  /// Интерактивная легенда
+  double _getMaxY() {
+    if (monthlyStats == null || monthlyStats!.isEmpty) return 100;
+    
+    // Создаем полный массив данных для всех 12 месяцев
+    final chartData = _getChartData();
+    final maxTotal = chartData.map((values) => values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b);
+    
+    if (maxTotal == 0) return 100; // Минимальное значение для пустого графика
+    return (maxTotal * 1.2).ceilToDouble(); // Добавляем 20% запаса
+  }
+
+  double _getYAxisInterval() {
+    final maxY = _getMaxY();
+    if (maxY <= 50) return 25;
+    if (maxY <= 100) return 25;
+    if (maxY <= 200) return 50;
+    if (maxY <= 500) return 100;
+    return (maxY / 4).ceilToDouble();
+  }
+
+  List<List<int>> _getChartData() {
+    // Инициализируем данные для всех 12 месяцев нулями
+    List<List<int>> chartData = List.generate(12, (index) => [0, 0, 0, 0]);
+    
+    if (monthlyStats != null && monthlyStats!.isNotEmpty) {
+      for (var stat in monthlyStats!) {
+        final index = stat.month - 1; // Месяцы с 1 до 12, индексы с 0 до 11
+        if (index >= 0 && index < 12) {
+          chartData[index] = [
+            stat.incoming,
+            stat.outgoing,
+            stat.unanswered,
+            stat.missed,
+          ];
+        }
+      }
+    }
+    return chartData;
+  }
+
   Widget _buildInteractiveLegend() {
+    final chartData = _getChartData();
     return Wrap(
       spacing: 16,
       runSpacing: 8,
@@ -164,7 +240,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
         final index = entry.key;
         final label = entry.value;
         final isSelected = selectedSegmentIndex == index;
-        
+
         return GestureDetector(
           onTap: () => _handleLegendTap(index),
           child: AnimatedContainer(
@@ -176,10 +252,12 @@ class _OperatorChart3State extends State<OperatorChart3> {
             decoration: BoxDecoration(
               color: isSelected ? segmentColors[index].withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
-              border: isSelected ? Border.all(
-                color: segmentColors[index].withOpacity(0.3),
-                width: 1,
-              ) : null,
+              border: isSelected
+                  ? Border.all(
+                      color: segmentColors[index].withOpacity(0.3),
+                      width: 1,
+                    )
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -191,13 +269,15 @@ class _OperatorChart3State extends State<OperatorChart3> {
                   decoration: BoxDecoration(
                     color: segmentColors[index],
                     borderRadius: BorderRadius.circular(2),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: segmentColors[index].withOpacity(0.4),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ] : null,
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: segmentColors[index].withOpacity(0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -237,30 +317,45 @@ class _OperatorChart3State extends State<OperatorChart3> {
     );
   }
 
-  /// Интерактивные столбцы
   List<BarChartGroupData> _buildInteractiveBarGroups() {
+    final chartData = _getChartData();
     return chartData.asMap().entries.map((entry) {
       final index = entry.key;
       final values = entry.value;
       final total = values.reduce((a, b) => a + b);
       final isSelected = selectedBarIndex == index;
 
+      // Если total равен 0, создаем очень маленький столбец для визуализации
+      final displayTotal = total == 0 ? 0.1 : total.toDouble();
+
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: total.toDouble(),
-            color: Colors.transparent,
-            width: isSelected ? 38 : 35,
+            toY: displayTotal,
+            color: total == 0 ? Colors.grey.withOpacity(0.2) : Colors.transparent,
+            width: isSelected ? 24 : 20,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
-            rodStackItems: [
-              BarChartRodStackItem(0, values[0].toDouble(), segmentColors[0]),
-              BarChartRodStackItem(values[0].toDouble(), (values[0] + values[1]).toDouble(), segmentColors[1]),
-              BarChartRodStackItem((values[0] + values[1]).toDouble(), (values[0] + values[1] + values[2]).toDouble(), segmentColors[2]),
-              BarChartRodStackItem((values[0] + values[1] + values[2]).toDouble(), total.toDouble(), segmentColors[3]),
+            rodStackItems: total == 0 ? [] : [
+              if (values[0] > 0) BarChartRodStackItem(0, values[0].toDouble(), segmentColors[0]),
+              if (values[1] > 0) BarChartRodStackItem(
+                values[0].toDouble(), 
+                (values[0] + values[1]).toDouble(), 
+                segmentColors[1]
+              ),
+              if (values[2] > 0) BarChartRodStackItem(
+                (values[0] + values[1]).toDouble(), 
+                (values[0] + values[1] + values[2]).toDouble(), 
+                segmentColors[2]
+              ),
+              if (values[3] > 0) BarChartRodStackItem(
+                (values[0] + values[1] + values[2]).toDouble(), 
+                total.toDouble(), 
+                segmentColors[3]
+              ),
             ],
           ),
         ],
@@ -269,15 +364,16 @@ class _OperatorChart3State extends State<OperatorChart3> {
     }).toList();
   }
 
-  /// Интерактивные подписи над столбцами
   Widget _buildInteractiveChartLabels() {
+    final chartData = _getChartData();
     final totals = chartData.map((values) => values.reduce((a, b) => a + b)).toList();
 
     return Positioned.fill(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final chartWidth = constraints.maxWidth - 35;
-          final barWidth = chartWidth / 6;
+          final barWidth = chartWidth / 12; // 12 месяцев
+          final maxY = _getMaxY();
 
           return Stack(
             children: totals.asMap().entries.map((entry) {
@@ -286,10 +382,17 @@ class _OperatorChart3State extends State<OperatorChart3> {
               final barCenterX = 35 + (index + 0.5) * barWidth;
               final isSelected = selectedBarIndex == index;
 
+              // Не показываем лейблы для нулевых значений
+              if (total == 0) return const SizedBox.shrink();
+
+              final topPosition = constraints.maxHeight - 
+                  (total / maxY * (constraints.maxHeight - 50)) - 
+                  (isSelected ? 28 : 20);
+
               return AnimatedPositioned(
                 duration: const Duration(milliseconds: 200),
-                left: barCenterX - 12,
-                top: constraints.maxHeight - (total / 115 * constraints.maxHeight) - (isSelected ? 28 : 20),
+                left: barCenterX - 8,
+                top: topPosition.clamp(0.0, constraints.maxHeight - 40),
                 child: GestureDetector(
                   onTap: () => _handleTotalTap(index),
                   child: AnimatedContainer(
@@ -328,10 +431,14 @@ class _OperatorChart3State extends State<OperatorChart3> {
     );
   }
 
-  /// Всплывающее окно с выбранным значением
   Widget _buildValuePopup() {
-    final selectedValue = chartData[selectedBarIndex!][selectedSegmentIndex!];
+    final chartData = _getChartData();
+    if (selectedBarIndex == null || selectedSegmentIndex == null) {
+      return const SizedBox.shrink();
+    }
     
+    final selectedValue = chartData[selectedBarIndex!][selectedSegmentIndex!];
+
     return Positioned(
       top: 10,
       right: 10,
@@ -372,7 +479,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
               ),
             ),
             Text(
-              'День ${selectedBarIndex! + 1}',
+              monthNames[selectedBarIndex!],
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 9,
@@ -386,32 +493,33 @@ class _OperatorChart3State extends State<OperatorChart3> {
     );
   }
 
-  /// Обработка нажатия на столбец
   void _handleBarTap(int barIndex, Offset localPosition) {
+    final values = _getChartData()[barIndex];
+    final total = values.reduce((a, b) => a + b);
+    
+    // Если столбец пустой, не обрабатываем тап
+    if (total == 0) return;
+
     setState(() {
       selectedBarIndex = barIndex;
-      
-      // Определяем сегмент по Y-координате нажатия
-      final values = chartData[barIndex];
-      final total = values.reduce((a, b) => a + b);
-      final relativeY = localPosition.dy / 250; // высота чарта
+
+      final relativeY = localPosition.dy / 250;
       final tapPosition = (1 - relativeY) * total;
-      
+
       int segmentIndex = 0;
       double cumulative = 0;
       for (int i = 0; i < values.length; i++) {
         cumulative += values[i];
-        if (tapPosition <= cumulative) {
+        if (tapPosition <= cumulative && values[i] > 0) {
           segmentIndex = i;
           break;
         }
       }
-      
+
       selectedSegmentIndex = segmentIndex;
     });
   }
 
-  /// Обработка нажатия на легенду
   void _handleLegendTap(int segmentIndex) {
     setState(() {
       if (selectedSegmentIndex == segmentIndex) {
@@ -419,18 +527,37 @@ class _OperatorChart3State extends State<OperatorChart3> {
         selectedBarIndex = null;
       } else {
         selectedSegmentIndex = segmentIndex;
-        // Показываем первый столбец с этим сегментом
-        selectedBarIndex = 0;
+        // Находим первый месяц с данными для этого сегмента
+        final chartData = _getChartData();
+        int? firstNonZeroMonth;
+        for (int i = 0; i < chartData.length; i++) {
+          if (chartData[i][segmentIndex] > 0) {
+            firstNonZeroMonth = i;
+            break;
+          }
+        }
+        selectedBarIndex = firstNonZeroMonth ?? 0;
       }
     });
   }
 
-  /// Обработка нажатия на общее значение
   void _handleTotalTap(int barIndex) {
+    final chartData = _getChartData();
+    final total = chartData[barIndex].reduce((a, b) => a + b);
+    
+    // Если столбец пустой, не обрабатываем тап
+    if (total == 0) return;
+
     setState(() {
       selectedBarIndex = selectedBarIndex == barIndex ? null : barIndex;
       if (selectedBarIndex != null && selectedSegmentIndex == null) {
-        selectedSegmentIndex = 0; // Показываем первый сегмент по умолчанию
+        // Находим первый ненулевой сегмент
+        for (int i = 0; i < chartData[barIndex].length; i++) {
+          if (chartData[barIndex][i] > 0) {
+            selectedSegmentIndex = i;
+            break;
+          }
+        }
       }
     });
   }

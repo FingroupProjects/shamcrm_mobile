@@ -1142,7 +1142,10 @@
 "no_reports_found": "Hisobotlar topilmadi",
 "not_called": "Qo‘ng‘iroq qilinmagan",
 "waiting_response": "Mijoz javobni kutmoqda",
-"called_during": "Yuqori vaqtda qo‘ng‘iroq qilindi"
+"called_during": "Yuqori vaqtda qo‘ng‘iroq qilindi",
+"all_calls": "Barcha qo‘ng‘iroqlar",
+"outgoing": "Chiquvchi",
+"missed": "O‘tkazib yuborilgan"
 
 
 

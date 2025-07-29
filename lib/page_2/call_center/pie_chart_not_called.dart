@@ -1,12 +1,17 @@
+import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class PieChartNotCalled extends StatelessWidget {
-  const PieChartNotCalled({Key? key}) : super(key: key);
+  final CallAnalyticsResult statistics;
+  const PieChartNotCalled({Key? key, required this.statistics}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Используем unanswered_not_called_back напрямую как процент
+    final unansweredPercentage = statistics.unansweredNotCalledBack.toDouble();
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -49,21 +54,21 @@ class PieChartNotCalled extends StatelessWidget {
                     sections: [
                       PieChartSectionData(
                         color: const Color(0xFF6C5CE7),
-                        value: 70,
+                        value: unansweredPercentage,
                         radius: 15,
-                        showTitle: false, // Отключаем текст на секторе
+                        showTitle: false,
                       ),
                       PieChartSectionData(
                         color: Colors.grey.shade300,
-                        value: 30,
+                        value: 100 - unansweredPercentage,
                         radius: 15,
-                        showTitle: false, // Отключаем текст на секторе
+                        showTitle: false,
                       ),
                     ],
                   ),
                 ),
                 Text(
-                  '70%',
+                  '${unansweredPercentage.toStringAsFixed(1)}%',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,

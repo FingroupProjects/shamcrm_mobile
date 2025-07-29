@@ -1,11 +1,28 @@
+import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class StatisticChart1 extends StatelessWidget {
-  const StatisticChart1({Key? key}) : super(key: key);
+  final CallStatistics statistics;
+
+  const StatisticChart1({Key? key, required this.statistics}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Текущий месяц (июль 2025 = месяц 7, индекс 6)
+    const int currentMonthIndex = 6; // 0-based индекс для июля
+
+    // Подготовка данных до текущего месяца
+    List<FlSpot> getSpots(double Function(CallStatMonth) valueExtractor) {
+      List<FlSpot> spots = [];
+      for (int i = 0; i < statistics.result.length; i++) {
+        // Ограничиваем данные до текущего месяца
+        double value = i <= currentMonthIndex ? valueExtractor(statistics.result[i]) : 0;
+        spots.add(FlSpot(i.toDouble(), value));
+      }
+      return spots;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -24,9 +41,9 @@ class StatisticChart1 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Статистика',
-            style: const TextStyle(
+          const Text(
+            'Статистика звонков',
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 20,
@@ -35,13 +52,13 @@ class StatisticChart1 extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 250,
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: 20,
+                  horizontalInterval: 50,
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
@@ -58,80 +75,61 @@ class StatisticChart1 extends StatelessWidget {
                 ),
                 titlesData: FlTitlesData(
                   show: true,
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 22,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return const Text('Янв',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 2:
-                            return const Text('Февр',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 4:
-                            return const Text('Март',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 6:
-                            return const Text('Апр',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 8:
-                            return const Text('Май',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 10:
-                            return const Text('Июн',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          case 12:
-                            return const Text('Июл',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ));
-                          default:
-                            return const Text('');
+                        final monthNames = [
+                          'Янв',
+                          'Фев',
+                          'Мар',
+                          'Апр',
+                          'Май',
+                          'Июн',
+                          'Июл',
+                          'Авг',
+                          'Сен',
+                          'Окт',
+                          'Ноя',
+                          'Дек'
+                        ];
+                        final index = value.toInt();
+                        if (index >= 0 && index < monthNames.length) {
+                          return Text(
+                            monthNames[index],
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          );
                         }
+                        return const Text('');
                       },
-                      interval: 2,
+                      interval: 1,
                     ),
                   ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        return Text(value.toInt().toString(),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ));
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        );
                       },
-                      interval: 20,
+                      interval: 50,
                       reservedSize: 28,
                     ),
                   ),
@@ -141,123 +139,136 @@ class StatisticChart1 extends StatelessWidget {
                   border: Border.all(color: Colors.grey.shade200, width: 0.5),
                 ),
                 minX: 0,
-                maxX: 14,
+                maxX: 11, // Все 12 месяцев
                 minY: 0,
-                maxY: 110,
+                maxY: 200,
                 lineBarsData: [
+                  // Общее количество звонков
                   LineChartBarData(
-                    spots: [
-                      FlSpot(0, 18),
-                      FlSpot(2, 43),
-                      FlSpot(4, 66),
-                      FlSpot(6, 93),
-                      FlSpot(8, 58),
-                      FlSpot(10, 83),
-                      FlSpot(12, 47),
-                      FlSpot(14, 33),
-                    ],
+                    spots: getSpots((data) => data.total.toDouble()),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: const Color(0xFF6C5CE7),
                     barWidth: 2,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFF6C5CE7).withOpacity(0.2),
+                      cutOffY: 0,
+                      applyCutOffY: true,
                     ),
                   ),
+                  // Исходящие звонки
                   LineChartBarData(
-                    spots: [
-                      FlSpot(0, 28),
-                      FlSpot(2, 54),
-                      FlSpot(4, 76),
-                      FlSpot(6, 74),
-                      FlSpot(8, 87),
-                      FlSpot(10, 62),
-                      FlSpot(12, 42),
-                      FlSpot(14, 23),
-                    ],
+                    spots: getSpots((data) => data.outgoing.toDouble()),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: const Color(0xFF00C48C),
                     barWidth: 2,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFF00C48C).withOpacity(0.2),
+                      cutOffY: 0,
+                      applyCutOffY: true,
                     ),
                   ),
+                  // Пропущенные звонки
                   LineChartBarData(
-                    spots: [
-                      FlSpot(0, 12),
-                      FlSpot(2, 27),
-                      FlSpot(4, 53),
-                      FlSpot(6, 58),
-                      FlSpot(8, 43),
-                      FlSpot(10, 68),
-                      FlSpot(12, 29),
-                      FlSpot(14, 52),
-                    ],
+                    spots: getSpots((data) => data.missed.toDouble()),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: const Color(0xFFFD9843),
                     barWidth: 2,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFFFD9843).withOpacity(0.2),
+                      cutOffY: 0,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                  // Звонки без перезвона
+                  LineChartBarData(
+                    spots: getSpots((data) => data.notCalledBackCount.toDouble()),
+                    isCurved: true,
+                    preventCurveOverShooting: true,
+                    color: const Color(0xFFE84393),
+                    barWidth: 2,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFFE84393).withOpacity(0.2),
+                      cutOffY: 0,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                  // Среднее время ответа
+                  LineChartBarData(
+                    spots: getSpots((data) => data.averageAnswerTime * 10),
+                    isCurved: true,
+                    preventCurveOverShooting: true,
+                    color: const Color(0xFF0984E3),
+                    barWidth: 2,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFF0984E3).withOpacity(0.2),
+                      cutOffY: 0,
+                      applyCutOffY: true,
                     ),
                   ),
                 ],
                 lineTouchData: LineTouchData(
                   enabled: true,
                   touchTooltipData: LineTouchTooltipData(
-                    // tooltipBgColor: Colors.white.withOpacity(0.9),
                     tooltipRoundedRadius: 8,
                     tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     tooltipMargin: 10,
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((LineBarSpot touchedSpot) {
                         final int xValue = touchedSpot.x.toInt();
-                        String month;
-                        switch (xValue) {
-                          case 0:
-                            month = 'Янв';
-                            break;
-                          case 2:
-                            month = 'Февр';
-                            break;
-                          case 4:
-                            month = 'Март';
-                            break;
-                          case 6:
-                            month = 'Апр';
-                            break;
-                          case 8:
-                            month = 'Май';
-                            break;
-                          case 10:
-                            month = 'Июн';
-                            break;
-                          case 12:
-                            month = 'Июл';
-                            break;
-                          default:
-                            month = '';
-                        }
+                        final monthNames = [
+                          'Янв',
+                          'Фев',
+                          'Мар',
+                          'Апр',
+                          'Май',
+                          'Июн',
+                          'Июл',
+                          'Авг',
+                          'Сен',
+                          'Окт',
+                          'Ноя',
+                          'Дек'
+                        ];
+                        String month = xValue < monthNames.length ? monthNames[xValue] : '';
 
-                        String operatorName;
+                        String metricName;
                         Color textColor;
+                        double value = touchedSpot.y;
+                        if (touchedSpot.barIndex == 4) {
+                          value = value / 10; // Обратное масштабирование для времени ответа
+                        }
                         if (touchedSpot.barIndex == 0) {
-                          operatorName = 'Оператор 1';
+                          metricName = 'Общее количество звонков';
                           textColor = const Color(0xFF6C5CE7);
                         } else if (touchedSpot.barIndex == 1) {
-                          operatorName = 'Оператор 2';
+                          metricName = 'Исходящие звонки';
                           textColor = const Color(0xFF00C48C);
-                        } else {
-                          operatorName = 'Оператор 3';
+                        } else if (touchedSpot.barIndex == 2) {
+                          metricName = 'Пропущенные звонки';
                           textColor = const Color(0xFFFD9843);
+                        } else if (touchedSpot.barIndex == 3) {
+                          metricName = 'Звонки без перезвона';
+                          textColor = const Color(0xFFE84393);
+                        } else {
+                          metricName = 'Среднее время ответа';
+                          textColor = const Color(0xFF0984E3);
                         }
 
                         return LineTooltipItem(
-                          '$month: ${touchedSpot.y.toInt()} ($operatorName)',
+                          '$month: ${value.toStringAsFixed(touchedSpot.barIndex == 4 ? 2 : 0)} ($metricName)',
                           TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
@@ -290,10 +301,12 @@ class StatisticChart1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 12,
@@ -302,7 +315,7 @@ class StatisticChart1 extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Оператор 1',
+                    'Общее количество звонков',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -312,8 +325,8 @@ class StatisticChart1 extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 16),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 12,
@@ -322,7 +335,7 @@ class StatisticChart1 extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Оператор 2',
+                    'Исходящие звонки',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -332,8 +345,8 @@ class StatisticChart1 extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 16),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 12,
@@ -342,7 +355,47 @@ class StatisticChart1 extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Оператор 3',
+                    'Пропущенные звонки',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    color: const Color(0xFFE84393),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Звонки без перезвона',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    color: const Color(0xFF0984E3),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Среднее время ответа',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
