@@ -1,14 +1,16 @@
-
-import 'package:crm_task_manager/api/service/api_service.dart' show ApiService;
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-
 class OperatorChart2 extends StatefulWidget {
-  final int operatorId; // Добавляем operatorId для возможной будущей интеграции
+  final int operatorId;
+  final CallSummaryStats summaryStats;
 
-  const OperatorChart2({Key? key, required this.operatorId}) : super(key: key);
+  const OperatorChart2({
+    Key? key,
+    required this.operatorId,
+    required this.summaryStats,
+  }) : super(key: key);
 
   @override
   State<OperatorChart2> createState() => _OperatorChart2State();
@@ -16,9 +18,6 @@ class OperatorChart2 extends StatefulWidget {
 
 class _OperatorChart2State extends State<OperatorChart2> {
   int? selectedSectionIndex;
-  CallSummaryStats? summaryStats;
-  bool isLoading = true;
-  String? errorMessage;
 
   final List<Color> sectionColors = [
     const Color(0xFF3B82F6), // Входящие - синий
@@ -34,34 +33,12 @@ class _OperatorChart2State extends State<OperatorChart2> {
     'Пропущенные'
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchSummaryStats();
-  }
-
-  Future<void> _fetchSummaryStats() async {
-    try {
-      final apiService = ApiService();
-      final stats = await apiService.getCallSummaryStats();
-      setState(() {
-        summaryStats = stats;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-        isLoading = false;
-      });
-    }
-  }
-
   List<double> _getSectionValues() {
-    if (summaryStats == null || summaryStats!.result.totalCalls == 0) {
+    if (widget.summaryStats.result.totalCalls == 0) {
       return [25.0, 25.0, 25.0, 25.0]; // Фаллбэк для пустых данных
     }
-    final counts = summaryStats!.result.countsByType;
-    final total = summaryStats!.result.totalCalls.toDouble();
+    final counts = widget.summaryStats.result.countsByType;
+    final total = widget.summaryStats.result.totalCalls.toDouble();
     return [
       (counts.incoming / total * 100),
       (counts.outgoing / total * 100),
@@ -71,10 +48,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
   }
 
   List<int> _getActualCounts() {
-    if (summaryStats == null) {
-      return [0, 0, 0, 0]; // Фаллбэк для пустых данных
-    }
-    final counts = summaryStats!.result.countsByType;
+    final counts = widget.summaryStats.result.countsByType;
     return [
       counts.incoming,
       counts.outgoing,
@@ -85,15 +59,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errorMessage != null) {
-      return Center(child: Text(errorMessage!));
-    }
-
-    final totalCalls = summaryStats!.result.totalCalls;
+    final totalCalls = widget.summaryStats.result.totalCalls;
     final sectionValues = _getSectionValues();
     final actualCounts = _getActualCounts();
 

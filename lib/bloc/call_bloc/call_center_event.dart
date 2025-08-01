@@ -22,3 +22,25 @@ class LoadCallById extends CallCenterEvent {
 
   LoadCallById({required this.callId});
 }
+class SubmitCallRatingAndReport extends CallCenterEvent {
+  final int callId;
+  final int rating;
+  final String report;
+  final int organizationId;
+
+  SubmitCallRatingAndReport({
+    required this.callId,
+    required this.rating,
+    required this.report,
+    required this.organizationId,
+  });
+}
+class FilterCalls extends CallCenterEvent {
+  final Map<String, dynamic> filters;
+
+  FilterCalls(this.filters);
+
+  @override
+  List<Object> get props => [filters];
+}
+class ResetFilters extends CallCenterEvent {}

@@ -8,6 +8,8 @@ class CallLogEntry {
   final CallType callType;
   final Duration? duration;
   final String? operatorName;
+  final String? rating; // Новое поле
+  final String? report; // Новое поле
 
   CallLogEntry({
     required this.id,
@@ -17,6 +19,8 @@ class CallLogEntry {
     required this.callType,
     this.duration,
     this.operatorName,
+    this.rating,
+    this.report,
   });
 
   factory CallLogEntry.fromJson(Map<String, dynamic> json) {
@@ -37,6 +41,8 @@ class CallLogEntry {
           ? Duration(seconds: json['call_duration'])
           : null,
       operatorName: json['user'] != null ? json['user']['name'] : null,
+      rating: json['rating']?.toString(), // Парсинг рейтинга
+      report: json['report']?.toString(), // Парсинг комментария
     );
   }
 }

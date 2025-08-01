@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
@@ -49,6 +50,10 @@ class CustomAppBar extends StatefulWidget {
   final bool showCalendar;
   final bool showCalendarDashboard;
   final bool showCallCenter; // Новый параметр
+
+  final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
+
+final bool showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
@@ -139,6 +144,9 @@ class CustomAppBar extends StatefulWidget {
 
   final bool showDashboardIcon; // Новый параметр
   final VoidCallback? onDashboardPressed; // Обработчик для Dashboard
+  
+  final Widget? titleWidget; // Новый параметр для кастомного заголовка
+  final VoidCallback? onFiltersReset; // Добавляем этот параметр
 
   CustomAppBar({
     super.key,
@@ -177,6 +185,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
     this.initialDirectoryValuesTask, // Добавляем в конструктор
+    this.showFilterIconOnSelectCallCenter = false, // Добавлено: по умолчанию false
 
 this.showDashboardIcon = false,
     this.onDashboardPressed,
@@ -203,6 +212,7 @@ this.showDashboardIcon = false,
     this.showFilterIcon = true,
     this.showFilterIconOnSelectLead = false,
     this.showFilterIconOnSelectDeal = false,
+    this.showFilterIconCallCenter = false, // Значение по умолчанию
     this.showFilterIconOnSelectTask = false,
     this.showFilterIconDeal = true,
     this.showFilterTaskIcon = true,
@@ -243,6 +253,8 @@ this.showDashboardIcon = false,
     this.initialDepartment,
     this.onLeadsDealSelected,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
+    this.titleWidget, // Добавляем в конструктор
+    this.onFiltersReset,
   });
 
   @override
@@ -273,6 +285,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCalendar = false;
   Color _iconColor = Colors.red;
   late Timer _timer;
+    bool _areFiltersActive = false; // Добавляем эту переменную
+
 
   @override
   void initState() {
@@ -309,13 +323,32 @@ class _CustomAppBarState extends State<CustomAppBar>
       (_) => _checkOverdueTasks(),
     );
 
-    _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+      // Модифицируем таймер
+  _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+    if (_areFiltersActive) {
       setState(() {
         _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
       });
-    });
-  }
+    } else {
+      setState(() {
+        _iconColor = Colors.black; // Возвращаем черный цвет когда фильтры неактивны
+      });
+    }
+  });
+}
+void _setFiltersActive(bool active) {
+  setState(() {
+    _areFiltersActive = active;
+    if (!active) {
+      _iconColor = Colors.black; // Сразу устанавливаем черный цвет при сбросе
+    }
+  });
+}
 
+// Метод для проверки активности фильтров (можно вызывать извне)
+void resetFilterIconState() {
+  _setFiltersActive(false);
+}
   void _setupFirebaseMessaging() async {
     final prefs = await SharedPreferences.getInstance();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -461,12 +494,11 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadNotice = await _apiService.hasPermission('notice.read');
     // final canReadCalendar = await _apiService.hasPermission('notice.read');
     final canReadCalendar = await _apiService.hasPermission('calendar');
-    final canReadCallCenter =
-        await _apiService.hasPermission('calendar');
-
+    final canReadCallCenter = await _apiService.hasPermission('call-center'); // Исправлено
     setState(() {
       _canReadNotice = canReadNotice;
       _canReadCalendar = canReadCalendar;
+      _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
     });
   }
@@ -661,36 +693,38 @@ class _CustomAppBarState extends State<CustomAppBar>
     );
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Container(
-        width: double.infinity,
-        height: kToolbarHeight,
-        color: Colors.white,
-        padding: EdgeInsets.zero,
-        child: Row(children: [
-          Container(
-            width: 40,
-            height: 40,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: _buildAvatarImage(_userImage),
-              onPressed: widget.onClickProfileAvatar,
-            ),
+      width: double.infinity,
+      height: kToolbarHeight,
+      color: Colors.white,
+      padding: EdgeInsets.zero,
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: _buildAvatarImage(_userImage),
+            onPressed: widget.onClickProfileAvatar,
           ),
-          SizedBox(width: 8),
-          if (!_isSearching)
-            Expanded(
-              child: Text(
-                widget.title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+        ),
+        SizedBox(width: 8),
+        if (!_isSearching)
+          Expanded(
+            child: widget.titleWidget ?? // Используем titleWidget, если передан
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
                 ),
-              ),
-            ),
+          ),
+       
           if (_isSearching)
             Expanded(
               child: AnimatedContainer(
@@ -863,6 +897,28 @@ class _CustomAppBarState extends State<CustomAppBar>
                 ),
               ),
             ),
+            if (widget.showFilterIconCallCenter) // Добавляем условие для фильтра CallCenter
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+              color: _iconColor, // Используем анимацию цвета
+            ),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CallCenterFilterScreen(
+                  // Параметры для CallCenterFilterScreen
+                ),
+              ),
+            );
+          },
+        ),
           if (widget.showFilterIconEvent)
             Tooltip(
               message: AppLocalizations.of(context)!.translate('search'),
@@ -1252,22 +1308,23 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ],
                               ),
                             ),
-                          if (widget.showCallCenter && _canReadCallCenter)
-                            PopupMenuItem<String>(
-                              value: 'call_center',
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/AppBar/call_center.png', // Предполагаемая иконка
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('call_center')),
-                                ],
-                              ),
-                            ),
+                          // В методе build внутри PopupMenuButton, замените пункт 'call_center' на:
+if (widget.showCallCenter && _canReadCallCenter)
+  PopupMenuItem<String>(
+    value: 'call_center',
+    child: Row(
+      children: [
+        Image.asset(
+          'assets/icons/AppBar/call_center.png',
+          width: 24,
+          height: 24,
+          color: _iconColor, // Добавляем изменение цвета иконки
+        ),
+        SizedBox(width: 8),
+        Text(AppLocalizations.of(context)!.translate('call_center')),
+      ],
+    ),
+  ),
                         ]))
         ]));
   }

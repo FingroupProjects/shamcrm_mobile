@@ -1145,23 +1145,7 @@
 "called_during": "Yuqori vaqtda qo‘ng‘iroq qilindi",
 "all_calls": "Barcha qo‘ng‘iroqlar",
 "outgoing": "Chiquvchi",
-"missed": "O‘tkazib yuborilgan"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+"missed": "O‘tkazib yuborilgan",
+"no_calls_found": "Qo‘ng‘iroqlar topilmadi"
 
 }

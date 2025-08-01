@@ -1,12 +1,16 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class OperatorChart3 extends StatefulWidget {
   final int operatorId;
+  final List<MonthlyCallStat> monthlyStats;
 
-  const OperatorChart3({Key? key, required this.operatorId}) : super(key: key);
+  const OperatorChart3({
+    Key? key,
+    required this.operatorId,
+    required this.monthlyStats,
+  }) : super(key: key);
 
   @override
   State<OperatorChart3> createState() => _OperatorChart3State();
@@ -15,11 +19,7 @@ class OperatorChart3 extends StatefulWidget {
 class _OperatorChart3State extends State<OperatorChart3> {
   int? selectedBarIndex;
   int? selectedSegmentIndex;
-  List<MonthlyCallStat>? monthlyStats;
-  bool isLoading = true;
-  String? errorMessage;
 
-  // Оригинальные цвета
   final List<Color> segmentColors = [
     const Color(0xFF3B82F6), // Входящие - синий
     const Color(0xFF10B981), // Исходящие - зеленый
@@ -40,37 +40,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _fetchMonthlyStats();
-  }
-
-  Future<void> _fetchMonthlyStats() async {
-    try {
-      final apiService = ApiService();
-      final stats = await apiService.getMonthlyCallStats(widget.operatorId);
-      setState(() {
-        monthlyStats = stats.result;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-        isLoading = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errorMessage != null) {
-      return Center(child: Text(errorMessage!));
-    }
-
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -192,14 +162,13 @@ class _OperatorChart3State extends State<OperatorChart3> {
   }
 
   double _getMaxY() {
-    if (monthlyStats == null || monthlyStats!.isEmpty) return 100;
-    
-    // Создаем полный массив данных для всех 12 месяцев
+    if (widget.monthlyStats.isEmpty) return 100;
+
     final chartData = _getChartData();
     final maxTotal = chartData.map((values) => values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b);
-    
-    if (maxTotal == 0) return 100; // Минимальное значение для пустого графика
-    return (maxTotal * 1.2).ceilToDouble(); // Добавляем 20% запаса
+
+    if (maxTotal == 0) return 100;
+    return (maxTotal * 1.2).ceilToDouble();
   }
 
   double _getYAxisInterval() {
@@ -212,12 +181,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
   }
 
   List<List<int>> _getChartData() {
-    // Инициализируем данные для всех 12 месяцев нулями
     List<List<int>> chartData = List.generate(12, (index) => [0, 0, 0, 0]);
-    
-    if (monthlyStats != null && monthlyStats!.isNotEmpty) {
-      for (var stat in monthlyStats!) {
-        final index = stat.month - 1; // Месяцы с 1 до 12, индексы с 0 до 11
+
+    if (widget.monthlyStats.isNotEmpty) {
+      for (var stat in widget.monthlyStats) {
+        final index = stat.month - 1;
         if (index >= 0 && index < 12) {
           chartData[index] = [
             stat.incoming,
@@ -325,7 +293,6 @@ class _OperatorChart3State extends State<OperatorChart3> {
       final total = values.reduce((a, b) => a + b);
       final isSelected = selectedBarIndex == index;
 
-      // Если total равен 0, создаем очень маленький столбец для визуализации
       final displayTotal = total == 0 ? 0.1 : total.toDouble();
 
       return BarChartGroupData(
@@ -372,7 +339,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final chartWidth = constraints.maxWidth - 35;
-          final barWidth = chartWidth / 12; // 12 месяцев
+          final barWidth = chartWidth / 12;
           final maxY = _getMaxY();
 
           return Stack(
@@ -382,7 +349,6 @@ class _OperatorChart3State extends State<OperatorChart3> {
               final barCenterX = 35 + (index + 0.5) * barWidth;
               final isSelected = selectedBarIndex == index;
 
-              // Не показываем лейблы для нулевых значений
               if (total == 0) return const SizedBox.shrink();
 
               final topPosition = constraints.maxHeight - 
@@ -497,7 +463,6 @@ class _OperatorChart3State extends State<OperatorChart3> {
     final values = _getChartData()[barIndex];
     final total = values.reduce((a, b) => a + b);
     
-    // Если столбец пустой, не обрабатываем тап
     if (total == 0) return;
 
     setState(() {
@@ -527,7 +492,6 @@ class _OperatorChart3State extends State<OperatorChart3> {
         selectedBarIndex = null;
       } else {
         selectedSegmentIndex = segmentIndex;
-        // Находим первый месяц с данными для этого сегмента
         final chartData = _getChartData();
         int? firstNonZeroMonth;
         for (int i = 0; i < chartData.length; i++) {
@@ -545,13 +509,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
     final chartData = _getChartData();
     final total = chartData[barIndex].reduce((a, b) => a + b);
     
-    // Если столбец пустой, не обрабатываем тап
     if (total == 0) return;
 
     setState(() {
       selectedBarIndex = selectedBarIndex == barIndex ? null : barIndex;
       if (selectedBarIndex != null && selectedSegmentIndex == null) {
-        // Находим первый ненулевой сегмент
         for (int i = 0; i < chartData[barIndex].length; i++) {
           if (chartData[barIndex][i] > 0) {
             selectedSegmentIndex = i;

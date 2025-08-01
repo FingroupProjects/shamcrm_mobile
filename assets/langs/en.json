@@ -1124,7 +1124,8 @@
 "called_during": "Called during peak time",
 "all_calls": "All calls",
 "outgoing": "Outgoing",
-"missed": "Missed"
+"missed": "Missed",
+"no_calls_found": "No calls found"
 
 
 

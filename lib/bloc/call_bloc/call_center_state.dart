@@ -6,7 +6,7 @@ abstract class CallCenterState {}
 class CallCenterInitial extends CallCenterState {}
 
 class CallCenterLoading extends CallCenterState {}
-
+class CallCenterEmpty extends CallCenterState {}
 class CallCenterLoaded extends CallCenterState {
   final List<CallLogEntry> calls;
   final int currentPage;

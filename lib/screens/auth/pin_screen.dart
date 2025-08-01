@@ -58,6 +58,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    print('PinScreen: initState started');
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -77,6 +78,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   Future<void> _initializeWithInternetCheck() async {
+    print('PinScreen: Initializing with internet check');
+    // Очищаем кэш воронок при входе в PinScreen
+    await _apiService.clearCachedSalesFunnels();
     await _ensureInternetConnection();
 
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
@@ -94,6 +98,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     await _fetchSettings();
   }
 
+  // Остальные методы без изменений
   Future<void> _ensureInternetConnection() async {
     bool hasInternet = false;
     while (!hasInternet) {
@@ -125,9 +130,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       if (settingsList.isNotEmpty) {
         final settings = settingsList.first;
         await prefs.setString('mini_app_settings', json.encode(settings.toJson()));
-        await prefs.setInt('currency_id', settings.currencyId); // Сохраняем currency_id
-        
-        // Оставляем остальные поля
+        await prefs.setInt('currency_id', settings.currencyId);
         await prefs.setString('store_name', settings.name);
         await prefs.setString('store_phone', settings.phone);
         await prefs.setString('delivery_sum', settings.deliverySum);
@@ -135,17 +138,17 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         await prefs.setBool('identify_by_phone', settings.identifyByPhone == 1);
         
         if (kDebugMode) {
-          //print('MiniAppSettings сохранены: ${settings.name}, ${settings.phone}, currency_id: ${settings.currencyId}');
+          print('PinScreen: MiniAppSettings saved: ${settings.name}, currency_id: ${settings.currencyId}');
         }
       }
     } catch (e) {
-      //print('Error fetching mini-app settings: $e');
+      print('PinScreen: Error fetching mini-app settings: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedSettings = prefs.getString('mini_app_settings');
       if (savedSettings != null) {
         final settings = MiniAppSettings.fromJson(json.decode(savedSettings));
-        await prefs.setInt('currency_id', settings.currencyId); // Сохраняем currency_id из кэша
-        //print('MiniAppSettings загружены из кэша: ${settings.name}, currency_id: ${settings.currencyId}');
+        await prefs.setInt('currency_id', settings.currencyId);
+        print('PinScreen: MiniAppSettings loaded from cache: ${settings.name}, currency_id: ${settings.currencyId}');
       }
     }
   }
@@ -160,12 +163,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       if (response['result'] != null) {
         await prefs.setBool('department_enabled', response['result']['department'] ?? false);
         await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
-        if (kDebugMode) {
-          //print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
-        }
+        print('PinScreen: Settings saved: integration_with_1C = ${response['result']['integration_with_1C']}');
       }
     } catch (e) {
-      //print('Error fetching settings: $e');
+      print('PinScreen: Error fetching settings: $e');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('integration_with_1C', false);
     }
@@ -179,20 +180,47 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         tutorialProgress = progress['result'];
       });
       await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      //print('Tutorial progress updated from server: $tutorialProgress');
+      print('PinScreen: Tutorial progress updated from server: $tutorialProgress');
     } catch (e) {
-      //print('Error fetching tutorial progress: $e');
+      print('PinScreen: Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        //print('Tutorial progress loaded from cache: $tutorialProgress');
+        print('PinScreen: Tutorial progress loaded from cache: $tutorialProgress');
       }
     }
   }
+Future<void> _initBiometrics() async {
+  final localizations = AppLocalizations.of(context)!;
 
+  try {
+    _canCheckBiometrics = await _auth.canCheckBiometrics;
+
+    if (_canCheckBiometrics) {
+      _availableBiometrics = await _auth.getAvailableBiometrics();
+      if (_availableBiometrics.isNotEmpty) {
+        if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
+          _authenticate();
+        } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
+          _authenticate();
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.translate('biometric_unavailable')),
+          ),
+        );
+      }
+    }
+  } on PlatformException catch (e) {
+    debugPrint('Ошибка инициализации биометрии!');
+  }
+}
   Future<void> _loadUserRoleId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -208,7 +236,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
       await prefs.remove('userRoles');
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile = await _apiService.getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
           userRoleId = userProfile.role!.first.id;
@@ -218,6 +246,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+      print('PinScreen: Dispatched FetchTaskStatuses');
       BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
       if (mounted) {
@@ -226,7 +255,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         });
       }
     } catch (e) {
-      //print('Error loading user role: $e');
+      print('PinScreen: Error loading user role: $e');
       if (mounted) {
         setState(() {
           userRoleId = 0;
@@ -257,9 +286,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? '';
       
-      //print('userID : $UUID');
+      print('PinScreen: userID: $UUID');
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile = await _apiService.getUserById(int.parse(UUID));
 
       await prefs.setString('userName', userProfile.name);
       await prefs.setString('userNameProfile', userProfile.name ?? '');
@@ -273,7 +302,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         });
       }
     } catch (e) {
-      //print('Ошибка при загрузке данных с сервера: $e');
+      print('PinScreen: Error loading user data: $e');
       if (mounted) {
         setState(() {
           _userName = 'Не найдено';
@@ -284,32 +313,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     }
   }
 
-  Future<void> _initBiometrics() async {
-    final localizations = AppLocalizations.of(context)!;
-
-    try {
-      _canCheckBiometrics = await _auth.canCheckBiometrics;
-
-      if (_canCheckBiometrics) {
-        _availableBiometrics = await _auth.getAvailableBiometrics();
-        if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
-            _authenticate();
-          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
-            _authenticate();
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizations.translate('biometric_unavailable')),
-            ),
-          );
-        }
+  Future<void> _checkSavedPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('user_pin');
+    if (savedPin == null) {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/pin_setup');
       }
-    } on PlatformException catch (e) {
-      debugPrint('Ошибка инициализации биометрии!');
     }
   }
 
@@ -341,20 +351,22 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         _navigateToHome();
       }
     } on PlatformException catch (e) {
-      if (mounted) {
-        //print('Ошибка биометрической аутентификации: $e');
-      }
+      print('PinScreen: Biometric authentication error: $e');
     }
   }
 
-  Future<void> _checkSavedPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPin = prefs.getString('user_pin');
-    if (savedPin == null) {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/pin_setup');
-      }
-    }
+  void _navigateToHome() {
+    Future.delayed(Duration(milliseconds: 10), () {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (tutorialProgress == null) {
+          await _fetchTutorialProgress();
+        }
+        if (widget.initialMessage != null) {
+          await _firebaseApi.handleMessage(widget.initialMessage!);
+        }
+      });
+    });
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _onNumberPressed(String number) async {
@@ -380,20 +392,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         }
       }
     }
-  }
-
-  void _navigateToHome() {
-    Future.delayed(Duration(milliseconds: 10), () {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (tutorialProgress == null) {
-          await _fetchTutorialProgress();
-        }
-        if (widget.initialMessage != null) {
-          await _firebaseApi.handleMessage(widget.initialMessage!);
-        }
-      });
-    });
-    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _triggerErrorEffect() async {
