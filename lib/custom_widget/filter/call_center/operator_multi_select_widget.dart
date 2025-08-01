@@ -23,77 +23,55 @@ class OperatorMultiSelectWidget extends StatefulWidget {
 }
 
 class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
+  List<Operator> operatorsList = [];
   List<Operator> selectedOperatorsData = [];
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<OperatorBloc>().add(FetchOperators());
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => OperatorBloc(ApiService())..add(FetchOperators()),
-      child: BlocBuilder<OperatorBloc, OperatorState>(
-        builder: (context, state) {
-          if (state is OperatorLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is OperatorError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    state.message,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<OperatorBloc>().add(FetchOperators());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C5CE7),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Повторить',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else if (state is OperatorLoaded) {
-            // Инициализация выбранных операторов
-            if (widget.selectedOperators != null && state.operators.isNotEmpty) {
-              selectedOperatorsData = state.operators
-                  .where((operator) => widget.selectedOperators!.contains(operator.id.toString()))
-                  .toList();
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      create: (context) => OperatorBloc(ApiService()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('operator'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 4),
+          BlocListener<OperatorBloc, OperatorState>(
+            listener: (context, state) {
+              if (state is OperatorLoaded) {
+                setState(() {
+                  operatorsList = state.operators;
+                  errorMessage = null;
+                  if (widget.selectedOperators != null && operatorsList.isNotEmpty) {
+                    selectedOperatorsData = operatorsList
+                        .where((operator) => widget.selectedOperators!.contains(operator.id.toString()))
+                        .toList();
+                  }
+                });
+              } else if (state is OperatorError) {
+                setState(() {
+                  errorMessage = state.message;
+                });
+              }
+            },
+            child: Column(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('operator'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-                const SizedBox(height: 4),
                 CustomDropdown<Operator>.multiSelectSearch(
-                  items: state.operators,
+                  items: operatorsList,
                   initialItems: selectedOperatorsData,
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
@@ -182,11 +160,49 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                     });
                   },
                 ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          errorMessage!,
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<OperatorBloc>().add(FetchOperators());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6C5CE7),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Повторить',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            );
-          }
-          return const SizedBox.shrink();
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

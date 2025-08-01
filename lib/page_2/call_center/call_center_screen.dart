@@ -4,7 +4,6 @@ import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
@@ -43,7 +42,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   DateTime? startDate;
   DateTime? endDate;
 
-  bool _areFiltersApplied = false; // Добавляем переменную для отслеживания фильтров
+  bool _areFiltersApplied =
+      false; // Добавляем переменную для отслеживания фильтров
 
   @override
   void initState() {
@@ -60,10 +60,13 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       final bloc = context.read<CallCenterBloc>();
       final state = bloc.state;
-      if (state is CallCenterLoaded && !bloc.allCallsFetched && !bloc.isLoadingMore) {
+      if (state is CallCenterLoaded &&
+          !bloc.allCallsFetched &&
+          !bloc.isLoadingMore) {
         bloc.add(LoadMoreCalls(
           callType: _selectedFilter,
           currentPage: state.currentPage,
@@ -75,7 +78,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _filterCalls(CallType? filter) {
     setState(() {
       _selectedFilter = filter;
-      _areFiltersApplied = filter != null; // Обновляем состояние фильтров
+      // Обновляем состояние фильтров при изменении типа звонка
+      _updateFiltersState();
       context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
     });
   }
@@ -83,28 +87,83 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _onSearch(String query) {
     setState(() {
       _searchQuery = query;
-      _isSearching = query.isNotEmpty;
-      _areFiltersApplied = query.isNotEmpty; // Обновляем состояние фильтров
-      context.read<CallCenterBloc>().add(LoadCalls(
-        callType: _selectedFilter,
-        page: 1,
-        searchQuery: query,
-      ));
     });
+
+    // Обновляем состояние фильтров
+    _updateFiltersState();
+
+    context.read<CallCenterBloc>().add(LoadCalls(
+          callType: _selectedFilter,
+          page: 1,
+          searchQuery: query,
+        ));
   }
 
+  void _resetSearch() {
+    setState(() {
+      _searchQuery = '';
+      _searchController.clear();
+      _isSearching = false;
+      _focusNode.unfocus();
+    });
+
+    // Обновляем состояние фильтров
+    _updateFiltersState();
+
+    // Загружаем данные без поискового запроса, но с сохранением других фильтров
+    context.read<CallCenterBloc>().add(LoadCalls(
+          callType: _selectedFilter,
+          page: 1,
+          searchQuery: '',
+        ));
+  }
+
+  // Обновленный метод для применения фильтров
   void _onFiltersSelected(Map filters) {
     setState(() {
-      _selectedCallTypes = (filters['callTypes'] as List<dynamic>?)?.map((id) => CallTypeData(id: int.parse(id.toString()), name: '')).toList() ?? [];
-      _selectedOperators = (filters['operators'] as List<dynamic>?)?.map((id) => Operator(id: int.parse(id.toString()), name: '', lastname: '', login: '', email: '', phone: '', image: '', telegramUserId: null, jobTitle: '', fullName: '', isFirstLogin: 0, departmentId: null, uniqueId: '', operatorAvgRating: 0.0)).toList() ?? [];
-      _selectedStatuses = (filters['statuses'] as List<dynamic>?)?.map((id) => StatusData(id: int.parse(id.toString()), name: '')).toList() ?? [];
-      _selectedRatings = (filters['ratings'] as List<dynamic>?)?.map((id) => RatingData(id: int.parse(id.toString()), name: '')).toList() ?? [];
-      _selectedLeads = (filters['leads'] as List<dynamic>?)?.map((id) => LeadData(id: int.parse(id.toString()), name: '')).toList() ?? [];
-      _areFiltersApplied = filters.isNotEmpty && filters.values.any((value) => 
-      value != null && (value is! List || value.isNotEmpty)
-    );
-      context.read<CallCenterBloc>().add(FilterCalls(filters.cast<String, dynamic>()));
+      _selectedCallTypes = (filters['callTypes'] as List<dynamic>?)
+              ?.map(
+                  (id) => CallTypeData(id: int.parse(id.toString()), name: ''))
+              .toList() ??
+          [];
+      _selectedOperators = (filters['operators'] as List<dynamic>?)
+              ?.map((id) => Operator(
+                  id: int.parse(id.toString()),
+                  name: '',
+                  lastname: '',
+                  login: '',
+                  email: '',
+                  phone: '',
+                  image: '',
+                  telegramUserId: null,
+                  jobTitle: '',
+                  fullName: '',
+                  isFirstLogin: 0,
+                  departmentId: null,
+                  uniqueId: '',
+                  operatorAvgRating: 0.0))
+              .toList() ??
+          [];
+      _selectedStatuses = (filters['statuses'] as List<dynamic>?)
+              ?.map((id) => StatusData(id: int.parse(id.toString()), name: ''))
+              .toList() ??
+          [];
+      _selectedRatings = (filters['ratings'] as List<dynamic>?)
+              ?.map((id) => RatingData(id: int.parse(id.toString()), name: ''))
+              .toList() ??
+          [];
+      _selectedLeads = (filters['leads'] as List<dynamic>?)
+              ?.map((id) => LeadData(id: int.parse(id.toString()), name: ''))
+              .toList() ??
+          [];
     });
+
+    // Обновляем состояние фильтров
+    _updateFiltersState();
+
+    context
+        .read<CallCenterBloc>()
+        .add(FilterCalls(filters.cast<String, dynamic>()));
   }
 
   void _resetFilters() {
@@ -123,7 +182,28 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       endDate = null; // Сбрасываем конечную дату
       _remarkController.clear();
       _areFiltersApplied = false; // Сбрасываем состояние фильтров
-      context.read<CallCenterBloc>().add(ResetFilters()); // Отправляем событие сброса
+      context
+          .read<CallCenterBloc>()
+          .add(ResetFilters()); // Отправляем событие сброса
+    });
+  }
+
+// Добавляем вспомогательный метод для проверки состояния фильтров
+  bool _hasAnyFiltersApplied() {
+    return _selectedCallTypes.isNotEmpty ||
+        _selectedOperators.isNotEmpty ||
+        _selectedStatuses.isNotEmpty ||
+        _selectedRatings.isNotEmpty ||
+        _selectedLeads.isNotEmpty ||
+        selectedRemarkStatus != null ||
+        startDate != null ||
+        endDate != null;
+  }
+
+// Метод для обновления состояния фильтров
+  void _updateFiltersState() {
+    setState(() {
+      _areFiltersApplied = _hasAnyFiltersApplied();
     });
   }
 
@@ -133,7 +213,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     DateTime? lastDate;
 
     for (var call in calls) {
-      final dateOnly = DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
+      final dateOnly =
+          DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
       if (lastDate == null || dateOnly != lastDate) {
         final header = _formatDateHeader(call.callDate);
         result.add(header);
@@ -186,13 +267,15 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 controller: _searchController,
                 focusNode: _focusNode,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 16, color: Colors.black),
                 autofocus: true,
               ),
             ),
+          // Обновленная кнопка поиска в AppBar
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -205,16 +288,21 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                   ),
             tooltip: AppLocalizations.of(context)!.translate('search'),
             onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (_isSearching) {
-                  _focusNode.requestFocus();
-                } else {
-                  _searchController.clear();
-                  _focusNode.unfocus();
-                  _resetFilters();
-                }
-              });
+              if (_isSearching) {
+                // Закрываем поиск
+                _resetSearch();
+              } else {
+                // Открываем поиск
+                setState(() {
+                  _isSearching = true;
+                });
+                // Задержка для корректной работы анимации
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (mounted) {
+                    _focusNode.requestFocus();
+                  }
+                });
+              }
             },
           ),
           IconButton(
@@ -240,7 +328,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               'assets/icons/AppBar/filter.png',
               width: 24,
               height: 24,
-              color: _areFiltersApplied ? Colors.blue : Colors.black, // Изменяем цвет иконки
+              color: _areFiltersApplied
+                  ? Colors.blue
+                  : Colors.black, // Изменяем цвет иконки
             ),
             tooltip: AppLocalizations.of(context)!.translate('filter'),
             onPressed: () {
@@ -256,18 +346,27 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                         _selectedStatuses = [];
                         _selectedRatings = [];
                         _selectedLeads = [];
-                        selectedRemarkStatus = null; // Сбрасываем статус замечаний
+                        selectedRemarkStatus =
+                            null; // Сбрасываем статус замечаний
                         startDate = null; // Сбрасываем начальную дату
                         endDate = null; // Сбрасываем конечную дату
-                        _areFiltersApplied = false; // Сбрасываем состояние фильтров
-                        context.read<CallCenterBloc>().add(ResetFilters()); // Отправляем событие сброса
+                        _areFiltersApplied =
+                            false; // Сбрасываем состояние фильтров
+                        context
+                            .read<CallCenterBloc>()
+                            .add(ResetFilters()); // Отправляем событие сброса
                       });
                     },
-                    initialCallTypes: _selectedCallTypes.map((c) => c.id.toString()).toList(),
-                    initialOperators: _selectedOperators.map((o) => o.id.toString()).toList(),
-                    initialStatuses: _selectedStatuses.map((s) => s.id.toString()).toList(),
-                    initialRatings: _selectedRatings.map((r) => r.id.toString()).toList(),
-                    initialLeads: _selectedLeads.map((l) => l.id.toString()).toList(),
+                    initialCallTypes:
+                        _selectedCallTypes.map((c) => c.id.toString()).toList(),
+                    initialOperators:
+                        _selectedOperators.map((o) => o.id.toString()).toList(),
+                    initialStatuses:
+                        _selectedStatuses.map((s) => s.id.toString()).toList(),
+                    initialRatings:
+                        _selectedRatings.map((r) => r.id.toString()).toList(),
+                    initialLeads:
+                        _selectedLeads.map((l) => l.id.toString()).toList(),
                     initialRemarkStatus: selectedRemarkStatus,
                     initialStartDate: startDate?.toIso8601String(),
                     initialEndDate: endDate?.toIso8601String(),
@@ -320,7 +419,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                   }
                   return ListView.builder(
                     controller: _scrollController,
-                    itemCount: items.length + (context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
+                    itemCount: items.length +
+                        (context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= items.length) {
                         if (context.read<CallCenterBloc>().isLoadingMore) {
@@ -444,10 +544,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
         page = currentState.currentPage;
       }
       context.read<CallCenterBloc>().add(LoadCalls(
-        callType: _selectedFilter,
-        page: page,
-        searchQuery: _searchQuery,
-      ));
+            callType: _selectedFilter,
+            page: page,
+            searchQuery: _searchQuery,
+          ));
     });
   }
 

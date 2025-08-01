@@ -494,12 +494,11 @@ void resetFilterIconState() {
     final canReadNotice = await _apiService.hasPermission('notice.read');
     // final canReadCalendar = await _apiService.hasPermission('notice.read');
     final canReadCalendar = await _apiService.hasPermission('calendar');
-    final canReadCallCenter =
-        await _apiService.hasPermission('calendar');
-
+    final canReadCallCenter = await _apiService.hasPermission('call-center'); // Исправлено
     setState(() {
       _canReadNotice = canReadNotice;
       _canReadCalendar = canReadCalendar;
+      _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
     });
   }
