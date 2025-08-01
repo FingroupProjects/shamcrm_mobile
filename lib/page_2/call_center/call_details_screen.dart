@@ -106,6 +106,8 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
         return CallRatingDialog(
           initialRating: _selectedRating,
           initialComment: _ratingComment,
+          callId: int.parse(widget.callEntry.id),
+          organizationId: 1, // TODO: Replace with actual organizationId
           onSubmit: (rating, comment) {
             setState(() {
               _selectedRating = rating;
@@ -120,30 +122,45 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(
-          context, AppLocalizations.of(context)!.translate('call_details')),
+      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('call_details')),
       backgroundColor: Colors.white,
-      body: BlocBuilder<CallCenterBloc, CallCenterState>(
-        builder: (context, state) {
-          print("Building CallDetailsScreen with state: $state");
-          if (state is CallCenterLoading) {
-            return _buildLoadingState();
-          } else if (state is CallByIdLoaded) {
-            return _buildDetailsList(state.call);
-          } else if (state is CallCenterError) {
-            return Center(
-              child: Text(
-                state.message,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  color: Colors.red,
+      body: BlocListener<CallCenterBloc, CallCenterState>(
+        listener: (context, state) {
+          if (state is CallCenterError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
               ),
             );
+          } else if (state is CallByIdLoaded) {
+            // Update state in listener instead of builder
+            setState(() {
+              _selectedRating = state.call.rating?.toString();
+              _ratingComment = state.call.report;
+            });
           }
-          return _buildDetailsListFromEntry(widget.callEntry);
         },
+        child: BlocBuilder<CallCenterBloc, CallCenterState>(
+          builder: (context, state) {
+            if (state is CallCenterLoading) {
+              return _buildLoadingState();
+            } else if (state is CallByIdLoaded) {
+              return _buildDetailsList(state.call);
+            } else if (state is CallCenterError) {
+              return _buildDetailsListFromEntry(widget.callEntry);
+            }
+            return _buildDetailsListFromEntry(widget.callEntry);
+          },
+        ),
       ),
     );
   }
@@ -185,145 +202,54 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Center(child: CircularProgressIndicator());
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildDetailsList(CallById call) {
-  final details = <Map<String, dynamic>>[
-    {
-      'label': AppLocalizations.of(context)!.translate('lead_name') as String,
-      'value': call.lead.name as String,
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('phone_number') as String,
-      'value': call.lead.phone as String,
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('date_of_call') as String,
-      'value': formatDate(call.callStartedAt) as String,
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('operator') as String,
-      'value': call.user?.fullName ?? AppLocalizations.of(context)!.translate('not_specified'),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('call_type') as String,
-      'value': _getCallTypeText(call.incoming, call.missed) as String,
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
-      'value': call.callDuration != null
-          ? _formatDuration(Duration(seconds: call.callDuration!))
-          : AppLocalizations.of(context)!.translate('not_available'),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('rating') as String,
-      'value': call.rating ?? '',
-    },
-    {
-      'label': 'call_details' as String,
-      'value': '' as String,
-      'call_data': <String, String>{
-        'caller': call.lead.name,
-        'call_duration': call.callDuration != null
-            ? _formatDuration(Duration(seconds: call.callDuration!))
-            : AppLocalizations.of(context)!.translate('not_available'),
-        'call_type': _getCallTypeText(call.incoming, call.missed),
-      },
-    },
-  ];
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-    child: ListView(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: details.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: _buildDetailItem(
-                    details[index]['label'] as String,
-                    details[index]['value'] as String,
-                    call,
-                    index,
-                    callData: details[index]['call_data'] as Map<String, String>?,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: const Color(0xFF1E2E52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: _showRatingDialog,
-                child: Text(
-                  AppLocalizations.of(context)!.translate('grade'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildDetailsListFromEntry(CallLogEntry call) {
     final details = <Map<String, dynamic>>[
       {
         'label': AppLocalizations.of(context)!.translate('lead_name') as String,
-        'value': call.leadName as String,
+        'value': call.lead.name as String,
       },
       {
         'label': AppLocalizations.of(context)!.translate('phone_number') as String,
-        'value': call.phoneNumber as String,
+        'value': call.lead.phone as String,
       },
       {
         'label': AppLocalizations.of(context)!.translate('date_of_call') as String,
-        'value': formatDate(call.callDate) as String,
+        'value': formatDate(call.callStartedAt) as String,
       },
       {
         'label': AppLocalizations.of(context)!.translate('operator') as String,
-        'value': call.operatorName ?? AppLocalizations.of(context)!.translate('not_specified'),
+        'value': call.user?.fullName ?? AppLocalizations.of(context)!.translate('not_specified'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('call_type') as String,
-        'value': _getCallTypeTextFromEntry(call.callType) as String,
+        'value': _getCallTypeText(call.incoming, call.missed) as String,
       },
       {
         'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
-        'value': _formatDuration(call.duration) as String,
+        'value': call.callDuration != null
+            ? _formatDuration(Duration(seconds: call.callDuration!))
+            : AppLocalizations.of(context)!.translate('not_available'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('rating') as String,
-        'value': _selectedRating ?? '',
+        'value': call.rating?.toString() ?? '',
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment') as String,
+        'value': call.report ?? '',
       },
       {
         'label': 'call_details' as String,
         'value': '' as String,
         'call_data': <String, String>{
-          'caller': call.leadName,
-          'call_duration': _formatDuration(call.duration),
-          'call_type': _getCallTypeTextFromEntry(call.callType),
+          'caller': call.lead.name,
+          'call_duration': call.callDuration != null
+              ? _formatDuration(Duration(seconds: call.callDuration!))
+              : AppLocalizations.of(context)!.translate('not_available'),
+          'call_type': _getCallTypeText(call.incoming, call.missed),
         },
       },
     ];
@@ -342,7 +268,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: _buildDetailItemFromEntry(
+                    child: _buildDetailItem(
                       details[index]['label'] as String,
                       details[index]['value'] as String,
                       call,
@@ -382,6 +308,105 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
     );
   }
 
+ Widget _buildDetailsListFromEntry(CallLogEntry call) {
+  final details = <Map<String, dynamic>>[
+    {
+      'label': AppLocalizations.of(context)!.translate('lead_name') as String,
+      'value': call.leadName as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('phone_number') as String,
+      'value': call.phoneNumber as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('date_of_call') as String,
+      'value': formatDate(call.callDate) as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('operator') as String,
+      'value': call.operatorName ?? AppLocalizations.of(context)!.translate('not_specified'),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('call_type') as String,
+      'value': _getCallTypeTextFromEntry(call.callType) as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
+      'value': _formatDuration(call.duration) as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('rating') as String,
+      'value': call.rating ?? _selectedRating ?? AppLocalizations.of(context)!.translate(''),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('comment') as String,
+      'value': call.report ?? _ratingComment ?? AppLocalizations.of(context)!.translate(''),
+    },
+    {
+      'label': 'call_details' as String,
+      'value': '' as String,
+      'call_data': <String, String>{
+        'caller': call.leadName,
+        'call_duration': _formatDuration(call.duration),
+        'call_type': _getCallTypeTextFromEntry(call.callType),
+      },
+    },
+  ];
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    child: ListView(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: details.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: _buildDetailItemFromEntry(
+                    details[index]['label'] as String,
+                    details[index]['value'] as String,
+                    call,
+                    index,
+                    callData: details[index]['call_data'] as Map<String, String>?,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: const Color(0xFF1E2E52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _showRatingDialog,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('grade'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
   String _getCallTypeText(bool incoming, bool missed) {
     if (missed) {
       return AppLocalizations.of(context)!.translate('missed_call');
@@ -403,250 +428,15 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
     }
   }
 
-Widget _buildDetailItem(
-  String label,
-  String value,
-  CallById call,
-  int index, {
-  Map<String, String>? callData,
-}) {
-  if (label == AppLocalizations.of(context)!.translate('rating')) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildValue(value.isNotEmpty ? value : AppLocalizations.of(context)!.translate('')),
-            ),
-          ],
-        ),
-        if (_ratingComment != null && _ratingComment!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(AppLocalizations.of(context)!.translate('comment')),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _ratingComment!,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  if (label == 'call_details') {
-    bool isMissed = call.missed;
-    bool isIncoming = call.incoming;
-    Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
-    String statusText = _getCallTypeText(call.incoming, call.missed);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xffF5F7FA),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xff1E2E52),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.phone,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                AppLocalizations.of(context)!.translate('lead_deal_card'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  callData!['caller']!,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xff1E2E52),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.timer,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                AppLocalizations.of(context)!.translate('call_duration_title') + ' ',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
-              Text(
-                callData!['call_duration']!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info,
-                  color: isMissed ? Colors.red : Colors.green,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: isMissed ? Colors.red : Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            AppLocalizations.of(context)!.translate('call_recording'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400,
-              color: Color(0xff99A4BA),
-            ),
-          ),
-          if (call.callDuration != null && call.callDuration! > 0 && !call.missed) ...[
-            const SizedBox(height: 0),
-            _buildVoicePlayer(call.callRecordUrl, call.callDuration!),
-          ],
-        ],
-      ),
-    );
-  }
-
-  if (label == AppLocalizations.of(context)!.translate('lead_name')) {
-    return GestureDetector(
-      onTap: () {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(
-              leadId: call.lead.id.toString(),
-              leadName: call.lead.name,
-              leadStatus: "",
-              statusId: 1,
-            ),
-          ),
-        );
-      },
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel(label),
-      const SizedBox(width: 8),
-      Expanded(
-        child: _buildValue(value),
-      ),
-    ],
-  );
-}
-  Widget _buildDetailItemFromEntry(
+  Widget _buildDetailItem(
     String label,
     String value,
-    CallLogEntry call,
+    CallById call,
     int index, {
     Map<String, String>? callData,
   }) {
-    if (label == AppLocalizations.of(context)!.translate('rating')) {
+    if (label == AppLocalizations.of(context)!.translate('rating') ||
+        label == AppLocalizations.of(context)!.translate('comment')) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -660,29 +450,221 @@ Widget _buildDetailItem(
               ),
             ],
           ),
-          if (_ratingComment != null && _ratingComment!.isNotEmpty) ...[
-            const SizedBox(height: 12),
+        ],
+      );
+    }
+
+    if (label == 'call_details') {
+      bool isMissed = call.missed;
+      bool isIncoming = call.incoming;
+      Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
+      String statusText = _getCallTypeText(call.incoming, call.missed);
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xffF5F7FA),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLabel(AppLocalizations.of(context)!.translate('comment')),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xff1E2E52),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.phone,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
+                Text(
+                  AppLocalizations.of(context)!.translate('lead_deal_card'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
                 Expanded(
                   child: Text(
-                    _ratingComment!,
+                    callData!['caller']!,
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xff1E2E52),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.timer,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppLocalizations.of(context)!.translate('call_duration_title') + ' ',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+                Text(
+                  callData!['call_duration']!,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info,
+                    color: isMissed ? Colors.red : Colors.green,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: isMissed ? Colors.red : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context)!.translate('call_recording'),
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+            if (call.callDuration != null && call.callDuration! > 0 && !call.missed) ...[
+              const SizedBox(height: 0),
+              _buildVoicePlayer(call.callRecordUrl, call.callDuration!),
+            ],
           ],
+        ),
+      );
+    }
+
+    if (label == AppLocalizations.of(context)!.translate('lead_name')) {
+      return GestureDetector(
+        onTap: () {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => LeadDetailsScreen(
+                leadId: call.lead.id.toString(),
+                leadName: call.lead.name,
+                leadStatus: "",
+                statusId: 1,
+              ),
+            ),
+          );
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildValue(value),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailItemFromEntry(
+    String label,
+    String value,
+    CallLogEntry call,
+    int index, {
+    Map<String, String>? callData,
+  }) {
+    if (label == AppLocalizations.of(context)!.translate('rating') ||
+        label == AppLocalizations.of(context)!.translate('comment')) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildValue(value.isNotEmpty ? value : AppLocalizations.of(context)!.translate('')),
+              ),
+            ],
+          ),
         ],
       );
     }

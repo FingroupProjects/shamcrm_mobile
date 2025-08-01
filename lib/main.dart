@@ -78,6 +78,7 @@ import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -112,7 +113,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final apiService = ApiService();
+  final apiService = ApiService(); 
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
@@ -297,9 +298,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
-        BlocProvider(create: (context) => CallCenterBloc(ApiService()),
-        ),
-        
+        BlocProvider(create: (context) => CallCenterBloc(ApiService()),),
+        BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

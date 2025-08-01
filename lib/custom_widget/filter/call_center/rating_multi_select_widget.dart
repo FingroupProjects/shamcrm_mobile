@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -17,7 +18,6 @@ class RatingMultiSelectWidget extends StatefulWidget {
 }
 
 class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
-  // Локальный список оценок
   final List<RatingData> ratingsList = [
     RatingData(id: 5, name: '5 - Отличное'),
     RatingData(id: 4, name: '4 - Хорошее'),
@@ -31,11 +31,13 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    // Инициализация выбранных элементов, если переданы
     if (widget.selectedRatings != null && ratingsList.isNotEmpty) {
       selectedRatingsData = ratingsList
           .where((rating) => widget.selectedRatings!.contains(rating.id.toString()))
           .toList();
+      if (kDebugMode) {
+        print('RatingMultiSelectWidget: Initial selected ratings: $selectedRatingsData');
+      }
     }
   }
 
@@ -59,18 +61,12 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
           initialItems: selectedRatingsData,
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
-          decoration:   CustomDropdownDecoration(
+          decoration: CustomDropdownDecoration(
             closedFillColor: Color(0xffF4F7FD),
             expandedFillColor: Colors.white,
-            closedBorder: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
-            ),
+            closedBorder: Border.all(color: Color(0xffF4F7FD), width: 1),
             closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
-            ),
+            expandedBorder: Border.all(color: Color(0xffF4F7FD), width: 1),
             expandedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -119,7 +115,7 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
             return Text(
               selectedRatingsCount == 0
                   ? AppLocalizations.of(context)!.translate('select_rating')
-                  : '${AppLocalizations.of(context)!.translate('select_rating')} $selectedRatingsCount',
+                  : '${AppLocalizations.of(context)!.translate('select_rating')} ($selectedRatingsCount)',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -138,10 +134,13 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
             ),
           ),
           onListChanged: (values) {
-            widget.onSelectRatings(values);
             setState(() {
               selectedRatingsData = values;
+              if (kDebugMode) {
+                print('RatingMultiSelectWidget: Selected ratings updated: $selectedRatingsData');
+              }
             });
+            widget.onSelectRatings(values);
           },
         ),
       ],
@@ -149,7 +148,6 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
   }
 }
 
-// Модель данных для оценки
 class RatingData {
   final int id;
   final String name;

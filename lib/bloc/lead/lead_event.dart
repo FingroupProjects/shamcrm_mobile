@@ -20,11 +20,12 @@ class FetchLeads extends LeadEvent {
   final bool? hasNotices;
   final bool? hasContact;
   final bool? hasChat;
-  final bool? hasNoReplies; // Новый параметр
-  final bool? hasUnreadMessages; // Новый параметр
+  final bool? hasNoReplies;
+  final bool? hasUnreadMessages;
   final bool? hasDeal;
   final int? daysWithoutActivity;
-  final List<Map<String, dynamic>>? directoryValues; // Новый параметр
+  final List<Map<String, dynamic>>? directoryValues;
+  final int? salesFunnelId;
 
   FetchLeads(
     this.statusId, {
@@ -41,11 +42,12 @@ class FetchLeads extends LeadEvent {
     this.hasNotices,
     this.hasContact,
     this.hasChat,
-    this.hasNoReplies, // Новый параметр
-    this.hasUnreadMessages, // Новый параметр
+    this.hasNoReplies,
+    this.hasUnreadMessages,
     this.hasDeal,
     this.daysWithoutActivity,
-    this.directoryValues, // Добавляем в конструктор
+    this.directoryValues,
+    this.salesFunnelId,
   });
 }
 

@@ -1,57 +1,20 @@
-
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:flutter/material.dart';
 
+class OperatorChartRating extends StatelessWidget {
+  final int operatorId;
+  final CallSummaryStats summaryStats;
 
-class OperatorChartRating extends StatefulWidget {
-  final int operatorId; // Добавляем operatorId для возможной будущей интеграции
-
-  const OperatorChartRating({Key? key, required this.operatorId}) : super(key: key);
-
-  @override
-  State<OperatorChartRating> createState() => _OperatorChartRatingState();
-}
-
-class _OperatorChartRatingState extends State<OperatorChartRating> {
-  CallSummaryStats? summaryStats;
-  bool isLoading = true;
-  String? errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchSummaryStats();
-  }
-
-  Future<void> _fetchSummaryStats() async {
-    try {
-      final apiService = ApiService();
-      final stats = await apiService.getCallSummaryStats();
-      setState(() {
-        summaryStats = stats;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-        isLoading = false;
-      });
-    }
-  }
+  const OperatorChartRating({
+    Key? key,
+    required this.operatorId,
+    required this.summaryStats,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errorMessage != null) {
-      return Center(child: Text(errorMessage!));
-    }
-
-    final averageCallDuration = _formatDuration(summaryStats!.result.averageCallDuration);
-    final averageDailyDuration = _formatDailyDuration(summaryStats!.result.averageDailyDuration);
+    final averageCallDuration = _formatDuration(summaryStats.result.averageCallDuration);
+    final averageDailyDuration = _formatDailyDuration(summaryStats.result.averageDailyDuration);
 
     final List<Map<String, dynamic>> cardData = [
       {
@@ -89,9 +52,9 @@ class _OperatorChartRatingState extends State<OperatorChartRating> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: const Text(
+        const Padding(
+          padding: EdgeInsets.only(bottom: 16.0),
+          child: Text(
             'Длительность разговора',
             style: TextStyle(
               fontFamily: 'Gilroy',

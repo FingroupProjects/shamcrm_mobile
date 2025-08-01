@@ -1,12 +1,12 @@
-// lib/page_2/call_center/dashboard_screen.dart
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
-import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart'; // Added import
+import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_log_item.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_not_called.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_called.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_waiting.dart';
-import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart'; // Added import
+import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -152,101 +152,97 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildStatisticsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Added StatisticChart1
-            FutureBuilder<CallStatistics>(
-              future: _apiService.getCallStatistics(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Ошибка загрузки данных: ${snapshot.error}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  );
-                } else if (snapshot.hasData &&
-                    snapshot.data!.result.isNotEmpty) {
-                  return StatisticChart1(statistics: snapshot.data!);
-                } else {
-                  return const Center(
-                    child: Text(
-                      'Нет данных для отображения',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-            const Divider(thickness: 1, color: Colors.grey),
-            // Existing pie charts
-            FutureBuilder<CallAnalytics>(
-              future: _apiService.getCallAnalytics(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Ошибка загрузки данных: ${snapshot.error}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  );
-                } else if (snapshot.hasData &&
-                    snapshot.data!.result.isNotEmpty) {
-                  return Column(
-                    children: [
-                      
-                      PieChartNotCalled(statistics: snapshot.data!.result),
-                      Divider(thickness: 1, color: Colors.grey[300]),
-                      PieChartAllCalls(statistics: snapshot.data!.result),
-                      Divider(thickness: 1, color: Colors.grey[300]),
-                      PieChartCalled(statistics: snapshot.data!.result),
-                    ],
-                  );
-                } else {
-                  return const Center(
-                    child: Text(
-                      'Нет данных для отображения',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: SingleChildScrollView(
+      child: FutureBuilder<List<dynamic>>(
+        future: Future.wait([
+          _apiService.getCallStatistics(),
+          _apiService.getCallAnalytics(),
+        ]),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Показываем анимацию загрузки, пока данные загружаются
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              ),
+            );
+          } else if (snapshot.hasError) {
+            // Обработка ошибки
+            return Center(
+              child: Text(
+                'Ошибка загрузки данных: ${snapshot.error}',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  color: Colors.red,
+                ),
+              ),
+            );
+          } else if (snapshot.hasData) {
+            // Данные загружены успешно
+            final callStatistics = snapshot.data![0] as CallStatistics;
+            final callAnalytics = snapshot.data![1] as CallAnalytics;
+
+            // Проверка на наличие данных
+            if (callStatistics.result.isEmpty && !callAnalytics.result.isNotEmpty) {
+              return const Center(
+                child: Text(
+                  'Нет данных для отображения',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    color: Colors.black,
+                  ),
+                ),
+              );
+            }
+
+            // Отображаем все графики одновременно
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (callStatistics.result.isNotEmpty)
+                  StatisticChart1(statistics: callStatistics),
+                if (callStatistics.result.isNotEmpty)
+                  const Divider(thickness: 1, color: Colors.grey),
+                if (callAnalytics.result.isNotEmpty) ...[
+                  PieChartNotCalled(statistics: callAnalytics.result),
+                  Divider(thickness: 1, color: Colors.grey[300]),
+                  PieChartAllCalls(statistics: callAnalytics.result),
+                  Divider(thickness: 1, color: Colors.grey[300]),
+                  PieChartCalled(statistics: callAnalytics.result),
+                ],
+              ],
+            );
+          } else {
+            // На случай, если snapshot.data == null
+            return const Center(
+              child: Text(
+                'Нет данных для отображения',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+            );
+          }
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildReportsTab() {
-    return CallReportList(searchQuery: _searchController.text);
+    return CallReportList(searchQuery: _searchController.text, onResetSearch: () {  },);
   }
 }

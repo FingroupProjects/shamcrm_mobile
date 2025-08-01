@@ -7,7 +7,9 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_mult
 import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';
 import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
@@ -32,15 +34,20 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   final ScrollController _scrollController = ScrollController();
 
   List<CallTypeData> _selectedCallTypes = [];
-  List<OperatorData> _selectedOperators = [];
+  List<Operator> _selectedOperators = [];
   List<StatusData> _selectedStatuses = [];
   List<RatingData> _selectedRatings = [];
   final TextEditingController _remarkController = TextEditingController();
+  List _selectedLeads = [];
+  bool? selectedRemarkStatus;
+  DateTime? startDate;
+  DateTime? endDate;
+
+  bool _areFiltersApplied = false; // Добавляем переменную для отслеживания фильтров
 
   @override
   void initState() {
     super.initState();
-    print("Initializing CallCenterScreen");
     context.read<CallCenterBloc>().add(LoadCalls(callType: null));
     _searchController.addListener(() {
       _onSearch(_searchController.text);
@@ -53,39 +60,31 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   }
 
   void _onScroll() {
-    final pixels = _scrollController.position.pixels;
-    final maxExtent = _scrollController.position.maxScrollExtent;
-    if (pixels >= maxExtent - 100) {
-      print("Near end of scroll, checking for LoadMoreCalls");
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       final bloc = context.read<CallCenterBloc>();
       final state = bloc.state;
       if (state is CallCenterLoaded && !bloc.allCallsFetched && !bloc.isLoadingMore) {
-        if (state.currentPage < state.totalPages) {
-          print("Triggering LoadMoreCalls for page ${state.currentPage + 1}");
-          bloc.add(LoadMoreCalls(
-            callType: _selectedFilter,
-            currentPage: state.currentPage,
-          ));
-        } else {
-          print("All pages fetched");
-        }
+        bloc.add(LoadMoreCalls(
+          callType: _selectedFilter,
+          currentPage: state.currentPage,
+        ));
       }
     }
   }
 
   void _filterCalls(CallType? filter) {
     setState(() {
-      print("Filtering calls with type: $filter");
       _selectedFilter = filter;
+      _areFiltersApplied = filter != null; // Обновляем состояние фильтров
       context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
     });
   }
 
   void _onSearch(String query) {
     setState(() {
-      print("Search query: $query");
       _searchQuery = query;
       _isSearching = query.isNotEmpty;
+      _areFiltersApplied = query.isNotEmpty; // Обновляем состояние фильтров
       context.read<CallCenterBloc>().add(LoadCalls(
         callType: _selectedFilter,
         page: 1,
@@ -96,19 +95,20 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
 
   void _onFiltersSelected(Map filters) {
     setState(() {
-      print("Filters selected: $filters");
-      _selectedFilter = filters['callType'] as CallType?;
-      _selectedCallTypes = filters['callTypes'] as List<CallTypeData>? ?? [];
-      _selectedOperators = filters['operators'] as List<OperatorData>? ?? [];
-      _selectedStatuses = filters['statuses'] as List<StatusData>? ?? [];
-      _selectedRatings = filters['ratings'] as List<RatingData>? ?? [];
-      context.read<CallCenterBloc>().add(LoadCalls(callType: _selectedFilter));
+      _selectedCallTypes = (filters['callTypes'] as List<dynamic>?)?.map((id) => CallTypeData(id: int.parse(id.toString()), name: '')).toList() ?? [];
+      _selectedOperators = (filters['operators'] as List<dynamic>?)?.map((id) => Operator(id: int.parse(id.toString()), name: '', lastname: '', login: '', email: '', phone: '', image: '', telegramUserId: null, jobTitle: '', fullName: '', isFirstLogin: 0, departmentId: null, uniqueId: '', operatorAvgRating: 0.0)).toList() ?? [];
+      _selectedStatuses = (filters['statuses'] as List<dynamic>?)?.map((id) => StatusData(id: int.parse(id.toString()), name: '')).toList() ?? [];
+      _selectedRatings = (filters['ratings'] as List<dynamic>?)?.map((id) => RatingData(id: int.parse(id.toString()), name: '')).toList() ?? [];
+      _selectedLeads = (filters['leads'] as List<dynamic>?)?.map((id) => LeadData(id: int.parse(id.toString()), name: '')).toList() ?? [];
+      _areFiltersApplied = filters.isNotEmpty && filters.values.any((value) => 
+      value != null && (value is! List || value.isNotEmpty)
+    );
+      context.read<CallCenterBloc>().add(FilterCalls(filters.cast<String, dynamic>()));
     });
   }
 
   void _resetFilters() {
     setState(() {
-      print("Resetting filters");
       _selectedFilter = null;
       _searchQuery = '';
       _searchController.clear();
@@ -117,13 +117,17 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       _selectedOperators = [];
       _selectedStatuses = [];
       _selectedRatings = [];
+      _selectedLeads = []; // Сбрасываем лиды
+      selectedRemarkStatus = null; // Сбрасываем статус замечаний
+      startDate = null; // Сбрасываем начальную дату
+      endDate = null; // Сбрасываем конечную дату
       _remarkController.clear();
-      context.read<CallCenterBloc>().add(LoadCalls(callType: null));
+      _areFiltersApplied = false; // Сбрасываем состояние фильтров
+      context.read<CallCenterBloc>().add(ResetFilters()); // Отправляем событие сброса
     });
   }
 
   List<Object> _buildListWithHeaders(List<CallLogEntry> calls) {
-    print("Building list with headers, call count: ${calls.length}");
     calls.sort((a, b) => b.callDate.compareTo(a.callDate));
     final List<Object> result = [];
     DateTime? lastDate;
@@ -132,14 +136,11 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       final dateOnly = DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
       if (lastDate == null || dateOnly != lastDate) {
         final header = _formatDateHeader(call.callDate);
-        print("Adding header: $header");
         result.add(header);
         lastDate = dateOnly;
       }
-      print("Adding call: ${call.id}");
       result.add(call);
     }
-    print("List built, total items: ${result.length}");
     return result;
   }
 
@@ -239,6 +240,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               'assets/icons/AppBar/filter.png',
               width: 24,
               height: 24,
+              color: _areFiltersApplied ? Colors.blue : Colors.black, // Изменяем цвет иконки
             ),
             tooltip: AppLocalizations.of(context)!.translate('filter'),
             onPressed: () {
@@ -247,20 +249,28 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 MaterialPageRoute(
                   builder: (context) => CallCenterFilterScreen(
                     onSelectedDataFilter: _onFiltersSelected,
-                    onResetFilters: _resetFilters,
-                    initialCallTypes: _selectedCallTypes
-                        .map((callType) => callType.id.toString())
-                        .toList(),
-                    initialOperators: _selectedOperators
-                        .map((operator) => operator.id.toString())
-                        .toList(),
-                    initialStatuses: _selectedStatuses
-                        .map((status) => status.id.toString())
-                        .toList(),
-                    initialRatings: _selectedRatings
-                        .map((rating) => rating.id.toString())
-                        .toList(),
-                    initialRemark: _remarkController.text,
+                    onResetFilters: () {
+                      setState(() {
+                        _selectedCallTypes = [];
+                        _selectedOperators = [];
+                        _selectedStatuses = [];
+                        _selectedRatings = [];
+                        _selectedLeads = [];
+                        selectedRemarkStatus = null; // Сбрасываем статус замечаний
+                        startDate = null; // Сбрасываем начальную дату
+                        endDate = null; // Сбрасываем конечную дату
+                        _areFiltersApplied = false; // Сбрасываем состояние фильтров
+                        context.read<CallCenterBloc>().add(ResetFilters()); // Отправляем событие сброса
+                      });
+                    },
+                    initialCallTypes: _selectedCallTypes.map((c) => c.id.toString()).toList(),
+                    initialOperators: _selectedOperators.map((o) => o.id.toString()).toList(),
+                    initialStatuses: _selectedStatuses.map((s) => s.id.toString()).toList(),
+                    initialRatings: _selectedRatings.map((r) => r.id.toString()).toList(),
+                    initialLeads: _selectedLeads.map((l) => l.id.toString()).toList(),
+                    initialRemarkStatus: selectedRemarkStatus,
+                    initialStartDate: startDate?.toIso8601String(),
+                    initialEndDate: endDate?.toIso8601String(),
                   ),
                 ),
               );
@@ -293,45 +303,41 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           Expanded(
             child: BlocBuilder<CallCenterBloc, CallCenterState>(
               builder: (context, state) {
-                print("Building UI with state: $state");
                 if (state is CallCenterLoading) {
-                  return const Center(child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: PlayStoreImageLoading(
-                                size: 80.0,
-                                duration: const Duration(milliseconds: 1000),
-                              ),
-                            ),);
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
+                      ),
+                    ),
+                  );
                 } else if (state is CallCenterLoaded) {
-                  print("CallCenterLoaded: calls=${state.calls.length}, currentPage=${state.currentPage}, totalPages=${state.totalPages}");
                   final items = _buildListWithHeaders(state.calls);
                   if (items.isEmpty) {
-                    print("No items to display after building list");
                     return _buildEmptyState();
                   }
                   return ListView.builder(
                     controller: _scrollController,
-                    itemCount: items.length + (state.currentPage < state.totalPages && context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
+                    itemCount: items.length + (context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= items.length) {
-                        if (state.currentPage < state.totalPages && context.read<CallCenterBloc>().isLoadingMore) {
-                          print("Rendering loading indicator for page ${state.currentPage + 1}");
-                          return Center(
+                        if (context.read<CallCenterBloc>().isLoadingMore) {
+                          return const Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: EdgeInsets.all(16.0),
                               child: PlayStoreImageLoading(
                                 size: 80.0,
-                                duration: const Duration(milliseconds: 1000),
+                                duration: Duration(milliseconds: 1000),
                               ),
                             ),
                           );
                         }
-                        print("Index $index out of bounds, returning empty widget");
                         return const SizedBox.shrink();
                       }
                       final item = items[index];
                       if (item is String) {
-                        print("Rendering header: $item");
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                           child: Text(
@@ -345,19 +351,15 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                           ),
                         );
                       } else if (item is CallLogEntry) {
-                        print("Rendering call item: ${item.id}");
                         return CallLogItem(
                           callEntry: item,
                           onTap: () => _onCallTap(item),
                         );
-                      } else {
-                        print("Unknown item type at index $index");
-                        return const SizedBox.shrink();
                       }
+                      return const SizedBox.shrink();
                     },
                   );
                 } else if (state is CallCenterError) {
-                  print("CallCenterError: ${state.message}");
                   return Center(
                     child: Text(
                       state.message,
@@ -369,13 +371,13 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                     ),
                   );
                 } else if (state is CallByIdLoaded) {
-                  print("CallByIdLoaded: call=${state.call.id}, no action needed");
-                  return const Center(child: PlayStoreImageLoading(
-                                size: 80.0,
-                                duration: const Duration(milliseconds: 1000),
-                              ),);
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  );
                 }
-                print("Default case: rendering empty state");
                 return _buildEmptyState();
               },
             ),
@@ -430,21 +432,16 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   }
 
   void _onCallTap(CallLogEntry call) {
-    print("Navigating to CallDetailsScreen for call: ${call.id}");
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CallDetailsScreen(callEntry: call),
       ),
     ).then((_) {
-      print("Returning to CallCenterScreen, restoring state");
       final currentState = context.read<CallCenterBloc>().state;
       int page = 1;
       if (currentState is CallCenterLoaded) {
         page = currentState.currentPage;
-        print("Restoring from CallCenterLoaded, page: $page");
-      } else {
-        print("Current state is $currentState, using default page: $page");
       }
       context.read<CallCenterBloc>().add(LoadCalls(
         callType: _selectedFilter,
@@ -456,7 +453,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
 
   @override
   void dispose() {
-    print("Disposing CallCenterScreen");
     if (_scrollController.hasListeners) {
       _scrollController.removeListener(_onScroll);
     }
