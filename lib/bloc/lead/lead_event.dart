@@ -26,6 +26,7 @@ class FetchLeads extends LeadEvent {
   final int? daysWithoutActivity;
   final List<Map<String, dynamic>>? directoryValues;
   final int? salesFunnelId;
+  final bool ignoreCache; // Новый параметр
 
   FetchLeads(
     this.statusId, {
@@ -48,6 +49,7 @@ class FetchLeads extends LeadEvent {
     this.daysWithoutActivity,
     this.directoryValues,
     this.salesFunnelId,
+    this.ignoreCache = false, // По умолчанию кэш используется
   });
 }
 

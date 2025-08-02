@@ -66,7 +66,7 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
       ),
       body: FutureBuilder<List<dynamic>>(
         future: Future.wait([
-          ApiService().getCallSummaryStats(),
+          ApiService().getCallSummaryStats(widget.operatorId),
           ApiService().getMonthlyCallStats(widget.operatorId),
         ]),
         builder: (context, snapshot) {

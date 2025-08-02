@@ -27,7 +27,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
   int? _currentDaysWithoutActivity;
-    List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
+  List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
 
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
@@ -54,84 +54,99 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
-    emit(LeadLoading());
+Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+  print('LeadBloc: FetchLeads event triggered with statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}, ignoreCache: ${event.ignoreCache}');
+  emit(LeadLoading());
 
-    _currentQuery = event.query;
-    _currentManagerIds = event.managerIds;
-    _currentRegionIds = event.regionsIds;
-    _currentSourceIds = event.sourcesIds;
-    _currentStatusId = event.statusIds;
-    _currentFromDate = event.fromDate;
-    _currentToDate = event.toDate;
-    _currentHasSuccessDeals = event.hasSuccessDeals;
-    _currentHasInProgressDeals = event.hasInProgressDeals;
-    _currentHasFailureDeals = event.hasFailureDeals;
-    _currentHasNotices = event.hasNotices;
-    _currentHasContact = event.hasContact;
-    _currentHasChat = event.hasChat;
-    _currentHasNoReplies = event.hasNoReplies; // Новый параметр
-    _currentHasUnreadMessages = event.hasUnreadMessages; // Новый параметр
-    _currentHasDeal = event.hasDeal;
-    _currentDaysWithoutActivity = event.daysWithoutActivity;
-        _currentDirectoryValues = event.directoryValues; // Сохраняем текущие значения
+  _currentQuery = event.query;
+  _currentManagerIds = event.managerIds;
+  _currentRegionIds = event.regionsIds;
+  _currentSourceIds = event.sourcesIds;
+  _currentStatusId = event.statusIds;
+  _currentFromDate = event.fromDate;
+  _currentToDate = event.toDate;
+  _currentHasSuccessDeals = event.hasSuccessDeals;
+  _currentHasInProgressDeals = event.hasInProgressDeals;
+  _currentHasFailureDeals = event.hasFailureDeals;
+  _currentHasNotices = event.hasNotices;
+  _currentHasContact = event.hasContact;
+  _currentHasChat = event.hasChat;
+  _currentHasNoReplies = event.hasNoReplies;
+  _currentHasUnreadMessages = event.hasUnreadMessages;
+  _currentHasDeal = event.hasDeal;
+  _currentDaysWithoutActivity = event.daysWithoutActivity;
+  _currentDirectoryValues = event.directoryValues;
 
-
-    if (!await _checkInternetConnection()) {
+  if (!await _checkInternetConnection()) {
+    print('LeadBloc: No internet connection');
+    if (!event.ignoreCache) {
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+      print('LeadBloc: Retrieved cached leads: $cachedLeads');
       if (cachedLeads.isNotEmpty) {
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
       } else {
         emit(LeadError('Нет подключения к интернету и нет данных в кэше!'));
       }
-      return;
+    } else {
+      emit(LeadError('Нет подключения к интернету!'));
     }
+    return;
+  }
 
-    try {
+  try {
+    // Пропускаем загрузку кэша, если ignoreCache == true
+    if (!event.ignoreCache) {
       final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+      print('LeadBloc: Retrieved cached leads: $cachedLeads');
       if (cachedLeads.isNotEmpty) {
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
       }
-
-      final leads = await apiService.getLeads(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managers: event.managerIds,
-        regions: event.regionsIds,
-        sources: event.sourcesIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        hasSuccessDeals: event.hasSuccessDeals,
-        hasInProgressDeals: event.hasInProgressDeals,
-        hasFailureDeals: event.hasFailureDeals,
-        hasNotices: event.hasNotices,
-        hasContact: event.hasContact,
-        hasChat: event.hasChat,
-        hasNoReplies: event.hasNoReplies, // Новый параметр
-        hasUnreadMessages: event.hasUnreadMessages, // Новый параметр
-        hasDeal: event.hasDeal,
-        daysWithoutActivity: event.daysWithoutActivity,
-                directoryValues: event.directoryValues, // Передаем в API
-
-      );
-
-      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
-
-      final leadCounts = Map<int, int>.from(_leadCounts);
-      for (var lead in leads) {
-        leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
-      }
-
-      allLeadsFetched = leads.isEmpty;
-      emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
-    } catch (e) {
-      emit(LeadError('Не удалось загрузить данные!'));
     }
-  }
 
+    // Запрашиваем данные с сервера
+    print('LeadBloc: Fetching leads from server with statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
+    final leads = await apiService.getLeads(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+      managers: event.managerIds,
+      regions: event.regionsIds,
+      sources: event.sourcesIds,
+      statuses: event.statusIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      hasSuccessDeals: event.hasSuccessDeals,
+      hasInProgressDeals: event.hasInProgressDeals,
+      hasFailureDeals: event.hasFailureDeals,
+      hasNotices: event.hasNotices,
+      hasContact: event.hasContact,
+      hasChat: event.hasChat,
+      hasNoReplies: event.hasNoReplies,
+      hasUnreadMessages: event.hasUnreadMessages,
+      hasDeal: event.hasDeal,
+      daysWithoutActivity: event.daysWithoutActivity,
+      directoryValues: event.directoryValues,
+      salesFunnelId: event.salesFunnelId,
+    );
+
+    // Кэшируем новые данные
+    await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+    print('LeadBloc: Cached leads for statusId: ${event.statusId}');
+
+    final leadCounts = Map<int, int>.from(_leadCounts);
+    for (var lead in leads) {
+      leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
+    }
+
+    allLeadsFetched = leads.isEmpty;
+    print('LeadBloc: Emitted LeadDataLoaded with ${leads.length} leads');
+    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
+  } catch (e) {
+    print('LeadBloc: Error fetching leads: $e');
+    emit(LeadError('Не удалось загрузить данные!'));
+  }
+}
   Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 

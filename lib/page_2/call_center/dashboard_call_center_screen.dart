@@ -152,46 +152,81 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildStatisticsTab() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: SingleChildScrollView(
-      child: FutureBuilder<List<dynamic>>(
-        future: Future.wait([
-          _apiService.getCallStatistics(),
-          _apiService.getCallAnalytics(),
-        ]),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // Показываем анимацию загрузки, пока данные загружаются
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: FutureBuilder<List<dynamic>>(
+          future: Future.wait([
+            _apiService.getCallStatistics(),
+            _apiService.getCallAnalytics(),
+          ]),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              // Показываем анимацию загрузки, пока данные загружаются
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
                 ),
-              ),
-            );
-          } else if (snapshot.hasError) {
-            // Обработка ошибки
-            return Center(
-              child: Text(
-                'Ошибка загрузки данных: ${snapshot.error}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  color: Colors.red,
+              );
+            } else if (snapshot.hasError) {
+              // Обработка ошибки
+              return Center(
+                child: Text(
+                  'Ошибка загрузки данных: ${snapshot.error}',
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    color: Colors.red,
+                  ),
                 ),
-              ),
-            );
-          } else if (snapshot.hasData) {
-            // Данные загружены успешно
-            final callStatistics = snapshot.data![0] as CallStatistics;
-            final callAnalytics = snapshot.data![1] as CallAnalytics;
+              );
+            } else if (snapshot.hasData) {
+              // Данные загружены успешно
+              final callStatistics = snapshot.data![0] as CallStatistics;
+              final callAnalytics = snapshot.data![1] as CallAnalytics;
 
-            // Проверка на наличие данных
-            if (callStatistics.result.isEmpty && !callAnalytics.result.isNotEmpty) {
+              // Проверка на наличие данных
+              if (callStatistics.result.isEmpty &&
+                  !callAnalytics.result.isNotEmpty) {
+                return const Center(
+                  child: Text(
+                    'Нет данных для отображения',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                  ),
+                );
+              }
+
+              // Отображаем все графики одновременно
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (callAnalytics.result.isNotEmpty) ...[
+                    PieChartNotCalled(statistics: callAnalytics.result),
+                    Divider(thickness: 1, color: Colors.grey[300]),
+                    PieChartAllCalls(statistics: callAnalytics.result),
+                    Divider(thickness: 1, color: Colors.grey[300]),
+                    PieChartCalled(statistics: callAnalytics.result),
+                    Divider(
+                        thickness: 1,
+                        color: Colors
+                            .grey), // если хочешь разделить от следующего блока
+                  ],
+                  if (callStatistics.result.isNotEmpty)
+                    StatisticChart1(statistics: callStatistics),
+                ],
+              );
+            } else {
+              // На случай, если snapshot.data == null
               return const Center(
                 child: Text(
                   'Нет данных для отображения',
@@ -204,45 +239,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               );
             }
-
-            // Отображаем все графики одновременно
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (callStatistics.result.isNotEmpty)
-                  StatisticChart1(statistics: callStatistics),
-                if (callStatistics.result.isNotEmpty)
-                  const Divider(thickness: 1, color: Colors.grey),
-                if (callAnalytics.result.isNotEmpty) ...[
-                  PieChartNotCalled(statistics: callAnalytics.result),
-                  Divider(thickness: 1, color: Colors.grey[300]),
-                  PieChartAllCalls(statistics: callAnalytics.result),
-                  Divider(thickness: 1, color: Colors.grey[300]),
-                  PieChartCalled(statistics: callAnalytics.result),
-                ],
-              ],
-            );
-          } else {
-            // На случай, если snapshot.data == null
-            return const Center(
-              child: Text(
-                'Нет данных для отображения',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  color: Colors.black,
-                ),
-              ),
-            );
-          }
-        },
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildReportsTab() {
-    return CallReportList(searchQuery: _searchController.text, onResetSearch: () {  },);
+    return CallReportList(
+      searchQuery: _searchController.text,
+      onResetSearch: () {},
+    );
   }
 }

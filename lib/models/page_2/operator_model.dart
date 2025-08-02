@@ -13,7 +13,7 @@ class OperatorList {
     var resultList = json['result'] as List;
     List<Operator> operators = resultList.map((item) => Operator.fromJson(item)).toList();
 
-    return OperatorList(
+    return OperatorList(  
       result: operators,
       errors: json['errors'],
     );
@@ -41,7 +41,7 @@ class Operator {
   final int isFirstLogin;
   final int? departmentId;
   final String uniqueId;
-  final double operatorAvgRating;
+  final double? operatorAvgRating; // Изменено на double?
 
   Operator({
     required this.id,
@@ -57,7 +57,7 @@ class Operator {
     required this.isFirstLogin,
     this.departmentId,
     required this.uniqueId,
-    required this.operatorAvgRating,
+    this.operatorAvgRating, // Теперь опционально
   });
 
   factory Operator.fromJson(Map<String, dynamic> json) {
@@ -75,7 +75,9 @@ class Operator {
       isFirstLogin: json['is_first_login'],
       departmentId: json['department_id'],
       uniqueId: json['unique_id'],
-      operatorAvgRating: json['operator_avg_rating'].toDouble(),
+      operatorAvgRating: json['operator_avg_rating'] != null
+          ? json['operator_avg_rating'].toDouble()
+          : null, // Обработка null
     );
   }
 
