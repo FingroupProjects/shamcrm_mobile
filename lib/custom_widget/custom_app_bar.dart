@@ -745,39 +745,39 @@ void resetFilterIconState() {
                 ),
               ),
             ),
-            if (widget.showDashboardIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('dashboard'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/MyNavBar/dashboard_OFF.png',
-                  width: 24,
-                  height: 24,
+           if (widget.showDashboardIcon)
+        Transform.translate(
+          offset: const Offset(10, 0),
+          child: Tooltip(
+            message: AppLocalizations.of(context)!.translate('dashboard'),
+            preferBelow: false,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
                 ),
-                onPressed: widget.onDashboardPressed,
+              ],
+            ),
+            textStyle: TextStyle(
+              fontSize: 12,
+              color: Colors.black,
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/MyNavBar/dashboard_OFF.png',
+                width: 24,
+                height: 24,
               ),
+              onPressed: widget.onDashboardPressed,
             ),
           ),
+        ),
           if (widget.showNotification)
             Transform.translate(
               offset: const Offset(10, 0),

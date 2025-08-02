@@ -87,7 +87,7 @@ class _CallReportListState extends State<CallReportList> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: widget.onResetSearch, // Используем callback
+                      onPressed: widget.onResetSearch,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6C5CE7),
                         shape: RoundedRectangleBorder(
@@ -114,7 +114,9 @@ class _CallReportListState extends State<CallReportList> {
                 itemCount: filteredOperators.length,
                 itemBuilder: (context, index) {
                   final operator = filteredOperators[index];
-                  final int rating = operator.operatorAvgRating.round();
+                  final int rating = operator.operatorAvgRating != null
+                      ? operator.operatorAvgRating!.round()
+                      : 0; // Обработка null, рейтинг по умолчанию 0
                   return InkWell(
                     onTap: () {
                       Navigator.push(
@@ -210,6 +212,19 @@ class _CallReportListState extends State<CallReportList> {
                                 );
                               }),
                             ),
+                            if (rating == 0) // Добавляем текст, если рейтинг отсутствует
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  'Рейтинг отсутствует',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),

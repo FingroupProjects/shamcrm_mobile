@@ -16,42 +16,49 @@ class _PieChartAllCallsState extends State<PieChartAllCalls> {
   int touchedIndex = -1;
 
   List<PieChartSectionData> _getSections() {
-    final outgoing = widget.statistics.todaysTotalOutgoingCalls.toDouble();
-    final missed = widget.statistics.todaysTotalMissedCalls.toDouble();
+  final outgoing = widget.statistics.todaysTotalOutgoingCalls.toDouble();
+  final missed = widget.statistics.todaysTotalMissedCalls.toDouble();
+  final total = outgoing + missed;
 
-    return [
-      PieChartSectionData(
-        color: touchedIndex == 0
-            ? const Color.fromARGB(255, 0, 184, 6)
-            : const Color.fromARGB(200, 0, 184, 6),
-        value: outgoing,
-        radius: touchedIndex == 0 ? 25 : 20,
-        showTitle: touchedIndex == 0,
-        title: touchedIndex == 0 ? '$outgoing' : '',
-        titleStyle: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: touchedIndex == 1
-            ? const Color.fromARGB(255, 255, 0, 0)
-            : const Color.fromARGB(200, 255, 0, 0),
-        value: missed,
-        radius: touchedIndex == 1 ? 25 : 20,
-        showTitle: touchedIndex == 1,
-        title: touchedIndex == 1 ? '$missed' : '',
-        titleStyle: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-    ];
+  String formatPercentage(double value) {
+    if (total == 0) return '0%';
+    return '${(value / total * 100).toStringAsFixed(1)}%';
   }
+
+  return [
+    PieChartSectionData(
+      color: touchedIndex == 0
+          ? const Color.fromARGB(255, 0, 184, 6)
+          : const Color.fromARGB(200, 0, 184, 6),
+      value: outgoing,
+      radius: touchedIndex == 0 ? 25 : 20,
+      showTitle: touchedIndex == 0,
+      title: touchedIndex == 0 ? formatPercentage(outgoing) : '',
+      titleStyle: const TextStyle(
+        fontFamily: 'Gilroy',
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+    ),
+    PieChartSectionData(
+      color: touchedIndex == 1
+          ? const Color.fromARGB(255, 255, 0, 0)
+          : const Color.fromARGB(200, 255, 0, 0),
+      value: missed,
+      radius: touchedIndex == 1 ? 25 : 20,
+      showTitle: touchedIndex == 1,
+      title: touchedIndex == 1 ? formatPercentage(missed) : '',
+      titleStyle: const TextStyle(
+        fontFamily: 'Gilroy',
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+    ),
+  ];
+}
+
 
   @override
   Widget build(BuildContext context) {

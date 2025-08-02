@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
@@ -14,6 +16,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
@@ -110,79 +113,96 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<int>? _selectedManagerIds;
 
   @override
-  void initState() {
-    super.initState();
-    print('LeadScreen: initState started');
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    print('LeadScreen: initState - Dispatched GetAllManagerEv');
-    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
-    print('LeadScreen: initState - Dispatched GetAllRegionEv');
-    context.read<GetAllSourceBloc>().add(GetAllSourceEv());
-    print('LeadScreen: initState - Dispatched GetAllSourceEv');
-    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    print('LeadScreen: initState - Dispatched FetchSalesFunnels');
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
-    print('LeadScreen: initState - ScrollController initialized');
+void initState() {
+  super.initState();
+  print('LeadScreen: initState started');
+  context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  print('LeadScreen: initState - Dispatched GetAllManagerEv');
+  context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+  print('LeadScreen: initState - Dispatched GetAllRegionEv');
+  context.read<GetAllSourceBloc>().add(GetAllSourceEv());
+  print('LeadScreen: initState - Dispatched GetAllSourceEv');
+  context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+  print('LeadScreen: initState - Dispatched FetchSalesFunnels');
+  _scrollController = ScrollController();
+  _scrollController.addListener(_onScroll);
+  print('LeadScreen: initState - ScrollController initialized');
 
-    // Загружаем сохранённую воронку из SharedPreferences
-    _apiService.getSelectedSalesFunnel().then((funnelId) {
-      print('LeadScreen: initState - Retrieved selected funnel ID from SharedPreferences: $funnelId');
-      if (funnelId != null && mounted) {
-        context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
-          SalesFunnel(
-            id: int.parse(funnelId),
-            name: '',
-            organizationId: 1,
-            isActive: true,
-            createdAt: '',
-            updatedAt: '',
-          ),
-        ));
-        print('LeadScreen: initState - Dispatched SelectSalesFunnel with ID: $funnelId');
-      } else {
-        print('LeadScreen: initState - No selected funnel ID found in SharedPreferences');
-      }
-    });
+  // Загружаем сохранённую воронку из SharedPreferences
+  _apiService.getSelectedSalesFunnel().then((funnelId) {
+    print('LeadScreen: initState - Retrieved selected funnel ID from SharedPreferences: $funnelId');
+    if (funnelId != null && mounted) {
+      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
+        SalesFunnel(
+          id: int.parse(funnelId),
+          name: '',
+          organizationId: 1,
+          isActive: true,
+          createdAt: '',
+          updatedAt: '',
+        ),
+      ));
+      print('LeadScreen: initState - Dispatched SelectSalesFunnel with ID: $funnelId');
+    } else {
+      print('LeadScreen: initState - No selected funnel ID found in SharedPreferences');
+    }
+  });
 
-    LeadCache.getLeadStatuses().then((cachedStatuses) {
-      print('LeadScreen: initState - Retrieved cached lead statuses: $cachedStatuses');
-      if (cachedStatuses.isNotEmpty) {
-        setState(() {
-          _tabTitles = cachedStatuses
-              .map((status) => {'id': status['id'], 'title': status['title']})
-              .toList();
-          print('LeadScreen: initState - Set _tabTitles: $_tabTitles');
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
-          _tabController.index = _currentTabIndex;
-          print('LeadScreen: initState - Initialized TabController with length: ${_tabTitles.length}, index: $_currentTabIndex');
+  // Слушаем изменения состояния SalesFunnelBloc для загрузки статусов и лидов
+  context.read<SalesFunnelBloc>().stream.listen((state) {
+    if (state is SalesFunnelLoaded && mounted) {
+      print('LeadScreen: initState - SalesFunnelLoaded received, selectedFunnel: ${state.selectedFunnel}');
+      setState(() {
+        _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+      });
+      // Загружаем статусы лидов
+      context.read<LeadBloc>().add(FetchLeadStatuses());
+      // Загружаем лиды для первой вкладки после получения статусов
+      LeadCache.getLeadStatuses().then((cachedStatuses) {
+        print('LeadScreen: initState - Retrieved cached lead statuses: $cachedStatuses');
+        if (cachedStatuses.isNotEmpty && mounted) {
+          setState(() {
+            _tabTitles = cachedStatuses
+                .map((status) => {'id': status['id'], 'title': status['title']})
+                .toList();
+            print('LeadScreen: initState - Set _tabTitles: $_tabTitles');
+            _tabController = TabController(length: _tabTitles.length, vsync: this);
+            _tabController.index = _currentTabIndex;
+            print('LeadScreen: initState - Initialized TabController with length: ${_tabTitles.length}, index: $_currentTabIndex');
 
-          _tabController.addListener(() {
-            setState(() {
-              _currentTabIndex = _tabController.index;
-              print('LeadScreen: initState - TabController index changed to: $_currentTabIndex');
+            _tabController.addListener(() {
+              setState(() {
+                _currentTabIndex = _tabController.index;
+                print('LeadScreen: initState - TabController index changed to: $_currentTabIndex');
+              });
+              _scrollToActiveTab();
+              // Загружаем лиды для новой вкладки
+              final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+              context.read<LeadBloc>().add(FetchLeads(
+                currentStatusId,
+                salesFunnelId: _selectedFunnel?.id,
+                ignoreCache: true,
+              ));
             });
-            _scrollToActiveTab();
           });
-        });
-      } else {
-        print('LeadScreen: initState - No cached lead statuses, fetching from server');
-        final leadBloc = BlocProvider.of<LeadBloc>(context);
-        leadBloc.add(FetchLeadStatuses());
-        print('LeadScreen: initState - Dispatched FetchLeadStatuses');
-      }
-    });
+          // Загружаем лиды для начальной вкладки
+          final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
+          context.read<LeadBloc>().add(FetchLeads(
+            currentStatusId,
+            salesFunnelId: _selectedFunnel?.id,
+            ignoreCache: true,
+          ));
+        } else {
+          print('LeadScreen: initState - No cached lead statuses, fetching from server');
+          context.read<LeadBloc>().add(FetchLeadStatuses());
+        }
+      });
+    }
+  });
 
-    LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
-      print('LeadScreen: initState - Retrieved cached leads for status ${widget.initialStatusId}: $cachedLeads');
-      if (cachedLeads.isNotEmpty) {
-        print('LeadScreen: initState - Leads loaded from cache.');
-      }
-    });
-    _checkPermissions();
-    print('LeadScreen: initState - Called _checkPermissions');
-  }
-
+  _checkPermissions();
+  print('LeadScreen: initState - Called _checkPermissions');
+}
   void _onScroll() {
     if (_scrollController.position.pixels ==
         _scrollController.position.maxScrollExtent) {
@@ -471,24 +491,26 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   bool isClickAvatarIcon = false;
 
-  Widget _buildTitleWidget(BuildContext context) {
+Widget _buildTitleWidget(BuildContext context) {
   print('LeadScreen: Entering _buildTitleWidget');
   return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
     builder: (context, state) {
       print('LeadScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
       String title = AppLocalizations.of(context)!.translate('appbar_leads');
+      SalesFunnel? selectedFunnel;
       if (state is SalesFunnelLoading) {
         print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoading');
         title = AppLocalizations.of(context)!.translate('appbar_leads');
       } else if (state is SalesFunnelLoaded) {
         print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-        _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-        print('LeadScreen: _buildTitleWidget - Selected funnel set to: $_selectedFunnel');
-        title = _selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_leads');
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel; // Обновляем _selectedFunnel
+        print('LeadScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
+        title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_leads');
         print('LeadScreen: _buildTitleWidget - Title set to: $title');
       } else if (state is SalesFunnelError) {
         print('LeadScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-        title = AppLocalizations.of(context)!.translate('appbar_leads');
+        title = 'Ошибка загрузки';
       } else {
         print('LeadScreen: _buildTitleWidget - Unexpected state: $state');
       }
@@ -522,29 +544,51 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 offset: Offset(0, 40),
                 onSelected: (SalesFunnel funnel) async {
                   print('LeadScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                  // Сохраняем новую воронку в SharedPreferences
-                  await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
-                  print('LeadScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                  // Очищаем кэш лидов
-                  await LeadCache.clearAllLeads();
-                  print('LeadScreen: _buildTitleWidget - Cleared lead cache');
-                  // Сбрасываем фильтры и поиск
-                  _resetFilters();
-                  print('LeadScreen: _buildTitleWidget - Reset filters');
-                  setState(() {
-                    _selectedFunnel = funnel;
-                    _isSearching = false;
-                    _searchController.clear();
-                    _lastSearchQuery = '';
-                    print('LeadScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                  });
-                  context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  print('LeadScreen: _buildTitleWidget - Fetching leads for status $currentStatusId with new funnel ${funnel.id}');
-                  context.read<LeadBloc>().add(FetchLeads(
-                    currentStatusId,
-                    salesFunnelId: funnel.id,
-                  ));
+                  try {
+                    // Сохраняем новую воронку в SharedPreferences
+                    await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
+                    print('LeadScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
+                    // Очищаем кэш лидов и статусов
+                    await LeadCache.clearAllLeads();
+                    await LeadCache.clearCache();
+                    print('LeadScreen: _buildTitleWidget - Cleared lead cache and statuses');
+                    // Сбрасываем фильтры и поиск
+                    _resetFilters();
+                    print('LeadScreen: _buildTitleWidget - Reset filters');
+                    setState(() {
+                      _selectedFunnel = funnel;
+                      _isSearching = false;
+                      _searchController.clear();
+                      _lastSearchQuery = '';
+                      print('LeadScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
+                    });
+                    // Обновляем воронку в SalesFunnelBloc
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                    // Ждём завершения обработки SelectSalesFunnel
+                    await Future.delayed(Duration(milliseconds: 100));
+                    // Очищаем текущие статусы и загружаем новые
+                    setState(() {
+                      _tabTitles.clear();
+                      _tabController = TabController(length: 0, vsync: this);
+                    });
+                    context.read<LeadBloc>().add(FetchLeadStatuses());
+                  } catch (e) {
+                    print('LeadScreen: Error switching funnel: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Ошибка при смене воронки',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
                 itemBuilder: (BuildContext context) {
                   print('LeadScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
@@ -1106,147 +1150,157 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTabBarView() {
-    return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) async {
-        if (state is LeadLoaded) {
-          await LeadCache.cacheLeadStatuses(state.leadStatuses
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) async {
+      if (state is LeadLoaded) {
+        await LeadCache.cacheLeadStatuses(state.leadStatuses
+            .map((status) => {'id': status.id, 'title': status.title})
+            .toList());
+        setState(() {
+          _tabTitles = state.leadStatuses
+              .where((status) => _canReadLeadStatus)
               .map((status) => {'id': status.id, 'title': status.title})
-              .toList());
-          setState(() {
-            _tabTitles = state.leadStatuses
-                .where((status) => _canReadLeadStatus)
-                .map((status) => {'id': status.id, 'title': status.title})
-                .toList();
+              .toList();
+          _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-
-            if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                setState(() {
-                  _currentTabIndex = _tabController.index;
-                });
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                if (_scrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
+          if (_tabTitles.isNotEmpty) {
+            _tabController =
+                TabController(length: _tabTitles.length, vsync: this);
+            _tabController.addListener(() {
+              setState(() {
+                _currentTabIndex = _tabController.index;
               });
-              int initialIndex = state.leadStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-              } else {
-                _tabController.index = _currentTabIndex;
-              }
-
+              final currentStatusId = _tabTitles[_currentTabIndex]['id'];
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
+              // Загружаем лиды для новой вкладки
+              context.read<LeadBloc>().add(FetchLeads(
+                currentStatusId,
+                salesFunnelId: _selectedFunnel?.id,
+                ignoreCache: true,
+              ));
+            });
+            int initialIndex = state.leadStatuses
+                .indexWhere((status) => status.id == widget.initialStatusId);
+            if (initialIndex != -1) {
+              _tabController.index = initialIndex;
+              _currentTabIndex = initialIndex;
+            } else {
+              _tabController.index = _currentTabIndex;
+            }
 
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                if (_tabController != null) {
+            if (_scrollController.hasClients) {
+              _scrollToActiveTab();
+            }
+
+            if (navigateToEnd) {
+              navigateToEnd = false;
+              _tabController.animateTo(_tabTitles.length - 1);
+            }
+
+            if (navigateAfterDelete) {
+              navigateAfterDelete = false;
+              if (_deletedIndex != null) {
+                if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                  _tabController.animateTo(1);
+                } else if (_deletedIndex == _tabTitles.length) {
                   _tabController.animateTo(_tabTitles.length - 1);
-                }
-              }
-
-              if (navigateAfterDelete) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                  }
+                } else {
+                  _tabController.animateTo(_deletedIndex! - 1);
                 }
               }
             }
-          });
-        } else if (state is LeadError) {
-          if (state.message.contains(
-              AppLocalizations.of(context)!.translate('unauthorized_access'))) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
-          } else if (state.message.contains(AppLocalizations.of(context)!
-              .translate('no_internet_connection'))) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+
+            // Загружаем лиды для текущей вкладки
+            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+            context.read<LeadBloc>().add(FetchLeads(
+              currentStatusId,
+              salesFunnelId: _selectedFunnel?.id,
+              ignoreCache: true,
+            ));
           }
+        });
+      } else if (state is LeadError) {
+        if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'))) {
+          ApiService apiService = ApiService();
+          await apiService.logout();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+          );
+        } else if (state.message.contains(AppLocalizations.of(context)!
+            .translate('no_internet_connection'))) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate(state.message),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
+      }
+    },
+    child: BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        if (state is LeadDataLoaded) {
+          final List<Lead> leads = state.leads;
+          return searchWidget(leads);
+        }
+        if (state is LeadLoading) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        } else if (state is LeadLoaded) {
+          if (_tabTitles.isEmpty) {
+            return const Center(child: Text(''));
+          }
+          return TabBarView(
+            controller: _tabController,
+            children: List.generate(_tabTitles.length, (index) {
+              final statusId = _tabTitles[index]['id'];
+              final title = _tabTitles[index]['title'];
+              return LeadColumn(
+                isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+                statusId: statusId,
+                title: title,
+                onStatusId: (newStatusId) {
+                  print('LeadScreen: onStatusId called with id: $newStatusId');
+                  final index = _tabTitles
+                      .indexWhere((status) => status['id'] == newStatusId);
+                  if (index != -1) {
+                    _tabController.animateTo(index);
+                  }
+                },
+              );
+            }),
+          );
+        }
+        return const SizedBox();
       },
-      child: BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          if (state is LeadDataLoaded) {
-            final List<Lead> leads = state.leads;
-            return searchWidget(leads);
-          }
-          if (state is LeadLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state is LeadLoaded) {
-            if (_tabTitles.isEmpty) {
-              return const Center(child: Text(''));
-            }
-            return TabBarView(
-              controller: _tabController,
-              children: List.generate(_tabTitles.length, (index) {
-                final statusId = _tabTitles[index]['id'];
-                final title = _tabTitles[index]['title'];
-                return LeadColumn(
-                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-                  statusId: statusId,
-                  title: title,
-                  onStatusId: (newStatusId) {
-                    // print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
-
-                    if (index != -1) {
-                      _tabController.animateTo(index);
-                    }
-                  },
-                );
-              }),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    );
-  }
+    ),
+  );
+}
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;

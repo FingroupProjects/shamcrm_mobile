@@ -336,16 +336,16 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                               ),
                             ),
                           ),
-                    if (widget.isLeadChat)
-                      Positioned(
-                        right: 35,
-                        child: IconButton(
-                          icon: Image.asset('assets/icons/chats/menu-button.png', width: 24, height: 24),
-                          onPressed: () {
-                            _showTemplatesPanel(context);
-                          },
-                        ),
-                      ),
+                    // if (widget.isLeadChat)
+                    //   Positioned(
+                    //     right: 35,
+                    //     child: IconButton(
+                    //       icon: Image.asset('assets/icons/chats/menu-button.png', width: 24, height: 24),
+                    //       onPressed: () {
+                    //         _showTemplatesPanel(context);
+                    //       },
+                    //     ),
+                    //   ),
                     Positioned(
                       right: widget.isLeadChat ? 0 : 0,
                       child: IconButton(

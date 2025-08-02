@@ -726,138 +726,141 @@ class ApiService {
 
   // Метод для получения списка Лидов с пагинацией
 
-  Future<List<Lead>> getLeads(
-    int? leadStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? managers,
-    List<int>? regions,
-    List<int>? sources,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    bool? hasSuccessDeals,
-    bool? hasInProgressDeals,
-    bool? hasFailureDeals,
-    bool? hasNotices,
-    bool? hasContact,
-    bool? hasChat,
-    bool? hasDeal,
-    int? daysWithoutActivity,
-    bool? hasNoReplies,
-    bool? hasUnreadMessages,
-    List<Map<String, dynamic>>? directoryValues, // Новый параметр
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/lead?page=$page&per_page=$perPage';
-    path += '&organization_id=$organizationId';
+Future<List<Lead>> getLeads(
+  int? leadStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? managers,
+  List<int>? regions,
+  List<int>? sources,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? hasSuccessDeals,
+  bool? hasInProgressDeals,
+  bool? hasFailureDeals,
+  bool? hasNotices,
+  bool? hasContact,
+  bool? hasChat,
+  bool? hasDeal,
+  int? daysWithoutActivity,
+  bool? hasNoReplies,
+  bool? hasUnreadMessages,
+  List<Map<String, dynamic>>? directoryValues,
+  int? salesFunnelId, // Новый параметр
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/lead?page=$page&per_page=$perPage';
+  path += '&organization_id=$organizationId';
 
-    bool hasFilters = (search != null && search.isNotEmpty) ||
-        (managers != null && managers.isNotEmpty) ||
-        (regions != null && regions.isNotEmpty) ||
-        (sources != null && sources.isNotEmpty) ||
-        (fromDate != null) ||
-        (toDate != null) ||
-        (hasSuccessDeals == true) ||
-        (hasInProgressDeals == true) ||
-        (hasFailureDeals == true) ||
-        (hasNotices == true) ||
-        (hasContact == true) ||
-        (hasChat == true) ||
-        (hasDeal == true) ||
-        (hasNoReplies == true) ||
-        (hasUnreadMessages == true) ||
-        (daysWithoutActivity != null) ||
-        (statuses != null) ||
-        (directoryValues != null &&
-            directoryValues.isNotEmpty); // Добавляем проверку
+  if (salesFunnelId != null) {
+    path += '&sales_funnel_id=$salesFunnelId';
+  }
 
-    if (leadStatusId != null && !hasFilters) {
-      path += '&lead_status_id=$leadStatusId';
-    }
+  bool hasFilters = (search != null && search.isNotEmpty) ||
+      (managers != null && managers.isNotEmpty) ||
+      (regions != null && regions.isNotEmpty) ||
+      (sources != null && sources.isNotEmpty) ||
+      (fromDate != null) ||
+      (toDate != null) ||
+      (hasSuccessDeals == true) ||
+      (hasInProgressDeals == true) ||
+      (hasFailureDeals == true) ||
+      (hasNotices == true) ||
+      (hasContact == true) ||
+      (hasChat == true) ||
+      (hasDeal == true) ||
+      (hasNoReplies == true) ||
+      (hasUnreadMessages == true) ||
+      (daysWithoutActivity != null) ||
+      (statuses != null) ||
+      (directoryValues != null && directoryValues.isNotEmpty);
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (leadStatusId != null && !hasFilters) {
+    path += '&lead_status_id=$leadStatusId';
+  }
 
-    if (managers != null && managers.isNotEmpty) {
-      for (int i = 0; i < managers.length; i++) {
-        path += '&managers[$i]=${managers[i]}';
-      }
-    }
-    if (regions != null && regions.isNotEmpty) {
-      for (int i = 0; i < regions.length; i++) {
-        path +=
-            '&regions[$i]=${regions[i]}'; // Исправляем опечатку: было "®ions"
-      }
-    }
-    if (sources != null && sources.isNotEmpty) {
-      for (int i = 0; i < sources.length; i++) {
-        path += '&sources[$i]=${sources[i]}';
-      }
-    }
-    if (hasNoReplies == true) {
-      path += '&hasNoReplies=1';
-    }
-    if (hasUnreadMessages == true) {
-      path += '&hasUnreadMessages=1';
-    }
-    if (statuses != null) {
-      path += '&lead_status_id=$statuses';
-    }
-    if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-      path += '&from=$formattedFromDate&to=$formattedToDate';
-    }
-    if (hasSuccessDeals == true) {
-      path += '&hasSuccessDeals=1';
-    }
-    if (hasInProgressDeals == true) {
-      path += '&hasInProgressDeals=1';
-    }
-    if (hasFailureDeals == true) {
-      path += '&hasFailureDeals=1';
-    }
-    if (hasNotices == true) {
-      path += '&hasNotices=1';
-    }
-    if (hasContact == true) {
-      path += '&hasContact=1';
-    }
-    if (hasChat == true) {
-      path += '&hasChat=1';
-    }
-    if (hasDeal == true) {
-      path += '&withoutDeal=1';
-    }
-    if (daysWithoutActivity != null) {
-      path += '&lastUpdate=$daysWithoutActivity';
-    }
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        final directoryId = directoryValues[i]['directory_id'];
-        final entryId = directoryValues[i]['entry_id'];
-        path += '&directory_values[$i][directory_id]=$directoryId';
-        path += '&directory_values[$i][entry_id]=$entryId';
-      }
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
 
-    final response = await _getRequest(path);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Данные лидов отсутствуют в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки лидов!');
+  if (managers != null && managers.isNotEmpty) {
+    for (int i = 0; i < managers.length; i++) {
+      path += '&managers[$i]=${managers[i]}';
     }
   }
+  if (regions != null && regions.isNotEmpty) {
+    for (int i = 0; i < regions.length; i++) {
+      path += '&regions[$i]=${regions[i]}';
+    }
+  }
+  if (sources != null && sources.isNotEmpty) {
+    for (int i = 0; i < sources.length; i++) {
+      path += '&sources[$i]=${sources[i]}';
+    }
+  }
+  if (hasNoReplies == true) {
+    path += '&hasNoReplies=1';
+  }
+  if (hasUnreadMessages == true) {
+    path += '&hasUnreadMessages=1';
+  }
+  if (statuses != null) {
+    path += '&lead_status_id=$statuses';
+  }
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+    path += '&from=$formattedFromDate&to=$formattedToDate';
+  }
+  if (hasSuccessDeals == true) {
+    path += '&hasSuccessDeals=1';
+  }
+  if (hasInProgressDeals == true) {
+    path += '&hasInProgressDeals=1';
+  }
+  if (hasFailureDeals == true) {
+    path += '&hasFailureDeals=1';
+  }
+  if (hasNotices == true) {
+    path += '&hasNotices=1';
+  }
+  if (hasContact == true) {
+    path += '&hasContact=1';
+  }
+  if (hasChat == true) {
+    path += '&hasChat=1';
+  }
+  if (hasDeal == true) {
+    path += '&withoutDeal=1';
+  }
+  if (daysWithoutActivity != null) {
+    path += '&lastUpdate=$daysWithoutActivity';
+  }
+  if (directoryValues != null && directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      final directoryId = directoryValues[i]['directory_id'];
+      final entryId = directoryValues[i]['entry_id'];
+      path += '&directory_values[$i][directory_id]=$directoryId';
+      path += '&directory_values[$i][entry_id]=$entryId';
+    }
+  }
+
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Данные лидов отсутствуют в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки лидов!');
+  }
+}
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
@@ -8780,7 +8783,7 @@ Future<Map<String, dynamic>> getMissedCalls({
     final organizationId = await getSelectedOrganization();
 
     String path =
-        '/calls/statistic/monthly-stats?operator=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
+        '/calls/statistic/monthly-stats?operator_id=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
 
     try {
       final response = await _getRequest(path);
@@ -8802,31 +8805,31 @@ Future<Map<String, dynamic>> getMissedCalls({
     }
   }
 
-  Future<CallSummaryStats> getCallSummaryStats() async {
-    final organizationId = await getSelectedOrganization();
+ Future<CallSummaryStats> getCallSummaryStats(int operatorId) async {
+  final organizationId = await getSelectedOrganization();
 
-    String path =
-        '/calls/statistic/summary${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  // Формируем URL с operator_id и organization_id (если есть)
+  String path = '/calls/statistic/summary?operator_id=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
 
-    try {
-      final response = await _getRequest(path);
+  try {
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['result'] != null) {
-          return CallSummaryStats.fromJson(jsonData);
-        } else {
-          throw ('Нет данных сводной статистики звонков в ответе');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера: 500');
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null) {
+        return CallSummaryStats.fromJson(jsonData);
       } else {
-        throw ('Ошибка загрузки данных сводной статистики звонков');
+        throw ('Нет данных сводной статистики звонков в ответе');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных сводной статистики звонков');
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных сводной статистики звонков: ${response.statusCode}');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных сводной статистики звонков: $e');
   }
+}
 
   Future<void> setCallRating({
     required int callId,

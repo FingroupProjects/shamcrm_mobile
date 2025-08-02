@@ -5,7 +5,7 @@ class CallStatistics {
   CallStatistics({required this.result, this.errors});
 
   factory CallStatistics.fromJson(Map<String, dynamic> json) {
-    var resultList = json['result'] as List<dynamic>;
+    var resultList = json['result'] as List;
     return CallStatistics(
       result: resultList.map((item) => CallStatMonth.fromJson(item)).toList(),
       errors: json['errors'],
@@ -21,6 +21,7 @@ class CallStatMonth {
   final int unanswered;
   final double averageAnswerTime;
   final int notCalledBackCount;
+  final int incoming; // Новое поле
 
   CallStatMonth({
     required this.month,
@@ -30,17 +31,19 @@ class CallStatMonth {
     required this.unanswered,
     required this.averageAnswerTime,
     required this.notCalledBackCount,
+    required this.incoming,
   });
 
   factory CallStatMonth.fromJson(Map<String, dynamic> json) {
     return CallStatMonth(
       month: json['month'] as int,
       total: json['total'] as int,
-      outgoing: int.parse(json['outgoing'].toString()), // Преобразуем строку в int
-      missed: int.parse(json['missed'].toString()), // Преобразуем строку в int
-      unanswered: int.parse(json['unanswered'].toString()), // Преобразуем строку в int
+      outgoing: int.parse(json['outgoing'].toString()),
+      missed: int.parse(json['missed'].toString()),
+      unanswered: int.parse(json['unanswered'].toString()),
       averageAnswerTime: (json['average_answer_time'] as num).toDouble(),
       notCalledBackCount: json['not_called_back_count'] as int,
+      incoming: (json['total'] as int) - int.parse(json['outgoing'].toString()),
     );
   }
 }
