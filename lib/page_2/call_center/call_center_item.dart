@@ -191,19 +191,35 @@ class CallLogItem extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} мин назад';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} ч назад';
-    } else if (difference.inDays == 1) {
-      return 'Вчера';
-    } else {
-      return '${date.day}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-    }
+  // Проверяем, что дата не null
+  if (date == null) {
+    return 'Дата неизвестна';
   }
+
+  // Преобразуем UTC в локальное время устройства
+  final timeZoneOffset = DateTime.now().timeZoneOffset;
+  final localDate = date.add(timeZoneOffset);
+
+  // Логика отображения относительно текущего времени
+  final now = DateTime.now();
+  final difference = now.difference(localDate);
+
+  if (difference.inMinutes < 60) {
+    return '${difference.inMinutes} мин назад';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours} ч назад';
+  } else if (difference.inDays == 1) {
+    return 'Вчера';
+  } else {
+    // Формат даты и времени с учётом локального часового пояса
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
+    final year = localDate.year;
+    final hour = localDate.hour.toString().padLeft(2, '0');
+    final minute = localDate.minute.toString().padLeft(2, '0');
+    return '$day.$month.$year $hour:$minute';
+  }
+}
 
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;

@@ -1,3 +1,4 @@
+
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
@@ -32,6 +33,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskCopyScreen extends StatefulWidget {
   final TaskById task;
@@ -59,16 +61,48 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-  bool _showAdditionalFields = true; // Показываем дополнительные поля сразу
+  bool _showAdditionalFields = true;
+  bool _canCreateTask = false;
+  bool _hasTaskCreateForMySelfPermission = false;
+  int? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     _initializeFields();
     _fetchAndAddCustomFields();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('userID');
+      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+
+      final results = await Future.wait([
+        ApiService().hasPermission('task.create'),
+        ApiService().hasPermission('task.createForMySelf'),
+      ]);
+
+      setState(() {
+        _canCreateTask = results[0] as bool;
+        _hasTaskCreateForMySelfPermission = results[1] as bool;
+        _currentUserId = userId;
+      });
+
+      print('TaskCopyScreen: Permissions - task.create: $_canCreateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+    } catch (e) {
+      print('TaskCopyScreen: Error checking permissions or userID: $e');
+      setState(() {
+        _canCreateTask = false;
+        _hasTaskCreateForMySelfPermission = false;
+        _currentUserId = null;
+      });
+    }
   }
 
   void _initializeFields() {
@@ -84,9 +118,13 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           : '';
       selectedPriority = task.priority ?? 1;
       selectedProject = task.project?.id.toString();
-      selectedUsers = task.user?.map((user) => user.id.toString()).toList();
       
-      // Инициализация кастомных полей
+      if (!_canCreateTask && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
+        selectedUsers = [_currentUserId.toString()];
+      } else {
+        selectedUsers = task.user?.map((user) => user.id.toString()).toList();
+      }
+      
       if (task.taskCustomFields.isNotEmpty) {
         customFields.addAll(task.taskCustomFields.map((field) => CustomField(
               fieldName: field.key,
@@ -96,7 +134,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
             )));
       }
 
-      // Инициализация значений справочников
       if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
         customFields.addAll(task.directoryValues!.map((dirValue) => CustomField(
               fieldName: dirValue.entry.directory.name,
@@ -108,12 +145,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
             )));
       }
 
-      // Инициализация файлов
       if (task.files != null && task.files!.isNotEmpty) {
         fileNames = task.files!.map((file) => file.name).toList();
         fileSizes = task.files!.map((file) => file.path ?? '').toList();
-        // Поскольку файлы хранятся на сервере, selectedFiles оставляем пустым
-        // Локальные пути файлов недоступны, они будут загружаться заново при необходимости
       }
     });
   }
@@ -497,7 +531,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                   backgroundColor: Colors.green,
                 ),
               );
-              Navigator.pop(context, true); // Возвращаем true для обновления
+              Navigator.pop(context, true);
             }
           },
           child: Form(
@@ -542,14 +576,15 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             keyboardType: TextInputType.multiline,
                           ),
                           const SizedBox(height: 8),
-                          UserMultiSelectWidget(
-                            selectedUsers: selectedUsers,
-                            onSelectUsers: (List<UserData> selectedUsersData) {
-                              setState(() {
-                                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                              });
-                            },
-                          ),
+                          if (_canCreateTask)
+                            UserMultiSelectWidget(
+                              selectedUsers: selectedUsers,
+                              onSelectUsers: (List<UserData> selectedUsersData) {
+                                setState(() {
+                                  selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                                });
+                              },
+                            ),
                           const SizedBox(height: 8),
                           ProjectTaskGroupWidget(
                             selectedProject: selectedProject,

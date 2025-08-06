@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -38,39 +39,36 @@ class TaskDetailsScreen extends StatefulWidget {
   final int? statusId;
   final String? project;
   final int? projectId;
-  // final String? user;
   final List<int>? userId;
-  // final String? projectName;
   final String? description;
   final String? startDate;
   final String? endDate;
   final String? sum;
   final int? priority;
   final List<TaskCustomField> taskCustomFields;
-  final String? taskFile; // Добавлено поле для файла
-  final List<TaskFiles>? files; // вместо String? taskFile
+  final String? taskFile;
+  final List<TaskFiles>? files;
   final DateTime? initialDate;
 
-  TaskDetailsScreen(
-      {required this.taskId,
-      this.taskNumber,
-      required this.taskName,
-      required this.taskStatus,
-      this.statusId,
-      this.project,
-      this.projectId,
-      // this.user,
-      this.userId,
-      this.description,
-      this.startDate,
-      this.endDate,
-      this.sum,
-      this.files,
-      // this.projectName,
-      this.priority,
-      required this.taskCustomFields,
-      this.taskFile, // Инициализация опционального параметра
-      this.initialDate});
+  TaskDetailsScreen({
+    required this.taskId,
+    this.taskNumber,
+    required this.taskName,
+    required this.taskStatus,
+    this.statusId,
+    this.project,
+    this.projectId,
+    this.userId,
+    this.description,
+    this.startDate,
+    this.endDate,
+    this.sum,
+    this.files,
+    this.priority,
+    required this.taskCustomFields,
+    this.taskFile,
+    this.initialDate,
+  });
 
   @override
   _TaskDetailsScreenState createState() => _TaskDetailsScreenState();
@@ -143,7 +141,6 @@ class FileCacheManager {
     await _saveCacheInfo();
   }
 
-  // Метод для получения размера кэша
   Future<int> getCacheSize() async {
     await init();
     int totalSize = 0;
@@ -163,6 +160,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   bool _canEditTask = false;
   bool _canDeleteTask = false;
   bool _canCreateTask = false;
+  bool _hasTaskCreateForMySelfPermission = false;
+  int? _currentUserId;
+  bool _isAuthor = false;
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   bool _isDownloading = false;
@@ -176,23 +176,54 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress =
-      false; // Добавлено для защиты от повторного вызова
-  Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
+  bool _isTutorialInProgress = false;
+  Map<String, dynamic>? tutorialProgress;
 
   @override
   void initState() {
     super.initState();
-    // print('================================================================');
-    // print(widget.statusId);
-    // print('================================================================');
-
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
     context
         .read<TaskByIdBloc>()
         .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
-    _fetchTutorialProgress(); // Загружаем данные туториала и инициализируем targets
+    _fetchTutorialProgress();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('userID');
+      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+
+      final results = await Future.wait([
+        _apiService.hasPermission('task.update'),
+        _apiService.hasPermission('task.delete'),
+        _apiService.hasPermission('task.create'),
+        _apiService.hasPermission('task.createForMySelf'),
+      ]);
+
+      setState(() {
+        _canEditTask = results[0] as bool;
+        _canDeleteTask = results[1] as bool;
+        _canCreateTask = results[2] as bool;
+        _hasTaskCreateForMySelfPermission = results[3] as bool;
+        _currentUserId = userId;
+        _isAuthor = userId != null && currentTask != null && currentTask!.author?.id != null && userId == currentTask!.author!.id;
+      });
+
+      print('TaskDetailsScreen: Permissions - task.update: $_canEditTask, task.delete: $_canDeleteTask, task.create: $_canCreateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId, isAuthor: $_isAuthor');
+    } catch (e) {
+      print('TaskDetailsScreen: Error checking permissions or userID: $e');
+      setState(() {
+        _canEditTask = false;
+        _canDeleteTask = false;
+        _canCreateTask = false;
+        _hasTaskCreateForMySelfPermission = false;
+        _currentUserId = null;
+        _isAuthor = false;
+      });
+    }
   }
 
   void _initTutorialTargets() {
@@ -200,22 +231,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       createTarget(
         identify: "TaskEdit",
         keyTarget: keyTaskEdit,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_edit_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_edit_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
       ),
-      if (_canDeleteTask)
+      if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
         createTarget(
           identify: "TaskDelete",
           keyTarget: keyTaskDelete,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_task_details_delete_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_task_details_delete_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
           align: ContentAlign.bottom,
           context: context,
           contentPosition: ContentPosition.above,
@@ -223,30 +250,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       createTarget(
         identify: "TaskNavigateChat",
         keyTarget: keyTaskNavigateChat,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_chat_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_chat_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
         align: ContentAlign.bottom,
         context: context,
       ),
       createTarget(
         identify: "TaskForReview",
         keyTarget: keyTaskForReview,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_review_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_task_details_review_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
         align: ContentAlign.bottom,
         context: context,
       ),
       createTarget(
           identify: "TaskHistory",
           keyTarget: keyTaskHistory,
-          title: AppLocalizations.of(context)!
-              .translate('tutorial_task_details_history_title'),
-          description: AppLocalizations.of(context)!
-              .translate('tutorial_task_details_history_description'),
+          title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
+          description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
           align: ContentAlign.top,
           context: context,
           contentPosition: ContentPosition.above,
@@ -256,7 +277,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      // print('Tutorial already in progress, skipping');
       return;
     }
 
@@ -267,7 +287,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         tutorialProgress!['tasks']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      // print('Tutorial conditions not met');
       return;
     }
 
@@ -294,9 +313,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
         prefs.setBool('isTutorialShownTasksDet', true);
-        _apiService.markPageCompleted("tasks", "view").catchError((e) {
-          // print('Error marking page completed on skip: $e');
-        });
+        _apiService.markPageCompleted("tasks", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
@@ -305,16 +322,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       onFinish: () {
         prefs.setBool('isTutorialShownTasksDet', true);
-        _apiService.markPageCompleted("tasks", "view").catchError((e) {
-          // print('Error marking page completed on finish: $e');
-        });
+        _apiService.markPageCompleted("tasks", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
         });
       },
     ).show(context: context);
-    // print('Showing tutorial for TaskDetails');
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -324,65 +338,47 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       setState(() {
         tutorialProgress = progress['result'];
       });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
 
       bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
 
-      // Инициализируем targets перед проверкой условий
       _initTutorialTargets();
 
-      // Проверяем условия и запускаем туториал
       if (tutorialProgress != null &&
           tutorialProgress!['tasks']?['view'] == false &&
           !isTutorialShown &&
           !_isTutorialInProgress &&
-          targets.isNotEmpty && // Добавляем проверку на непустой список
+          targets.isNotEmpty &&
           mounted) {
         showTutorial();
       }
     } catch (e) {
-      // print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
-        bool isTutorialShown =
-            prefs.getBool('isTutorialShownTasksDet') ?? false;
+        bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
 
-        // Инициализируем targets перед проверкой условий
         _initTutorialTargets();
 
         if (tutorialProgress != null &&
             tutorialProgress!['tasks']?['view'] == false &&
             !isTutorialShown &&
             !_isTutorialInProgress &&
-            targets.isNotEmpty && // Добавляем проверку на непустой список
+            targets.isNotEmpty &&
             mounted) {
           showTutorial();
         }
       }
     }
-  }
-
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canEdit = await _apiService.hasPermission('task.update');
-    final canDelete = await _apiService.hasPermission('task.delete');
-    final canCreate = await _apiService.hasPermission('task.create');
-    setState(() {
-      _canEditTask = canEdit;
-      _canDeleteTask = canDelete;
-      _canCreateTask = canCreate;
-    });
   }
 
   void _updateDetails(TaskById? task) {
@@ -392,23 +388,25 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
+    setState(() {
+      currentTask = task;
+      _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
+    });
+
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
       2: AppLocalizations.of(context)!.translate('normal'),
       3: AppLocalizations.of(context)!.translate('urgent'),
     };
 
-    currentTask = task;
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('task_name'),
         'value': task.name ?? ''
       },
       {
-        'label':
-            AppLocalizations.of(context)!.translate('priority_level_colon'),
-        'value': priorityLevels[task.priority] ??
-            AppLocalizations.of(context)!.translate('normal'),
+        'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+        'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('description_details'),
@@ -417,9 +415,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
-            ? task.user!
-                .map((user) => '${user.name} ${user.lastname ?? ''}')
-                .join(', ')
+            ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
             : '',
       },
       {
@@ -434,15 +430,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': task.taskStatus?.taskStatus?.name ?? '', // Safe access
+        'value': task.taskStatus?.taskStatus?.name ?? '',
       },
       {
         'label': AppLocalizations.of(context)!.translate('author_details'),
         'value': task.author?.name ?? ''
       },
       {
-        'label':
-            AppLocalizations.of(context)!.translate('creation_date_details'),
+        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt)
       },
       if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
@@ -453,231 +448,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       if (task.files != null && task.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value': task.files!.length.toString() +
-              ' ' +
-              AppLocalizations.of(context)!.translate('files'),
+          'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
         },
     ];
 
-    // Добавление taskCustomFields
     for (var field in task.taskCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
 
-    // Добавление directory_values
     if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
       for (var dirValue in task.directoryValues!) {
         details.add({
-          'label': '${dirValue.entry.directory.name}:', // Название справочника
-          'value': dirValue.entry.values['value'] ?? '', // Значение
+          'label': '${dirValue.entry.directory.name}:',
+          'value': dirValue.entry.values['value'] ?? '',
         });
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<TaskByIdBloc, TaskByIdState>(
-      listener: (context, state) {
-        if (state is TaskByIdLoaded) {
-        } else if (state is TaskByIdError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-        builder: (context, state) {
-          if (state is TaskByIdLoading) {
-            return Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-              ),
-            );
-          } else if (state is TaskByIdLoaded) {
-            if (state.task == null) {
-              return Scaffold(
-                body: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('task_data_unavailable'),
-                  ),
-                ),
-              );
-            }
-            TaskById task = state.task!;
-            _updateDetails(task);
-
-            return Scaffold(
-              appBar: _buildAppBar(context,
-                  '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
-              backgroundColor: Colors.white,
-              body: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(),
-                   Row(
-                      children: [
-                        Expanded(
-                          key: keyTaskNavigateChat,
-                          flex: task.isFinished == 1 ? 100 : 55,
-                          child: TaskNavigateToChat(
-                            chatId: task.chat!.id,
-                            taskName: widget.taskName,
-                            canSendMessage: task.chat!.canSendMessage,
-                          ),
-                        ),
-                        if (task.isFinished == 0) ...[
-                          SizedBox(width: 8, height: 60),
-                          Expanded(
-                            key: keyTaskForReview,
-                            flex: 45,
-                            child: ElevatedButton(
-                              onPressed: () => showDialog(
-                                context: context,
-                                builder: (dialogContext) => AlertDialog(
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                  title: Text(
-                                    AppLocalizations.of(context)!.translate('confirm_task_completion'),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
-                                  ),
-                                  content: Container(
-                                    width: double.maxFinite,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: TextButton(
-                                            onPressed: () => Navigator.pop(dialogContext),
-                                            style: TextButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              minimumSize: Size(80, 48),
-                                              padding: EdgeInsets.symmetric(horizontal: 16),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                            ),
-                                            child: Text(
-                                              AppLocalizations.of(context)!.translate('cancel'),
-                                              style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 16),
-                                        Expanded(
-                                          child: StatefulBuilder(
-                                            builder: (context, setState) => TextButton(
-                                              onPressed: _isLoading ? null : () async {
-                                                setState(() => _isLoading = true);
-                                                final taskId = int.parse(widget.taskId);
-                                                try {
-                                                  final result = await context.read<ApiService>().finishTask(taskId);
-                                                  Navigator.pop(dialogContext);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
-                                                      behavior: SnackBarBehavior.floating,
-                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
-                                                      elevation: 3,
-                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      duration: Duration(seconds: 2),
-                                                    ),
-                                                  );
-                                                  if (result['success'] == true) {
-                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
-                                                    context.read<TaskBloc>().add(FetchTaskStatuses());
-                                                  }
-                                                } catch (e) {
-                                                  Navigator.pop(dialogContext);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
-                                                  );
-                                                } finally {
-                                                  setState(() => _isLoading = false);
-                                                }
-                                              },
-                                              style: TextButton.styleFrom(
-                                                backgroundColor: Color(0xff1E2E52),
-                                                minimumSize: Size(130, 48),
-                                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                              ),
-                                              child: _isLoading 
-                                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                                : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  backgroundColor: Color.fromARGB(255, 255, 255, 255),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: Color(0xFF1E2E52),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(context)!.translate('for_review'),
-                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ActionHistoryWidgetTask(
-                        taskId: int.parse(widget.taskId), key: keyTaskHistory),
-                  ],
-                ),
-              ),
-            );
-          } else if (state is TaskByIdError) {
-            return Scaffold(
-              body: Center(
-                child: Text(state.message),
-              ),
-            );
-          }
-          return Scaffold(
-            body: Center(
-              child: Text(''),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // В методе _buildAppBar в TaskDetailsScreen
   AppBar _buildAppBar(BuildContext context, String title) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -725,7 +513,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_canCreateTask)
+            if (_canCreateTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(),
@@ -741,9 +529,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       MaterialPageRoute(
                         builder: (context) => TaskCopyScreen(
                           task: currentTask!,
-                          statusId: currentTask!.taskStatus?.id ??
-                              widget.statusId ??
-                              0,
+                          statusId: currentTask!.taskStatus?.id ?? widget.statusId ?? 0,
                         ),
                       ),
                     );
@@ -759,7 +545,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   }
                 },
               ),
-            if (_canEditTask && _canCreateTask)
+            if (_canEditTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
               IconButton(
                 key: keyTaskEdit,
                 padding: EdgeInsets.zero,
@@ -817,7 +603,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   }
                 },
               ),
-            if (_canDeleteTask)
+            if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
               IconButton(
                 key: keyTaskDelete,
                 padding: EdgeInsets.only(right: 8),
@@ -841,7 +627,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  // Построение списка деталей задачи
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -860,10 +645,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    // Специальная обработка для названия и описания
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
-        label ==
-            AppLocalizations.of(context)!.translate('description_details') ||
+        label == AppLocalizations.of(context)!.translate('description_details') ||
         label == AppLocalizations.of(context)!.translate('project_details') ||
         label == AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
@@ -939,7 +722,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           _buildLabel(label),
           SizedBox(height: 8),
           Container(
-            height: 120, // Высота контейнера для файлов
+            height: 120,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: currentTask?.files?.length ?? 0,
@@ -970,20 +753,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Иконка файла
                               Image.asset(
                                 'assets/icons/files/$fileExtension.png',
                                 width: 60,
                                 height: 60,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Image.asset(
-                                    'assets/icons/files/file.png', // Дефолтная иконка
+                                    'assets/icons/files/file.png',
                                     width: 60,
                                     height: 60,
                                   );
                                 },
                               ),
-                              // Индикатор загрузки
                               if (_downloadProgress.containsKey(file.id))
                                 CircularProgressIndicator(
                                   value: _downloadProgress[file.id],
@@ -1019,8 +800,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label ==
-        AppLocalizations.of(context)!.translate('priority_level_colon')) {
+    if (label == AppLocalizations.of(context)!.translate('priority_level_colon')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1160,13 +940,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               SizedBox(
                 height: 400,
                 child: ListView.builder(
-                  itemExtent: 40, // Уменьшаем высоту элемента
+                  itemExtent: 40,
                   itemCount: userList.length,
                   itemBuilder: (context, index) {
                     return ListTile(
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 2), // Минимальный вертикальный отступ
+                          vertical: 2),
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
@@ -1196,7 +976,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -1209,7 +988,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  // Построение значения
   Widget _buildValue(String value) {
     return Text(
       value,
@@ -1223,17 +1001,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  // Функция для форматирования даты
-  // String formatDate(String? dateString) {
-  //   if (dateString == null || dateString.isEmpty) return '';
-  //   try {
-  //     final parsedDate = DateTime.parse(dateString);
-  //     return DateFormat('dd.MM.yyyy').format(parsedDate);
-  //   } catch (e) {
-  //     return 'Неверный формат';
-  //   }
-  // }
-  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -1244,7 +1011,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  // Функция для показа диалогового окна с полным текстом
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
@@ -1275,8 +1041,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    textAlign: TextAlign.justify, // Выровнять текст по ширине
-
+                    textAlign: TextAlign.justify,
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -1299,6 +1064,208 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           ),
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<TaskByIdBloc, TaskByIdState>(
+      listener: (context, state) {
+        if (state is TaskByIdLoaded) {
+          // Обновляем детали задачи и _isAuthor
+          _updateDetails(state.task);
+        } else if (state is TaskByIdError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+        builder: (context, state) {
+          if (state is TaskByIdLoading) {
+            return Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              ),
+            );
+          } else if (state is TaskByIdLoaded) {
+            if (state.task == null) {
+              return Scaffold(
+                body: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('task_data_unavailable'),
+                  ),
+                ),
+              );
+            }
+            TaskById task = state.task!;
+            _updateDetails(task);
+
+            return Scaffold(
+              appBar: _buildAppBar(context, '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
+              backgroundColor: Colors.white,
+              body: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: ListView(
+                  children: [
+                    _buildDetailsList(),
+                    Row(
+                      children: [
+                        Expanded(
+                          key: keyTaskNavigateChat,
+                          flex: task.isFinished == 1 ? 100 : 55,
+                          child: TaskNavigateToChat(
+                            chatId: task.chat!.id,
+                            taskName: widget.taskName,
+                            canSendMessage: task.chat!.canSendMessage,
+                          ),
+                        ),
+                        if (task.isFinished == 0) ...[
+                          SizedBox(width: 8, height: 60),
+                          Expanded(
+                            key: keyTaskForReview,
+                            flex: 45,
+                            child: ElevatedButton(
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  title: Text(
+                                    AppLocalizations.of(context)!.translate('confirm_task_completion'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
+                                  ),
+                                  content: Container(
+                                    width: double.maxFinite,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: TextButton(
+                                            onPressed: () => Navigator.pop(dialogContext),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              minimumSize: Size(80, 48),
+                                              padding: EdgeInsets.symmetric(horizontal: 16),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                            child: Text(
+                                              AppLocalizations.of(context)!.translate('cancel'),
+                                              style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 16),
+                                        Expanded(
+                                          child: StatefulBuilder(
+                                            builder: (context, setState) => TextButton(
+                                              onPressed: _isLoading ? null : () async {
+                                                setState(() => _isLoading = true);
+                                                final taskId = int.parse(widget.taskId);
+                                                try {
+                                                  final result = await context.read<ApiService>().finishTask(taskId);
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                                                      elevation: 3,
+                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      duration: Duration(seconds: 2),
+                                                    ),
+                                                  );
+                                                  if (result['success'] == true) {
+                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
+                                                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                                                  }
+                                                } catch (e) {
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
+                                                  );
+                                                } finally {
+                                                  setState(() => _isLoading = false);
+                                                }
+                                              },
+                                              style: TextButton.styleFrom(
+                                                backgroundColor: Color(0xff1E2E52),
+                                                minimumSize: Size(130, 48),
+                                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: _isLoading 
+                                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                                : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Color(0xFF1E2E52),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: Text(
+                                AppLocalizations.of(context)!.translate('for_review'),
+                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ActionHistoryWidgetTask(
+                        taskId: int.parse(widget.taskId), key: keyTaskHistory),
+                  ],
+                ),
+              ),
+            );
+          } else if (state is TaskByIdError) {
+            return Scaffold(
+              body: Center(
+                child: Text(state.message),
+              ),
+            );
+          }
+          return Scaffold(
+            body: Center(
+              child: Text(''),
+            ),
+          );
+        },
+      ),
     );
   }
 }

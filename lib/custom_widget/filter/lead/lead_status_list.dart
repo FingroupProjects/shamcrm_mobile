@@ -45,128 +45,120 @@ class _LeadStatusRadioGroupWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        BlocBuilder<LeadBloc, LeadState>(
-          builder: (context, state) {
-            if (state is LeadLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state is LeadError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
-                  ),
+       BlocBuilder<LeadBloc, LeadState>(
+  builder: (context, state) {
+    if (state is LeadLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state is LeadError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate(state.message),
+              style: statusTextStyle.copyWith(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
+      return const SizedBox();
+    }
+    if (state is LeadLoaded) {
+      statusList = state.leadStatuses;
+      print('Status List: ${statusList.map((s) => s.title).toList()}'); // Добавляем отладочный вывод
+
+      if (statusList.length == 1 && selectedStatusData == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onSelectStatus(statusList[0]);
+          setState(() {
+            selectedStatusData = statusList[0];
+          });
+        });
+      } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
+        try {
+          selectedStatusData = statusList.firstWhere(
+            (status) => status.id.toString() == widget.selectedStatus,
+          );
+        } catch (e) {
+          print('Error selecting status: $e'); // Логируем ошибку
+          selectedStatusData = null;
+        }
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('lead_statuses'),
+            style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F7FD),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                width: 1,
+                color: const Color(0xFFF4F7FD),
+              ),
+            ),
+            child: CustomDropdown<LeadStatus>.search(
+              closeDropDownOnClearFilterSearch: true,
+              items: statusList,
+              searchHintText: AppLocalizations.of(context)!.translate('search'),
+              overlayHeight: 400,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: const Color(0xffF4F7FD),
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
+                ),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
+                ),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.title,
+                  style: statusTextStyle,
                 );
-              });
-            }
-
-            if (state is LeadLoaded) {
-              statusList = state.leadStatuses;
-
-              if (statusList.length == 1 && selectedStatusData == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onSelectStatus(statusList[0]);
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                return Text(
+                  selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
+                  style: statusTextStyle,
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                AppLocalizations.of(context)!.translate('select_status'),
+                style: statusTextStyle.copyWith(fontSize: 14),
+              ),
+              excludeSelected: false,
+              initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+              onChanged: (value) {
+                if (value != null) {
+                  print('Selected status: ${value.title}'); // Логируем выбор
+                  widget.onSelectStatus(value);
                   setState(() {
-                    selectedStatusData = statusList[0];
+                    selectedStatusData = value;
                   });
-                });
-              } else if (widget.selectedStatus != null &&
-                  statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                  );
-                } catch (e) {
-                  selectedStatusData = null;
+                  FocusScope.of(context).unfocus();
                 }
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('lead_statuses'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
-                    ),
-                    child: CustomDropdown<LeadStatus>.search(
-                      closeDropDownOnClearFilterSearch: true,
-                      items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
-                        return Text(
-                          item.title,
-                          style: statusTextStyle,
-                        );
-                      },
-                      headerBuilder: (context, selectedItem, enabled) {
-                        return Text(
-                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle,
-                        );
-                      },
-                      hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(fontSize: 14),
-                      ),
-                      excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.onSelectStatus(value);
-                          setState(() {
-                            selectedStatusData = value;
-                          });
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
-            }
-            return const SizedBox();
-          },
-        ),
+              },
+            ),
+          ),
+        ],
+      );
+    }
+    return const SizedBox();
+  },
+)
       ],
     );
   }

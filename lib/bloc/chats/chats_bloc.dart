@@ -48,36 +48,40 @@
 
     // Загрузка чатов
     Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
-      endPoint = event.endPoint;
-      _lastFetchedPage = 0; // Сбрасываем последнюю страницу
-      emit(ChatsLoading());
+    endPoint = event.endPoint;
+    _lastFetchedPage = 0;
+    emit(ChatsLoading());
 
-      if (await _checkInternetConnection()) {
-        try {
-          chatsPagination = await apiService.getAllChats(event.endPoint, 1, event.query);
-          // print('ChatsBloc._fetchChatsEvent: Fetched ${chatsPagination!.data.length} chats for endpoint ${event.endPoint}, page 1');
-          // print('ChatsBloc._fetchChatsEvent: Chat IDs: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
+    if (await _checkInternetConnection()) {
+      try {
+        chatsPagination = await apiService.getAllChats(
+          event.endPoint,
+          1,
+          event.query,
+          event.salesFunnelId, // Передаем salesFunnelId
+        );
+        print('ChatsBloc._fetchChatsEvent: Fetched ${chatsPagination!.data.length} chats for endpoint ${event.endPoint}, page 1');
+        print('ChatsBloc._fetchChatsEvent: Chat IDs: ${chatsPagination!.data.map((chat) => chat.id).toList()}');
 
-          // Сортируем чаты
-          final sortedChats = _sortChats(chatsPagination!.data, event.endPoint);
-          chatsPagination = PaginationDTO(
-            data: sortedChats,
-            count: chatsPagination!.count,
-            total: chatsPagination!.total,
-            perPage: chatsPagination!.perPage,
-            currentPage: chatsPagination!.currentPage,
-            totalPage: chatsPagination!.totalPage,
-          );
-          _lastFetchedPage = 1;
-          emit(ChatsLoaded(chatsPagination!));
-        } catch (e) {
-          // print('ChatsBloc._fetchChatsEvent: Error: $e');
-          emit(ChatsError(e.toString()));
-        }
-      } else {
-        emit(ChatsError('Нет подключения к интернету'));
+        final sortedChats = _sortChats(chatsPagination!.data, event.endPoint);
+        chatsPagination = PaginationDTO(
+          data: sortedChats,
+          count: chatsPagination!.count,
+          total: chatsPagination!.total,
+          perPage: chatsPagination!.perPage,
+          currentPage: chatsPagination!.currentPage,
+          totalPage: chatsPagination!.totalPage,
+        );
+        _lastFetchedPage = 1;
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (e) {
+        print('ChatsBloc._fetchChatsEvent: Error: $e');
+        emit(ChatsError(e.toString()));
       }
+    } else {
+      emit(ChatsError('Нет подключения к интернету'));
     }
+  }
 
     // Перезагрузка чатов
     Future<void> _refetchChatsEvent(RefreshChats event, Emitter<ChatsState> emit) async {

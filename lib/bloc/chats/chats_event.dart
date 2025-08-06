@@ -7,14 +7,16 @@ abstract class ChatsEvent extends Equatable {
   List<Object> get props => [];
 }
 
+
 class FetchChats extends ChatsEvent {
   final String endPoint;
   final String? query;
+  final int? salesFunnelId; // Новый параметр
 
-  const FetchChats({required this.endPoint, this.query});
+  const FetchChats({required this.endPoint, this.query, this.salesFunnelId});
 
   @override
-  List<Object> get props => [endPoint, if (query != null) query!];
+  List<Object> get props => [endPoint, if (query != null) query!, if (salesFunnelId != null) salesFunnelId!];
 }
 
 class RefreshChats extends ChatsEvent {}

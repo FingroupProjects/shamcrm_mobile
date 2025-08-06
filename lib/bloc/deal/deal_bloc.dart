@@ -9,6 +9,7 @@ import 'deal_state.dart';
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
   bool allDealsFetched = false; 
+  bool isFetching = false; // Новый флаг
   Map<int, int> _dealCounts = {}; 
   String? _currentQuery;
   List<int>? _currentManagerIds;
@@ -44,6 +45,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+  if (isFetching) {
+    print('DealBloc: _fetchDeals - Already fetching, skipping');
+    return;
+  }
+  isFetching = true;
+  try {
+    print('DealBloc: _fetchDeals - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
     emit(DealLoading());
 
     _currentQuery = event.query;
@@ -54,52 +62,60 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     _currentLeadIds = event.leadIds;
     _currentHasTasks = event.hasTasks;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
-    _currentDirectoryValues = event.directoryValues; // Сохраняем directory_values
+    _currentDirectoryValues = event.directoryValues;
 
     if (!await _checkInternetConnection()) {
+      print('DealBloc: _fetchDeals - No internet connection');
       final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
       if (cachedDeals.isNotEmpty) {
         emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+        emit(DealWarning('Используются кэшированные данные из-за отсутствия интернета'));
       } else {
         emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
       }
       return;
     }
 
-    try {
-      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-      if (cachedDeals.isNotEmpty) {
-        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
-      }
-
-      final deals = await apiService.getDeals(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managers: event.managerIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        leads: event.leadIds,
-        hasTasks: event.hasTasks,
-        daysWithoutActivity: event.daysWithoutActivity,
-        directoryValues: event.directoryValues, // Передаем directory_values
-      );
-
-      await DealCache.cacheDealsForStatus(event.statusId, deals);
-
-      final dealCounts = Map<int, int>.from(_dealCounts);
-      for (var deal in deals) {
-        dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
-      }
-
-      allDealsFetched = deals.isEmpty;
-      emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
-    } catch (e) {
-      emit(DealError('Не удалось загрузить данные!'));
+    final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+    if (cachedDeals.isNotEmpty) {
+      print('DealBloc: _fetchDeals - Emitting cached deals: ${cachedDeals.length}');
+      emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
     }
+
+    final deals = await apiService.getDeals(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+      managers: event.managerIds,
+      statuses: event.statusIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      leads: event.leadIds,
+      hasTasks: event.hasTasks,
+      daysWithoutActivity: event.daysWithoutActivity,
+      directoryValues: event.directoryValues,
+      salesFunnelId: event.salesFunnelId,
+    );
+
+    await DealCache.cacheDealsForStatus(event.statusId, deals);
+    print('DealBloc: _fetchDeals - Cached deals for statusId: ${event.statusId}, count: ${deals.length}');
+
+    final dealCounts = Map<int, int>.from(_dealCounts);
+    for (var deal in deals) {
+      dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
+    }
+
+    allDealsFetched = deals.isEmpty;
+    emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+  } catch (e) {
+    print('DealBloc: _fetchDeals - Error: $e');
+    emit(DealError('Не удалось загрузить данные!'));
+  } finally {
+    isFetching = false;
   }
+}
+
 
 // Метод для загрузки статусов сделок с учётом кэша
   Future<void> _fetchDealStatuses(

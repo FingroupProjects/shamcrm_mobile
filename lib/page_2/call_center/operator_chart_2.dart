@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -26,19 +27,22 @@ class _OperatorChart2State extends State<OperatorChart2> {
     const Color(0xFFEF4444), // Пропущенные - красный
   ];
 
-  final List<String> sectionLabels = [
-    'Входящие',
-    'Исходящие',
-    'Исходящие без ответа',
-    'Пропущенные'
-  ];
+  List<String> getCallTypes(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('incoming'),
+      localizations.translate('outgoing'),
+      localizations.translate('unanswered'),
+      localizations.translate('missed'),
+    ];
+  }
 
   List<double> _getSectionValues() {
-    if (widget.summaryStats.result.totalCalls == 0) {
-      return [25.0, 25.0, 25.0, 25.0]; // Фаллбэк для пустых данных
-    }
     final counts = widget.summaryStats.result.countsByType;
     final total = widget.summaryStats.result.totalCalls.toDouble();
+    if (total == 0) {
+      return [25.0, 25.0, 25.0, 25.0]; // Фаллбэк для равномерного распределения
+    }
     return [
       (counts.incoming / total * 100),
       (counts.outgoing / total * 100),
@@ -59,9 +63,12 @@ class _OperatorChart2State extends State<OperatorChart2> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final callTypes = getCallTypes(context);
     final totalCalls = widget.summaryStats.result.totalCalls;
     final sectionValues = _getSectionValues();
     final actualCounts = _getActualCounts();
+    final hasData = totalCalls > 0 && actualCounts.any((count) => count > 0);
 
     return Container(
       padding: const EdgeInsets.all(20.0),
@@ -79,9 +86,9 @@ class _OperatorChart2State extends State<OperatorChart2> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Количество разговора',
-            style: TextStyle(
+          Text(
+            localizations.translate('call_type_stats'),
+            style: const TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -89,106 +96,141 @@ class _OperatorChart2State extends State<OperatorChart2> {
             ),
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (selectedSectionIndex != null &&
-                              selectedSectionIndex! >= 0 &&
-                              selectedSectionIndex! < sectionLabels.length)
-                          ? sectionLabels[selectedSectionIndex!]
-                          : 'Всего звонков',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: (selectedSectionIndex != null &&
-                                selectedSectionIndex! >= 0 &&
-                                selectedSectionIndex! < sectionColors.length)
-                            ? sectionColors[selectedSectionIndex!]
-                            : Colors.grey.shade600,
-                      ),
+          if (!hasData) ...[
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 0,
+                      centerSpaceRadius: 60,
+                      startDegreeOffset: -90,
+                      pieTouchData: PieTouchData(enabled: false),
+                      sections: [
+                        PieChartSectionData(
+                          color: Colors.grey.withOpacity(0.3),
+                          value: 100,
+                          title: '',
+                          radius: 25,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
+                  ),
+                ),
+                Text(
+                  localizations.translate('no_data_to_display'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         (selectedSectionIndex != null &&
                                 selectedSectionIndex! >= 0 &&
-                                selectedSectionIndex! < actualCounts.length)
-                            ? actualCounts[selectedSectionIndex!].toString()
-                            : totalCalls.toString(),
-                        key: ValueKey(selectedSectionIndex),
+                                selectedSectionIndex! < callTypes.length)
+                            ? callTypes[selectedSectionIndex!]
+                            : localizations.translate('total_calls'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 48,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
                           color: (selectedSectionIndex != null &&
                                   selectedSectionIndex! >= 0 &&
                                   selectedSectionIndex! < sectionColors.length)
                               ? sectionColors[selectedSectionIndex!]
-                              : const Color(0xFF2D3748),
-                          height: 1.0,
+                              : Colors.grey.shade600,
                         ),
                       ),
-                    ),
-                    if (selectedSectionIndex != null &&
-                        selectedSectionIndex! >= 0 &&
-                        selectedSectionIndex! < sectionValues.length) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        '${sectionValues[selectedSectionIndex!].toStringAsFixed(1)}% от общего',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Text(
+                          (selectedSectionIndex != null &&
+                                  selectedSectionIndex! >= 0 &&
+                                  selectedSectionIndex! < actualCounts.length)
+                              ? actualCounts[selectedSectionIndex!].toString()
+                              : totalCalls.toString(),
+                          key: ValueKey(selectedSectionIndex),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 48,
+                            color: (selectedSectionIndex != null &&
+                                    selectedSectionIndex! >= 0 &&
+                                    selectedSectionIndex! < sectionColors.length)
+                                ? sectionColors[selectedSectionIndex!]
+                                : const Color(0xFF2D3748),
+                            height: 1.0,
+                          ),
                         ),
                       ),
+                      if (selectedSectionIndex != null &&
+                          selectedSectionIndex! >= 0 &&
+                          selectedSectionIndex! < sectionValues.length) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '${sectionValues[selectedSectionIndex!].toStringAsFixed(1)}% ${localizations.translate('of_total')}',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: 3,
-                child: SizedBox(
-                  height: 200,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 60,
-                      startDegreeOffset: -90,
-                      pieTouchData: PieTouchData(
-                        enabled: true,
-                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                          if (event is FlTapUpEvent && pieTouchResponse != null) {
-                            final touchedIndex = pieTouchResponse.touchedSection?.touchedSectionIndex;
-
-                            setState(() {
-                              if (touchedIndex != null &&
-                                  touchedIndex >= 0 &&
-                                  touchedIndex < sectionValues.length) {
-                                selectedSectionIndex = touchedIndex == selectedSectionIndex ? null : touchedIndex;
-                              } else {
-                                selectedSectionIndex = null;
-                              }
-                            });
-                          }
-                        },
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 60,
+                        startDegreeOffset: -90,
+                        pieTouchData: PieTouchData(
+                          enabled: true,
+                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                            if (event is FlTapUpEvent && pieTouchResponse != null) {
+                              final touchedIndex = pieTouchResponse.touchedSection?.touchedSectionIndex;
+                              setState(() {
+                                if (touchedIndex != null &&
+                                    touchedIndex >= 0 &&
+                                    touchedIndex < sectionValues.length) {
+                                  selectedSectionIndex = touchedIndex == selectedSectionIndex ? null : touchedIndex;
+                                } else {
+                                  selectedSectionIndex = null;
+                                }
+                              });
+                            }
+                          },
+                        ),
+                        sections: _buildInteractivePieChartSections(),
                       ),
-                      sections: _buildInteractivePieChartSections(),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
-          _buildInteractiveLegend(),
+          if (hasData) _buildInteractiveLegend(),
         ],
       ),
     );
@@ -196,6 +238,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
 
   List<PieChartSectionData> _buildInteractivePieChartSections() {
     final sectionValues = _getSectionValues();
+    final callTypes = getCallTypes(context);
     return sectionValues.asMap().entries.map((entry) {
       final index = entry.key;
       final value = entry.value;
@@ -219,10 +262,11 @@ class _OperatorChart2State extends State<OperatorChart2> {
 
   Widget _buildInteractiveLegend() {
     final actualCounts = _getActualCounts();
+    final callTypes = getCallTypes(context);
     return Wrap(
       spacing: 24,
       runSpacing: 12,
-      children: sectionLabels.asMap().entries.map((entry) {
+      children: callTypes.asMap().entries.map((entry) {
         final index = entry.key;
         final label = entry.value;
         final isSelected = selectedSectionIndex == index;

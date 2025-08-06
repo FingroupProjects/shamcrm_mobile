@@ -35,6 +35,7 @@ Future<void> _onFetchEvents(
         toDate: event.toDate,
         noticefromDate: event.noticefromDate,
         noticetoDate: event.noticetoDate,
+        salesFunnelId: event.salesFunnelId, // Передаем новый параметр
       );
 
       emit(EventDataLoaded(

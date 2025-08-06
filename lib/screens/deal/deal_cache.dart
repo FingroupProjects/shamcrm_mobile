@@ -12,7 +12,13 @@ class DealCache {
     final String encodedStatuses = json.encode(dealStatuses);
     await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
   }
-
+static Future<void> clearDealsForStatus(int? statusId) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String key = 'cachedDeals_$statusId';
+  await prefs.remove(key);
+  await prefs.remove('cacheTimestamp_$statusId');
+  print('DealCache: Cleared deals for statusId: $statusId');
+}
   // Get deal statuses from cache
   static Future<List<Map<String, dynamic>>> getDealStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();

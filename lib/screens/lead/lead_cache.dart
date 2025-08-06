@@ -55,7 +55,12 @@ class LeadCache {
     print('CACHE LEADS CLEARED');
 
   }
-
+ static Future<void> clearLeadsForStatus(int? statusId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String key = 'cachedLeads_$statusId';
+    await prefs.remove(key);
+    print('LeadCache: Cleared leads for statusId: $statusId');
+  }
   static Future<void> clearLeadStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);

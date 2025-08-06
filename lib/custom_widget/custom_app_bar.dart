@@ -283,7 +283,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCallCenter = false;
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
-  Color _iconColor = Colors.red;
+  Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
     bool _areFiltersActive = false; // Добавляем эту переменную
 

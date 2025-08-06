@@ -3,6 +3,7 @@
   import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
   import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/sales_funnel_model.dart';
   import 'package:crm_task_manager/models/source_model.dart';
 
   class LeadById {
@@ -31,6 +32,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
   final String? phone_verified_at;
   final String? verification_code;
   final PriceType? priceType;
+   final SalesFunnel? salesFunnel;
 
     LeadById({
       required this.id,
@@ -49,6 +51,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
       this.phone,
       this.email,
       this.author,
+      this.salesFunnel,
       this.description,
       this.leadStatus,
       required this.leadCustomFields,
@@ -104,6 +107,9 @@ import 'package:crm_task_manager/models/price_type_model.dart';
         email: json['email'] is String ? json['email'] : '',
         author: json['author'] != null && json['author'] is Map<String, dynamic>
             ? Author.fromJson(json['author'])
+            : null,
+             salesFunnel: json['salesFunnel'] != null && json['salesFunnel'] is Map<String, dynamic>
+            ? SalesFunnel.fromJson(json['salesFunnel'])
             : null,
         description: json['description'] is String ? json['description'] : '',
         leadStatus: json['leadStatus'] != null &&
@@ -192,6 +198,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
       return author;
     }
   }
+  
 
   class LeadFiles {
     final int id;
@@ -282,25 +289,27 @@ import 'package:crm_task_manager/models/price_type_model.dart';
     }
   }
 
-  class DirectoryValue {
-    final int id;
-    final DirectoryEntry entry;
+ class DirectoryValue {
+  final int id;
+  final DirectoryEntry? entry; // Делаем nullable
 
-    DirectoryValue({
-      required this.id,
-      required this.entry,
-    });
+  DirectoryValue({
+    required this.id,
+    this.entry, // Убираем required
+  });
 
-    factory DirectoryValue.fromJson(Map<String, dynamic> json) {
-      //print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
-      final value = DirectoryValue(
-        id: json['id'] ?? 0,
-        entry: DirectoryEntry.fromJson(json['entry']),
-      );
-      //print('DirectoryValue: Directory value created: id=${value.id}');
-      return value;
-    }
+  factory DirectoryValue.fromJson(Map<String, dynamic> json) {
+    //print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
+    final value = DirectoryValue(
+      id: json['id'] ?? 0,
+      entry: json['entry'] != null && json['entry'] is Map<String, dynamic>
+          ? DirectoryEntry.fromJson(json['entry'])
+          : null, // Безопасный парсинг с проверкой на null
+    );
+    //print('DirectoryValue: Directory value created: id=${value.id}, entry=${value.entry != null ? "not null" : "null"}');
+    return value;
   }
+}
 
   class DirectoryEntry {
     final int id;

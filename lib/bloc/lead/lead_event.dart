@@ -153,6 +153,9 @@ class UpdateLead extends LeadEvent {
   final AppLocalizations localizations;
   final List<LeadFiles> existingFiles;
   final String? priceTypeId; // Новое поле
+    final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
+    final String? duplicate; // Новое поле
+
 
   UpdateLead({
     required this.leadId,
@@ -176,6 +179,9 @@ class UpdateLead extends LeadEvent {
     this.isSystemManager = false,
     required this.existingFiles,
     this.priceTypeId,
+        this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
+    this.duplicate, // Новое поле]  
+
   });
 }
 

@@ -82,15 +82,29 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
     super.dispose();
   }
 
-  String formatDate(DateTime? date) {
-    if (date == null) return AppLocalizations.of(context)!.translate('');
-    try {
-      return DateFormat('dd.MM.yy HH:mm').format(date.toLocal());
-    } catch (e) {
-      return AppLocalizations.of(context)!.translate('invalid_format');
-    }
+String formatDate(DateTime? date) {
+  print('Input date: $date, isUtc: ${date?.isUtc}');
+  if (date == null) {
+    return AppLocalizations.of(context)!.translate('date_unknown') ?? 'Дата неизвестна';
   }
 
+  try {
+    final utcDate = DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      date.hour,
+      date.minute,
+      date.second,
+    );
+    final localDate = utcDate.toLocal();
+    print('UTC date: $utcDate, Local date: $localDate');
+    return DateFormat('dd.MM.yy HH:mm').format(localDate);
+  } catch (e) {
+    print('Error formatting date: $e');
+    return AppLocalizations.of(context)!.translate('invalid_format') ?? 'Неверный формат даты';
+  }
+}
   String _formatDuration(Duration? duration) {
     if (duration == null) return '00:00';
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -101,6 +115,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
 
   void _showRatingDialog() {
     showDialog(
+      
       context: context,
       builder: (BuildContext context) {
         return CallRatingDialog(
