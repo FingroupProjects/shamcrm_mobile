@@ -349,7 +349,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       ////print('Error fetching tutorial progress: $e');
@@ -373,7 +373,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }

@@ -214,7 +214,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           !isTutorialShown &&
           !_isTutorialShown &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       //print('Error fetching tutorial progress: $e');
@@ -236,7 +236,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             !isTutorialShown &&
             !_isTutorialShown &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }

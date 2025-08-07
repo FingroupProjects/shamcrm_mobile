@@ -31,6 +31,14 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   final ScrollController _scrollController = ScrollController();
+  
+  // Добавляем PageController для swipe навигации
+  final PageController _pageController = PageController();
+  int _currentPageIndex = 0;
+
+  // Массив фильтров для удобного управления
+  final List<CallType?> _filterTypes = [null, CallType.incoming, CallType.outgoing, CallType.missed];
+  final List<String> _filterLabels = ['Все', 'Входящие', 'Исходящие', 'Пропущенные'];
 
   List<CallTypeData> _selectedCallTypes = [];
   List<Operator> _selectedOperators = [];
@@ -42,8 +50,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   DateTime? startDate;
   DateTime? endDate;
 
-  bool _areFiltersApplied =
-      false; // Добавляем переменную для отслеживания фильтров
+  bool _areFiltersApplied = false;
 
   @override
   void initState() {
@@ -78,10 +85,27 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _filterCalls(CallType? filter) {
     setState(() {
       _selectedFilter = filter;
-      // Обновляем состояние фильтров при изменении типа звонка
       _updateFiltersState();
       context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
     });
+  }
+
+  // Новый метод для обработки смены страницы через swipe
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentPageIndex = index;
+      _selectedFilter = _filterTypes[index];
+    });
+    _filterCalls(_filterTypes[index]);
+  }
+
+  // Новый метод для программного переключения страниц при нажатии на кнопку
+  void _navigateToPage(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _onSearch(String query) {
@@ -89,7 +113,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       _searchQuery = query;
     });
 
-    // Обновляем состояние фильтров
     _updateFiltersState();
 
     context.read<CallCenterBloc>().add(LoadCalls(
@@ -107,10 +130,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       _focusNode.unfocus();
     });
 
-    // Обновляем состояние фильтров
     _updateFiltersState();
 
-    // Загружаем данные без поискового запроса, но с сохранением других фильтров
     context.read<CallCenterBloc>().add(LoadCalls(
           callType: _selectedFilter,
           page: 1,
@@ -118,7 +139,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
         ));
   }
 
-  // Обновленный метод для применения фильтров
   void _onFiltersSelected(Map filters) {
     setState(() {
       _selectedCallTypes = (filters['callTypes'] as List<dynamic>?)
@@ -158,7 +178,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           [];
     });
 
-    // Обновляем состояние фильтров
     _updateFiltersState();
 
     context
@@ -176,19 +195,17 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       _selectedOperators = [];
       _selectedStatuses = [];
       _selectedRatings = [];
-      _selectedLeads = []; // Сбрасываем лиды
-      selectedRemarkStatus = null; // Сбрасываем статус замечаний
-      startDate = null; // Сбрасываем начальную дату
-      endDate = null; // Сбрасываем конечную дату
-      _remarkController.clear();
-      _areFiltersApplied = false; // Сбрасываем состояние фильтров
+      _selectedLeads = [];
+      selectedRemarkStatus = null;
+      startDate = null;
+      endDate = null;
+      _areFiltersApplied = false;
       context
           .read<CallCenterBloc>()
-          .add(ResetFilters()); // Отправляем событие сброса
+          .add(ResetFilters());
     });
   }
 
-// Добавляем вспомогательный метод для проверки состояния фильтров
   bool _hasAnyFiltersApplied() {
     return _selectedCallTypes.isNotEmpty ||
         _selectedOperators.isNotEmpty ||
@@ -200,7 +217,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
         endDate != null;
   }
 
-// Метод для обновления состояния фильтров
   void _updateFiltersState() {
     setState(() {
       _areFiltersApplied = _hasAnyFiltersApplied();
@@ -235,6 +251,91 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     if (difference == 1) return 'Вчера';
 
     return DateFormat('d MMMM', 'ru').format(date);
+  }
+
+  // Метод для создания контента страницы
+  Widget _buildPageContent() {
+    return BlocBuilder<CallCenterBloc, CallCenterState>(
+      builder: (context, state) {
+        if (state is CallCenterLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            ),
+          );
+        } else if (state is CallCenterLoaded) {
+          final items = _buildListWithHeaders(state.calls);
+          if (items.isEmpty) {
+            return _buildEmptyState();
+          }
+          return ListView.builder(
+            controller: _scrollController,
+            itemCount: items.length +
+                (context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index >= items.length) {
+                if (context.read<CallCenterBloc>().isLoadingMore) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }
+              final item = items[index];
+              if (item is String) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(
+                    item,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                );
+              } else if (item is CallLogEntry) {
+                return CallLogItem(
+                  callEntry: item,
+                  onTap: () => _onCallTap(item),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          );
+        } else if (state is CallCenterError) {
+          return Center(
+            child: Text(
+              state.message,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                color: Colors.red,
+              ),
+            ),
+          );
+        } else if (state is CallByIdLoaded) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+        return _buildEmptyState();
+      },
+    );
   }
 
   @override
@@ -275,7 +376,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 autofocus: true,
               ),
             ),
-          // Обновленная кнопка поиска в AppBar
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -289,14 +389,11 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             tooltip: AppLocalizations.of(context)!.translate('search'),
             onPressed: () {
               if (_isSearching) {
-                // Закрываем поиск
                 _resetSearch();
               } else {
-                // Открываем поиск
                 setState(() {
                   _isSearching = true;
                 });
-                // Задержка для корректной работы анимации
                 Future.delayed(const Duration(milliseconds: 100), () {
                   if (mounted) {
                     _focusNode.requestFocus();
@@ -330,7 +427,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               height: 24,
               color: _areFiltersApplied
                   ? Colors.blue
-                  : Colors.black, // Изменяем цвет иконки
+                  : Colors.black,
             ),
             tooltip: AppLocalizations.of(context)!.translate('filter'),
             onPressed: () {
@@ -346,15 +443,13 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                         _selectedStatuses = [];
                         _selectedRatings = [];
                         _selectedLeads = [];
-                        selectedRemarkStatus =
-                            null; // Сбрасываем статус замечаний
-                        startDate = null; // Сбрасываем начальную дату
-                        endDate = null; // Сбрасываем конечную дату
-                        _areFiltersApplied =
-                            false; // Сбрасываем состояние фильтров
+                        selectedRemarkStatus = null;
+                        startDate = null;
+                        endDate = null;
+                        _areFiltersApplied = false;
                         context
                             .read<CallCenterBloc>()
-                            .add(ResetFilters()); // Отправляем событие сброса
+                            .add(ResetFilters());
                       });
                     },
                     initialCallTypes:
@@ -386,99 +481,26 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                children: [
-                  _buildFilterChip('Все', null),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Входящие', CallType.incoming),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Исходящие', CallType.outgoing),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Пропущенные', CallType.missed),
-                ],
+                children: List.generate(_filterLabels.length, (index) {
+                  return Padding(
+                    padding: EdgeInsets.only(right: index < _filterLabels.length - 1 ? 8 : 0),
+                    child: _buildFilterChip(_filterLabels[index], _filterTypes[index], index),
+                  );
+                }),
               ),
             ),
           ),
           Container(height: 1, color: Colors.grey.shade200),
           Expanded(
-            child: BlocBuilder<CallCenterBloc, CallCenterState>(
-              builder: (context, state) {
-                if (state is CallCenterLoading) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
-                      ),
-                    ),
-                  );
-                } else if (state is CallCenterLoaded) {
-                  final items = _buildListWithHeaders(state.calls);
-                  if (items.isEmpty) {
-                    return _buildEmptyState();
-                  }
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: items.length +
-                        (context.read<CallCenterBloc>().isLoadingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= items.length) {
-                        if (context.read<CallCenterBloc>().isLoadingMore) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: PlayStoreImageLoading(
-                                size: 80.0,
-                                duration: Duration(milliseconds: 1000),
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      }
-                      final item = items[index];
-                      if (item is String) {
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                          child: Text(
-                            item,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        );
-                      } else if (item is CallLogEntry) {
-                        return CallLogItem(
-                          callEntry: item,
-                          onTap: () => _onCallTap(item),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  );
-                } else if (state is CallCenterError) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  );
-                } else if (state is CallByIdLoaded) {
-                  return const Center(
-                    child: PlayStoreImageLoading(
-                      size: 80.0,
-                      duration: Duration(milliseconds: 1000),
-                    ),
-                  );
-                }
-                return _buildEmptyState();
+            // Заменяем обычный контент на PageView для swipe навигации
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              itemCount: _filterTypes.length,
+              itemBuilder: (context, index) {
+                // Возвращаем одинаковый контент для всех страниц,
+                // так как фильтрация происходит на уровне BLoC
+                return _buildPageContent();
               },
             ),
           ),
@@ -487,10 +509,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, CallType? type) {
-    final isSelected = _selectedFilter == type;
+  Widget _buildFilterChip(String label, CallType? type, int index) {
+    final isSelected = _currentPageIndex == index;
     return GestureDetector(
-      onTap: () => _filterCalls(type),
+      onTap: () => _navigateToPage(index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -560,6 +582,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     _focusNode.dispose();
     _scrollController.dispose();
     _remarkController.dispose();
+    _pageController.dispose(); // Не забываем освободить PageController
     super.dispose();
   }
 }

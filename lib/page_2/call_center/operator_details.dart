@@ -32,7 +32,8 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Средняя оценка: ',
+             AppLocalizations.of(context)!
+                              .translate('average_rating'),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
@@ -127,9 +128,10 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
 
             // Проверка на наличие данных
             if (callSummaryStats.result.totalCalls == 0 && monthlyCallStats.result.isEmpty) {
-              return const Center(
+              return  Center(
                 child: Text(
-                  'Нет данных для отображения',
+     AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -179,9 +181,10 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
             );
           } else {
             // На случай, если snapshot.data == null
-            return const Center(
+            return  Center(
               child: Text(
-                'Нет данных для отображения',
+                 AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,

@@ -115,7 +115,7 @@ String formatDate(DateTime? date) {
 
   void _showRatingDialog() {
     showDialog(
-      
+
       context: context,
       builder: (BuildContext context) {
         return CallRatingDialog(
@@ -221,33 +221,36 @@ String formatDate(DateTime? date) {
   }
 
   Widget _buildDetailsList(CallById call) {
-    final details = <Map<String, dynamic>>[
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name') as String,
-        'value': call.lead.name as String,
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('phone_number') as String,
-        'value': call.lead.phone as String,
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('date_of_call') as String,
-        'value': formatDate(call.callStartedAt) as String,
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('operator') as String,
-        'value': call.user?.fullName ?? AppLocalizations.of(context)!.translate('not_specified'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('call_type') as String,
-        'value': _getCallTypeText(call.incoming, call.missed) as String,
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
-        'value': call.callDuration != null
-            ? _formatDuration(Duration(seconds: call.callDuration!))
-            : AppLocalizations.of(context)!.translate('not_available'),
-      },
+  // Формируем список деталей, исключая "Оценка" и "Комментарий" для пропущенных звонков
+  final details = <Map<String, dynamic>>[
+    {
+      'label': AppLocalizations.of(context)!.translate('lead_name') as String,
+      'value': call.lead.name as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('phone_number') as String,
+      'value': call.lead.phone as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('date_of_call') as String,
+      'value': formatDate(call.callStartedAt) as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('operator') as String,
+      'value': call.user?.fullName ?? AppLocalizations.of(context)!.translate('not_specified'),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('call_type') as String,
+      'value': _getCallTypeText(call.incoming, call.missed) as String,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
+      'value': call.callDuration != null
+          ? _formatDuration(Duration(seconds: call.callDuration!))
+          : AppLocalizations.of(context)!.translate('not_available'),
+    },
+    // Добавляем "Оценка" и "Комментарий" только если звонок НЕ пропущен
+    if (!call.missed) ...[
       {
         'label': AppLocalizations.of(context)!.translate('rating') as String,
         'value': call.rating?.toString() ?? '',
@@ -256,43 +259,46 @@ String formatDate(DateTime? date) {
         'label': AppLocalizations.of(context)!.translate('comment') as String,
         'value': call.report ?? '',
       },
-      {
-        'label': 'call_details' as String,
-        'value': '' as String,
-        'call_data': <String, String>{
-          'caller': call.lead.name,
-          'call_duration': call.callDuration != null
-              ? _formatDuration(Duration(seconds: call.callDuration!))
-              : AppLocalizations.of(context)!.translate('not_available'),
-          'call_type': _getCallTypeText(call.incoming, call.missed),
-        },
+    ],
+    {
+      'label': 'call_details' as String,
+      'value': '' as String,
+      'call_data': <String, String>{
+        'caller': call.lead.name,
+        'call_duration': call.callDuration != null
+            ? _formatDuration(Duration(seconds: call.callDuration!))
+            : AppLocalizations.of(context)!.translate('not_available'),
+        'call_type': _getCallTypeText(call.incoming, call.missed),
       },
-    ];
+    },
+  ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: ListView(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: details.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: _buildDetailItem(
-                      details[index]['label'] as String,
-                      details[index]['value'] as String,
-                      call,
-                      index,
-                      callData: details[index]['call_data'] as Map<String, String>?,
-                    ),
-                  );
-                },
-              ),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    child: ListView(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: details.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: _buildDetailItem(
+                    details[index]['label'] as String,
+                    details[index]['value'] as String,
+                    call,
+                    index,
+                    callData: details[index]['call_data'] as Map<String, String>?,
+                  ),
+                );
+              },
+            ),
+            // Отображаем кнопку "Оценить" только если звонок НЕ пропущен
+            if (!call.missed) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -317,13 +323,15 @@ String formatDate(DateTime? date) {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
  Widget _buildDetailsListFromEntry(CallLogEntry call) {
+  // Формируем список деталей, исключая "Оценка" и "Комментарий" для пропущенных звонков
   final details = <Map<String, dynamic>>[
     {
       'label': AppLocalizations.of(context)!.translate('lead_name') as String,
@@ -349,14 +357,17 @@ String formatDate(DateTime? date) {
       'label': AppLocalizations.of(context)!.translate('call_duration_title') as String,
       'value': _formatDuration(call.duration) as String,
     },
-    {
-      'label': AppLocalizations.of(context)!.translate('rating') as String,
-      'value': call.rating ?? _selectedRating ?? AppLocalizations.of(context)!.translate(''),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('comment') as String,
-      'value': call.report ?? _ratingComment ?? AppLocalizations.of(context)!.translate(''),
-    },
+    // Добавляем "Оценка" и "Комментарий" только если звонок НЕ пропущен
+    if (call.callType != CallType.missed) ...[
+      {
+        'label': AppLocalizations.of(context)!.translate('rating') as String,
+        'value': call.rating ?? _selectedRating ?? AppLocalizations.of(context)!.translate(''),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment') as String,
+        'value': call.report ?? _ratingComment ?? AppLocalizations.of(context)!.translate(''),
+      },
+    ],
     {
       'label': 'call_details' as String,
       'value': '' as String,
@@ -392,29 +403,32 @@ String formatDate(DateTime? date) {
                 );
               },
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: const Color(0xFF1E2E52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            // Отображаем кнопку "Оценить" только если звонок НЕ пропущен
+            if (call.callType != CallType.missed) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: const Color(0xFF1E2E52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-                onPressed: _showRatingDialog,
-                child: Text(
-                  AppLocalizations.of(context)!.translate('grade'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Gilroy',
+                  onPressed: _showRatingDialog,
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('grade'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],

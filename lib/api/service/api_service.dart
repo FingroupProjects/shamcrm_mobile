@@ -1638,7 +1638,7 @@ Future<Map<String, dynamic>> updateLeadWithData({
 // Api Service
 Future<DealNameDataResponse> getAllDealNames() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/service');
+  final path = await _appendQueryParams('/service/by-sales-funnel-id');
   if (kDebugMode) {
     print('ApiService: getAllDealNames - Generated path: $path');
   }
@@ -5725,26 +5725,36 @@ Future<String> _appendQueryParams(String path) async {
 // Метод для получения списка Уведомлений
 Future<List<Notifications>> getAllNotifications(
     {int page = 1, int perPage = 20}) async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   String path = await _appendQueryParams('/notification/unread?page=$page&per_page=$perPage');
   if (kDebugMode) {
     print('ApiService: getAllNotifications - Generated path: $path');
   }
 
-  //print('Sending request to API with path: $path');
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((json) => Notifications.fromJson(json))
-          .toList();
-    } else {
-      throw Exception('Нет данных о уведомлениях в ответе');
+    try {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) {
+              try {
+                return Notifications.fromJson(json);
+              } catch (e) {
+                print('Ошибка десериализации уведомления: $e, JSON: $json');
+                rethrow;
+              }
+            })
+            .toList();
+      } else {
+        throw Exception('Нет данных о уведомлениях в ответе');
+      }
+    } catch (e) {
+      print('Ошибка декодирования ответа: $e');
+      throw Exception('Ошибка обработки ответа сервера: $e');
     }
   } else {
-    throw Exception('Ошибка загрузки уведомлений!');
+    throw Exception('Ошибка загрузки уведомлений: ${response.statusCode}');
   }
 }
 
@@ -6935,7 +6945,7 @@ Future<Map<String, dynamic>> finishNotice(
 
 Future<SubjectDataResponse> getAllSubjects() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/noteSubject');
+  final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
   if (kDebugMode) {
     print('ApiService: getAllSubjects - Generated path: $path');
   }

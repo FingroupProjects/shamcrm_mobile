@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -35,6 +35,7 @@ class _LeadColumnState extends State<LeadColumn> {
   bool _isSwitch = false;
   final ApiService _apiService = ApiService();
   late final LeadBloc _leadBloc;
+  final ScrollController _scrollController = ScrollController();
 
   List<TargetFocus> targets = [];
   final GlobalKey keyLeadCard = GlobalKey();
@@ -51,37 +52,40 @@ class _LeadColumnState extends State<LeadColumn> {
     super.initState();
     _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
     _checkPermission();
-    _loadFeatureState(); 
+    _loadFeatureState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+          !_leadBloc.allLeadsFetched) {
+        _leadBloc.add(FetchMoreLeads(widget.statusId, (_leadBloc.state as LeadDataLoaded).currentPage));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _leadBloc.close();
+    super.dispose();
   }
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isSwitch = prefs.getBool('switchContact') ?? false; 
+      _isSwitch = prefs.getBool('switchContact') ?? false;
     });
   }
 
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      _initTutorialTargets();
-      _isInitialized = true;
-    }
-    if (widget.isLeadScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
-      _startTutorialLogic();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant LeadColumn oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isLeadScreenTutorialCompleted != oldWidget.isLeadScreenTutorialCompleted &&
-        widget.isLeadScreenTutorialCompleted && 
-        !_isTutorialShown && 
-        !_isTutorialInProgress) {
-      _startTutorialLogic();
+  Future<void> _checkPermission() async {
+    try {
+      bool hasPermission = await _apiService.hasPermission('lead.create');
+      setState(() {
+        _hasPermissionToAddLead = hasPermission;
+      });
+    } catch (e) {
+      print('LeadColumn: Error checking lead.create permission: $e');
+      setState(() {
+        _hasPermissionToAddLead = false;
+      });
     }
   }
 
@@ -131,12 +135,10 @@ class _LeadColumnState extends State<LeadColumn> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      //print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      //print('No targets available for tutorial, reinitializing');
       _initTutorialTargets();
       if (targets.isEmpty) return;
     }
@@ -145,7 +147,6 @@ class _LeadColumnState extends State<LeadColumn> {
     bool isTutorialShown = prefs.getBool('isTutorialShownLeadColumn') ?? false;
 
     if (isTutorialShown || _isTutorialShown) {
-      //print('Tutorial conditions not met');
       return;
     }
 
@@ -158,12 +159,12 @@ class _LeadColumnState extends State<LeadColumn> {
     bool isLastStep = false;
 
     switch (_tutorialStep) {
-      case 0: // LeadCard и StatusDropdown вместе
+      case 0:
         currentTargets = targets
             .where((t) => t.identify == "LeadCard" || t.identify == "StatusDropdown")
             .toList();
         break;
-      case 1: // FloatingActionButton
+      case 1:
         if (_hasPermissionToAddLead) {
           currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
           isLastStep = true;
@@ -203,13 +204,11 @@ class _LeadColumnState extends State<LeadColumn> {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        // Синхронная функция для onSkip
         prefs.setBool('isTutorialShownLeadColumn', true);
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
         });
-        // Вызываем асинхронную логику отдельно
         _completeTutorialAsync();
         return true;
       },
@@ -218,9 +217,8 @@ class _LeadColumnState extends State<LeadColumn> {
           await prefs.setBool('isTutorialShownLeadColumn', true);
           try {
             await _apiService.markPageCompleted("leads", "index");
-            //print('Sent markPageCompleted for leads/index after finishing LeadColumn');
           } catch (e) {
-            //print('Error marking page completed on finish: $e');
+            print('LeadColumn: Error marking page completed on finish: $e');
           }
           setState(() {
             _isTutorialShown = true;
@@ -231,27 +229,18 @@ class _LeadColumnState extends State<LeadColumn> {
             _tutorialStep++;
             _isTutorialInProgress = false;
           });
-          showTutorial(); // Переходим к следующему шагу
+          showTutorial();
         }
       },
     ).show(context: context);
   }
 
-  // Отдельный метод для асинхронной логики завершения туториала
   Future<void> _completeTutorialAsync() async {
     try {
       await _apiService.markPageCompleted("leads", "index");
-      //print('Sent markPageCompleted for leads/index after skipping LeadColumn');
     } catch (e) {
-      //print('Error marking page completed on skip: $e');
+      print('LeadColumn: Error marking page completed on skip: $e');
     }
-  }
-
-  Future<void> _checkPermission() async {
-    bool hasPermission = await _apiService.hasPermission('lead.create');
-    setState(() {
-      _hasPermissionToAddLead = hasPermission;
-    });
   }
 
   Future<void> _onRefresh() async {
@@ -279,14 +268,6 @@ class _LeadColumnState extends State<LeadColumn> {
               final leads = state.leads.where((lead) => lead.statusId == widget.statusId).toList();
 
               if (leads.isNotEmpty) {
-                final ScrollController _scrollController = ScrollController();
-                _scrollController.addListener(() {
-                  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
-                      !_leadBloc.allLeadsFetched) {
-                    _leadBloc.add(FetchMoreLeads(widget.statusId, state.currentPage));
-                  }
-                });
-
                 return RefreshIndicator(
                   color: Color(0xff1E2E52),
                   backgroundColor: Colors.white,

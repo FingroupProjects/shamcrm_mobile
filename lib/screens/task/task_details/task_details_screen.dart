@@ -353,7 +353,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       final prefs = await SharedPreferences.getInstance();
@@ -375,7 +375,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
@@ -469,7 +469,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   AppBar _buildAppBar(BuildContext context, String title) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
+        //showTutorial();
         setState(() {
           _isTutorialShown = true;
         });

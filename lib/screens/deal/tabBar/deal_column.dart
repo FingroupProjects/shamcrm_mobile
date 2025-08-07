@@ -33,11 +33,11 @@ class DealColumn extends StatefulWidget {
 
 class _DealColumnState extends State<DealColumn> {
   bool _canCreateDeal = false;
+  bool _permissionChecked = false;
   final ApiService _apiService = ApiService();
   late DealBloc _dealBloc;
   late ScrollController _scrollController;
 
-  // Ключи для подсказок
   final GlobalKey keyDealCard = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
   final GlobalKey keyDropdown = GlobalKey();
@@ -53,7 +53,10 @@ class _DealColumnState extends State<DealColumn> {
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    _checkCreatePermission();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCreatePermission();
+    });
   }
 
   @override
@@ -72,8 +75,8 @@ class _DealColumnState extends State<DealColumn> {
   void didUpdateWidget(covariant DealColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isDealScreenTutorialCompleted != oldWidget.isDealScreenTutorialCompleted &&
-        widget.isDealScreenTutorialCompleted && 
-        !_isTutorialShown && 
+        widget.isDealScreenTutorialCompleted &&
+        !_isTutorialShown &&
         !_isTutorialInProgress) {
       _startTutorialLogic();
     }
@@ -87,6 +90,34 @@ class _DealColumnState extends State<DealColumn> {
     super.dispose();
   }
 
+  Future<void> _checkCreatePermission() async {
+    if (_permissionChecked && _canCreateDeal) {
+      print('DealColumn: Permission already checked and available, skipping');
+      return;
+    }
+
+    try {
+      print('DealColumn: Checking deal.create permission...');
+      final canCreate = await _apiService.hasPermission('deal.create');
+      print('DealColumn: deal.create permission result: $canCreate');
+      if (mounted) {
+        setState(() {
+          _canCreateDeal = canCreate;
+          _permissionChecked = true;
+        });
+        print('DealColumn: Updated _canCreateDeal: $_canCreateDeal');
+        print('DealColumn: Set _permissionChecked: $_permissionChecked');
+      }
+    } catch (e) {
+      print('DealColumn: Error checking deal.create permission: $e');
+      if (mounted) {
+        setState(() {
+          _canCreateDeal = false;
+          _permissionChecked = true;
+        });
+      }
+    }
+  }
 
   void _initTutorialTargets() {
     targets.clear();
@@ -126,7 +157,7 @@ class _DealColumnState extends State<DealColumn> {
       Future.delayed(Duration(milliseconds: 500), () {
         if (mounted) {
           _tutorialStep = 0;
-          showTutorial();
+          //showTutorial();
         }
       });
     }
@@ -134,12 +165,12 @@ class _DealColumnState extends State<DealColumn> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      //print('Tutorial already in progress, skipping');
+      print('DealColumn: Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      //print('No targets available for tutorial, reinitializing');
+      print('DealColumn: No targets available for tutorial, reinitializing');
       _initTutorialTargets();
       if (targets.isEmpty) return;
     }
@@ -148,7 +179,7 @@ class _DealColumnState extends State<DealColumn> {
     bool isTutorialShown = prefs.getBool('isTutorialShownDealColumn') ?? false;
 
     if (isTutorialShown || _isTutorialShown) {
-      //print('Tutorial conditions not met');
+      print('DealColumn: Tutorial conditions not met');
       return;
     }
 
@@ -161,12 +192,12 @@ class _DealColumnState extends State<DealColumn> {
     bool isLastStep = false;
 
     switch (_tutorialStep) {
-      case 0: // DealCard и Dropdown вместе
+      case 0:
         currentTargets = targets
             .where((t) => t.identify == "DealCard" || t.identify == "Dropdown")
             .toList();
         break;
-      case 1: // FloatingActionButton
+      case 1:
         if (_canCreateDeal) {
           currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
           isLastStep = true;
@@ -214,7 +245,7 @@ class _DealColumnState extends State<DealColumn> {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
         });
-        _completeTutorialAsync(); // Асинхронная логика вынесена
+        _completeTutorialAsync();
         return true;
       },
       onFinish: () async {
@@ -222,9 +253,9 @@ class _DealColumnState extends State<DealColumn> {
           await prefs.setBool('isTutorialShownDealColumn', true);
           try {
             await _apiService.markPageCompleted("deals", "index");
-            //print('Sent markPageCompleted for deals/index after finishing DealColumn');
+            print('DealColumn: Sent markPageCompleted for deals/index after finishing');
           } catch (e) {
-            //print('Error marking page completed on finish: $e');
+            print('DealColumn: Error marking page completed on finish: $e');
           }
           setState(() {
             _isTutorialShown = true;
@@ -235,7 +266,7 @@ class _DealColumnState extends State<DealColumn> {
             _tutorialStep++;
             _isTutorialInProgress = false;
           });
-          showTutorial();
+          //showTutorial();
         }
       },
     ).show(context: context);
@@ -244,17 +275,10 @@ class _DealColumnState extends State<DealColumn> {
   Future<void> _completeTutorialAsync() async {
     try {
       await _apiService.markPageCompleted("deals", "index");
-      //print('Sent markPageCompleted for deals/index after skipping DealColumn');
+      print('DealColumn: Sent markPageCompleted for deals/index after skipping');
     } catch (e) {
-      //print('Error marking page completed: $e');
+      print('DealColumn: Error marking page completed: $e');
     }
-  }
-
-  Future<void> _checkCreatePermission() async {
-    final canCreate = await _apiService.hasPermission('deal.create');
-    setState(() {
-      _canCreateDeal = canCreate;
-    });
   }
 
   Future<void> _onRefresh() async {
@@ -263,26 +287,27 @@ class _DealColumnState extends State<DealColumn> {
     return Future.delayed(Duration(milliseconds: 1));
   }
 
-void _onScroll() {
-  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-    final currentState = _dealBloc.state;
-    if (currentState is DealDataLoaded) {
-      // Проверяем, загружены ли все сделки
-      if (!_dealBloc.allDealsFetched) {
-        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      final currentState = _dealBloc.state;
+      if (currentState is DealDataLoaded) {
+        if (!_dealBloc.allDealsFetched) {
+          _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+        }
       }
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ DealColumn: Rendering - statusId: ${widget.statusId}, _canCreateDeal: $_canCreateDeal, _permissionChecked: $_permissionChecked');
     return BlocProvider.value(
       value: _dealBloc,
       child: Scaffold(
         backgroundColor: Colors.white,
         body: BlocBuilder<DealBloc, DealState>(
           builder: (context, state) {
+            print('🏗️ DealColumn: BlocBuilder - state: ${state.runtimeType}');
             if (state is DealLoading) {
               return const Center(
                 child: PlayStoreImageLoading(
@@ -292,7 +317,7 @@ void _onScroll() {
               );
             } else if (state is DealDataLoaded) {
               final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
-
+              print('📋 DealColumn: DealDataLoaded - deals count: ${deals.length} for statusId: ${widget.statusId}');
               if (deals.isNotEmpty) {
                 return RefreshIndicator(
                   color: Color(0xff1E2E52),
@@ -354,6 +379,7 @@ void _onScroll() {
                 );
               }
             } else if (state is DealError) {
+              print('❌ DealColumn: DealError: ${state.message}');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -384,15 +410,20 @@ void _onScroll() {
             ? FloatingActionButton(
                 key: keyFloatingActionButton,
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DealAddScreen(statusId: widget.statusId),
-                    ),
-                  ).then((_) => _dealBloc.add(FetchDeals(widget.statusId)));
+                  print('➕ DealColumn: FloatingActionButton pressed');
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DealAddScreen(statusId: widget.statusId),
+                      ),
+                    ).then((_) {
+                      _dealBloc.add(FetchDeals(widget.statusId));
+                    });
+                  }
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
+                child: Icon(Icons.add, color: Colors.white),
               )
             : null,
       ),

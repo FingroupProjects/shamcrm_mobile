@@ -295,7 +295,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       //print('Error fetching tutorial progress: $e');
@@ -319,7 +319,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }

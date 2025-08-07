@@ -178,7 +178,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
         targets.isNotEmpty &&
         mounted) {
       _tutorialStep = 0; // Начинаем с первого шага
-      showTutorial(); // Запускаем туториал
+      //showTutorial(); // Запускаем туториал
     }
   } catch (e) {
     //print('Error fetching tutorial progress: $e');
@@ -202,7 +202,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
           targets.isNotEmpty &&
           mounted) {
         _tutorialStep = 0; // Начинаем с первого шага
-        showTutorial(); // Запускаем туториал
+        //showTutorial(); // Запускаем туториал
       }
     }
   }
@@ -367,7 +367,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
           _tutorialStep++;
           _isTutorialInProgress = false;
         });
-        showTutorial(); // Переходим к следующему шагу
+        //showTutorial(); // Переходим к следующему шагу
       }
     },
     onSkip: () {

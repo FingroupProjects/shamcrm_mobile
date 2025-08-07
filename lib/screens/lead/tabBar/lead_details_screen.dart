@@ -304,7 +304,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       final prefs = await SharedPreferences.getInstance();
@@ -325,7 +325,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
@@ -630,7 +630,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget build(BuildContext context) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
+        //showTutorial();
         setState(() {
           _isTutorialShown = true;
         });

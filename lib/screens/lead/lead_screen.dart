@@ -48,7 +48,7 @@ class LeadScreen extends StatefulWidget {
 
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
+  late ScrollController tabScrollController; // Переименован для ясности
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
@@ -61,15 +61,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canDeleteLeadStatus = false;
   bool _isSwitch = false;
   bool _isSwitchingFunnel = false;
-
+  bool _hasPermissionToAddLead = false;
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-
   bool _showCustomTabBar = true;
   String _lastSearchQuery = "";
-
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
   List<SourceData> _selectedSources = [];
@@ -88,7 +86,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _daysWithoutActivity;
   List<Map<String, dynamic>> _directoryValues = [];
   List<Map<String, dynamic>> _initialDirectoryValues = [];
-
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
   List<SourceData> _initialSelectedSources = [];
@@ -105,11 +102,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasUnreadMessages;
   bool? _initialHasDeal;
   int? _initialDaysWithoutActivity;
-
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
-
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isLeadScreenTutorialCompleted = false;
@@ -125,8 +120,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+    tabScrollController = ScrollController(); // Контроллер только для табов
+    tabScrollController.addListener(_onScroll);
     _loadFeatureState();
 
     _apiService.getSelectedSalesFunnel().then((funnelId) {
@@ -199,20 +194,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
-      if (leadBloc.state is LeadDataLoaded) {
-        final state = leadBloc.state as LeadDataLoaded;
-        if (!leadBloc.allLeadsFetched) {
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          leadBloc.add(FetchMoreLeads(
-            currentStatusId,
-            state.currentPage,
-          ));
-        }
-      }
-    }
+    // Логика прокрутки табов, не связана с LeadColumn
   }
 
   Future<void> _onRefresh(int currentStatusId) async {
@@ -252,6 +234,60 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     print('LeadScreen: _onRefresh - FetchLeads dispatched for statusId: $currentStatusId');
   }
 
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('leadStatus.read');
+    final canCreate = await _apiService.hasPermission('leadStatus.create');
+    final canUpdate = await _apiService.hasPermission('leadStatus.update');
+    final canDelete = await _apiService.hasPermission('leadStatus.delete');
+    final canAddLead = await _apiService.hasPermission('lead.create');
+    if (mounted) {
+      setState(() {
+        _canReadLeadStatus = canRead;
+        _canCreateLeadStatus = canCreate;
+        _canUpdateLeadStatus = canUpdate;
+        _canDeleteLeadStatus = canDelete;
+        _hasPermissionToAddLead = canAddLead;
+      });
+    }
+
+    try {
+      final progress = await _apiService.getTutorialProgress();
+      if (mounted) {
+        if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
+          setState(() {
+            tutorialProgress = progress['result'];
+          });
+        } else {
+          setState(() {
+            tutorialProgress = null;
+          });
+        }
+      }
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
+      if (mounted) {
+        setState(() {
+          _isTutorialShown = isTutorialShown;
+        });
+      }
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['leads']?['index'] == false &&
+          !_isTutorialShown &&
+          mounted) {
+        _initTutorialTargets();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // showTutorial();
+          }
+        });
+      }
+    } catch (e) {
+      print('LeadScreen: Error fetching tutorial progress: $e');
+    }
+  }
+
   void _initTutorialTargets() {
     targets.clear();
     targets.addAll([
@@ -286,58 +322,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         context: context,
       ),
     ]);
-  }
-
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('leadStatus.read');
-    final canCreate = await _apiService.hasPermission('leadStatus.create');
-    final canUpdate = await _apiService.hasPermission('leadStatus.update');
-    final canDelete = await _apiService.hasPermission('leadStatus.delete');
-    if (mounted) {
-      setState(() {
-        _canReadLeadStatus = canRead;
-        _canCreateLeadStatus = canCreate;
-        _canUpdateLeadStatus = canUpdate;
-        _canDeleteLeadStatus = canDelete;
-      });
-    }
-
-    try {
-      final progress = await _apiService.getTutorialProgress();
-      if (mounted) {
-        if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
-          setState(() {
-            tutorialProgress = progress['result'];
-          });
-        } else {
-          setState(() {
-            tutorialProgress = null;
-          });
-        }
-      }
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
-      if (mounted) {
-        setState(() {
-          _isTutorialShown = isTutorialShown;
-        });
-      }
-
-      if (tutorialProgress != null &&
-          tutorialProgress!['leads']?['index'] == false &&
-          !_isTutorialShown &&
-          mounted) {
-        _initTutorialTargets();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            showTutorial();
-          }
-        });
-      }
-    } catch (e) {
-      print('LeadScreen: Error fetching tutorial progress: $e');
-    }
   }
 
   void showTutorial() async {
@@ -398,7 +382,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       query: query,
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
       regionsIds: _selectedRegions.map((region) => region.id).toList(),
-      sourcesIds: _selectedSources.map((sources) => sources.id).toList(),
+      sourcesIds: _selectedSources.map((source) => source.id).toList(),
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -1011,7 +995,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       child: ListView.builder(
-        controller: _scrollController,
         itemCount: leads.length,
         itemBuilder: (context, index) {
           final lead = leads[index];
@@ -1072,7 +1055,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             color: const Color(0xff1E2E52),
             backgroundColor: Colors.white,
             child: ListView.builder(
-              controller: _scrollController,
               itemCount: filteredLeads.length,
               itemBuilder: (context, index) {
                 final lead = filteredLeads[index];
@@ -1106,7 +1088,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      controller: _scrollController,
+      controller: tabScrollController, // Используем контроллер для табов
       child: Row(
         children: [
           ...List.generate(_tabTitles.length, (index) {
@@ -1345,7 +1327,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       _currentTabIndex = _tabController.index;
                     });
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                    if (_scrollController.hasClients) {
+                    if (tabScrollController.hasClients) {
                       _scrollToActiveTab();
                     }
                     context.read<LeadBloc>().add(FetchLeads(
@@ -1364,7 +1346,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   _tabController.index = _currentTabIndex;
                 }
 
-                if (_scrollController.hasClients) {
+                if (tabScrollController.hasClients) {
                   _scrollToActiveTab();
                 }
 
@@ -1499,25 +1481,30 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
-    if (keyContext != null) {
+    if (keyContext != null && tabScrollController.hasClients) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
       if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset +
+        double targetOffset = tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
-            targetOffset,
-            duration: Duration(milliseconds: 100),
-            curve: Curves.linear,
-          );
-        }
+        tabScrollController.animateTo(
+          targetOffset,
+          duration: Duration(milliseconds: 100),
+          curve: Curves.linear,
+        );
       }
     }
+  }
+
+  @override
+  void dispose() {
+    tabScrollController.dispose();
+    _tabController.dispose();
+    super.dispose();
   }
 }

@@ -265,7 +265,7 @@
 //       _initTargets();
 
 //       if (tutorialProgress != null && tutorialProgress!['deals']?['view'] == false && !isTutorialShown && !_isTutorialInProgress && targets.isNotEmpty && mounted) {
-//         showTutorial();
+//         //showTutorial();
 //       }
 //     } catch (e) {
 //       print('Error fetching tutorial progress: $e');
@@ -283,7 +283,7 @@
 //         _initTargets();
 
 //         if (tutorialProgress != null && tutorialProgress!['deals']?['view'] == false && !isTutorialShown && !_isTutorialInProgress && targets.isNotEmpty && mounted) {
-//           showTutorial();
+//           //showTutorial();
 //         }
 //       }
 //     }
