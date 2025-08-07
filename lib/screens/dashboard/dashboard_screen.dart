@@ -194,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _initTutorialTargets();
-            showTutorial();
+            //showTutorial();
           } else {
             //print('Widget not mounted, skipping tutorial for dashboard');
           }

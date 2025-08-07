@@ -1146,6 +1146,24 @@
 "all_calls": "Barcha qo‘ng‘iroqlar",
 "outgoing": "Chiquvchi",
 "missed": "O‘tkazib yuborilgan",
-"no_calls_found": "Qo‘ng‘iroqlar topilmadi"
+"no_calls_found": "Qo‘ng‘iroqlar topilmadi",
+"remarks": "Izohlar",
+"date_range": "Sana oralig‘i",
+"sales_funnel": "Sotuv voronkasi",
+"select_sales_funnel": "Voronka tanlang",
+"field_required_sales_funnel": "Sotuv voronkasi maydoni majburiy",
+"sales_funnel_details": "Sotuv voronkasi:",
+"incoming": "Kirish",
+"total_calls": "Jami qo‘ng‘iroqlar",
+"call_type_stats": "Qo‘ng‘iroqlar soni",
+"operator_efficiency": "Operator samaradorligi",
+"unanswered": "Javobsiz",
+"duplicate_options": "Ko‘chirish funksiyasi",
+"duplicate": "Nusxalash",
+"transfer_and_delete": "To‘liq ko‘chirib, o‘chirish",
+"user_id_not_found": "Foydalanuvchi IDsi aniqlanmadi",
+"not_available": "00:00",
+"average_rating": "O‘rtacha baho"
+
 
 }

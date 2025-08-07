@@ -1,3 +1,4 @@
+
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
@@ -14,8 +15,7 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
-import 'package:crm_task_manager/models/directory_model.dart'
-    as directory_model;
+import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -32,6 +32,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskEditScreen extends StatefulWidget {
@@ -48,7 +49,8 @@ class TaskEditScreen extends StatefulWidget {
   final int? priority;
   final List<TaskCustomFieldsById> taskCustomFields;
   final List<TaskFiles>? files;
-  final List<DirectoryValues>? directoryValues; // Добавляем directoryValues
+  final List<DirectoryValues>? directoryValues;
+
   TaskEditScreen({
     required this.taskId,
     required this.taskName,
@@ -63,7 +65,7 @@ class TaskEditScreen extends StatefulWidget {
     this.priority,
     this.files,
     required this.taskCustomFields,
-    this.directoryValues, // Добавляем в конструктор
+    this.directoryValues,
   });
 
   @override
@@ -90,10 +92,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final ApiService _apiService = ApiService();
   List<TaskFiles> existingFiles = [];
   bool _shouldShowAdditionalFieldsButton = true;
+  bool _canUpdateTask = false;
+  bool _hasTaskCreateForMySelfPermission = false;
+  int? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _initializeControllers();
     _loadInitialData();
     _checkAdditionalFields();
@@ -105,16 +111,40 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _fetchAndAddCustomFields();
   }
 
+  Future<void> _checkPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('userID');
+      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+
+      final results = await Future.wait([
+        _apiService.hasPermission('task.update'),
+        _apiService.hasPermission('task.createForMySelf'),
+      ]);
+
+      setState(() {
+        _canUpdateTask = results[0] as bool;
+        _hasTaskCreateForMySelfPermission = results[1] as bool;
+        _currentUserId = userId;
+      });
+
+      print('TaskEditScreen: Permissions - task.update: $_canUpdateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+    } catch (e) {
+      print('TaskEditScreen: Error checking permissions or userID: $e');
+      setState(() {
+        _canUpdateTask = false;
+        _hasTaskCreateForMySelfPermission = false;
+        _currentUserId = null;
+      });
+    }
+  }
+
   void _fetchAndAddCustomFields() async {
-    //print('Начало загрузки справочных полей');
     try {
       final directoryLinkData = await _apiService.getTaskDirectoryLinks();
-      //print('Получены directoryLinkData: ${directoryLinkData.data}');
       if (directoryLinkData.data != null) {
         setState(() {
           customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-            // //print(
-            //     'Добавление справочного поля: ${link.directory.name}, id: ${link.directory.id}');
             return CustomField(
               fieldName: link.directory.name,
               controller: TextEditingController(),
@@ -126,7 +156,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         });
       }
     } catch (e) {
-      //print('Ошибка при получении данных справочников: $e');
+      print('Ошибка при получении данных справочников: $e');
     }
   }
 
@@ -180,24 +210,26 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
-    selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
+    
+    if (!_canUpdateTask && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
+      selectedUsers = [_currentUserId.toString()];
+    } else {
+      selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
+    }
+    
     selectedPriority = widget.priority ?? 1;
 
-    // //print(
-    //     'Инициализация customFields из taskCustomFields: ${widget.taskCustomFields}');
     for (var customField in widget.taskCustomFields) {
       final controller = TextEditingController(text: customField.value);
       customFields.add(CustomField(
         fieldName: customField.key,
         controller: controller,
         uniqueId: Uuid().v4(),
-        type: customField.type ?? 'string', // Инициализация с типом
+        type: customField.type ?? 'string',
       ));
     }
 
-    //print('Инициализация directoryValues: ${widget.directoryValues}');
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-      // Удаляем дубликаты по directoryId и entryId
       final seen = <String>{};
       final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
         final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
@@ -205,8 +237,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }).toList();
 
       for (var dirValue in uniqueDirectoryValues) {
-        // //print(
-        //     'Обработка directoryValue: ${dirValue.entry.directory.name}, entryId: ${dirValue.entry.id}, value: ${dirValue.entry.values['value']}');
         final controller =
             TextEditingController(text: dirValue.entry.values['value'] ?? '');
         customFields.add(CustomField(
@@ -218,8 +248,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           uniqueId: Uuid().v4(),
         ));
       }
-    } else {
-      //print('directoryValues пустой или null');
     }
   }
 
@@ -230,16 +258,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   void _addCustomField(String fieldName,
       {bool isDirectory = false, int? directoryId, String? type}) {
-    // //print(
-    //     'Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId');
     if (isDirectory && directoryId != null) {
-      // Проверяем, существует ли уже поле с таким directoryId
       bool directoryExists = customFields.any((field) =>
           field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        // //print(
-        //     'Справочник с directoryId: $directoryId уже добавлен, пропускаем');
-        return; // Игнорируем добавление, если справочник уже существует
+        return;
       }
     }
     setState(() {
@@ -671,7 +694,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         _checkAdditionalFields();
       }
     } catch (e) {
-      //print('Ошибка при выборе файла: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Ошибка при выборе файла!"),
@@ -829,16 +851,17 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             keyboardType: TextInputType.multiline,
                           ),
                           const SizedBox(height: 8),
-                          UserMultiSelectWidget(
-                            selectedUsers: selectedUsers,
-                            onSelectUsers: (List<UserData> selectedUsersData) {
-                              setState(() {
-                                selectedUsers = selectedUsersData
-                                    .map((user) => user.id.toString())
-                                    .toList();
-                              });
-                            },
-                          ),
+                          if (_canUpdateTask)
+                            UserMultiSelectWidget(
+                              selectedUsers: selectedUsers,
+                              onSelectUsers: (List<UserData> selectedUsersData) {
+                                setState(() {
+                                  selectedUsers = selectedUsersData
+                                      .map((user) => user.id.toString())
+                                      .toList();
+                                });
+                              },
+                            ),
                           const SizedBox(height: 8),
                           ProjectTaskGroupWidget(
                             selectedProject: selectedProject,
@@ -882,7 +905,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               itemCount: customFields.length,
                               itemBuilder: (context, index) {
                                 final field = customFields[index];
-                                // //print( 'Построение поля: ${field.fieldName}, isDirectoryField: ${field.isDirectoryField}, entryId: ${field.entryId}');
                                 return Container(
                                   key: ValueKey(field.uniqueId),
                                   child: field.isDirectoryField &&
@@ -919,8 +941,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                               _checkAdditionalFields();
                                             });
                                           },
-                                          initialEntryId:
-                                              field.entryId, // Передаем entryId
+                                          initialEntryId: field.entryId,
                                         )
                                       : CustomFieldWidget(
                                           fieldName: field.fieldName,
@@ -931,7 +952,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                               _checkAdditionalFields();
                                             });
                                           },
-                                          type: field.type, // Передаём тип поля
+                                          type: field.type,
                                         ),
                                 );
                               },
@@ -1020,7 +1041,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             field.controller.text.trim();
                                         String? fieldType = field.type;
 
-                                        // Валидация для number
                                         if (fieldType == 'number' &&
                                             fieldValue.isNotEmpty) {
                                           if (!RegExp(r'^\d+$')
@@ -1033,34 +1053,38 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           }
                                         }
 
-                                       // Валидация и форматирование для date и datetime
-       if ((fieldType == 'date' || fieldType == 'datetime') &&
-          fieldValue.isNotEmpty) {
-        try {
-          if (fieldType == 'date') {
-            DateFormat('dd/MM/yyyy').parse(fieldValue);
-          } else {
-            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!
-                    .translate('enter_valid_${fieldType}'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
+                                        if ((fieldType == 'date' ||
+                                                fieldType == 'datetime') &&
+                                            fieldValue.isNotEmpty) {
+                                          try {
+                                            if (fieldType == 'date') {
+                                              DateFormat('dd/MM/yyyy')
+                                                  .parse(fieldValue);
+                                            } else {
+                                              DateFormat('dd/MM/yyyy HH:mm')
+                                                  .parse(fieldValue);
+                                            }
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  AppLocalizations.of(context)!
+                                                      .translate(
+                                                          'enter_valid_${fieldType}'),
+                                                  style: TextStyle(
+                                                    fontFamily: 'Gilroy',
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                        }
 
                                         if (field.isDirectoryField &&
                                             field.directoryId != null &&
@@ -1149,7 +1173,7 @@ class CustomField {
   final int? directoryId;
   final int? entryId;
   final String uniqueId;
-  final String? type; // Добавлено поле type
+  final String? type;
 
   CustomField({
     required this.fieldName,

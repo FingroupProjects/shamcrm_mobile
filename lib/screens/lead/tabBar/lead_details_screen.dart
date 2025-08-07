@@ -304,7 +304,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       final prefs = await SharedPreferences.getInstance();
@@ -325,7 +325,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
@@ -572,6 +572,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'label': '${AppLocalizations.of(context)!.translate('author_details')}',
         'value': lead.author?.name ?? ''
       },
+       {
+        'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+        'value': lead.salesFunnel?.name ?? ''
+      },
       {
         'label':
             '${AppLocalizations.of(context)!.translate('created_at_details')}',
@@ -594,8 +598,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
     for (var dirValue in lead.directoryValues) {
-      final directoryName = dirValue.entry.directory.name;
-      final value = dirValue.entry.values['value'] ?? '';
+      final directoryName = dirValue.entry?.directory.name;
+      final value = dirValue.entry?.values['value'] ?? '';
       details.add({'label': '$directoryName:', 'value': value});
     }
   }
@@ -626,7 +630,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget build(BuildContext context) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
+        //showTutorial();
         setState(() {
           _isTutorialShown = true;
         });
@@ -831,6 +835,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             statusId: currentLead!.statusId,
                             sourceId: currentLead!.source != null
                                 ? currentLead!.source!.id.toString()
+                                : '',
+                            salesFunnelId: currentLead!.salesFunnel != null
+                                ? currentLead!.salesFunnel!.id.toString()
                                 : '',
                             region: currentLead!.region != null
                                 ? currentLead!.region!.id.toString()

@@ -52,54 +52,81 @@ class CallById {
     required this.updatedAt,
   });
 
-  factory CallById.fromJson(Map<String, dynamic> json) {
-    return CallById(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      linkedId: json['linked_id'].toString(),
-      caller: json['caller'].toString(),
-      destinationNumber: json['destination_number'].toString(),
-      trunk: json['trunk'].toString(),
-      organizationId: json['organization_id'] is int
-          ? json['organization_id']
-          : int.parse(json['organization_id'].toString()),
-      lead: LeadByCall.fromJson(json['lead'] as Map<String, dynamic>),
-      callRecordUrl: json['call_record_url'].toString(),
-      user: json['user'] != null
-          ? UserByCall.fromJson(json['user'] as Map<String, dynamic>)
-          : null,
-      internalNumber: json['internal_number'] != null
-          ? json['internal_number'] is int
-              ? json['internal_number']
-              : int.tryParse(json['internal_number'].toString())
-          : null,
-      callDuration: json['call_duration'] != null
-          ? json['call_duration'] is int
-              ? json['call_duration']
-              : int.tryParse(json['call_duration'].toString())
-          : null,
-      callRingingDuration: json['call_ringing_duration'] != null
-          ? json['call_ringing_duration'] is int
-              ? json['call_ringing_duration']
-              : int.tryParse(json['call_ringing_duration'].toString())
-          : null,
-      incoming: json['incoming'] as bool,
-      missed: json['missed'] as bool,
-      answered: json['answered'] as bool,
-      callStatus: json['call_status'].toString(),
-      callStartedAt: DateTime.parse(json['call_started_at'].toString()),
-      callAnsweredAt: json['call_answered_at'] != null
-          ? DateTime.parse(json['call_answered_at'].toString())
-          : null,
-      callEndedAt: DateTime.parse(json['call_ended_at'].toString()),
-      additionalData: json['additional_data'] != null
-          ? AdditionalData.fromJson(json['additional_data'] as Map<String, dynamic>)
-          : null,
-      rating: json['rating']?.toString(),
-      report: json['report']?.toString(),
-      createdAt: json['created_at'].toString(),
-      updatedAt: json['updated_at'].toString(),
-    );
+ factory CallById.fromJson(Map<String, dynamic> json) {
+  DateTime? _parseCustomDate(String? dateStr) {
+    if (dateStr == null) return null;
+    try {
+      // Проверяем формат ISO 8601
+      if (dateStr.contains('T') && dateStr.endsWith('Z')) {
+        return DateTime.parse(dateStr);
+      }
+      // Обрабатываем нестандартный формат "YYYY-MM-DD HH:mm"
+      final parts = dateStr.split(' ');
+      if (parts.length != 2) return null;
+      final dateParts = parts[0].split('-');
+      final timeParts = parts[1].split(':');
+      if (dateParts.length != 3 || timeParts.length != 2) return null;
+      return DateTime.utc(
+        int.parse(dateParts[0]),
+        int.parse(dateParts[1]),
+        int.parse(dateParts[2]),
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+    } catch (e) {
+      return null;
+    }
   }
+
+  return CallById(
+    id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+    linkedId: json['linked_id']?.toString() ?? '',
+    caller: json['caller']?.toString() ?? '',
+    destinationNumber: json['destination_number']?.toString() ?? '',
+    trunk: json['trunk']?.toString() ?? '',
+    organizationId: json['organization_id'] is int
+        ? json['organization_id']
+        : int.parse(json['organization_id']?.toString() ?? '0'),
+    lead: LeadByCall.fromJson(json['lead'] as Map<String, dynamic>),
+    callRecordUrl: json['call_record_url']?.toString() ?? '',
+    user: json['user'] != null
+        ? UserByCall.fromJson(json['user'] as Map<String, dynamic>)
+        : null,
+    internalNumber: json['internal_number'] != null
+        ? json['internal_number'] is int
+            ? json['internal_number']
+            : int.tryParse(json['internal_number'].toString())
+        : null,
+    callDuration: json['call_duration'] != null
+        ? json['call_duration'] is int
+            ? json['call_duration']
+            : int.tryParse(json['call_duration'].toString())
+        : null,
+    callRingingDuration: json['call_ringing_duration'] != null
+        ? json['call_ringing_duration'] is int
+            ? json['call_ringing_duration']
+            : int.tryParse(json['call_ringing_duration'].toString())
+        : null,
+    incoming: json['incoming'] as bool? ?? false,
+    missed: json['missed'] as bool? ?? false,
+    answered: json['answered'] as bool? ?? false,
+    callStatus: json['call_status']?.toString() ?? '',
+    callStartedAt: _parseCustomDate(json['call_started_at']?.toString()) ??
+        DateTime.utc(1970, 1, 1, 0, 0),
+    callAnsweredAt: json['call_answered_at'] != null
+        ? _parseCustomDate(json['call_answered_at']?.toString())
+        : null,
+    callEndedAt: _parseCustomDate(json['call_ended_at']?.toString()) ??
+        DateTime.utc(1970, 1, 1, 0, 0),
+    additionalData: json['additional_data'] != null
+        ? AdditionalData.fromJson(json['additional_data'] as Map<String, dynamic>)
+        : null,
+    rating: json['rating']?.toString(),
+    report: json['report']?.toString(),
+    createdAt: json['created_at']?.toString() ?? '',
+    updatedAt: json['updated_at']?.toString() ?? '',
+  );
+}
 }
 class LeadByCall {
   final int id;
@@ -161,36 +188,43 @@ class LeadByCall {
   });
 
   factory LeadByCall.fromJson(Map<String, dynamic> json) {
-    return LeadByCall(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      facebookLogin: json['facebook_login'] as String?,
-      instaLogin: json['insta_login'] as String?,
-      tgNick: json['tg_nick'] as String?,
-      tgId: json['tg_id'] as String?,
-      channels: json['channels'] as List<dynamic>,
-      position: json['position'] as String?,
-      waName: json['wa_name'] as String?,
-      waPhone: json['wa_phone'] as String?,
-      address: json['address'] as String?,
-      phone: json['phone'] as String,
-      birthday: json['birthday'] as String?,
-      description: json['description'] as String?,
-      createdAt: json['created_at'] as String,
-      dealsCount: json['deals_count'] as int?,
-      email: json['email'] as String?,
-      inProgressDealsCount: json['in_progress_deals_count'] as int?,
-      successfulDealsCount: json['successful_deals_count'] as int?,
-      failedDealsCount: json['failed_deals_count'] as int?,
-      sentTo1c: json['sent_to_1c'] as bool,
-      lastUpdate: json['last_update'] as int,
-      messageStatus: json['messageStatus'] as String,
-      file: json['file'] as String?,
-      verificationCode: json['verification_code'] as String?,
-      phoneVerifiedAt: json['phone_verified_at'] as String?,
-      bonus: json['bonus'] as String,
-    );
-  }
+  return LeadByCall(
+    id: json['id'] is int ? json['id'] : int.parse(json['id']?.toString() ?? '0'),
+    name: json['name']?.toString() ?? '',
+    facebookLogin: json['facebook_login']?.toString(),
+    instaLogin: json['insta_login']?.toString(),
+    tgNick: json['tg_nick']?.toString(),
+    tgId: json['tg_id']?.toString(),
+    channels: json['channels'] as List<dynamic>? ?? [],
+    position: json['position']?.toString(),
+    waName: json['wa_name']?.toString(),
+    waPhone: json['wa_phone']?.toString(),
+    address: json['address']?.toString(),
+    phone: json['phone']?.toString() ?? '',
+    birthday: json['birthday']?.toString(),
+    description: json['description']?.toString(),
+    createdAt: json['created_at']?.toString() ?? '',
+    dealsCount: json['deals_count'] is int ? json['deals_count'] : int.tryParse(json['deals_count']?.toString() ?? ''),
+    email: json['email']?.toString(),
+    inProgressDealsCount: json['in_progress_deals_count'] is int
+        ? json['in_progress_deals_count']
+        : int.tryParse(json['in_progress_deals_count']?.toString() ?? ''),
+    successfulDealsCount: json['successful_deals_count'] is int
+        ? json['successful_deals_count']
+        : int.tryParse(json['successful_deals_count']?.toString() ?? ''),
+    failedDealsCount: json['failed_deals_count'] is int
+        ? json['failed_deals_count']
+        : int.tryParse(json['failed_deals_count']?.toString() ?? ''),
+    sentTo1c: json['sent_to_1c'] as bool? ?? false,
+    lastUpdate: json['last_update'] is int ? json['last_update'] : int.parse(json['last_update']?.toString() ?? '0'),
+    messageStatus: json['messageStatus']?.toString() ?? '',
+    file: json['file']?.toString(),
+    verificationCode: json['verification_code']?.toString(),
+    phoneVerifiedAt: json['phone_verified_at']?.toString(),
+    bonus: json['bonus']?.toString() ?? '0.00',
+  );
+}
+
 }
 
 class UserByCall {

@@ -12,6 +12,7 @@ class FetchEvents extends EventEvent {
   final DateTime? toDate; 
   final DateTime? noticefromDate; 
   final DateTime? noticetoDate; 
+  final int? salesFunnelId; // Новый параметр
 
   FetchEvents({
     this.refresh = false,
@@ -22,7 +23,9 @@ class FetchEvents extends EventEvent {
     this.toDate,
     this.noticefromDate,
     this.noticetoDate,
+    this.salesFunnelId,
   });
+
 }
 
 

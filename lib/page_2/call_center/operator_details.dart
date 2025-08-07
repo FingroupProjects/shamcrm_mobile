@@ -25,6 +25,51 @@ class OperatorDetailsScreen extends StatefulWidget {
 }
 
 class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
+  
+  // Виджет для отображения звездочек рейтинга
+  Widget _buildRatingStars() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+             AppLocalizations.of(context)!
+                              .translate('average_rating'),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Row(
+          children: List.generate(5, (starIndex) {
+            return Padding(
+              padding: const EdgeInsets.only(left: 2.0),
+              child: Image.asset(
+                starIndex < widget.rating && widget.rating > 0
+                    ? 'assets/icons/AppBar/star_on.png'
+                    : 'assets/icons/AppBar/star_off.png',
+                width: 20,
+                height: 20,
+              ),
+            );
+          }),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '(${widget.rating}/5)',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,25 +89,7 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Row(
-              children: List.generate(5, (starIndex) {
-                return Padding(
-                  padding: const EdgeInsets.only(left: 2.0),
-                  child: Image.asset(
-                    starIndex < widget.rating && widget.rating > 0
-                        ? 'assets/icons/AppBar/star_on.png'
-                        : 'assets/icons/AppBar/star_off.png',
-                    width: 20,
-                    height: 20,
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
+        // Убираем actions со звездочками из AppBar
       ),
       body: FutureBuilder<List<dynamic>>(
         future: Future.wait([
@@ -101,9 +128,10 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
 
             // Проверка на наличие данных
             if (callSummaryStats.result.totalCalls == 0 && monthlyCallStats.result.isEmpty) {
-              return const Center(
+              return  Center(
                 child: Text(
-                  'Нет данных для отображения',
+     AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -114,12 +142,24 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
               );
             }
 
-            // Отображаем все графики одновременно
+            // Отображаем все графики с рейтингом вверху
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Добавляем рейтинг над первым графиком
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: _buildRatingStars(),
+                  ),
+                  const SizedBox(height: 16),
                   OperatorChartRating(
                     operatorId: widget.operatorId,
                     summaryStats: callSummaryStats,
@@ -141,9 +181,10 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
             );
           } else {
             // На случай, если snapshot.data == null
-            return const Center(
+            return  Center(
               child: Text(
-                'Нет данных для отображения',
+                 AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,

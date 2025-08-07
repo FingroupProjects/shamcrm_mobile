@@ -276,7 +276,7 @@ Future<void> _saveFilterState() async {
       _initTutorialTargets();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          showTutorial();
+          //showTutorial();
         }
       });
     }

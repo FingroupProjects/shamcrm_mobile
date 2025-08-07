@@ -1134,7 +1134,23 @@
 "all_calls": "Все звонки",
 "outgoing": "Исходящие",
 "missed": "Пропущенные",
-"no_calls_found": "Звонки не найдены"
+"no_calls_found": "Звонки не найдены",
+"sales_funnel": "Воронка продаж",
+  "select_sales_funnel": "Выберите воронку",
+  "field_required_sales_funnel": "Поле воронка продаж обязательно для заполнения",
+  "sales_funnel_details": "Воронка продаж:",
+  "incoming": "Входящие",
+"total_calls": "Всего звонков",
+"call_type_stats": "Количество звонков",
+"operator_efficiency": "Эффективность работы",
+"unanswered": "Без ответа",
+"duplicate_options": "Функция переноса",
+"duplicate": "Дублировать",
+"transfer_and_delete": "Перенести полностью и удалить",
+"user_id_not_found": "Не удалось определить ID текущего пользователя",
+"not_available": "00:00",
+"average_rating": "Средняя оценка"
+
 
 
 

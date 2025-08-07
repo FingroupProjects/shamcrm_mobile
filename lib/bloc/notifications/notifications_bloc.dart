@@ -51,44 +51,41 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   }
 
 Future<void> _fetchNotifications(FetchNotifications event, Emitter<NotificationState> emit) async {
-  //print("📥 [FETCH] Начинаем загрузку уведомлений...");
+  print("📥 [FETCH] Начинаем загрузку уведомлений...");
   emit(NotificationLoading());
 
-  // Загружаем данные из кэша
-  final cachedNotifications = await NotificationCacheHandler.getNotifications();
-  if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
-    //print("📦 [CACHE] Найдены уведомления в кэше: ${cachedNotifications.length} шт.");
-    emit(NotificationDataLoaded(cachedNotifications, currentPage: 1));
-  } else {
-    //print("⚠️ [CACHE] Данных в кэше не найдено.");
-    emit(NotificationDataLoaded([], currentPage: 1)); 
-  }
-
-  // Проверяем подключение к интернету
   if (await _checkInternetConnection()) {
-    //print("🌐 [NETWORK] Интернет подключен. Загружаем уведомления с сервера...");
+    print("🌐 [NETWORK] Интернет подключен. Загружаем уведомления с сервера...");
     try {
       final notifications = await apiService.getAllNotifications(page: 1, perPage: 20);
+      print("✅ [SERVER] Успешно загружены уведомления: ${notifications.length} шт.");
 
-      if (notifications.isNotEmpty) {
-        //print("✅ [SERVER] Успешно загружены уведомления: ${notifications.length} шт.");
-        // Сохраняем данные в кэш
-        await NotificationCacheHandler.saveNotifications(notifications);
-        //print("💾 [CACHE] Уведомления сохранены в кэш.");
-        emit(NotificationDataLoaded(notifications, currentPage: 1));
-      } else {
-        //print("⚠️ [SERVER] Сервер вернул пустой список уведомлений.");
-        // Очищаем кэш, если сервер вернул пустой список
-        await NotificationCacheHandler.clearCache();
-        emit(NotificationDataLoaded([], currentPage: 1)); // Отправляем пустое состояние
-      }
+      // Сохраняем данные в кэш
+      await NotificationCacheHandler.saveNotifications(notifications);
+      print("💾 [CACHE] Уведомления сохранены в кэш.");
+      emit(NotificationDataLoaded(notifications, currentPage: 1));
     } catch (e) {
-      //print("❌ [ERROR] Ошибка при загрузке уведомлений!");
-      emit(NotificationError('Не удалось загрузить уведомления!'));
+      print("❌ [ERROR] Ошибка при загрузке уведомлений: $e");
+      // Пробуем загрузить из кэша, если сервер недоступен
+      final cachedNotifications = await NotificationCacheHandler.getNotifications();
+      if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
+        print("📦 [CACHE] Найдены уведомления в кэше: ${cachedNotifications.length} шт.");
+        emit(NotificationDataLoaded(cachedNotifications, currentPage: 1));
+      } else {
+        print("🚫 [OFFLINE] Нет данных в кэше.");
+        emit(NotificationError('Не удалось загрузить уведомления: $e'));
+      }
     }
-  } else if (cachedNotifications == null || cachedNotifications.isEmpty) {
-    //print("🚫 [OFFLINE] Нет подключения к интернету и данных в кэше.");
-    emit(NotificationError('Нет подключения к интернету и данных в кэше'));
+  } else {
+    print("🚫 [OFFLINE] Нет подключения к интернету. Проверяем кэш...");
+    final cachedNotifications = await NotificationCacheHandler.getNotifications();
+    if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
+      print("📦 [CACHE] Найдены уведомления в кэше: ${cachedNotifications.length} шт.");
+      emit(NotificationDataLoaded(cachedNotifications, currentPage: 1));
+    } else {
+      print("🚫 [OFFLINE] Нет подключения к интернету и данных в кэше.");
+      emit(NotificationError('Нет подключения к интернету и данных в кэше'));
+    }
   }
 }
 

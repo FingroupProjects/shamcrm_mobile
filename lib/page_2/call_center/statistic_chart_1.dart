@@ -71,40 +71,50 @@ class StatisticChart1 extends StatelessWidget {
                   show: true,
                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 22,
-                      getTitlesWidget: (value, meta) {
-                        const monthNames = [
-                          'Янв',
-                          'Фев',
-                          'Мар',
-                          'Апр',
-                          'Май',
-                          'Июн',
-                          'Июл',
-                          'Авг',
-                          'Сен',
-                          'Окт',
-                          'Ноя',
-                          'Дек'
-                        ];
-                        final index = value.toInt();
-                        return index >= 0 && index < monthNames.length
-                            ? Text(
-                                monthNames[index],
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              )
-                            : const Text('');
-                      },
-                      interval: 1,
-                    ),
-                  ),
+                 bottomTitles: AxisTitles(
+  sideTitles: SideTitles(
+    showTitles: true,
+    reservedSize: 40, // Увеличено для повернутого текста
+    getTitlesWidget: (value, meta) {
+      const monthNames = [
+        'Янв',
+        'Фев',
+        'Мар',
+        'Апр',
+        'Май',
+        'Июн',
+        'Июл',
+        'Авг',
+        'Сен',
+        'Окт',
+        'Ноя',
+        'Дек'
+      ];
+      final index = value.toInt();
+      if (index < 0 || index >= monthNames.length) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.only(top: 16), // Смещение текста вниз
+        child: Transform.rotate(
+          angle: -1.55, // Поворот текста (~90 градусов)
+          child: Text(
+            monthNames[index],
+            textAlign: TextAlign.left,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+              color: Colors.black, // Явно задаем цвет для согласованности
+            ),
+          ),
+        ),
+      );
+    },
+    interval: 1,
+  ),
+),
+
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -125,12 +135,14 @@ class StatisticChart1 extends StatelessWidget {
                   show: true,
                   border: Border.all(color: Colors.grey.shade200, width: 0.5),
                 ),
+                
                 minX: 0,
                 maxX: 11,
                 minY: 0,
                 maxY: 250, // Увеличено для вмещения всех данных
                 lineBarsData: [
                   // Общее количество звонков
+                  
                   LineChartBarData(
                     spots: getSpots((data) => data.total.toDouble()),
                     isCurved: true,

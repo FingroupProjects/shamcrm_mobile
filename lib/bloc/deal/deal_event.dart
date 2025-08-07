@@ -3,7 +3,11 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 abstract class DealEvent {}
 
-  class FetchDealStatuses extends DealEvent {}
+ class FetchDealStatuses extends DealEvent {
+  final int? salesFunnelId; // Добавляем параметр
+
+  FetchDealStatuses({this.salesFunnelId});
+}
 
   class FetchDeals extends DealEvent {
     final int statusId;
@@ -15,6 +19,7 @@ abstract class DealEvent {}
     final DateTime? toDate;
     final int? daysWithoutActivity;
     final bool? hasTasks;
+    final int? salesFunnelId;
     final List<Map<String, dynamic>>? directoryValues; // Добавляем directory_values
 
     FetchDeals(
@@ -28,6 +33,8 @@ abstract class DealEvent {}
       this.daysWithoutActivity,
       this.hasTasks,
       this.directoryValues,
+      this.salesFunnelId,
+      
     });
   }
 

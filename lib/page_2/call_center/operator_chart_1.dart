@@ -18,7 +18,7 @@ class OperatorChartRating extends StatelessWidget {
 
     final List<Map<String, dynamic>> cardData = [
       {
-        'title': 'В среднем в разговор',
+        'title': 'В среднем на один звонок',
         'mainValue': averageCallDuration['minutes'].toString(),
         'mainUnit': 'мин',
         'secondaryValue': averageCallDuration['seconds'].toString(),
@@ -55,7 +55,7 @@ class OperatorChartRating extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(bottom: 16.0),
           child: Text(
-            'Длительность разговора',
+            '    Длительность разговора',
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,

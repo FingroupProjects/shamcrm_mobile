@@ -121,13 +121,7 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
-/*************  ✨ Windsurf Command ⭐  *************/
-  /// If the domain is set, initialize the API service with the set domain.
-  /// This function is used to initialize the API service when the app is
-  /// launched, and the domain is already set. If the domain is not set, the
-  /// function does nothing.
-  /// This function is called from the constructor of the `ApiService` class.
-/*******  8a917748-763b-4d5c-9dab-3d40df7fafa3  *******/ Future<void>
+Future<void>
       _initializeIfDomainExists() async {
     bool isDomainSet = await isDomainChecked();
     if (isDomainSet) {
@@ -384,348 +378,322 @@ class ApiService {
 
   //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
-  // Добавление метода для отправки токена устройства
-  Future<void> sendDeviceToken(String deviceToken) async {
-    final token =
-        await getToken(); // Получаем токен пользователя (если он есть)
-    final organizationId = await getSelectedOrganization();
+ // Добавление метода для отправки токена устройства
+Future<void> sendDeviceToken(String deviceToken) async {
+  final token = await getToken(); // Получаем токен пользователя (если он есть)
+  // Эндпоинт /add-fcm-token входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+  final organizationId = await getSelectedOrganization();
 
-    final response = await http.post(
-      Uri.parse(
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем правильный путь
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode({
-        'type': 'mobile', // Указываем тип устройства
-        'token': deviceToken, // Передаем FCM-токен устройства
-      }),
-    );
+  final response = await http.post(
+    Uri.parse(
+        '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем оригинальный путь, так как исключён
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      'Device': 'mobile'
+    },
+    body: json.encode({
+      'type': 'mobile', // Указываем тип устройства
+      'token': deviceToken, // Передаем FCM-токен устройства
+    }),
+  );
 
-    if (response.statusCode == 200) {
-      //print('FCM-токен успешно отправлен!');
-    } else {
-      //print('Ошибка при отправке FCM-токена!');
-      throw Exception('Ошибка!');
-    }
+  if (response.statusCode == 200) {
+    //print('FCM-токен успешно отправлен!');
+  } else {
+    //print('Ошибка при отправке FCM-токена!');
+    throw Exception('Ошибка!');
+  }
+}
+
+// Метод для получения чата по ID
+Future<ChatsGetId> getChatById(int chatId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/$chatId');
+  if (kDebugMode) {
+    print('ApiService: getChatById - Generated path: $path');
   }
 
-  // Метод для получения чата по ID
-  Future<ChatsGetId> getChatById(int chatId) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-        '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return ChatsGetId.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Ошибка получения чата!');
-    }
+  if (response.statusCode == 200) {
+    return ChatsGetId.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Ошибка получения чата!');
   }
+}
 
-  //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
+//_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
-  // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String mainDomain, String domain, String login,
-      String token, String userId, String organizationId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+// Метод для сохранения данных из QR-кода
+Future<void> saveQrData(String mainDomain, String domain, String login,
+    String token, String userId, String organizationId) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Сохраняем данные из QR-кода
-    await prefs.setString('domain', domain ?? '');
-    //print(prefs.getString('domain'));
-    await prefs.setString('mainDomain', mainDomain ?? '');
-    //print(prefs.getString('mainDomain'));
-    await prefs.setString('userLogin', login ?? '');
-    //print(prefs.getString('userLogin'));
-    await prefs.setString('token', token);
-    //print(prefs.getString('token'));
-    await prefs.setString('userID', userId ?? '');
-    //print(prefs.getString('userID'));
-    await prefs.setString('selectedOrganization', organizationId ?? '');
-    //print(prefs.getString('selectedOrganization'));
+  // Сохраняем данные из QR-кода
+  await prefs.setString('domain', domain ?? '');
+  //print(prefs.getString('domain'));
+  await prefs.setString('mainDomain', mainDomain ?? '');
+  //print(prefs.getString('mainDomain'));
+  await prefs.setString('userLogin', login ?? '');
+  //print(prefs.getString('userLogin'));
+  await prefs.setString('token', token);
+  //print(prefs.getString('token'));
+  await prefs.setString('userID', userId ?? '');
+  //print(prefs.getString('userID'));
+  await prefs.setString('selectedOrganization', organizationId ?? '');
+  //print(prefs.getString('selectedOrganization'));
 
-    // После сохранения обновляем информацию
-    await saveDomainChecked(true);
-    await saveDomain(mainDomain, domain);
+  // После сохранения обновляем информацию
+  await saveDomainChecked(true);
+  await saveDomain(mainDomain, domain);
+}
+
+// Метод для получения данных из QR-кода
+Future<Map<String, String?>> getQrData() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  String? domain = prefs.getString('domain') ?? '';
+  String? mainDomain = prefs.getString('mainDomain') ?? '';
+
+  String? login = prefs.getString('userLogin') ?? '';
+  String? token = prefs.getString('token') ?? '';
+  String userId = prefs.getString('userID') ?? '';
+  String? organizationId = prefs.getString('selectedOrganization') ?? '';
+  return {
+    'domain': domain,
+    'mainDomain': mainDomain,
+    'login': login,
+    'token': token,
+    'userID': userId,
+    'selectedOrganization': organizationId
+  };
+}
+
+//_________________________________ START___API__DOMAIN_CHECK____________________________________________//
+
+Future<http.Response> _postRequestDomain(
+    String path, Map<String, dynamic> body) async {
+  final enteredDomainMap = await getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  final String domainUrl = 'https://$enteredMainDomain/api';
+  final token = await getToken();
+  final updatedPath = await _appendQueryParams(path); // Уже использует _appendQueryParams
+  final response = await http.post(
+    Uri.parse('$domainUrl$updatedPath'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      'Device': 'mobile'
+    },
+    body: json.encode(body),
+  );
+  return response;
+}
+
+// Метод для проверки домена
+Future<DomainCheck> checkDomain(String domain) async {
+  //print(
+  // '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+  //print(domain);
+  // Эндпоинт /checkDomain входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequestDomain(
+      '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {'domain': domain});
+
+  if (response.statusCode == 200) {
+    return DomainCheck.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Не удалось загрузить поддомен!');
   }
+}
 
-  // Метод для получения данных из QR-кода
-  Future<Map<String, String?>> getQrData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+// Метод для сохранения домена
+Future<void> saveDomainChecked(bool value) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(
+      'domainChecked', value); // Сохраняем статус проверки домена
+}
 
-    String? domain = prefs.getString('domain') ?? '';
-    String? mainDomain = prefs.getString('mainDomain') ?? '';
+// Метод для проверки домена из SharedPreferences
+Future<bool> isDomainChecked() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('domainChecked') ??
+      false; // Проверяем статус или возвращаем false
+}
 
-    String? login = prefs.getString('userLogin') ?? '';
-    String? token = prefs.getString('token') ?? '';
-    String userId = prefs.getString('userID') ?? '';
-    String? organizationId = prefs.getString('selectedOrganization') ?? '';
-    return {
-      'domain': domain,
-      'mainDomain': mainDomain,
-      'login': login,
-      'token': token,
-      'userID': userId,
-      'selectedOrganization': organizationId
-    };
-  }
-
-  //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
-
-  Future<http.Response> _postRequestDomain(
-      String path, Map<String, dynamic> body) async {
-    final enteredDomainMap = await getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    final String domainUrl = 'https://$enteredMainDomain/api';
-    final token = await getToken();
-    final updatedPath = await _appendQueryParams(path);
-    final response = await http.post(
-      Uri.parse('$domainUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-    return response;
-  }
-
-  // Метод для проверки домена
-  Future<DomainCheck> checkDomain(String domain) async {
-    //print(
-    // '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
-    //print(domain);
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequestDomain(
-        '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {'domain': domain});
-
-    if (response.statusCode == 200) {
-      return DomainCheck.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Не удалось загрузить поддомен!');
-    }
-  }
-
-  // Метод для сохранения домена
-  Future<void> saveDomainChecked(bool value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'domainChecked', value); // Сохраняем статус проверки домена
-  }
-
-  // Метод для проверки домена из SharedPreferences
-  Future<bool> isDomainChecked() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('domainChecked') ??
-        false; // Проверяем статус или возвращаем false
-  }
-
-  // Метод для сохранения введенного домена
-  Future<void> saveDomain(String domain, String mainDomain) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('enteredMainDomain', mainDomain);
-    await prefs.setString('enteredDomain', domain);
-    //print('Ввведеный Doмен:----------------------');
-    //print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
-    //print('Ввведеный Poddomen---=----:----------------------');
-    //print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
-  }
+// Метод для сохранения введенного домена
+Future<void> saveDomain(String domain, String mainDomain) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('enteredMainDomain', mainDomain);
+  await prefs.setString('enteredDomain', domain);
+  //print('Ввведеный Doмен:----------------------');
+  //print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+  //print('Ввведеный Poddomen---=----:----------------------');
+  //print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
+}
 
 // Метод для получения введенного домена
-  Future<Map<String, String?>> getEnteredDomain() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? mainDomain = prefs.getString('enteredMainDomain');
-    String? domain = prefs.getString('enteredDomain');
+Future<Map<String, String?>> getEnteredDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? mainDomain = prefs.getString('enteredMainDomain');
+  String? domain = prefs.getString('enteredDomain');
 
-    return {
-      'enteredMainDomain': mainDomain,
-      'enteredDomain': domain,
-    };
+  return {
+    'enteredMainDomain': mainDomain,
+    'enteredDomain': domain,
+  };
+}
+//_________________________________ END___API__DOMAIN_CHECK____________________________________________//
+
+//_________________________________ START___API__LOGIN____________________________________________//
+
+// Метод для проверки логина и пароля
+Future<LoginResponse> login(LoginModel loginModel) async {
+  // Эндпоинт /login входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+  final organizationId = await getSelectedOrganization();
+  //print("------------------------ $organizationId");
+  final response = await _postRequest(
+      '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      loginModel.toJson());
+
+  // Выводим ответ от сервера в консоль
+  //print("Response from server: ${response.body}");
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final loginResponse = LoginResponse.fromJson(data);
+
+    await _saveToken(loginResponse.token);
+    // await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
+
+    return loginResponse;
+  } else {
+    throw Exception('Неправильный Логин или Пароль!');
   }
-  //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
-
-  //_________________________________ START___API__LOGIN____________________________________________//
-
-  // Метод для проверки логина и пароля
-  Future<LoginResponse> login(LoginModel loginModel) async {
-    final organizationId = await getSelectedOrganization();
-    //print("------------------------ $organizationId");
-    final response = await _postRequest(
-        '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        loginModel.toJson());
-
-    // Выводим ответ от сервера в консоль
-    //print("Response from server: ${response.body}");
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final loginResponse = LoginResponse.fromJson(data);
-
-      await _saveToken(loginResponse.token);
-      // await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
-
-      return loginResponse;
-    } else {
-      throw Exception('Неправильный Логин или Пароль!');
-    }
-  }
-
-// // Метод для сохранения прав доступа в SharedPreferences
-//   Future<void> _savePermissions(List<String> permissions) async {
-//     SharedPreferences prefs = await SharedPreferences.getInstance();
-//     await prefs.setStringList('permissions', permissions); // Сохраняем список прав
-//   }
-
-// // Метод для получения списка прав доступа
-//   Future<List<String>> getPermissions() async {
-//     SharedPreferences prefs = await SharedPreferences.getInstance();
-//     return prefs.getStringList('permissions') ?? []; // Возвращаем список прав доступа или пустой список
-//   }
-
-// // Метод для проверки, есть ли у пользователя определенное право
-//   Future<bool> hasPermission(String permission) async {
-//     final permissions = await getPermissions();
-//     return permissions.contains(permission); // Проверяем наличие права
-//   }
-
-  Future<List<String>> fetchPermissionsByRoleId() async {
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      final response = await _getRequest(
-          '/get-all-permissions?organization_id=$organizationId');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['permissions'] != null) {
-          // Преобразование списка разрешений в List<String>
-          return (data['permissions'] as List<dynamic>)
-              .map((permission) => permission as String)
-              .toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        throw Exception('Ошибка при получении прав доступа!!');
-      }
-    } catch (e) {
-      //print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
-      rethrow;
-    }
-  }
+}
 
 // Сохранение прав доступа в SharedPreferences
-  Future<void> savePermissions(List<String> permissions) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('permissions', permissions);
-    // //print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
-  }
+Future<void> savePermissions(List<String> permissions) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('permissions', permissions);
+  // //print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
+}
 
 // Получение списка прав доступа из SharedPreferences
-  Future<List<String>> getPermissions() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final permissions = prefs.getStringList('permissions') ?? [];
-    // //print('Извлечённые права доступа: $permissions');
-    return permissions;
-  }
+Future<List<String>> getPermissions() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final permissions = prefs.getStringList('permissions') ?? [];
+  // //print('Извлечённые права доступа: $permissions');
+  return permissions;
+}
 
 // Проверка наличия определенного права
-  Future<bool> hasPermission(String permission) async {
-    final permissions = await getPermissions();
-    return permissions.contains(permission);
+Future<bool> hasPermission(String permission) async {
+  final permissions = await getPermissions();
+  return permissions.contains(permission);
+}
+
+// Метод для получения прав доступа по ID роли
+Future<List<String>> fetchPermissionsByRoleId() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/get-all-permissions');
+  if (kDebugMode) {
+    print('ApiService: fetchPermissionsByRoleId - Generated path: $path');
   }
-// // Сохранение прав доступа в SharedPreferences
-// Future<void> savePermissionsPinCode(List<String> permissions) async {
-//   SharedPreferences prefs = await SharedPreferences.getInstance();
-//   await prefs.setStringList('permissions', permissions);
-// }
 
-// // Получение списка прав доступа из SharedPreferences
-// Future<List<String>> getPermissionsPinCode() async {
-//   SharedPreferences prefs = await SharedPreferences.getInstance();
-//   return prefs.getStringList('permissions') ?? [];
-// }
+  try {
+    final response = await _getRequest(path);
 
-// // Проверка наличия определенного права
-// Future<bool> hasPermissionPinCode(String permission) async {
-//   final permissions = await getPermissions();
-//   return permissions.contains(permission);
-// }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
 
-  //_________________________________ END___API__LOGIN____________________________________________//
-
-  Future<String> forgotPin(LoginModel loginModel) async {
-    try {
-      // Получение ID организации (если необходимо)
-      final organizationId = await getSelectedOrganization();
-
-      // Формирование URL с учетом ID организации
-      final url =
-          '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-      // Запрос к API
-      final response = await _postRequest(
-        url,
-        {
-          'login': loginModel.login,
-          'password': loginModel.password,
-        },
-      );
-
-      // Обработка успешного ответа
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-
-        if (decodedJson['result'] != null) {
-          return decodedJson['result'].toString();
-        } else {
-          throw Exception('Не удалось получить временный PIN.');
-        }
-      }
-      // Обработка ошибок сервера
-      else if (response.statusCode == 400) {
-        throw Exception('Некорректные данные запроса.');
+      if (data['permissions'] != null) {
+        // Преобразование списка разрешений в List<String>
+        return (data['permissions'] as List<dynamic>)
+            .map((permission) => permission as String)
+            .toList();
       } else {
-        //print('Ошибка API forgotPin!');
-        throw Exception('Ошибка сервера!');
+        throw Exception('Результат отсутствует в ответе');
       }
-    } catch (e) {
-      //print('Ошибка в forgotPin!');
-      throw Exception('Ошибка в запросе!');
+    } else {
+      throw Exception('Ошибка при получении прав доступа!!');
     }
+  } catch (e) {
+    //print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
+    rethrow;
   }
+}
 
-  //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
+//_________________________________ END___API__LOGIN____________________________________________//
+
+Future<String> forgotPin(LoginModel loginModel) async {
+  try {
+    // Эндпоинт /forgotPin входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+    final organizationId = await getSelectedOrganization();
+
+    // Формирование URL с учетом ID организации
+    final url =
+        '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    // Запрос к API
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
+
+    // Обработка успешного ответа
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+      if (decodedJson['result'] != null) {
+        return decodedJson['result'].toString();
+      } else {
+        throw Exception('Не удалось получить временный PIN.');
+      }
+    }
+    // Обработка ошибок сервера
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса.');
+    } else {
+      //print('Ошибка API forgotPin!');
+      throw Exception('Ошибка сервера!');
+    }
+  } catch (e) {
+    //print('Ошибка в forgotPin!');
+    throw Exception('Ошибка в запросе!');
+  }
+}
+
+//_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
 //Метод для получения Лида через его ID
-  Future<LeadById> getLeadById(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+Future<LeadById> getLeadById(int leadId) async {
+  try {
+    final path = await _appendQueryParams('/lead/$leadId');
+    print('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _getRequest(
-          '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic> jsonLead = decodedJson['result'];
-        return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
-      } else {
-        throw Exception('Ошибка загрузки лида ID!');
-      }
-    } catch (e) {
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic> jsonLead = decodedJson['result'];
+      return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
+    } else {
       throw Exception('Ошибка загрузки лида ID!');
     }
+  } catch (e) {
+    print('ApiService: getLeadById - Error:');
+    throw Exception('Ошибка загрузки лида ID!');
   }
+}
 
-  // Метод для получения списка Лидов с пагинацией
-
+// Метод для получения списка Лидов с пагинацией
 Future<List<Lead>> getLeads(
   int? leadStatusId, {
   int page = 1,
@@ -750,10 +718,15 @@ Future<List<Lead>> getLeads(
   List<Map<String, dynamic>>? directoryValues,
   int? salesFunnelId, // Новый параметр
 }) async {
-  final organizationId = await getSelectedOrganization();
+  // Формируем базовый путь
   String path = '/lead?page=$page&per_page=$perPage';
-  path += '&organization_id=$organizationId';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getLeads - After _appendQueryParams: $path');
+  }
 
+  // Добавляем sales_funnel_id из аргумента, если он передан
   if (salesFunnelId != null) {
     path += '&sales_funnel_id=$salesFunnelId';
   }
@@ -847,6 +820,9 @@ Future<List<Lead>> getLeads(
     }
   }
 
+  if (kDebugMode) {
+    print('ApiService: getLeads - Final path: $path');
+  }
   final response = await _getRequest(path);
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
@@ -862,695 +838,257 @@ Future<List<Lead>> getLeads(
   }
 }
 
-  // Метод для получения статусов лидов
-  Future<List<LeadStatus>> getLeadStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
+Future<List<LeadStatus>> getLeadStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+  print('ApiService: getLeadStatuses - organizationId: $organizationId');
 
-    try {
-      // Отправляем запрос на сервер
-      final response = await _getRequest(
-          '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  try {
+    // Используем _appendQueryParams для формирования пути
+    final path = await _appendQueryParams('/lead/statuses');
+    print('ApiService: getLeadStatuses - Generated path: $path');
 
-      // //print(
-      //     '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-      // //print('Отправка запроса на API с путём: ${response.body}');
+    final response = await _getRequest(path);
+    print('ApiService: getLeadStatuses - Response status: ${response.statusCode}');
+    print('ApiService: getLeadStatuses - Response body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final statuses = (data['result'] as List)
-              .map((status) => LeadStatus.fromJson(status))
-              .toList();
-
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedLeadStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            // //print(
-            //     '------------------------------ Старые данные в кэше ------------------------------');
-            // //print(decodedData); // Старые данные
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedLeadStatuses_$organizationId',
-              json.encode(data['result']));
-          // //print(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          return statuses;
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        throw Exception('Ошибка при получении данных!');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedLeadStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('ApiService: getLeadStatuses - Parsed data: $data');
+      if (data['result'] != null) {
+        final statuses = (data['result'] as List)
             .map((status) => LeadStatus.fromJson(status))
             .toList();
-        return cachedList;
+        print('ApiService: getLeadStatuses - Retrieved statuses: ${statuses.map((s) => {'id': s.id, 'title': s.title})}');
+
+        // Кэширование
+        await prefs.setString('cachedLeadStatuses_$organizationId', json.encode(data['result']));
+        print('ApiService: getLeadStatuses - Cached new statuses: ${data['result']}');
+
+        return statuses;
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        print('ApiService: getLeadStatuses - Result is null in response');
+        throw Exception('Результат отсутствует в ответе');
       }
-    }
-  }
-
-  Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
-    try {
-      // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Lead> leads =
-          await getLeads(leadStatusId, page: 1, perPage: 1);
-
-      // Если список лидов не пуст, значит статус содержит элементы
-      return leads.isNotEmpty;
-    } catch (e) {
-      //print('Error while checking if status has leads!');
-      return false;
-    }
-  }
-
-  // Метод для создания Cтатуса Лида
-  Future<Map<String, dynamic>> createLeadStatus(
-      String title, String color, bool? isFailure, bool? isSuccess) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/lead-status${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'color': color,
-          "is_success": isSuccess == true ? 1 : 0,
-          "is_failure": isFailure == true ? 1 : 0,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Статус лида создан успешно'};
     } else {
-      return {'success': false, 'message': 'Ошибка создания статуса лида!'};
+      print('ApiService: getLeadStatuses - Error status: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных: ${response.statusCode}');
     }
-  }
-
-//Обновление статуса карточки Лида  в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'position': position,
-        'status_id': statusId,
-      },
-    );
-
-    if (response.statusCode == 200) {
-      //print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'];
-
-      throw LeadStatusUpdateException(422, errorMessage);
-    } else {
-      throw Exception('Ошибка обновления задач лида!');
-    }
-  }
-
-// Метод для получения Истории Лида
-  Future<List<LeadHistory>> getLeadHistory(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest(
-          '/lead/history/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result']['history'];
-        return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
-      } else {
-        //print('Failed to load lead history!');
-        throw Exception('Ошибка загрузки истории лида!');
-      }
-    } catch (e) {
-      //print('Error occurred!');
-      throw Exception('Ошибка загрузки истории лида!');
-    }
-  }
-
-  Future<List<NoticeHistory>> getNoticeHistory(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final response = await _getRequest(
-          '/notices/history-by-lead-id/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result'];
-        return jsonList.map((json) => NoticeHistory.fromJson(json)).toList();
-      } else {
-        throw Exception('Ошибка загрузки истории заметок!');
-      }
-    } catch (e) {
-      throw Exception('Ошибка загрузки истории заметок!');
-    }
-  }
-
-  Future<List<DealHistoryLead>> getDealHistoryLead(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final response = await _getRequest(
-          '/deal/history-by-lead-id/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result'];
-        return jsonList.map((json) => DealHistoryLead.fromJson(json)).toList();
-      } else {
-        throw Exception('Ошибка загрузки истории сделок!');
-      }
-    } catch (e) {
-      throw Exception('Ошибка загрузки истории сделок!');
-    }
-  }
-
-  Future<List<Notes>> getLeadNotes(int leadId,
-      {int page = 1, int perPage = 20}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
-    final path =
-        '/notices/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['result']['data'] as List)
-          .map((note) => Notes.fromJson(note))
+  } catch (e) {
+    print('ApiService: getLeadStatuses - Error');
+    // Загрузка из кэша
+    final cachedStatuses = prefs.getString('cachedLeadStatuses_$organizationId');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => LeadStatus.fromJson(status))
           .toList();
+      print('ApiService: getLeadStatuses - Returning cached statuses: ${cachedList.map((s) => {'id': s.id, 'title': s.title})}');
+      return cachedList;
     } else {
-      throw Exception('Ошибка загрузки заметок');
+      print('ApiService: getLeadStatuses - No cached statuses available');
+      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
+}
 
-  Future<Map<String, dynamic>> createNotes({
-    required String title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required List<int> users,
-    List<String>? filePaths, // Новое поле для файлов
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/notices${organizationId != null ? '?organization_id=$organizationId' : ''}');
+Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Lead> leads =
+        await getLeads(leadStatusId, page: 1, perPage: 1);
 
-      var request = http.MultipartRequest('POST', uri);
+    // Если список лидов не пуст, значит статус содержит элементы
+    return leads.isNotEmpty;
+  } catch (e) {
+    //print('Error while checking if status has leads!');
+    return false;
+  }
+}
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
+// Метод для создания Cтатуса Лида
+Future<Map<String, dynamic>> createLeadStatus(
+    String title, String color, bool? isFailure, bool? isSuccess) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead-status');
+  if (kDebugMode) {
+    print('ApiService: createLeadStatus - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
+      {
+        'title': title,
+        'color': color,
+        "is_success": isSuccess == true ? 1 : 0,
+        "is_failure": isFailure == true ? 1 : 0,
       });
 
-      // Добавляем поля в запрос
-      request.fields['title'] = title;
-      request.fields['body'] = body;
-      request.fields['lead_id'] = leadId.toString();
-      if (date != null) {
-        request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
-      }
-      request.fields['organization_id'] = organizationId?.toString() ?? '2';
-      for (int i = 0; i < users.length; i++) {
-        request.fields['users[$i]'] = users[i].toString();
-      }
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Статус лида создан успешно'};
+  } else {
+    return {'success': false, 'message': 'Ошибка создания статуса лида!'};
+  }
+}
 
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'success': true, 'message': 'note_created_successfully'};
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('title')) {
-          return {'success': false, 'message': 'invalid_title_length'};
-        } else if (response.body.contains('body')) {
-          return {'success': false, 'message': 'error_field_is_not_empty'};
-        } else if (response.body.contains('date')) {
-          return {'success': false, 'message': 'error_valid_date'};
-        } else if (response.body.contains('users')) {
-          return {'success': false, 'message': 'error_users'};
-        } else {
-          return {'success': false, 'message': 'validation_error'};
-        }
-      } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      } else {
-        return {'success': false, 'message': 'error_create_note'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'error_create_note'};
-    }
+//Обновление статуса карточки Лида в колонке
+Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/changeStatus/$leadId');
+  if (kDebugMode) {
+    print('ApiService: updateLeadStatus - Generated path: $path');
   }
 
-  // Метод для Редактирование Заметки Лида
-  Future<Map<String, dynamic>> updateNotes({
-    required int noteId,
-    required int leadId,
-    required String title,
-    required String body,
-    DateTime? date,
-  }) async {
-    date ??= DateTime.now();
-    final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    path,
+    {
+      'position': position,
+      'status_id': statusId,
+    },
+  );
 
-    final response = await _patchRequest(
-        '/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'body': body,
-          'lead_id': leadId,
-          'date': date.toIso8601String(),
-        });
+  if (response.statusCode == 200) {
+    //print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    final responseData = jsonDecode(response.body);
+    final errorMessage = responseData['message'];
 
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Заметка успешно обновлена'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('title')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
-      } else if (response.body.contains('body')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
-      } else if (response.body.contains('date')) {
-        return {'success': false, 'message': 'error_valid_date'};
-      } else {
-        return {'success': false, 'message': 'unknown_error'};
-      }
-    } else {
-      return {'success': false, 'message': 'error_update_note'};
-    }
+    throw LeadStatusUpdateException(422, errorMessage);
+  } else {
+    throw Exception('Ошибка обновления задач лида!');
   }
+}
 
-// Метод для Удаления Заметки Лида
-  Future<Map<String, dynamic>> deleteNotes(int noteId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete note!');
+// Метод для получения Истории Лида
+Future<List<LeadHistory>> getLeadHistory(int leadId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/lead/history/$leadId');
+    if (kDebugMode) {
+      print('ApiService: getLeadHistory - Generated path: $path');
     }
-  }
-
-// Метод для Получения Сделки в Окно Лида
-  Future<List<LeadDeal>> getLeadDeals(int leadId,
-      {int page = 1, int perPage = 20}) async {
-    final organizationId = await getSelectedOrganization();
-    final path =
-        '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['result']['data'] as List)
-          .map((deal) => LeadDeal.fromJson(deal))
-          .toList();
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
     } else {
-      throw Exception('Ошибка загрузки заметок');
+      //print('Failed to load lead history!');
+      throw Exception('Ошибка загрузки истории лида!');
     }
+  } catch (e) {
+    //print('Error occurred!');
+    throw Exception('Ошибка загрузки истории лида!');
   }
+}
 
-// Обновленный метод createLead
-  Future<Map<String, dynamic>> createLead({
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? managerId,
-    int? sourceId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, dynamic>>? customFields,
-    String? manager,
-  }) async {
-    final Map<String, dynamic> requestData = {
-      'name': name,
-      'lead_status_id': leadStatusId,
-      'phone': phone,
-      'position': 1,
-      if (regionId != null) 'region_id': regionId,
-      if (managerId != null) 'manager_id': managerId,
-      if (manager != null) 'manager': manager,
-      if (sourceId != null) 'source_id': sourceId,
-      if (instaLogin != null) 'insta_login': instaLogin,
-      if (facebookLogin != null) 'facebook_login': facebookLogin,
-      if (tgNick != null) 'tg_nick': tgNick,
-      if (birthday != null) 'birthday': birthday.toIso8601String(),
-      if (email != null) 'email': email,
-      if (description != null) 'description': description,
-      if (waPhone != null) 'wa_phone': waPhone,
-      if (customFields != null && customFields.isNotEmpty)
-        'lead_custom_fields': customFields,
-    };
-
-    final response = await _postRequest('/lead', requestData);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
-    }
-  }
-
-  Future<Map<String, dynamic>> createLeadWithData(
-    Map<String, dynamic> data, {
-    List<String>? filePaths,
-  }) async {
-    // Формируем путь с query-параметрами
-    final updatedPath = await _appendQueryParams('/lead');
-    var request =
-        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-
-    // Добавляем поля, кроме lead_custom_fields
-    data.forEach((key, value) {
-      if (key != 'lead_custom_fields') {
-        if (value is List) {
-          request.fields[key] = json.encode(value);
-        } else if (value != null) {
-          request.fields[key] = value.toString();
-        }
-      }
-    });
-
-    // Обрабатываем lead_custom_fields как массив объектов
-    if (data['lead_custom_fields'] != null &&
-        data['lead_custom_fields'] is List &&
-        data['lead_custom_fields'].isNotEmpty) {
-      List<Map<String, dynamic>> customFields =
-          data['lead_custom_fields'] as List<Map<String, dynamic>>;
-      for (int i = 0; i < customFields.length; i++) {
-        request.fields['lead_custom_fields[$i][key]'] =
-            customFields[i]['key'] ?? '';
-        request.fields['lead_custom_fields[$i][value]'] =
-            customFields[i]['value'] ?? '';
-        request.fields['lead_custom_fields[$i][type]'] =
-            customFields[i]['type'] ?? 'string';
-      }
+Future<List<NoticeHistory>> getNoticeHistory(int leadId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/notices/history-by-lead-id/$leadId');
+    if (kDebugMode) {
+      print('ApiService: getNoticeHistory - Generated path: $path');
     }
 
-    // Добавляем файлы
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
-      }
-    }
-
-    final response = await _multipartPostRequest('/lead', request);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
-    }
-  }
-
-  // Метод для Обновления Лида
-  Future<Map<String, dynamic>> updateLead({
-    required int leadId,
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? sourceId,
-    int? managerId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, dynamic>>? customFields, // Изменён тип
-    List<Map<String, int>>? directoryValues,
-    String? priceTypeId, // Добавляем priceTypeId
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _patchRequest(
-      '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'name': name,
-        'lead_status_id': leadStatusId,
-        'phone': phone,
-        if (regionId != null) 'region_id': regionId,
-        if (sourceId != null) 'source_id': sourceId,
-        if (managerId != null) 'manager_id': managerId,
-        if (instaLogin != null) 'insta_login': instaLogin,
-        if (facebookLogin != null) 'facebook_login': facebookLogin,
-        if (tgNick != null) 'tg_nick': tgNick,
-        if (birthday != null) 'birthday': birthday.toIso8601String(),
-        if (email != null) 'email': email,
-        if (description != null) 'description': description,
-        if (waPhone != null) 'wa_phone': waPhone,
-        if (priceTypeId != null)
-          'price_type_id': priceTypeId, // Добавляем price_type_id
-        'lead_custom_fields': customFields ?? [],
-        'directory_values': directoryValues ?? [],
-      },
-    );
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'lead_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday remont_nullable')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('price_type_id')) {
-        return {'success': false, 'message': 'invalid_price_type_id'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result'];
+      return jsonList.map((json) => NoticeHistory.fromJson(json)).toList();
     } else {
-      return {'success': false, 'message': 'error_updated_lead'};
+      throw Exception('Ошибка загрузки истории заметок!');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки истории заметок!');
+  }
+}
+
+Future<List<DealHistoryLead>> getDealHistoryLead(int leadId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/deal/history-by-lead-id/$leadId');
+    if (kDebugMode) {
+      print('ApiService: getDealHistoryLead - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result'];
+      return jsonList.map((json) => DealHistoryLead.fromJson(json)).toList();
+    } else {
+      throw Exception('Ошибка загрузки истории сделок!');
+    }
+  } catch (e) {
+    throw Exception('Ошибка загрузки истории сделок!');
+  }
+}
+
+Future<List<Notes>> getLeadNotes(int leadId,
+    {int page = 1, int perPage = 20}) async {
+  // Формируем базовый путь
+  final basePath = '/notices/$leadId?page=$page&per_page=$perPage';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(basePath);
+  if (kDebugMode) {
+    print('ApiService: getLeadNotes - Generated path: $path');
   }
 
-  Future<Map<String, dynamic>> updateLeadWithData({
-    required int leadId,
-    required Map<String, dynamic> data,
-    List<String>? filePaths,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    var uri = Uri.parse(
-      '${baseUrl}/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result']['data'] as List)
+        .map((note) => Notes.fromJson(note))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки заметок');
+  }
+}
+
+Future<Map<String, dynamic>> createNotes({
+  required String title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required List<int> users,
+  List<String>? filePaths, // Новое поле для файлов
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/notices');
+    if (kDebugMode) {
+      print('ApiService: createNotes - Generated path: $path');
+    }
+    var uri = Uri.parse('$baseUrl$path');
 
     var request = http.MultipartRequest('POST', uri);
 
-    final token = await getToken();
     request.headers.addAll({
       'Authorization': 'Bearer $token',
       'Accept': 'application/json',
-      'Device': 'mobile',
+      'Device': 'mobile'
     });
 
-    request.fields['name'] = data['name']?.toString() ?? '';
-    request.fields['lead_status_id'] = data['lead_status_id']?.toString() ?? '';
-    request.fields['phone'] = data['phone']?.toString() ?? '';
-    if (data['region_id'] != null) {
-      request.fields['region_id'] = data['region_id'].toString();
+    // Добавляем поля в запрос
+    request.fields['title'] = title;
+    request.fields['body'] = body;
+    request.fields['lead_id'] = leadId.toString();
+    if (date != null) {
+      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
     }
-    if (data['source_id'] != null) {
-      request.fields['source_id'] = data['source_id'].toString();
-    }
-    if (data['manager_id'] != null) {
-      request.fields['manager_id'] = data['manager_id'].toString();
-    }
-    if (data['insta_login'] != null) {
-      request.fields['insta_login'] = data['insta_login'].toString();
-    }
-    if (data['facebook_login'] != null) {
-      request.fields['facebook_login'] = data['facebook_login'].toString();
-    }
-    if (data['tg_nick'] != null) {
-      request.fields['tg_nick'] = data['tg_nick'].toString();
-    }
-    if (data['birthday'] != null) {
-      request.fields['birthday'] = data['birthday'].toString();
-    }
-    if (data['email'] != null) {
-      request.fields['email'] = data['email'].toString();
-    }
-    if (data['description'] != null) {
-      request.fields['description'] = data['description'].toString();
-    }
-    if (data['wa_phone'] != null) {
-      request.fields['wa_phone'] = data['wa_phone'].toString();
-    }
-    if (data['price_type_id'] != null) {
-      request.fields['price_type_id'] =
-          data['price_type_id'].toString(); // Добавляем price_type_id
-    }
-    if (data['existing_file_ids'] != null) {
-      request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+    final organizationId = await getSelectedOrganization();
+    request.fields['organization_id'] = organizationId?.toString() ?? '2';
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
     }
 
-    // Обрабатываем lead_custom_fields
-    final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
-    if (customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i] as Map<String, dynamic>;
-        request.fields['lead_custom_fields[$i][key]'] =
-            field['key']?.toString() ?? '';
-        request.fields['lead_custom_fields[$i][value]'] =
-            field['value']?.toString() ?? '';
-        request.fields['lead_custom_fields[$i][type]'] =
-            field['type']?.toString() ?? 'string';
-      }
-    }
-
-    // Обрабатываем directory_values
-    final directoryValues = data['directory_values'] as List<dynamic>? ?? [];
-    if (directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var value = directoryValues[i] as Map<String, dynamic>;
-        request.fields['directory_values[$i][directory_id]'] =
-            value['directory_id'].toString();
-        request.fields['directory_values[$i][entry_id]'] =
-            value['entry_id'].toString();
-      }
-    }
-
+    // Добавляем файлы, если они есть
     if (filePaths != null && filePaths.isNotEmpty) {
       for (var filePath in filePaths) {
         final file = await http.MultipartFile.fromPath('files[]', filePath);
@@ -1562,573 +1100,1106 @@ Future<List<Lead>> getLeads(
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_updated_successfully'};
+      return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
+      if (response.body.contains('title')) {
+        return {'success': false, 'message': 'invalid_title_length'};
+      } else if (response.body.contains('body')) {
+        return {'success': false, 'message': 'error_field_is_not_empty'};
+      } else if (response.body.contains('date')) {
+        return {'success': false, 'message': 'error_valid_date'};
+      } else if (response.body.contains('users')) {
+        return {'success': false, 'message': 'error_users'};
+      } else {
+        return {'success': false, 'message': 'validation_error'};
       }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      if (response.body.contains('price_type_id')) {
-        return {'success': false, 'message': 'invalid_price_type_id'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'error_update_lead'};
+      return {'success': false, 'message': 'error_create_note'};
+    }
+  } catch (e) {
+    return {'success': false, 'message': 'error_create_note'};
+  }
+}
+
+// Метод для Редактирование Заметки Лида
+Future<Map<String, dynamic>> updateNotes({
+  required int noteId,
+  required int leadId,
+  required String title,
+  required String body,
+  DateTime? date,
+}) async {
+  date ??= DateTime.now();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/notices/$noteId');
+  if (kDebugMode) {
+    print('ApiService: updateNotes - Generated path: $path');
+  }
+
+  final response = await _patchRequest(
+      path,
+      {
+        'title': title,
+        'body': body,
+        'lead_id': leadId,
+        'date': date.toIso8601String(),
+      });
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'Заметка успешно обновлена'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('title')) {
+      return {'success': false, 'message': 'error_field_is_not_empty'};
+    } else if (response.body.contains('body')) {
+      return {'success': false, 'message': 'error_field_is_not_empty'};
+    } else if (response.body.contains('date')) {
+      return {'success': false, 'message': 'error_valid_date'};
+    } else {
+      return {'success': false, 'message': 'unknown_error'};
+    }
+  } else {
+    return {'success': false, 'message': 'error_update_note'};
+  }
+}
+
+// Метод для Удаления Заметки Лида
+Future<Map<String, dynamic>> deleteNotes(int noteId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/notices/$noteId');
+  if (kDebugMode) {
+    print('ApiService: deleteNotes - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete note!');
+  }
+}
+
+// Метод для Получения Сделки в Окно Лида
+Future<List<LeadDeal>> getLeadDeals(int leadId,
+    {int page = 1, int perPage = 20}) async {
+  // Формируем базовый путь
+  final basePath = '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(basePath);
+  if (kDebugMode) {
+    print('ApiService: getLeadDeals - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result']['data'] as List)
+        .map((deal) => LeadDeal.fromJson(deal))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки заметок');
+  }
+}
+
+// Обновленный метод createLead
+Future<Map<String, dynamic>> createLead({
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? managerId,
+  int? sourceId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, dynamic>>? customFields,
+  String? manager,
+}) async {
+  final Map<String, dynamic> requestData = {
+    'name': name,
+    'lead_status_id': leadStatusId,
+    'phone': phone,
+    'position': 1,
+    if (regionId != null) 'region_id': regionId,
+    if (managerId != null) 'manager_id': managerId,
+    if (manager != null) 'manager': manager,
+    if (sourceId != null) 'source_id': sourceId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(),
+    if (email != null) 'email': email,
+    if (description != null) 'description': description,
+    if (waPhone != null) 'wa_phone': waPhone,
+    if (customFields != null && customFields.isNotEmpty)
+      'lead_custom_fields': customFields,
+  };
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: createLead - Generated path: $path');
+  }
+
+  final response = await _postRequest(path, requestData);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body
+        .contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
+  }
+}
+
+Future<Map<String, dynamic>> createLeadWithData(
+  Map<String, dynamic> data, {
+  List<String>? filePaths,
+}) async {
+  // Формируем путь с query-параметрами
+  final updatedPath = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: createLeadWithData - Generated path: $updatedPath');
+  }
+  var request =
+      http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+
+  // Добавляем поля, кроме lead_custom_fields
+  data.forEach((key, value) {
+    if (key != 'lead_custom_fields') {
+      if (value is List) {
+        request.fields[key] = json.encode(value);
+      } else if (value != null) {
+        request.fields[key] = value.toString();
+      }
+    }
+  });
+
+  // Обрабатываем lead_custom_fields как массив объектов
+  if (data['lead_custom_fields'] != null &&
+      data['lead_custom_fields'] is List &&
+      data['lead_custom_fields'].isNotEmpty) {
+    List<Map<String, dynamic>> customFields =
+        data['lead_custom_fields'] as List<Map<String, dynamic>>;
+    for (int i = 0; i < customFields.length; i++) {
+      request.fields['lead_custom_fields[$i][key]'] =
+          customFields[i]['key'] ?? '';
+      request.fields['lead_custom_fields[$i][value]'] =
+          customFields[i]['value'] ?? '';
+      request.fields['lead_custom_fields[$i][type]'] =
+          customFields[i]['type'] ?? 'string';
     }
   }
+
+  // Добавляем файлы
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  final response = await _multipartPostRequest('/lead', request);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body
+        .contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
+  }
+}
+
+Future<Map<String, dynamic>> updateLead({
+  required int leadId,
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  int? sourceId,
+  int? managerId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? email,
+  String? description,
+  String? waPhone,
+  List<Map<String, dynamic>>? customFields, // Изменён тип
+  List<Map<String, int>>? directoryValues,
+  String? priceTypeId, // Добавляем priceTypeId
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/$leadId');
+  if (kDebugMode) {
+    print('ApiService: updateLead - Generated path: $path');
+  }
+
+  final response = await _patchRequest(
+    path,
+    {
+      'name': name,
+      'lead_status_id': leadStatusId,
+      'phone': phone,
+      if (regionId != null) 'region_id': regionId,
+      if (sourceId != null) 'source_id': sourceId,
+      if (managerId != null) 'manager_id': managerId,
+      if (instaLogin != null) 'insta_login': instaLogin,
+      if (facebookLogin != null) 'facebook_login': facebookLogin,
+      if (tgNick != null) 'tg_nick': tgNick,
+      if (birthday != null) 'birthday': birthday.toIso8601String(),
+      if (email != null) 'email': email,
+      if (description != null) 'description': description,
+      if (waPhone != null) 'wa_phone': waPhone,
+      if (priceTypeId != null)
+        'price_type_id': priceTypeId, // Добавляем price_type_id
+      'lead_custom_fields': customFields ?? [],
+      'directory_values': directoryValues ?? [],
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body
+        .contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday remont_nullable')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('price_type_id')) {
+      return {'success': false, 'message': 'invalid_price_type_id'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else {
+    return {'success': false, 'message': 'error_updated_lead'};
+  }
+}
+
+Future<Map<String, dynamic>> updateLeadWithData({
+  required int leadId,
+  required Map<String, dynamic> data,
+  List<String>? filePaths,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/$leadId');
+  if (kDebugMode) {
+    print('ApiService: updateLeadWithData - Generated path: $path');
+  }
+  var uri = Uri.parse('$baseUrl$path');
+
+  var request = http.MultipartRequest('POST', uri);
+
+  final token = await getToken();
+  request.headers.addAll({
+    'Authorization': 'Bearer $token',
+    'Accept': 'application/json',
+    'Device': 'mobile',
+  });
+
+  request.fields['name'] = data['name']?.toString() ?? '';
+  request.fields['lead_status_id'] = data['lead_status_id']?.toString() ?? '';
+  request.fields['phone'] = data['phone']?.toString() ?? '';
+  if (data['region_id'] != null) {
+    request.fields['region_id'] = data['region_id'].toString();
+  }
+  if (data['source_id'] != null) {
+    request.fields['source_id'] = data['source_id'].toString();
+  }
+  if (data['manager_id'] != null) {
+    request.fields['manager_id'] = data['manager_id'].toString();
+  }
+  if (data['insta_login'] != null) {
+    request.fields['insta_login'] = data['insta_login'].toString();
+  }
+  if (data['facebook_login'] != null) {
+    request.fields['facebook_login'] = data['facebook_login'].toString();
+  }
+  if (data['tg_nick'] != null) {
+    request.fields['tg_nick'] = data['tg_nick'].toString();
+  }
+  if (data['birthday'] != null) {
+    request.fields['birthday'] = data['birthday'].toString();
+  }
+  if (data['email'] != null) {
+    request.fields['email'] = data['email'].toString();
+  }
+  if (data['description'] != null) {
+    request.fields['description'] = data['description'].toString();
+  }
+  if (data['wa_phone'] != null) {
+    request.fields['wa_phone'] = data['wa_phone'].toString();
+  }
+  if (data['price_type_id'] != null) {
+    request.fields['price_type_id'] =
+        data['price_type_id'].toString(); // Добавляем price_type_id
+  }
+  if (data['existing_file_ids'] != null) {
+    request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+  }
+  // Добавляем sales_funnel_id из данных, если он присутствует
+  if (data['sales_funnel_id'] != null) {
+    request.fields['sales_funnel_id'] = data['sales_funnel_id'].toString();
+  }
+  if (data['duplicate'] != null) {
+    request.fields['duplicate'] = data['duplicate'].toString(); // Добавляем duplicate
+  }
+  // Обрабатываем lead_custom_fields
+  final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
+  if (customFields.isNotEmpty) {
+    for (int i = 0; i < customFields.length; i++) {
+      var field = customFields[i] as Map<String, dynamic>;
+      request.fields['lead_custom_fields[$i][key]'] =
+          field['key']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][value]'] =
+          field['value']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][type]'] =
+          field['type']?.toString() ?? 'string';
+    }
+  }
+
+  // Обрабатываем directory_values
+  final directoryValues = data['directory_values'] as List<dynamic>? ?? [];
+  if (directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      var value = directoryValues[i] as Map<String, dynamic>;
+      request.fields['directory_values[$i][directory_id]'] =
+          value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          value['entry_id'].toString();
+    }
+  }
+
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body
+        .contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    if (response.body.contains('duplicate')) {
+      return {'success': false, 'message': 'invalid_duplicate_value'};
+    }
+    if (response.body.contains('price_type_id')) {
+      return {'success': false, 'message': 'invalid_price_type_id'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_update_lead'};
+  }
+}
 
 // Api Service
-  Future<DealNameDataResponse> getAllDealNames() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/service${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return DealNameDataResponse.fromJson(data);
-    } else {
-      throw ('Failed to load deal names');
-    }
+Future<DealNameDataResponse> getAllDealNames() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/service/by-sales-funnel-id');
+  if (kDebugMode) {
+    print('ApiService: getAllDealNames - Generated path: $path');
   }
 
-  //Метод для получения региона
-  Future<RegionsDataResponse> getAllRegion() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-        '/region${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return DealNameDataResponse.fromJson(data);
+  } else {
+    throw ('Failed to load deal names');
+  }
+}
 
-    late RegionsDataResponse dataRegion;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataRegion = RegionsDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-
-    if (kDebugMode) {
-      // //print('getAll region!');
-    }
-
-    return dataRegion;
+//Метод для получения региона
+Future<RegionsDataResponse> getAllRegion() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/region');
+  if (kDebugMode) {
+    print('ApiService: getAllRegion - Generated path: $path');
   }
 
-  //Метод для получения региона
-// In your ApiService
-  Future<List<SourceData>> getAllSource() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-        '/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  late RegionsDataResponse dataRegion;
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data != null) {
-        List<SourceData> dataSource = List<SourceData>.from(
-            data.map((source) => SourceData.fromJson(source)));
-        return dataSource;
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataRegion = RegionsDataResponse.fromJson(data);
     } else {
-      throw Exception('Ошибка при получении данных!');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка при получении данных!');
   }
 
-  //Метод для получения Менеджера
-  Future<ManagersDataResponse> getAllManager() async {
-    final organizationId = await getSelectedOrganization();
-
-    // Используем общий метод для выполнения GET-запроса
-    final response = await _getRequest(
-        '/manager${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    late ManagersDataResponse dataManager;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataManager = ManagersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-
-    if (kDebugMode) {}
-
-    return dataManager;
+  if (kDebugMode) {
+    // //print('getAll region!');
   }
+
+  return dataRegion;
+}
+
+//Метод для получения региона
+Future<List<SourceData>> getAllSource() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/source');
+  if (kDebugMode) {
+    print('ApiService: getAllSource - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data != null) {
+      List<SourceData> dataSource = List<SourceData>.from(
+          data.map((source) => SourceData.fromJson(source)));
+      return dataSource;
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных!');
+  }
+}
 
 //Метод для получения Менеджера
-  Future<LeadsMultiDataResponse> getAllLeadMulti() async {
-    final organizationId = await getSelectedOrganization();
-
-    // Используем общий метод для выполнения GET-запроса
-    final response = await _getRequest(
-        '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    late LeadsMultiDataResponse dataLead;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataLead = LeadsMultiDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-
-    if (kDebugMode) {}
-
-    return dataLead;
+Future<ManagersDataResponse> getAllManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/manager');
+  if (kDebugMode) {
+    print('ApiService: getAllManager - Generated path: $path');
   }
 
-  //Метод для получения лида
-  Future<LeadsDataResponse> getAllLead() async {
-    final organizationId = await getSelectedOrganization();
+  // Используем общий метод для выполнения GET-запроса
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-        '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  late ManagersDataResponse dataManager;
 
-    late LeadsDataResponse dataLead;
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        dataLead = LeadsDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+    if (data['result'] != null) {
+      dataManager = ManagersDataResponse.fromJson(data);
     } else {
-      throw Exception('Ошибка при получении данных!');
+      throw Exception('Результат отсутствует в ответе');
     }
-
-    if (kDebugMode) {}
-
-    return dataLead;
+  } else {
+    throw Exception('Ошибка при получении данных!');
   }
 
-  // Метод для Удаления Статуса Лида
-  Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
-    final organizationId = await getSelectedOrganization();
+  if (kDebugMode) {}
 
-    final response = await _deleteRequest(
-        '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  return dataManager;
+}
 
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete leadStatus!');
-    }
+//Метод для получения Менеджера
+Future<LeadsMultiDataResponse> getAllLeadMulti() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: getAllLeadMulti - Generated path: $path');
   }
+
+  // Используем общий метод для выполнения GET-запроса
+  final response = await _getRequest(path);
+
+  late LeadsMultiDataResponse dataLead;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataLead = LeadsMultiDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {}
+
+  return dataLead;
+}
+
+//Метод для получения лида
+Future<LeadsDataResponse> getAllLead() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: getAllLead - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  late LeadsDataResponse dataLead;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      dataLead = LeadsDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {}
+
+  return dataLead;
+}
+
+// Метод для Удаления Статуса Лида
+Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead-status/$leadStatusId');
+  if (kDebugMode) {
+    print('ApiService: deleteLeadStatuses - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete leadStatus!');
+  }
+}
 
 // Метод для изменения статуса лида в ApiService
-  Future<Map<String, dynamic>> updateLeadStatusEdit(
-      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
-    final organizationId = await getSelectedOrganization();
-
-    final payload = {
-      "title": title,
-      "is_success": isSuccess ? 1 : 0,
-      "is_failure": isFailure ? 1 : 0,
-      "organization_id": organizationId,
-    };
-
-    final response = await _patchRequest(
-      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      payload, // Исправлено: Передача `payload` как второго аргумента
-    );
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update leadStatus!');
-    }
+Future<Map<String, dynamic>> updateLeadStatusEdit(
+    int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead-status/$leadStatusId');
+  if (kDebugMode) {
+    print('ApiService: updateLeadStatusEdit - Generated path: $path');
   }
+
+  final payload = {
+    "title": title,
+    "is_success": isSuccess ? 1 : 0,
+    "is_failure": isFailure ? 1 : 0,
+    "organization_id": await getSelectedOrganization(),
+  };
+
+  final response = await _patchRequest(
+    path, // Исправлено: Передача пути с query-параметрами
+    payload, // Исправлено: Передача `payload` как второго аргумента
+  );
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update leadStatus!');
+  }
+}
 
 // Метод для Удаления Лида
-  Future<Map<String, dynamic>> deleteLead(int leadId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete lead!');
-    }
+Future<Map<String, dynamic>> deleteLead(int leadId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/$leadId');
+  if (kDebugMode) {
+    print('ApiService: deleteLead - Generated path: $path');
   }
 
-  // Метод для Получения Сделки в Окно Лида
-  Future<List<ContactPerson>> getContactPerson(int leadId) async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/contactPerson/$leadId?organization_id=$organizationId';
+  final response = await _deleteRequest(path);
 
-    final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete lead!');
+  }
+}
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['result'] as List)
-          .map((contactPerson) => ContactPerson.fromJson(contactPerson))
-          .toList();
-    } else {
-      throw Exception('Ошибка загрузки Контактное Лицо ');
-    }
+// Метод для Получения Сделки в Окно Лида
+Future<List<ContactPerson>> getContactPerson(int leadId) async {
+  // Формируем базовый путь
+  final basePath = '/contactPerson/$leadId';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(basePath);
+  if (kDebugMode) {
+    print('ApiService: getContactPerson - Generated path: $path');
   }
 
-  // Метод для Создания Контактного Лица
-  Future<Map<String, dynamic>> createContactPerson({
-    required int leadId,
-    required String name,
-    required String phone,
-    required String position,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _postRequest(
-        '/contactPerson${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'lead_id': leadId,
-          'name': name,
-          'phone': phone,
-          'position': position,
-        });
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List)
+        .map((contactPerson) => ContactPerson.fromJson(contactPerson))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки Контактное Лицо ');
+  }
+}
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'contact_create_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'field_is_not_empty'};
-      } else {
-        return {'success': false, 'message': 'unknown_error'};
-      }
-    } else {
-      return {'success': false, 'message': 'error_contact_create'};
-    }
+// Метод для Создания Контактного Лица
+Future<Map<String, dynamic>> createContactPerson({
+  required int leadId,
+  required String name,
+  required String phone,
+  required String position,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/contactPerson');
+  if (kDebugMode) {
+    print('ApiService: createContactPerson - Generated path: $path');
   }
 
-  // Метод для Создания Контактного Лица
-  Future<Map<String, dynamic>> updateContactPerson({
-    required int leadId,
-    required int contactpersonId,
-    required String name,
-    required String phone,
-    required String position,
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+      path,
+      {
+        'lead_id': leadId,
+        'name': name,
+        'phone': phone,
+        'position': position,
+      });
 
-    final response = await _patchRequest(
-        '/contactPerson/$contactpersonId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'lead_id': leadId,
-          'name': name,
-          'phone': phone,
-          'position': position,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'contact_update_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'field_is_not_empty'};
-      } else {
-        return {'success': false, 'message': 'unknown_error'};
-      }
-    } else {
-      return {'success': false, 'message': 'error_contact_update_successfully'};
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'contact_create_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
     }
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    } else if (response.body.contains('position')) {
+      return {'success': false, 'message': 'field_is_not_empty'};
+    } else {
+      return {'success': false, 'message': 'unknown_error'};
+    }
+  } else {
+    return {'success': false, 'message': 'error_contact_create'};
+  }
+}
+
+// Метод для Создания Контактного Лица
+Future<Map<String, dynamic>> updateContactPerson({
+  required int leadId,
+  required int contactpersonId,
+  required String name,
+  required String phone,
+  required String position,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/contactPerson/$contactpersonId');
+  if (kDebugMode) {
+    print('ApiService: updateContactPerson - Generated path: $path');
   }
 
-// Метод для Удаления конатного Лица
-  Future<Map<String, dynamic>> deleteContactPerson(int contactpersonId) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _patchRequest(
+      path,
+      {
+        'lead_id': leadId,
+        'name': name,
+        'phone': phone,
+        'position': position,
+      });
 
-    final response = await _deleteRequest(
-        '/contactPerson/$contactpersonId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete contactPerson!');
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'contact_update_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
     }
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    } else if (response.body.contains('position')) {
+      return {'success': false, 'message': 'field_is_not_empty'};
+    } else {
+      return {'success': false, 'message': 'unknown_error'};
+    }
+  } else {
+    return {'success': false, 'message': 'error_contact_update_successfully'};
+  }
+}
+
+// Метод для Удаления контактного Лица
+Future<Map<String, dynamic>> deleteContactPerson(int contactpersonId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/contactPerson/$contactpersonId');
+  if (kDebugMode) {
+    print('ApiService: deleteContactPerson - Generated path: $path');
   }
 
-  // Метод для Получения Чата в Окно Лида
-  Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/lead/$leadId/chats?organization_id=$organizationId';
+  final response = await _deleteRequest(path);
 
-    final response = await _getRequest(path);
-    //print('Request path: $path');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['result'] as List)
-          .map((leadtochat) => LeadNavigateChat.fromJson(leadtochat))
-          .toList();
-    } else {
-      throw Exception('Ошибка загрузки чата в Лид');
-    }
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete contactPerson!');
   }
+}
+
+// Метод для Получения Чата в Окно Лида
+Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
+  // Формируем базовый путь
+  final basePath = '/lead/$leadId/chats';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(basePath);
+  if (kDebugMode) {
+    print('ApiService: getLeadToChat - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+  //print('Request path: $path');
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List)
+        .map((leadtochat) => LeadNavigateChat.fromJson(leadtochat))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки чата в Лид');
+  }
+}
 
 // Метод для получения Источников
-  Future<List<SourceLead>> getSourceLead() async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/source?organization_id=$organizationId';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      //print('Полученные данные: $data');
-      return (data as List)
-          .map((sourceLead) => SourceLead.fromJson(sourceLead))
-          .toList();
-    } else {
-      throw Exception('Ошибка загрузки источников');
-    }
+Future<List<SourceLead>> getSourceLead() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/source');
+  if (kDebugMode) {
+    print('ApiService: getSourceLead - Generated path: $path');
   }
 
-  Future<List<PriceType>> getPriceType() async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/priceType?organization_id=$organizationId';
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    //print('Полученные данные: $data');
+    return (data as List)
+        .map((sourceLead) => SourceLead.fromJson(sourceLead))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки источников');
+  }
+}
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body)['result']['data'];
-      return (data as List)
-          .map((priceType) => PriceType.fromJson(priceType))
-          .toList();
-    } else {
-      throw Exception('Ошибка загрузки типов цен');
-    }
+Future<List<PriceType>> getPriceType() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/priceType');
+  if (kDebugMode) {
+    print('ApiService: getPriceType - Generated path: $path');
   }
 
-  /// Метод для отправки на 1С
-  Future<void> postLeadToC(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final path =
-          '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  final response = await _getRequest(path);
 
-      final response = await _postRequest(path, {});
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body)['result']['data'];
+    return (data as List)
+        .map((priceType) => PriceType.fromJson(priceType))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки типов цен');
+  }
+}
 
-      if (response.statusCode == 200) {
-        //print('Успешно отправлено в 1С');
-      } else {
-        //print('Ошибка отправки в 1С Лид!');
-        throw Exception('Ошибка отправки в 1С!');
-      }
-    } catch (e) {
-      //print('Произошла ошибка!');
+/// Метод для отправки на 1С
+Future<void> postLeadToC(int leadId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/lead/sendToOneC/$leadId');
+    if (kDebugMode) {
+      print('ApiService: postLeadToC - Generated path: $path');
+    }
+
+    final response = await _postRequest(path, {});
+
+    if (response.statusCode == 200) {
+      //print('Успешно отправлено в 1С');
+    } else {
+      //print('Ошибка отправки в 1С Лид!');
       throw Exception('Ошибка отправки в 1С!');
     }
+  } catch (e) {
+    //print('Произошла ошибка!');
+    throw Exception('Ошибка отправки в 1С!');
   }
-  // Future postLeadToC(int leadId) async {
-  //   try {
-  //     final organizationId = await getSelectedOrganization();
-
-  //     // Формируем URL с параметрами запроса
-  //     final path =
-  //         '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-  //     // Выполняем POST-запрос (без тела)
-  //     final response = await _postRequest(path, {});
-
-  //     if (response.statusCode == 200) {
-  //       // final data = jsonDecode(response.body);
-  //       //print("------------------------------------------------------------------------------------");
-  //       //print('LEAD TO 1C');
-  //       // //print(data);
-
-  //       // return data;
-  //     } else {
-  //       //print('Ошибка отправки в  1С Лид!');
-  //       throw Exception('Ошибка отправки в  Лид 1С!');
-  //     }
-  //   } catch (e) {
-  //     //print('Произошла ошибка!');
-  //     throw Exception('Ошибка отправки 1С Лид!');
-  //   }
-  // }
+}
 
 // Метод для Обновления Данных 1С
-  Future getData1C() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/get-all-data${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List).toList();
-      } else {
-        // throw Exception('Результат отсутствует в ответе');
-      }
-    } else if (response.statusCode == 500) {
-      throw Exception('Ошибка сервера (500): Внутреняя ошибка сервера');
-    } else if (response.statusCode == 422) {
-      throw Exception('Ошибка валидации (422): Некорректные данные');
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
+Future getData1C() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/get-all-data');
+  if (kDebugMode) {
+    print('ApiService: getData1C - Generated path: $path');
   }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List).toList();
+    } else {
+      // throw Exception('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 500) {
+    throw Exception('Ошибка сервера (500): Внутреняя ошибка сервера');
+  } else if (response.statusCode == 422) {
+    throw Exception('Ошибка валидации (422): Некорректные данные');
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
 
 //Метод для получение кастомных полей Задачи
-  Future<Map<String, dynamic>> getCustomFieldslead() async {
-    final organizationId = await getSelectedOrganization();
+Future<Map<String, dynamic>> getCustomFieldslead() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/get/custom-fields');
+  if (kDebugMode) {
+    print('ApiService: getCustomFieldslead - Generated path: $path');
+  }
 
-    // Выполняем запрос
-    final response = await _getRequest(
-      '/lead/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+  // Выполняем запрос
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return data; // Возвращаем данные, если они есть
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
     } else {
-      throw Exception('Ошибка ${response.statusCode}!');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+Future<LeadStatus> getLeadStatus(int leadStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead-status/$leadStatusId');
+  if (kDebugMode) {
+    print('ApiService: getLeadStatus - Generated path: $path');
   }
 
-  Future<LeadStatus> getLeadStatus(int leadStatusId) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null) {
-        return LeadStatus.fromJson(data['result']);
-      }
-      throw Exception('Invalid response format');
-    } else {
-      throw Exception('Failed to fetch deal status!');
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null) {
+      return LeadStatus.fromJson(data['result']);
     }
+    throw Exception('Invalid response format');
+  } else {
+    throw Exception('Failed to fetch deal status!');
+  }
+}
+
+Future<Map<String, dynamic>> addLeadsFromContacts(
+    int statusId, List<Map<String, dynamic>> contacts) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead/insert');
+  if (kDebugMode) {
+    print('ApiService: addLeadsFromContacts - Generated path: $path');
   }
 
-  Future<Map<String, dynamic>> addLeadsFromContacts(
-      int statusId, List<Map<String, dynamic>> contacts) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-      '/lead/insert/${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'leads': contacts,
-      },
-    );
+  final response = await _postRequest(
+    path,
+    {
+      'leads': contacts,
+    },
+  );
 
-    // Parse the response body
-    final responseData = json.decode(response.body);
+  // Parse the response body
+  final responseData = json.decode(response.body);
 
-    // If status code is not 200, throw an exception with the response data
-    if (response.statusCode != 200) {
-      throw Exception(response.body);
-    }
-
-    // Return the response data even for 200 status code
-    // since it may contain partial errors
-    return responseData;
+  // If status code is not 200, throw an exception with the response data
+  if (response.statusCode != 200) {
+    throw Exception(response.body);
   }
+
+  // Return the response data even for 200 status code
+  // since it may contain partial errors
+  return responseData;
+}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
 
-//Метод для получения Сделки через его ID
-  Future<DealById> getDealById(int dealId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+  //Метод для получения Сделки через его ID
+Future<DealById> getDealById(int dealId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/deal/$dealId');
+    if (kDebugMode) {
+      print('ApiService: getDealById - Generated path: $path');
+    }
 
-      final response = await _getRequest(
-          '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonDeal = decodedJson['result'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonDeal = decodedJson['result'];
 
-        if (jsonDeal == null || jsonDeal['deal_status'] == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        return DealById.fromJson(jsonDeal, jsonDeal['deal_status']['id'] ?? 0);
-      } else {
-        throw Exception('Ошибка загрузки deal ID!');
+      if (jsonDeal == null || jsonDeal['deal_status'] == null) {
+        throw Exception('Некорректные данные от API');
       }
-    } catch (e) {
+
+      return DealById.fromJson(jsonDeal, jsonDeal['deal_status']['id'] ?? 0);
+    } else {
       throw Exception('Ошибка загрузки deal ID!');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки deal ID!');
   }
+}
 
-  Future<List<Deal>> getDeals(
+ // Метод для получения списка Сделок с пагинацией
+Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
@@ -2141,10 +2212,19 @@ Future<List<Lead>> getLeads(
     int? daysWithoutActivity,
     bool? hasTasks,
     List<Map<String, dynamic>>? directoryValues,
+    int? salesFunnelId, // Новый параметр
   }) async {
-    final organizationId = await getSelectedOrganization();
+    // Формируем базовый путь
     String path = '/deal?page=$page&per_page=$perPage';
-    path += '&organization_id=$organizationId';
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getDeals - Generated path: $path');
+    }
+ // Добавляем sales_funnel_id из аргумента, если он передан
+  if (salesFunnelId != null) {
+    path += '&sales_funnel_id=$salesFunnelId';
+  }
 
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
@@ -2218,347 +2298,269 @@ Future<List<Lead>> getLeads(
   }
 
 // Метод для получения статусов Сделок
-  Future<List<DealStatus>> getDealStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
+Future<List<DealStatus>> getDealStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
 
-    try {
-      // Отправляем запрос на сервер
-      final response = await _getRequest(
-          '/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedDealStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedDealStatuses_$organizationId',
-              json.encode(data['result']));
-          // //print(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          // //print(
-          //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
-          // //print('Статусы сделок обновлены в кэше');
-
-          return (data['result'] as List)
-              .map((status) => DealStatus.fromJson(status))
-              .toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedDealStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
-            .map((status) => DealStatus.fromJson(status))
-            .toList();
-        return cachedList;
-      } else {
-        throw Exception(
-            'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
-      }
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/deal/statuses');
+    if (kDebugMode) {
+      print('ApiService: getDealStatuses - Generated path: $path');
     }
-  }
-
-  Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
-    try {
-      // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Deal> deals =
-          await getDeals(dealStatusId, page: 1, perPage: 1);
-
-      // Если список лидов не пуст, значит статус содержит элементы
-      return deals.isNotEmpty;
-    } catch (e) {
-      //print('Error while checking if status has deals!');
-      return false;
-    }
-  }
-
-// Метод для создания Cтатуса Сделки
-  Future<Map<String, dynamic>> createDealStatus(
-      String title, String color, int? day) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'day': day,
-          'color': color,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Статус сделки успешно создан'};
-    } else {
-      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
-    }
-  }
-
-  // Метод для получения Истории Лида
-  Future<List<DealHistory>> getDealHistory(int dealId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest(
-          '/deal/history/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result']['history'];
-        return jsonList.map((json) => DealHistory.fromJson(json)).toList();
-      } else {
-        //print('Failed to load deal history!');
-        throw Exception('Ошибка загрузки истории сделки!');
-      }
-    } catch (e) {
-      //print('Error occurred!');
-      throw Exception('Ошибка загрузки истории сделки!');
-    }
-  }
-
-  Future<List<OrderHistory>> getOrderHistory(int orderId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final response = await _getRequest(
-        '/order/history/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result']['history'];
-        return jsonList.map((json) => OrderHistory.fromJson(json)).toList();
-      } else {
-        //print('Failed to load order history!');
-        throw Exception('Ошибка загрузки истории заказа!');
-      }
-    } catch (e) {
-      //print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории заказа!');
-    }
-  }
-
-  //Обновление статуса карточки Сделки  в колонке
-  Future<void> updateDealStatus(int dealId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'position': 1,
-        'status_id': statusId,
-      },
-    );
-
-    if (response.statusCode == 200) {
-      //print('Статус задачи успешно обновлен.');
-    } else if (response.statusCode == 422) {
-      throw DealStatusUpdateException(
-        422,
-        'Вы не можете переместить задачу на этот статус',
-      );
-    } else {
-      throw Exception('Ошибка обновления задач сделки!');
-    }
-  }
-
-  // Метод для Получения Сделки в Окно Лида
-  Future<List<DealTask>> getDealTasks(int dealId) async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/task/getByDeal/$dealId?organization_id=$organizationId';
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return (data['result'] as List)
-          .map((task) => DealTask.fromJson(task))
-          .toList();
+      if (data['result'] != null) {
+        // Принт старых кэшированных данных (если они есть)
+        final cachedStatuses =
+            prefs.getString('cachedDealStatuses_$organizationId');
+        if (cachedStatuses != null) {
+          final decodedData = json.decode(cachedStatuses);
+        }
+
+        // Обновляем кэш новыми данными
+        await prefs.setString('cachedDealStatuses_$organizationId',
+            json.encode(data['result']));
+        // //print(
+        //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+        // //print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+        // //print(
+        //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
+        // //print('Статусы сделок обновлены в кэше');
+
+        return (data['result'] as List)
+            .map((status) => DealStatus.fromJson(status))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Ошибка загрузки сделки задачи');
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    //print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
+    // Если запрос не удался, пытаемся загрузить данные из кэша
+    final cachedStatuses =
+        prefs.getString('cachedDealStatuses_$organizationId');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => DealStatus.fromJson(status))
+          .toList();
+      return cachedList;
+    } else {
+      throw Exception(
+          'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
     }
   }
+}
+
+Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Deal> deals =
+        await getDeals(dealStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return deals.isNotEmpty;
+  } catch (e) {
+    //print('Error while checking if status has deals!');
+    return false;
+  }
+}
+
+// Метод для создания Статуса Сделки
+Future<Map<String, dynamic>> createDealStatus(
+    String title, String color, int? day) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/statuses');
+  if (kDebugMode) {
+    print('ApiService: createDealStatus - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
+      {
+        'title': title,
+        'day': day,
+        'color': color,
+      });
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Статус сделки успешно создан'};
+  } else {
+    return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
+  }
+}
+
+// Метод для получения Истории Сделки
+Future<List<DealHistory>> getDealHistory(int dealId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/deal/history/$dealId');
+    if (kDebugMode) {
+      print('ApiService: getDealHistory - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => DealHistory.fromJson(json)).toList();
+    } else {
+      //print('Failed to load deal history!');
+      throw Exception('Ошибка загрузки истории сделки!');
+    }
+  } catch (e) {
+    //print('Error occurred!');
+    throw Exception('Ошибка загрузки истории сделки!');
+  }
+}
+
+Future<List<OrderHistory>> getOrderHistory(int orderId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order/history/$orderId');
+    if (kDebugMode) {
+      print('ApiService: getOrderHistory - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => OrderHistory.fromJson(json)).toList();
+    } else {
+      //print('Failed to load order history!');
+      throw Exception('Ошибка загрузки истории заказа!');
+    }
+  } catch (e) {
+    //print('Error occurred: $e');
+    throw Exception('Ошибка загрузки истории заказа!');
+  }
+}
+
+// Обновление статуса карточки Сделки в колонке
+Future<void> updateDealStatus(int dealId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/changeStatus/$dealId');
+  if (kDebugMode) {
+    print('ApiService: updateDealStatus - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+    path,
+    {
+      'position': 1,
+      'status_id': statusId,
+    },
+  );
+
+  if (response.statusCode == 200) {
+    //print('Статус задачи успешно обновлен.');
+  } else if (response.statusCode == 422) {
+    throw DealStatusUpdateException(
+      422,
+      'Вы не можете переместить задачу на этот статус',
+    );
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
+  }
+}
+
+// Метод для Получения Сделки в Окно Лида
+Future<List<DealTask>> getDealTasks(int dealId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/getByDeal/$dealId');
+  if (kDebugMode) {
+    print('ApiService: getDealTasks - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List)
+        .map((task) => DealTask.fromJson(task))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки сделки задачи');
+  }
+}
 
 // Метод для создания Сделки
-  Future<Map<String, dynamic>> createDeal({
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    int? leadId,
-    List<Map<String, dynamic>>? customFields,
-    List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
-  }) async {
-    try {
-      // Формируем путь с query-параметрами
-      final updatedPath = await _appendQueryParams('/deal');
-      var request =
-          http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-
-      request.fields['name'] = name;
-      request.fields['deal_status_id'] = dealStatusId.toString();
-      request.fields['position'] = '1';
-      if (managerId != null) {
-        request.fields['manager_id'] = managerId.toString();
-      }
-      if (startDate != null) {
-        request.fields['start_date'] =
-            DateFormat('yyyy-MM-dd').format(startDate);
-      }
-      if (endDate != null) {
-        request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-      }
-      request.fields['sum'] = sum;
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-      if (dealtypeId != null) {
-        request.fields['deal_type_id'] = dealtypeId.toString();
-      }
-      if (leadId != null) {
-        request.fields['lead_id'] = leadId.toString();
-      }
-
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['deal_custom_fields[$i][value]'] =
-              field['value'] ?? '';
-          request.fields['deal_custom_fields[$i][type]'] =
-              field['type'] ?? 'string';
-        }
-      }
-
-      if (directoryValues != null && directoryValues.isNotEmpty) {
-        for (int i = 0; i < directoryValues.length; i++) {
-          var directoryValue = directoryValues[i];
-          request.fields['directory_values[$i][entry_id]'] =
-              directoryValue['entry_id'].toString();
-          request.fields['directory_values[$i][directory_id]'] =
-              directoryValue['directory_id'].toString();
-        }
-      }
-
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      final response = await _multipartPostRequest('/deal', request);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'deal_created_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {'success': false, 'message': 'invalid_name_length'};
-        }
-        if (response.body.contains('directory_values')) {
-          return {'success': false, 'message': 'error_directory_values'};
-        }
-        if (response.body.contains('type')) {
-          return {'success': false, 'message': 'invalid_field_type'};
-        }
-        if (response.body.contains('deal_custom_fields')) {
-          return {'success': false, 'message': 'invalid_deal_custom_fields'};
-        }
-        return {'success': false, 'message': 'unknown_error'};
-      } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      } else {
-        return {'success': false, 'message': 'error_deal_create_successfully'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'error_deal_create_successfully'};
-    }
-  }
-
-  Future<Map<String, dynamic>> updateDeal({
-    required int dealId,
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, dynamic>>? customFields,
-    List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
-    List<DealFiles>? existingFiles,
-  }) async {
+Future<Map<String, dynamic>> createDeal({
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  int? leadId,
+  List<Map<String, dynamic>>? customFields,
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths,
+}) async {
+  try {
     // Формируем путь с query-параметрами
-    final updatedPath = await _appendQueryParams('/deal/$dealId');
+    final updatedPath = await _appendQueryParams('/deal');
+    if (kDebugMode) {
+      print('ApiService: createDeal - Generated path: $updatedPath');
+    }
     var request =
         http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
     request.fields['name'] = name;
     request.fields['deal_status_id'] = dealStatusId.toString();
-    if (managerId != null) request.fields['manager_id'] = managerId.toString();
-    if (startDate != null)
-      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    if (endDate != null)
+    request.fields['position'] = '1';
+    if (managerId != null) {
+      request.fields['manager_id'] = managerId.toString();
+    }
+    if (startDate != null) {
+      request.fields['start_date'] =
+          DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
       request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    if (sum.isNotEmpty) request.fields['sum'] = sum;
-    if (description != null) request.fields['description'] = description;
-    if (dealtypeId != null)
+    }
+    request.fields['sum'] = sum;
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+    if (dealtypeId != null) {
       request.fields['deal_type_id'] = dealtypeId.toString();
-    if (leadId != null) request.fields['lead_id'] = leadId.toString();
+    }
+    if (leadId != null) {
+      request.fields['lead_id'] = leadId.toString();
+    }
 
-    final customFieldsList = customFields ?? [];
-    if (customFieldsList.isNotEmpty) {
-      for (int i = 0; i < customFieldsList.length; i++) {
-        var field = customFieldsList[i];
-        request.fields['deal_custom_fields[$i][key]'] =
-            field['key']!.toString();
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
         request.fields['deal_custom_fields[$i][value]'] =
-            field['value']!.toString();
+            field['value'] ?? '';
         request.fields['deal_custom_fields[$i][type]'] =
-            field['type']?.toString() ?? 'string';
+            field['type'] ?? 'string';
       }
     }
 
-    final directoryValuesList = directoryValues ?? [];
-    if (directoryValuesList.isNotEmpty) {
-      for (int i = 0; i < directoryValuesList.length; i++) {
-        var value = directoryValuesList[i];
-        request.fields['directory_values[$i][directory_id]'] =
-            value['directory_id'].toString();
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
         request.fields['directory_values[$i][entry_id]'] =
-            value['entry_id'].toString();
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
       }
-    }
-
-    if (existingFiles != null && existingFiles.isNotEmpty) {
-      final existingFileIds = existingFiles.map((file) => file.id).toList();
-      request.fields['existing_files'] = jsonEncode(existingFileIds);
     }
 
     if (filePaths != null && filePaths.isNotEmpty) {
@@ -2568,364 +2570,496 @@ Future<List<Lead>> getLeads(
       }
     }
 
-    final response = await _multipartPostRequest('/deal/$dealId', request);
+    final response = await _multipartPostRequest('/deal', request);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'deal_updated_successfully'};
+      return {
+        'success': true,
+        'message': 'deal_created_successfully',
+      };
     } else if (response.statusCode == 422) {
-      if (response.body.contains('"name"')) {
+      if (response.body.contains('name')) {
         return {'success': false, 'message': 'invalid_name_length'};
       }
-      if (response.body.contains('sum')) {
-        return {'success': false, 'message': 'invalid_sum_format'};
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'error_directory_values'};
       }
       if (response.body.contains('type')) {
         return {'success': false, 'message': 'invalid_field_type'};
       }
       if (response.body.contains('deal_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
+        return {'success': false, 'message': 'invalid_deal_custom_fields'};
       }
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'error_deal_update'};
+      return {'success': false, 'message': 'error_deal_create_successfully'};
+    }
+  } catch (e) {
+    return {'success': false, 'message': 'error_deal_create_successfully'};
+  }
+}
+
+Future<Map<String, dynamic>> updateDeal({
+  required int dealId,
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  required int? leadId,
+  List<Map<String, dynamic>>? customFields,
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths,
+  List<DealFiles>? existingFiles,
+}) async {
+  // Формируем путь с query-параметрами
+  final updatedPath = await _appendQueryParams('/deal/$dealId');
+  if (kDebugMode) {
+    print('ApiService: updateDeal - Generated path: $updatedPath');
+  }
+  var request =
+      http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+
+  request.fields['name'] = name;
+  request.fields['deal_status_id'] = dealStatusId.toString();
+  if (managerId != null) request.fields['manager_id'] = managerId.toString();
+  if (startDate != null)
+    request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+  if (endDate != null)
+    request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+  if (sum.isNotEmpty) request.fields['sum'] = sum;
+  if (description != null) request.fields['description'] = description;
+  if (dealtypeId != null)
+    request.fields['deal_type_id'] = dealtypeId.toString();
+  if (leadId != null) request.fields['lead_id'] = leadId.toString();
+
+  final customFieldsList = customFields ?? [];
+  if (customFieldsList.isNotEmpty) {
+    for (int i = 0; i < customFieldsList.length; i++) {
+      var field = customFieldsList[i];
+      request.fields['deal_custom_fields[$i][key]'] =
+          field['key']!.toString();
+      request.fields['deal_custom_fields[$i][value]'] =
+          field['value']!.toString();
+      request.fields['deal_custom_fields[$i][type]'] =
+          field['type']?.toString() ?? 'string';
     }
   }
 
-  // Метод для Удаления Статуса Лида
-  Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
-    final organizationId = await getSelectedOrganization();
+  final directoryValuesList = directoryValues ?? [];
+  if (directoryValuesList.isNotEmpty) {
+    for (int i = 0; i < directoryValuesList.length; i++) {
+      var value = directoryValuesList[i];
+      request.fields['directory_values[$i][directory_id]'] =
+          value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          value['entry_id'].toString();
+    }
+  }
 
-    final response = await _deleteRequest(
-        '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  if (existingFiles != null && existingFiles.isNotEmpty) {
+    final existingFileIds = existingFiles.map((file) => file.id).toList();
+    request.fields['existing_files'] = jsonEncode(existingFileIds);
+  }
+
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  final response = await _multipartPostRequest('/deal/$dealId', request);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'deal_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('sum')) {
+      return {'success': false, 'message': 'invalid_sum_format'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('deal_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_deal_update'};
+  }
+}
+
+// Метод для Удаления Статуса Сделки
+Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+  if (kDebugMode) {
+    print('ApiService: deleteDealStatuses - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete dealStatus!');
+  }
+}
+
+// Метод для Удаления Сделки
+Future<Map<String, dynamic>> deleteDeal(int dealId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/$dealId');
+  if (kDebugMode) {
+    print('ApiService: deleteDeal - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete deal!');
+  }
+}
+
+// Метод для получения кастомных полей Сделки
+Future<Map<String, dynamic>> getCustomFieldsdeal() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/get/custom-fields');
+  if (kDebugMode) {
+    print('ApiService: getCustomFieldsdeal - Generated path: $path');
+  }
+
+  // Выполняем запрос
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+// Метод для изменения статуса Сделки в ApiService
+Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
+    String title, int day, bool isSuccess, bool isFailure) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+  if (kDebugMode) {
+    print('ApiService: updateDealStatusEdit - Generated path: $path');
+  }
+
+  final payload = {
+    "title": title,
+    "day": day,
+    "color": "#000",
+    "is_success": isSuccess ? 1 : 0,
+    "is_failure": isFailure ? 1 : 0,
+    "organization_id": await getSelectedOrganization(),
+  };
+
+  final response = await _patchRequest(
+    path,
+    payload,
+  );
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update dealStatus!');
+  }
+}
+
+Future<DealStatus> getDealStatus(int dealStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+  if (kDebugMode) {
+    print('ApiService: getDealStatus - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null) {
+      return DealStatus.fromJson(data['result']);
+    }
+    throw Exception('Invalid response format');
+  } else {
+    throw Exception('Failed to fetch deal status!');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__DEAL____________________________________________//
+//_________________________________ START___API__SCREEN__TASK____________________________________________//
+
+// Метод для получения Задачи через его ID
+Future<TaskById> getTaskById(int taskId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/$taskId');
+    if (kDebugMode) {
+      print('ApiService: getTaskById - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      return {'result': 'Success'};
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
+
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
+      }
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+    } else if (response.statusCode == 404) {
+      throw Exception('Ресурс с задачи $taskId не найден');
+    } else if (response.statusCode == 500) {
+      throw Exception('Ошибка сервера. Попробуйте позже');
     } else {
-      throw Exception('Failed to delete dealStatus!');
+      throw Exception('Ошибка загрузки task ID!');
+    }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID');
+  }
+}
+
+// API Service
+Future<List<Task>> getTasks(
+  int? taskStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? users,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? overdue,
+  bool? hasFile,
+  bool? hasDeal,
+  bool? urgent,
+  DateTime? deadlinefromDate,
+  DateTime? deadlinetoDate,
+  String? project,
+  List<String>? authors,
+  String? department,
+  List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
+}) async {
+  // Формируем базовый путь
+  String path = '/task?page=$page&per_page=$perPage';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getTasks - Generated path: $path');
+  }
+
+  bool hasFilters = (search != null && search.isNotEmpty) ||
+      (users != null && users.isNotEmpty) ||
+      (fromDate != null) ||
+      (toDate != null) ||
+      (statuses != null) ||
+      overdue == true ||
+      hasFile == true ||
+      hasDeal == true ||
+      urgent == true ||
+      (deadlinefromDate != null) ||
+      (deadlinetoDate != null) ||
+      (project != null && project.isNotEmpty) ||
+      (authors != null && authors.isNotEmpty) ||
+      (department != null && department.isNotEmpty) ||
+      (directoryValues != null &&
+          directoryValues.isNotEmpty); // Проверяем directoryValues
+
+  if (taskStatusId != null && !hasFilters) {
+    path += '&task_status_id=$taskStatusId';
+  }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+  if (users != null && users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      path += '&users[$i]=${users[i]}';
+    }
+  }
+  if (statuses != null) {
+    path += '&task_status_id=$statuses';
+  }
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+    path += '&from=$formattedFromDate&to=$formattedToDate';
+  }
+  if (overdue == true) {
+    path += '&overdue=1';
+  }
+  if (hasFile == true) {
+    path += '&hasFile=1';
+  }
+  if (hasDeal == true) {
+    path += '&hasDeal=1';
+  }
+  if (urgent == true) {
+    path += '&urgent=1';
+  }
+  if (deadlinefromDate != null && deadlinetoDate != null) {
+    final formattedFromDate =
+        DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+  }
+  if (project != null && project.isNotEmpty) {
+    path += '&project=$project';
+  }
+  if (authors != null && authors.isNotEmpty) {
+    for (int i = 0; i < authors.length; i++) {
+      path += '&authors[$i]=${authors[i]}';
+    }
+  }
+  if (department != null && department.isNotEmpty) {
+    path += '&department_id=$department';
+  }
+  if (directoryValues != null && directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      path +=
+          '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+      path +=
+          '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
     }
   }
 
-  // Метод для Удаления Сделки
-  Future<Map<String, dynamic>> deleteDeal(int dealId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+          .toList();
     } else {
-      throw Exception('Failed to delete deal!');
+      throw Exception('Нет данных о задачах в ответе');
     }
+  } else {
+    //print('Error response! - ${response.body}');
+    throw Exception('Ошибка загрузки задач!');
   }
+}
 
-  //Метод для получение кастомных полей Задачи
-  Future<Map<String, dynamic>> getCustomFieldsdeal() async {
-    final organizationId = await getSelectedOrganization();
+// Метод для получения статусов задач
+Future<List<TaskStatus>> getTaskStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
 
-    // Выполняем запрос
-    final response = await _getRequest(
-      '/deal/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task-status');
+    if (kDebugMode) {
+      print('ApiService: getTaskStatuses - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
-        return data; // Возвращаем данные, если они есть
+        // Принт старых кэшированных данных (если они есть)
+        final cachedStatuses =
+            prefs.getString('cachedTaskStatuses_$organizationId');
+        if (cachedStatuses != null) {
+          final decodedData = json.decode(cachedStatuses);
+          // //print(
+          //     '------------------------------ Старые данные в кэше ------------------------------');
+          // //print(decodedData); // Старые данные
+        }
+
+        // Обновляем кэш новыми данными
+        await prefs.setString('cachedTaskStatuses_$organizationId',
+            json.encode(data['result']));
+        // //print(
+        //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+        // //print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+        return (data['result'] as List)
+            .map((status) => TaskStatus.fromJson(status))
+            .toList();
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
     }
-  }
-
-// Метод для изменения статуса deal в ApiService
-  Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
-      String title, int day, bool isSuccess, bool isFailure) async {
-    final organizationId = await getSelectedOrganization();
-
-    final payload = {
-      "title": title,
-      "day": day,
-      "color": "#000",
-      "is_success": isSuccess ? 1 : 0,
-      "is_failure": isFailure ? 1 : 0,
-      "organization_id": organizationId,
-    };
-
-    final response = await _patchRequest(
-      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      payload, // Исправлено: Передача `payload` как второго аргумента
-    );
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
+  } catch (e) {
+    //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+    // Если запрос не удался, пытаемся загрузить данные из кэша
+    final cachedStatuses =
+        prefs.getString('cachedTaskStatuses_$organizationId');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => TaskStatus.fromJson(status))
+          .toList();
+      return cachedList;
     } else {
-      throw Exception('Failed to update leadStatus!');
+      throw Exception(
+          'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
     }
   }
+}
 
-  Future<DealStatus> getDealStatus(int dealStatusId) async {
-    final organizationId = await getSelectedOrganization();
+Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Task> tasks =
+        await getTasks(taskStatusId, page: 1, perPage: 1);
 
-    final response = await _getRequest(
-      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+    // Если список лидов не пуст, значит статус содержит элементы
+    return tasks.isNotEmpty;
+  } catch (e) {
+    //print('Error while checking if status has deals!');
+    return false;
+  }
+}
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null) {
-        return DealStatus.fromJson(data['result']);
-      }
-      throw Exception('Invalid response format');
-    } else {
-      throw Exception('Failed to fetch deal status!');
-    }
+// Обновление статуса карточки Задачи в колонке
+Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/changeStatus/$taskId');
+  if (kDebugMode) {
+    print('ApiService: updateTaskStatus - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
-  //_________________________________ START___API__SCREEN__TASK____________________________________________//
+  final response = await _postRequest(
+      path,
+      {
+        'position': 1,
+        'status_id': statusId,
+      });
 
-  //Метод для получения Задачи через его ID
-  Future<TaskById> getTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonTask = decodedJson['result'];
-
-        if (jsonTask == null || jsonTask['taskStatus'] == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-      } else if (response.statusCode == 404) {
-        throw Exception('Ресурс с задачи $taskId не найден');
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера. Попробуйте позже');
-      } else {
-        throw Exception('Ошибка загрузки task ID!');
-      }
-    } catch (e) {
-      throw Exception('Ошибка загрузки task ID');
-    }
+  if (response.statusCode == 200) {
+    //print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    throw TaskStatusUpdateException(
+        422, 'Вы не можете переместить задачу на этот статус');
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
   }
-
-  // API Service
-  Future<List<Task>> getTasks(
-    int? taskStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? users,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    bool? overdue,
-    bool? hasFile,
-    bool? hasDeal,
-    bool? urgent,
-    DateTime? deadlinefromDate,
-    DateTime? deadlinetoDate,
-    String? project,
-    List<String>? authors,
-    String? department,
-    List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/task?page=$page&per_page=$perPage';
-    path += '&organization_id=$organizationId';
-
-    bool hasFilters = (search != null && search.isNotEmpty) ||
-        (users != null && users.isNotEmpty) ||
-        (fromDate != null) ||
-        (toDate != null) ||
-        (statuses != null) ||
-        overdue == true ||
-        hasFile == true ||
-        hasDeal == true ||
-        urgent == true ||
-        (deadlinefromDate != null) ||
-        (deadlinetoDate != null) ||
-        (project != null && project.isNotEmpty) ||
-        (authors != null && authors.isNotEmpty) ||
-        (department != null && department.isNotEmpty) ||
-        (directoryValues != null &&
-            directoryValues.isNotEmpty); // Проверяем directoryValues
-
-    if (taskStatusId != null && !hasFilters) {
-      path += '&task_status_id=$taskStatusId';
-    }
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-    if (users != null && users.isNotEmpty) {
-      for (int i = 0; i < users.length; i++) {
-        path += '&users[$i]=${users[i]}';
-      }
-    }
-    if (statuses != null) {
-      path += '&task_status_id=$statuses';
-    }
-    if (fromDate != null && toDate != null) {
-      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-      path += '&from=$formattedFromDate&to=$formattedToDate';
-    }
-    if (overdue == true) {
-      path += '&overdue=1';
-    }
-    if (hasFile == true) {
-      path += '&hasFile=1';
-    }
-    if (hasDeal == true) {
-      path += '&hasDeal=1';
-    }
-    if (urgent == true) {
-      path += '&urgent=1';
-    }
-    if (deadlinefromDate != null && deadlinetoDate != null) {
-      final formattedFromDate =
-          DateFormat('yyyy-MM-dd').format(deadlinefromDate);
-      final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
-      path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
-    }
-    if (project != null && project.isNotEmpty) {
-      path += '&project=$project';
-    }
-    if (authors != null && authors.isNotEmpty) {
-      for (int i = 0; i < authors.length; i++) {
-        path += '&authors[$i]=${authors[i]}';
-      }
-    }
-    if (department != null && department.isNotEmpty) {
-      path += '&department_id=$department';
-    }
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        path +=
-            '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-        path +=
-            '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
-      }
-    }
-
-    final response = await _getRequest(path);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      //print('Error response! - ${response.body}');
-      throw Exception('Ошибка загрузки задач!');
-    }
-  }
-
-// Метод для получения статусов задач
-  Future<List<TaskStatus>> getTaskStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      // Отправляем запрос на сервер
-      final response = await _getRequest(
-          '/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            // //print(
-            //     '------------------------------ Старые данные в кэше ------------------------------');
-            // //print(decodedData); // Старые данные
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedTaskStatuses_$organizationId',
-              json.encode(data['result']));
-          // //print(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          return (data['result'] as List)
-              .map((status) => TaskStatus.fromJson(status))
-              .toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedTaskStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
-            .map((status) => TaskStatus.fromJson(status))
-            .toList();
-        return cachedList;
-      } else {
-        throw Exception(
-            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
-      }
-    }
-  }
-
-  Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
-    try {
-      // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Task> tasks =
-          await getTasks(taskStatusId, page: 1, perPage: 1);
-
-      // Если список лидов не пуст, значит статус содержит элементы
-      return tasks.isNotEmpty;
-    } catch (e) {
-      //print('Error while checking if status has deals!');
-      return false;
-    }
-  }
-
-//Обновление статуса карточки Задачи  в колонке
-
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/task/changeStatus/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'position': 1,
-          'status_id': statusId,
-        });
-
-    if (response.statusCode == 200) {
-      //print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      throw TaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
-    } else {
-      throw Exception('Ошибка обновления задач сделки!');
-    }
-  }
+}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -2993,1847 +3127,1809 @@ Future<List<Lead>> getLeads(
   }
 
   // Общий метод обработки ошибок
-  Exception _handleErrorResponse(http.Response response, String operation) {
-    try {
-      final data = json.decode(response.body);
-      final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-      return Exception('Ошибка ${operation}! - $errorMessage');
-    } catch (e) {
-      return Exception('Ошибка ${operation}! - ${response.body}');
-    }
+Exception _handleErrorResponse(http.Response response, String operation) {
+  try {
+    final data = json.decode(response.body);
+    final errorMessage = data['errors'] ?? data['message'] ?? response.body;
+    return Exception('Ошибка ${operation}! - $errorMessage');
+  } catch (e) {
+    return Exception('Ошибка ${operation}! - ${response.body}');
   }
+}
 
-  /// Создает новый статус задачи
-  Future<Map<String, dynamic>> CreateTaskStatusAdd({
-    required int taskStatusNameId,
-    required int projectId,
-    required bool needsPermission,
-    List<int>? roleIds,
-    bool? finalStep,
-  }) async {
-    try {
-      // Формируем данные для запроса
-      final Map<String, dynamic> data = {
-        'task_status_name_id': taskStatusNameId,
-        'project_id': projectId,
-        'needs_permission': needsPermission ? 1 : 0,
-      };
+// Создает новый статус задачи
+Future<Map<String, dynamic>> CreateTaskStatusAdd({
+  required int taskStatusNameId,
+  required int projectId,
+  required bool needsPermission,
+  List<int>? roleIds,
+  bool? finalStep,
+}) async {
+  try {
+    // Формируем данные для запроса
+    final Map<String, dynamic> data = {
+      'task_status_name_id': taskStatusNameId,
+      'project_id': projectId,
+      'needs_permission': needsPermission ? 1 : 0,
+    };
 
-      // Добавляем final_step, если оно не null
-      if (finalStep != null) {
-        data['final_step'] = finalStep;
-      }
+    // Добавляем final_step, если оно не null
+    if (finalStep != null) {
+      data['final_step'] = finalStep;
+    }
 
-      // Обрабатываем список ролей, если он существует
-      if (roleIds != null && roleIds.isNotEmpty) {
-        data['roles'] = roleIds.map((roleId) => {'role_id': roleId}).toList();
-      }
+    // Обрабатываем список ролей, если он существует
+    if (roleIds != null && roleIds.isNotEmpty) {
+      data['roles'] = roleIds.map((roleId) => {'role_id': roleId}).toList();
+    }
 
-      // Получаем идентификатор организации
-      final organizationIdProfile = await getSelectedOrganization();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task-status');
+    if (kDebugMode) {
+      print('ApiService: CreateTaskStatusAdd - Generated path: $path');
+    }
 
-      // Выполняем запрос
-      final response = await _postRequest(
-        '/task-status${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
-        data,
-      );
+    // Выполняем запрос
+    final response = await _postRequest(path, data);
 
-      // Проверяем статус ответа
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        return {
-          'success': true,
-          'message': 'Статус задачи успешно создан',
-          'data': responseData,
-        };
-      }
-
-      // Обрабатываем различные коды ошибок
-      String errorMessage;
-      switch (response.statusCode) {
-        case 400:
-          errorMessage = 'Неверные данные запроса';
-          break;
-        case 401:
-          errorMessage = 'Необходима авторизация';
-          break;
-        case 403:
-          errorMessage = 'Недостаточно прав для создания статуса';
-          break;
-        case 404:
-          errorMessage = 'Ресурс не найден';
-          break;
-        case 409:
-          errorMessage = 'Конфликт при создании статуса';
-          break;
-        case 500:
-          errorMessage = 'Внутренняя ошибка сервера';
-          break;
-        default:
-          errorMessage = 'Произошла ошибка при создании статуса';
-      }
-
+    // Проверяем статус ответа
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = json.decode(response.body);
       return {
-        'success': false,
-        'message': '$errorMessage!',
-        'statusCode': response.statusCode,
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при выполнении запроса!',
-        'error': e.toString(),
+        'success': true,
+        'message': 'Статус задачи успешно создан',
+        'data': responseData,
       };
     }
+
+    // Обрабатываем различные коды ошибок
+    String errorMessage;
+    switch (response.statusCode) {
+      case 400:
+        errorMessage = 'Неверные данные запроса';
+        break;
+      case 401:
+        errorMessage = 'Необходима авторизация';
+        break;
+      case 403:
+        errorMessage = 'Недостаточно прав для создания статуса';
+        break;
+      case 404:
+        errorMessage = 'Ресурс не найден';
+        break;
+      case 409:
+        errorMessage = 'Конфликт при создании статуса';
+        break;
+      case 500:
+        errorMessage = 'Внутренняя ошибка сервера';
+        break;
+      default:
+        errorMessage = 'Произошла ошибка при создании статуса';
+    }
+
+    return {
+      'success': false,
+      'message': '$errorMessage!',
+      'statusCode': response.statusCode,
+    };
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при выполнении запроса!',
+      'error': e.toString(),
+    };
   }
+}
 
-// Метод для создание задачи из сделки
-  Future<Map<String, dynamic>> createTaskFromDeal({
-    required int dealId,
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, dynamic>>? customFields, // Изменяем тип
-    List<String>? filePaths,
-    List<Map<String, int>>? directoryValues,
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+// Метод для создания задачи из сделки
+Future<Map<String, dynamic>> createTaskFromDeal({
+  required int dealId,
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, dynamic>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues,
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/createFromDeal/$dealId');
+    if (kDebugMode) {
+      print('ApiService: createTaskFromDeal - Generated path: $path');
+    }
+    var uri = Uri.parse('$baseUrl$path');
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
+      request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
-      }
-      if (endDate != null) {
-        request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
-      }
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
+    }
 
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
+        request.fields['task_custom_fields[$i][value]'] =
+            field['value'] ?? '';
+        request.fields['task_custom_fields[$i][type]'] =
+            field['type'] ?? 'string';
       }
+    }
 
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
-              field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
-              field['type'] ?? 'string';
-        }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
       }
+    }
 
-      if (directoryValues != null && directoryValues.isNotEmpty) {
-        for (int i = 0; i < directoryValues.length; i++) {
-          var directoryValue = directoryValues[i];
-          request.fields['directory_values[$i][entry_id]'] =
-              directoryValue['entry_id'].toString();
-          request.fields['directory_values[$i][directory_id]'] =
-              directoryValue['directory_id'].toString();
-        }
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_deal_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
-        if (response.body.contains('directory_values')) {
-          return {
-            'success': false,
-            'message': 'error_directory_values',
-          };
-        }
-        if (response.body.contains('type')) {
-          return {
-            'success': false,
-            'message': 'invalid_field_type',
-          };
-        }
-        if (response.body.contains('task_custom_fields')) {
-          return {
-            'success': false,
-            'message': 'invalid_task_custom_fields',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_deal_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      if (response.body.contains('type')) {
+        return {
+          'success': false,
+          'message': 'invalid_field_type',
+        };
+      }
+      if (response.body.contains('task_custom_fields')) {
+        return {
+          'success': false,
+          'message': 'invalid_task_custom_fields',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
   }
+}
 
-/*
-// Метод для создание задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, String>>? customFields,
-    String? filePath,
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken(); // Получаем токен
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+// Метод для создания задачи
+Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, dynamic>>? customFields,
+  List<String>? filePaths,
+  List<Map<String, int>>? directoryValues,
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task');
+    if (kDebugMode) {
+      print('ApiService: createTask - Generated path: $path');
+    }
+    var uri = Uri.parse('$baseUrl$path');
 
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
+    request.fields['name'] = name;
+    request.fields['status_id'] = statusId.toString();
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
+    request.fields['organization_id'] = (await getSelectedOrganization()).toString();
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
+      request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
       }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
+    }
 
-      // Добавляем пользователей
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
+        request.fields['task_custom_fields[$i][value]'] =
+            field['value'] ?? '';
+        request.fields['task_custom_fields[$i][type]'] =
+            field['type'] ?? 'string';
       }
+    }
 
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValue['directory_id'].toString();
       }
+    }
 
-      // Добавляем файл, если он есть
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileName = file.path.split('/').last;
-          final fileStream = http.ByteStream(file.openRead());
-          final length = await file.length();
-
-          final multipartFile = http.MultipartFile(
-            'file',
-            fileStream,
-            length,
-            filename: fileName,
-          );
-          request.files.add(multipartFile);
-        }
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
+    }
 
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        // Обработка ошибок валидации
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_create_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
+      if (response.body.contains('directory_values')) {
+        return {
+          'success': false,
+          'message': 'error_directory_values',
+        };
+      }
+      if (response.body.contains('type')) {
+        return {
+          'success': false,
+          'message': 'invalid_field_type',
+        };
+      }
+      if (response.body.contains('task_custom_fields')) {
+        return {
+          'success': false,
+          'message': 'invalid_task_custom_fields',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'unknown_error',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_task',
       };
     }
-  }*/
-// Метод для создание задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<Map<String, dynamic>>? customFields, // Изменяем тип
-    List<String>? filePaths,
-    List<Map<String, int>>? directoryValues,
-    int position = 1,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_task',
+    };
+  }
+}
 
-      var request = http.MultipartRequest('POST', uri);
+// Метод для обновления задачи
+Future<Map<String, dynamic>> updateTask({
+  required int taskId,
+  required String name,
+  required int taskStatusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<String>? filePaths,
+  List<Map<String, dynamic>>? customFields,
+  List<TaskFiles>? existingFiles,
+  List<Map<String, int>>? directoryValues,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/$taskId');
+    if (kDebugMode) {
+      print('ApiService: updateTask - Generated path: $path');
+    }
+    var uri = Uri.parse('$baseUrl$path');
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
+    // Создаем multipart request
+    var request = http.MultipartRequest('POST', uri);
+
+    // Добавляем заголовки с токеном
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем все поля в формате form-data
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['_method'] = 'POST'; // Для эмуляции PUT запроса
+
+    if (priority != null) {
+      request.fields['priority_level'] = priority;
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toString().split(' ')[0];
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toString().split(' ')[0];
+    }
+
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    // Добавляем пользователей
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
+      }
+    }
+
+    // Добавляем кастомные поля
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] =
+            field['key']!.toString();
+        request.fields['task_custom_fields[$i][value]'] =
+            field['value']!.toString();
+        request.fields['task_custom_fields[$i][type]'] =
+            field['type']?.toString() ?? 'string';
+      }
+    }
+
+    // Добавляем ID существующих файлов
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      for (int i = 0; i < existingFiles.length; i++) {
+        request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
+      }
+    }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      directoryValues.asMap().forEach((i, value) {
+        request.fields['directory_values[$i][entry_id]'] =
+            value['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] =
+            value['directory_id'].toString();
       });
+    }
+    // Добавляем новые файлы
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
+    // Отправляем запрос
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
-      request.fields['organization_id'] = organizationId.toString();
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'task_update_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      //print('Server Response: ${response.body}'); // Добавим для отладки
 
-      if (priority != null) {
-        request.fields['priority_level'] = priority.toString();
-      }
-      if (startDate != null) {
-        request.fields['from'] = DateFormat('yyyy-MM-dd').format(startDate);
-      }
-      if (endDate != null) {
-        request.fields['to'] = DateFormat('yyyy-MM-dd').format(endDate);
-      }
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
-      }
-
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
-              field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
-              field['type'] ?? 'string';
-        }
-      }
-
-      if (directoryValues != null && directoryValues.isNotEmpty) {
-        for (int i = 0; i < directoryValues.length; i++) {
-          var directoryValue = directoryValues[i];
-          request.fields['directory_values[$i][entry_id]'] =
-              directoryValue['entry_id'].toString();
-          request.fields['directory_values[$i][directory_id]'] =
-              directoryValue['directory_id'].toString();
-        }
-      }
-
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
-        if (response.body.contains('directory_values')) {
-          return {
-            'success': false,
-            'message': 'error_directory_values',
-          };
-        }
-        if (response.body.contains('type')) {
-          return {
-            'success': false,
-            'message': 'invalid_field_type',
-          };
-        }
-        if (response.body.contains('task_custom_fields')) {
-          return {
-            'success': false,
-            'message': 'invalid_task_custom_fields',
-          };
-        }
+      // Обработка ошибок валидации
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_task',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'error_start_date_task',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'error_end_date_task',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'error_priority_level',
+        };
+      }
       return {
         'success': false,
-        'message': 'error_create_task',
+        'message': 'unknown_error',
       };
-    }
-  }
-
-  //Метод для обновление задачи
-  Future<Map<String, dynamic>> updateTask({
-    required int taskId,
-    required String name,
-    required int taskStatusId,
-    String? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    List<String>? filePaths, // Список путей к файлам
-    List<Map<String, dynamic>>? customFields, // Обновлённый тип
-    List<TaskFiles>?
-        existingFiles, // Добавляем параметр для существующих файлов
-    List<Map<String, int>>? directoryValues,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
-
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['_method'] = 'POST'; // Для эмуляции PUT запроса
-
-      if (priority != null) {
-        request.fields['priority_level'] = priority;
-      }
-      if (startDate != null) {
-        request.fields['from'] = startDate.toString().split(' ')[0];
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toString().split(' ')[0];
-      }
-
-      if (projectId != null) {
-        request.fields['project_id'] = projectId.toString();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-
-      // Добавляем пользователей
-      if (userId != null && userId.isNotEmpty) {
-        for (int i = 0; i < userId.length; i++) {
-          request.fields['users[$i][user_id]'] = userId[i].toString();
-        }
-      }
-
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] =
-              field['key']!.toString();
-          request.fields['task_custom_fields[$i][value]'] =
-              field['value']!.toString();
-          request.fields['task_custom_fields[$i][type]'] =
-              field['type']?.toString() ?? 'string';
-        }
-      }
-
-      // Добавляем ID существующих файлов
-      if (existingFiles != null && existingFiles.isNotEmpty) {
-        for (int i = 0; i < existingFiles.length; i++) {
-          request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
-        }
-      }
-      if (directoryValues != null && directoryValues.isNotEmpty) {
-        directoryValues.asMap().forEach((i, value) {
-          request.fields['directory_values[$i][entry_id]'] =
-              value['entry_id'].toString();
-          request.fields['directory_values[$i][directory_id]'] =
-              value['directory_id'].toString();
-        });
-      }
-      // Добавляем новые файлы
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'task_update_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        //print('Server Response: ${response.body}'); // Добавим для отладки
-
-        // Обработка ошибок валидации
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
-        if (response.body.contains('from')) {
-          return {
-            'success': false,
-            'message': 'error_start_date_task',
-          };
-        }
-        if (response.body.contains('to')) {
-          return {
-            'success': false,
-            'message': 'error_end_date_task',
-          };
-        }
-        if (response.body.contains('priority_level')) {
-          return {
-            'success': false,
-            'message': 'error_priority_level',
-          };
-        }
-        return {
-          'success': false,
-          'message': 'unknown_error',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        //print('Server Response: ${response.body}'); // Добавим для отладки
-
-        return {
-          'success': false,
-          'message': 'error_task_update_successfully',
-        };
-      }
-    } catch (e) {
-      //print('Update Task Error: $e'); // Добавим для отладки
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
+      //print('Server Response: ${response.body}'); // Добавим для отладки
 
       return {
         'success': false,
         'message': 'error_task_update_successfully',
       };
     }
+  } catch (e) {
+    //print('Update Task Error: $e'); // Добавим для отладки
+
+    return {
+      'success': false,
+      'message': 'error_task_update_successfully',
+    };
   }
+}
 
 // Метод для получения Истории Задачи
-  Future<List<TaskHistory>> getTaskHistory(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+Future<List<TaskHistory>> getTaskHistory(int taskId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/history/$taskId');
+    if (kDebugMode) {
+      print('ApiService: getTaskHistory - Generated path: $path');
+    }
 
-      // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest(
-          '/task/history/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result']['history'];
-        return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
-      } else {
-        //print('Failed to load task history!');
-        throw Exception('Ошибка загрузки истории задач!');
-      }
-    } catch (e) {
-      //print('Error occurred!');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
+    } else {
+      //print('Failed to load task history!');
       throw Exception('Ошибка загрузки истории задач!');
     }
+  } catch (e) {
+    //print('Error occurred!');
+    throw Exception('Ошибка загрузки истории задач!');
   }
+}
 
 // Метод для получения Проекта
-  Future<ProjectsDataResponse> getAllProject() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/project${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    late ProjectsDataResponse dataProject;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataProject = ProjectsDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-
-    if (kDebugMode) {}
-
-    return dataProject;
+Future<ProjectsDataResponse> getAllProject() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/project');
+  if (kDebugMode) {
+    print('ApiService: getAllProject - Generated path: $path');
   }
 
-// Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(
-        '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  late ProjectsDataResponse dataProject;
 
-    late ProjectTaskDataResponse dataProject;
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataProject = ProjectTaskDataResponse.fromJson(data);
-      } else {
-        throw ('Результат отсутствует в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw ('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw ('Внутренняя ошибка сервера');
+    if (data['result'] != null) {
+      dataProject = ProjectsDataResponse.fromJson(data);
     } else {
-      throw ('Ошибка при получении данных!');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка при получении данных!');
+  }
 
+  if (kDebugMode) {}
+
+  return dataProject;
+}
+
+// Метод для получения Проекта
+Future<ProjectTaskDataResponse> getTaskProject() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/get/projects');
+  if (kDebugMode) {
+    print('ApiService: getTaskProject - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  late ProjectTaskDataResponse dataProject;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataProject = ProjectTaskDataResponse.fromJson(data);
+    } else {
+      throw ('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw ('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw ('Внутренняя ошибка сервера');
+  } else {
+    throw ('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {
+    // //print('getAll project!');
+  }
+
+  return dataProject;
+}
+
+// Метод для получения Пользователя
+Future<List<UserTask>> getUserTask() async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/user');
     if (kDebugMode) {
-      // //print('getAll project!');
+      print('ApiService: getUserTask - Generated path: $path');
     }
 
-    return dataProject;
-  }
-
-  // Метод для получение Пользователя
-  Future<List<UserTask>> getUserTask() async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      //print('Отправка запроса на /user');
-      final response = await _getRequest(
-          '/user${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      // //print('Статус ответа!');
-      // //print('Тело ответа!');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Убедитесь, что данные соответствуют ожидаемой структуре
-        if (data['result'] != null && data['result'] is List) {
-          final usersList = (data['result'] as List)
-              .map((user) => UserTask.fromJson(user))
-              .toList();
-
-          return usersList;
-        } else {
-          throw Exception('Неверная структура данных пользователей');
-        }
-      } else {
-        throw Exception('Ошибка сервера!');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-  // Future<List<UserTaskAdd>> getUsers() async {
-  // final response = await _getRequest('/user');
-
-  // if (response.statusCode == 200) {
-  //   final data = json.decode(response.body);
-  //   //print('Ответ пользователей: $data'); // Для отладки
-
-  //   if (data['users'] != null) {
-  //     return (data['users'] as List)
-  //         .map((user) => UserTaskAdd.fromJson(user))
-  //         .toList();
-  //   } else {
-  //     throw Exception('Пользователи не найдены');
-  //   }
-  // } else {
-  //   throw Exception('Ошибка ${response.statusCode}!');
-  // }}
-
-  // Метод для получение Роли
-  Future<List<Role>> getRoles() async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-        '/role${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((role) => Role.fromJson(role))
-            .toList();
-      } else {
-        throw Exception('Роли не найдены');
-      }
-    } else {
-      throw Exception('Ошибка при получении ролей!');
-    }
-  }
-
-// Метод для получения Cтатуса задачи
-  Future<List<StatusName>> getStatusName() async {
-    final organizationId = await getSelectedOrganization();
-
-    //print('Начало запроса статусов задач'); // Отладочный вывод
-    final response = await _getRequest(
-        '/taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    //print('Статус код ответа!'); // Отладочный вывод
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      //print('Полученные данные: $data'); // Отладочный вывод
-
-      if (data['result'] != null) {
-        final statusList = (data['result'] as List)
-            .map((name) => StatusName.fromJson(name))
-            .toList();
-        //print(
-        // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
-        return statusList;
-      } else {
-        throw Exception('Статусы задач не найдены');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  }
-
-  // Метод для Удаления Задачи
-  Future<Map<String, dynamic>> deleteTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete task!');
-    }
-  }
-
-  // Метод для Удаления Статуса Задачи
-
-  Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete taskStatus!');
-    }
-  }
-
-  // Метод для завершения задачи
-
-  Future<Map<String, dynamic>> finishTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'task_id': taskId,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача успешно завершена'};
-    } else if (response.statusCode == 422) {
-      try {
-        final responseData = jsonDecode(response.body);
-        final errorMessage = responseData['message'] ??
-            'Неизвестная ошибка при завершении задачи';
-        return {
-          'success': false,
-          'message': errorMessage,
-        };
-      } catch (e) {
-        return {
-          'success': false,
-          'message': 'Ошибка обработки ответа сервера',
-        };
-      }
-    } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
-    }
-  }
-
-  //Метод для получение кастомных полей Задачи
-  Future<Map<String, dynamic>> getCustomFields() async {
-    final organizationId = await getSelectedOrganization();
-
-    // Выполняем запрос
-    final response = await _getRequest(
-      '/task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return data; // Возвращаем данные, если они есть
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  }
-
-  Future<TaskStatus> getTaskStatus(int taskStatusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null) {
-        return TaskStatus.fromJson(data['result']);
-      }
-      throw Exception('Invalid response format');
-    } else {
-      throw Exception('Failed to fetch deal status!');
-    }
-  }
-
-// Метод для изменения статуса лида в ApiService
-  Future<Map<String, dynamic>> updateTaskStatusEdit({
-    required int taskStatusId,
-    required String name,
-    required bool needsPermission,
-    required bool finalStep,
-    required bool checkingStep,
-    required List<int> roleIds,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
-
-    final payload = {
-      "task_status_name_id": taskStatusId,
-      "needs_permission": needsPermission ? 1 : 0,
-      "final_step": finalStep ? 1 : 0,
-      "checking_step": checkingStep ? 1 : 0,
-      "roles": roles,
-      "organization_id": organizationId,
-    };
-
-    final response = await _patchRequest(
-      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      payload,
-    );
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update task status!');
-    }
-  }
-
-  Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/task/deleteFile/$fileId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete task file!');
-    }
-  }
-
-  Future<List<Department>> getDepartments() async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/department?organization_id=$organizationId';
-
+    //print('Отправка запроса на /user');
     final response = await _getRequest(path);
+    // //print('Статус ответа!');
+    // //print('Тело ответа!');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      final result = data['result']; // Извлекаем массив из ключа "result"
-      //print('Полученные данные отделов: $result');
-      return (result as List)
-          .map((department) => Department.fromJson(department))
+
+      // Убедитесь, что данные соответствуют ожидаемой структуре
+      if (data['result'] != null && data['result'] is List) {
+        final usersList = (data['result'] as List)
+            .map((user) => UserTask.fromJson(user))
+            .toList();
+
+        return usersList;
+      } else {
+        throw Exception('Неверная структура данных пользователей');
+      }
+    } else {
+      throw Exception('Ошибка сервера!');
+    }
+  } catch (e) {
+    rethrow;
+  }
+}
+
+// Метод для получения Роли
+Future<List<Role>> getRoles() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/role');
+  if (kDebugMode) {
+    print('ApiService: getRoles - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((role) => Role.fromJson(role))
           .toList();
     } else {
-      throw Exception('Ошибка загрузки отделов');
+      throw Exception('Роли не найдены');
     }
+  } else {
+    throw Exception('Ошибка при получении ролей!');
+  }
+}
+
+// Метод для получения Статуса задачи
+Future<List<StatusName>> getStatusName() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/taskStatusName');
+  if (kDebugMode) {
+    print('ApiService: getStatusName - Generated path: $path');
   }
 
-  Future<DirectoryDataResponse> getDirectory() async {
-    final organizationId = await getSelectedOrganization();
+  //print('Начало запроса статусов задач'); // Отладочный вывод
+  final response = await _getRequest(path);
+  //print('Статус код ответа!'); // Отладочный вывод
 
-    final response = await _getRequest(
-        '/directory${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    //print('Полученные данные: $data'); // Отладочный вывод
 
-    late DirectoryDataResponse dataDirectory;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataDirectory = DirectoryDataResponse.fromJson(data);
-      } else {
-        throw ('Результат отсутствует в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw ('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw ('Внутренняя ошибка сервера');
+    if (data['result'] != null) {
+      final statusList = (data['result'] as List)
+          .map((name) => StatusName.fromJson(name))
+          .toList();
+      //print(
+      // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
+      return statusList;
     } else {
-      throw ('Ошибка при получении данных!');
+      throw Exception('Статусы задач не найдены');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
 
-    if (kDebugMode) {
-      //print('getAll directory!');
-    }
-
-    return dataDirectory;
+// Метод для Удаления Задачи
+Future<Map<String, dynamic>> deleteTask(int taskId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/$taskId');
+  if (kDebugMode) {
+    print('ApiService: deleteTask - Generated path: $path');
   }
 
-  Future<MainFieldResponse> getMainFields(int directoryId) async {
-    final organizationId = await getSelectedOrganization();
-    //print('Вызов getMainFields для directoryId: $directoryId');
-    final response = await _getRequest(
-      '/directory/getMainFields/$directoryId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+  final response = await _deleteRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      //print('Ответ getMainFields для directoryId $directoryId: $data');
-      if (data['result'] != null) {
-        return MainFieldResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw Exception('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw Exception('Внутренняя ошибка сервера');
-    } else {
-      throw Exception('Ошибка при получении данных справочника!');
-    }
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete task!');
+  }
+}
+
+// Метод для Удаления Статуса Задачи
+Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task-status/$taskStatusId');
+  if (kDebugMode) {
+    print('ApiService: deleteTaskStatuses - Generated path: $path');
   }
 
-  Future<void> linkDirectory({
-    required int directoryId,
-    required String modelType,
-    required String organizationId,
-  }) async {
-    final response = await _postRequest(
-      '/directoryLink?organization_id=$organizationId',
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete taskStatus!');
+  }
+}
+
+// Метод для завершения задачи
+Future<Map<String, dynamic>> finishTask(int taskId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/finish');
+  if (kDebugMode) {
+    print('ApiService: finishTask - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
       {
-        'directory_id': directoryId,
-        'model_type': modelType,
-        'organization_id': organizationId,
-      },
-    );
+        'task_id': taskId,
+      });
 
-    if (response.statusCode != 200) {
-      throw ('Ошибка при связывании справочника: ${response.statusCode}');
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача успешно завершена'};
+  } else if (response.statusCode == 422) {
+    try {
+      final responseData = jsonDecode(response.body);
+      final errorMessage = responseData['message'] ??
+          'Неизвестная ошибка при завершении задачи';
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка обработки ответа сервера',
+      };
     }
+  } else {
+    return {'success': false, 'message': 'Ошибка завершения задачи!'};
+  }
+}
 
-    if (kDebugMode) {
-      //print('Directory linked successfully!');
-    }
+// Метод для получения кастомных полей Задачи
+Future<Map<String, dynamic>> getCustomFields() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/get/custom-fields');
+  if (kDebugMode) {
+    print('ApiService: getCustomFields - Generated path: $path');
   }
 
-  Future<DirectoryLinkResponse> getTaskDirectoryLinks() async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/directoryLink/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['data'] != null) {
-        return DirectoryLinkResponse.fromJson(data);
-      } else {
-        throw Exception('Данные отсутствуют в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw Exception('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw Exception('Внутренняя ошибка сервера');
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
     } else {
-      throw Exception('Ошибка при получении связанных справочников!');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
   }
+}
+
+Future<TaskStatus> getTaskStatus(int taskStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task-status/$taskStatusId');
+  if (kDebugMode) {
+    print('ApiService: getTaskStatus - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null) {
+      return TaskStatus.fromJson(data['result']);
+    }
+    throw Exception('Invalid response format');
+  } else {
+    throw Exception('Failed to fetch deal status!');
+  }
+}
+
+// Метод для изменения статуса задачи в ApiService
+Future<Map<String, dynamic>> updateTaskStatusEdit({
+  required int taskStatusId,
+  required String name,
+  required bool needsPermission,
+  required bool finalStep,
+  required bool checkingStep,
+  required List<int> roleIds,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task-status/$taskStatusId');
+  if (kDebugMode) {
+    print('ApiService: updateTaskStatusEdit - Generated path: $path');
+  }
+
+  final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
+
+  final payload = {
+    "task_status_name_id": taskStatusId,
+    "needs_permission": needsPermission ? 1 : 0,
+    "final_step": finalStep ? 1 : 0,
+    "checking_step": checkingStep ? 1 : 0,
+    "roles": roles,
+    "organization_id": await getSelectedOrganization(),
+  };
+
+  final response = await _patchRequest(
+    path,
+    payload,
+  );
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update task status!');
+  }
+}
+
+Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/deleteFile/$fileId');
+  if (kDebugMode) {
+    print('ApiService: deleteTaskFile - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete task file!');
+  }
+}
+
+Future<List<Department>> getDepartments() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/department');
+  if (kDebugMode) {
+    print('ApiService: getDepartments - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final result = data['result']; // Извлекаем массив из ключа "result"
+    //print('Полученные данные отделов: $result');
+    return (result as List)
+        .map((department) => Department.fromJson(department))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки отделов');
+  }
+}
+
+Future<DirectoryDataResponse> getDirectory() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directory');
+  if (kDebugMode) {
+    print('ApiService: getDirectory - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  late DirectoryDataResponse dataDirectory;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataDirectory = DirectoryDataResponse.fromJson(data);
+    } else {
+      throw ('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw ('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw ('Внутренняя ошибка сервера');
+  } else {
+    throw ('Ошибка при получении данных!');
+  }
+
+  if (kDebugMode) {
+    //print('getAll directory!');
+  }
+
+  return dataDirectory;
+}
+
+Future<MainFieldResponse> getMainFields(int directoryId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directory/getMainFields/$directoryId');
+  if (kDebugMode) {
+    print('ApiService: getMainFields - Generated path: $path');
+  }
+
+  //print('Вызов getMainFields для directoryId: $directoryId');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    //print('Ответ getMainFields для directoryId $directoryId: $data');
+    if (data['result'] != null) {
+      return MainFieldResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении данных справочника!');
+  }
+}
+
+Future<void> linkDirectory({
+  required int directoryId,
+  required String modelType,
+  required String organizationId,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directoryLink');
+  if (kDebugMode) {
+    print('ApiService: linkDirectory - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+    path,
+    {
+      'directory_id': directoryId,
+      'model_type': modelType,
+      'organization_id': organizationId,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw ('Ошибка при связывании справочника: ${response.statusCode}');
+  }
+
+  if (kDebugMode) {
+    //print('Directory linked successfully!');
+  }
+}
+
+Future<DirectoryLinkResponse> getTaskDirectoryLinks() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directoryLink/task');
+  if (kDebugMode) {
+    print('ApiService: getTaskDirectoryLinks - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
 
 // Для лидов
-  Future<DirectoryLinkResponse> getLeadDirectoryLinks() async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/directoryLink/lead${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['data'] != null) {
-        return DirectoryLinkResponse.fromJson(data);
-      } else {
-        throw Exception('Данные отсутствуют в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw Exception('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw Exception('Внутренняя ошибка сервера');
-    } else {
-      throw Exception('Ошибка при получении связанных справочников!');
-    }
+Future<DirectoryLinkResponse> getLeadDirectoryLinks() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directoryLink/lead');
+  if (kDebugMode) {
+    print('ApiService: getLeadDirectoryLinks - Generated path: $path');
   }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
+    } else {
+      throw Exception('Данные отсутствуют в ответе');
+    }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
+  }
+}
 
 // Для сделок
-  Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/directoryLink/deal${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['data'] != null) {
-        return DirectoryLinkResponse.fromJson(data);
-      } else {
-        throw Exception('Данные отсутствуют в ответе');
-      }
-    } else if (response.statusCode == 404) {
-      throw Exception('Ресурс не найден');
-    } else if (response.statusCode == 500) {
-      throw Exception('Внутренняя ошибка сервера');
-    } else {
-      throw Exception('Ошибка при получении связанных справочников!');
-    }
-  }
-  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
-
-  //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
-
-  /// Получение данных графика для дашборда
-  Future<List<ChartData>> getLeadChart() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/lead-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      if (data.isNotEmpty) {
-        return data.map((json) => ChartData.fromJson(json)).toList();
-      } else {
-        throw ('Нет данных графика в ответе "Клиенты"');
-      }
-    } else {
-      throw ('Ошибка загрузки данных график клиента!');
-    }
+Future<DirectoryLinkResponse> getDealDirectoryLinks() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/directoryLink/deal');
+  if (kDebugMode) {
+    print('ApiService: getDealDirectoryLinks - Generated path: $path');
   }
 
-  Future<LeadConversion> getLeadConversionData() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    String path =
-        '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data.isNotEmpty) {
-        final conversion = LeadConversion.fromJson(data);
-        return conversion;
-      } else {
-        throw ('Нет данных графика в ответе "Конверсия лидов');
-      }
-    } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['data'] != null) {
+      return DirectoryLinkResponse.fromJson(data);
     } else {
-      throw ('');
+      throw Exception('Данные отсутствуют в ответе');
     }
+  } else if (response.statusCode == 404) {
+    throw Exception('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw Exception('Внутренняя ошибка сервера');
+  } else {
+    throw Exception('Ошибка при получении связанных справочников!');
   }
+}
+
+//_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
+
+/// Получение данных графика для дашборда
+Future<List<ChartData>> getLeadChart() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/lead-chart');
+  if (kDebugMode) {
+    print('ApiService: getLeadChart - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    if (data.isNotEmpty) {
+      return data.map((json) => ChartData.fromJson(json)).toList();
+    } else {
+      throw ('Нет данных графика в ответе "Клиенты"');
+    }
+  } else {
+    throw ('Ошибка загрузки данных график клиента!');
+  }
+}
+
+Future<LeadConversion> getLeadConversionData() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/leadConversion-chart');
+  if (kDebugMode) {
+    print('ApiService: getLeadConversionData - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data.isNotEmpty) {
+      final conversion = LeadConversion.fromJson(data);
+      return conversion;
+    } else {
+      throw ('Нет данных графика в ответе "Конверсия лидов');
+    }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('');
+  }
+}
 
 // Метод для получения графика Сделки
-  Future<DealStatsResponse> getDealStatsData() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/dealStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return DealStatsResponse.fromJson(jsonData);
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера!');
-      } else {
-        throw Exception('Ошибка загрузки данных!');
-      }
-    } catch (e) {
-      //print('Ошибка запроса!');
-      throw ('');
-    }
+Future<DealStatsResponse> getDealStatsData() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/dealStats');
+  if (kDebugMode) {
+    print('ApiService: getDealStatsData - Generated path: $path');
   }
+
+  try {
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      return DealStatsResponse.fromJson(jsonData);
+    } else if (response.statusCode == 500) {
+      throw Exception('Ошибка сервера!');
+    } else {
+      throw Exception('Ошибка загрузки данных!');
+    }
+  } catch (e) {
+    //print('Ошибка запроса!');
+    throw ('');
+  }
+}
 
 // Метод для получения графика Задачи
-  Future<TaskChart> getTaskChartData() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonMap = json.decode(response.body);
-
-        if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
-          final taskChart = TaskChart.fromJson(jsonMap);
-          return taskChart;
-        } else {
-          throw ('Нет данных графика в ответе "Задачи');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера!');
-      } else {
-        throw ('Ошибка загрузки данных графика!');
-      }
-    } catch (e) {
-      throw ('Ошибка получения данных!');
-    }
+Future<TaskChart> getTaskChartData() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/task-chart');
+  if (kDebugMode) {
+    print('ApiService: getTaskChartData - Generated path: $path');
   }
 
-  // Метод для получения графика Скорость обработки
-
-  Future<ProcessSpeed> getProcessSpeedData() async {
-    final organizationId = await getSelectedOrganization();
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    // Извлекаем значения из Map
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    String path =
-        '/dashboard/lead-process-speed${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
+  try {
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
 
-      if (data.isNotEmpty) {
-        final speed = ProcessSpeed.fromJson(data);
-        return speed;
+      if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
+        final taskChart = TaskChart.fromJson(jsonMap);
+        return taskChart;
       } else {
-        throw ('Нет данных графика в ответе "Скорость обработки"');
+        throw ('Нет данных графика в ответе "Задачи');
       }
     } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
+      throw ('Ошибка сервера!');
     } else {
-      throw ('Ошибка загрузки данных графика Скорость обработки');
+      throw ('Ошибка загрузки данных графика!');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных!');
+  }
+}
+
+// Метод для получения графика Скорость обработки
+Future<ProcessSpeed> getProcessSpeedData() async {
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/lead-process-speed');
+  if (kDebugMode) {
+    print('ApiService: getProcessSpeedData - Generated path: $path');
   }
 
-  Future<List<UserTaskCompletion>> getUsersChartData() async {
-    final organizationId = await getSelectedOrganization();
-    String path =
-        '/dashboard/users-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        final List<dynamic> resultList = data['result'];
-        return resultList
-            .map((item) => UserTaskCompletion.fromJson(item))
-            .toList();
-      } else {
-        throw ('Нет данных графика в ответе "Выполнение целей"');
-      }
-    } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
+    if (data.isNotEmpty) {
+      final speed = ProcessSpeed.fromJson(data);
+      return speed;
     } else {
-      throw ('Ошибка загрузки данных графика Выролнение целей!');
+      throw ('Нет данных графика в ответе "Скорость обработки"');
     }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('Ошибка загрузки данных графика Скорость обработки');
+  }
+}
+
+Future<List<UserTaskCompletion>> getUsersChartData() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/users-chart');
+  if (kDebugMode) {
+    print('ApiService: getUsersChartData - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
+  final response = await _getRequest(path);
 
-  //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      final List<dynamic> resultList = data['result'];
+      return resultList
+          .map((item) => UserTaskCompletion.fromJson(item))
+          .toList();
+    } else {
+      throw ('Нет данных графика в ответе "Выполнение целей"');
+    }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('Ошибка загрузки данных графика Выполнение целей!');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
+
+//_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
 
 // Метод для получения графика Сделки
-  Future<DealStatsResponseManager> getDealStatsManagerData() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/dealStats/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return DealStatsResponseManager.fromJson(jsonData);
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера!');
-      } else {
-        throw Exception('Ошибка загрузки данных!');
-      }
-    } catch (e) {
-      //print('Ошибка запроса!');
-      throw ('');
-    }
+Future<DealStatsResponseManager> getDealStatsManagerData() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/dealStats/for-manager');
+  if (kDebugMode) {
+    print('ApiService: getDealStatsManagerData - Generated path: $path');
   }
 
-  /// Получение данных графика для дашборда
-  Future<List<ChartDataManager>> getLeadChartManager() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/lead-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
+  try {
     final response = await _getRequest(path);
-
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      if (data.isNotEmpty) {
-        return data.map((json) => ChartDataManager.fromJson(json)).toList();
-      } else {
-        throw ('Нет данных графика в ответе "Клиенты"');
-      }
+      final jsonData = json.decode(response.body);
+      return DealStatsResponseManager.fromJson(jsonData);
+    } else if (response.statusCode == 500) {
+      throw Exception('Ошибка сервера!');
     } else {
-      throw ('Ошибка загрузки данных график клиента!');
+      throw Exception('Ошибка загрузки данных!');
     }
+  } catch (e) {
+    //print('Ошибка запроса!');
+    throw ('');
+  }
+}
+
+/// Получение данных графика для дашборда
+Future<List<ChartDataManager>> getLeadChartManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/lead-chart/for-manager');
+  if (kDebugMode) {
+    print('ApiService: getLeadChartManager - Generated path: $path');
   }
 
-  Future<LeadConversionManager> getLeadConversionDataManager() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(path);
 
-    String path =
-        '/dashboard/leadConversion-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    if (data.isNotEmpty) {
+      return data.map((json) => ChartDataManager.fromJson(json)).toList();
+    } else {
+      throw ('Нет данных графика в ответе "Клиенты"');
+    }
+  } else {
+    throw ('Ошибка загрузки данных график клиента!');
+  }
+}
 
+Future<LeadConversionManager> getLeadConversionDataManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/leadConversion-chart/for-manager');
+  if (kDebugMode) {
+    print('ApiService: getLeadConversionDataManager - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data.isNotEmpty) {
+      final conversion = LeadConversionManager.fromJson(data);
+      return conversion;
+    } else {
+      throw ('Нет данных графика в ответе "Конверсия лидов');
+    }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('');
+  }
+}
+
+Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/lead-process-speed/for/manager');
+  if (kDebugMode) {
+    print('ApiService: getProcessSpeedDataManager - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data.isNotEmpty) {
+      final speed = ProcessSpeedManager.fromJson(data);
+      return speed;
+    } else {
+      throw ('Нет данных графика в ответе "Скорость обработки"');
+    }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('Ошибка загрузки данных графика Скорость обработки');
+  }
+}
+
+// Метод для получения графика Задачи
+Future<TaskChartManager> getTaskChartDataManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/task-chart/for-manager');
+  if (kDebugMode) {
+    print('ApiService: getTaskChartDataManager - Generated path: $path');
+  }
+
+  try {
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
 
-      if (data.isNotEmpty) {
-        final conversion = LeadConversionManager.fromJson(data);
-        return conversion;
+      if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
+        final taskChart = TaskChartManager.fromJson(jsonMap);
+        return taskChart;
       } else {
-        throw ('Нет данных графика в ответе "Конверсия лидов');
+        throw ('Нет данных графика в ответе "Задачи');
       }
     } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
+      throw ('Ошибка сервера!');
     } else {
-      throw ('');
+      throw ('Ошибка загрузки данных графика!');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных!');
   }
-
-  Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/lead-process-speed/for/manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data.isNotEmpty) {
-        final speed = ProcessSpeedManager.fromJson(data);
-        return speed;
-      } else {
-        throw ('Нет данных графика в ответе "Скорость обработки"');
-      }
-    } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
-    } else {
-      throw ('Ошибка загрузки данных графика Скорость обработки');
-    }
-  }
-
-  // Метод для получения графика Задачи
-  Future<TaskChartManager> getTaskChartDataManager() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/task-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonMap = json.decode(response.body);
-
-        if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
-          final taskChart = TaskChartManager.fromJson(jsonMap);
-          return taskChart;
-        } else {
-          throw ('Нет данных графика в ответе "Задачи');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера!');
-      } else {
-        throw ('Ошибка загрузки данных графика!');
-      }
-    } catch (e) {
-      throw ('Ошибка получения данных!');
-    }
-  }
+}
 
 // API Service
-  Future<UserTaskCompletionManager> getUserStatsManager() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        return UserTaskCompletionManager.fromJson(data);
-      } else {
-        throw ('Нет данных графика в ответе');
-      }
-    } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
-    } else {
-      throw ('Неизвестная ошибка');
-    }
+Future<UserTaskCompletionManager> getUserStatsManager() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/dashboard/completed-task-chart');
+  if (kDebugMode) {
+    print('ApiService: getUserStatsManager - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
+  final response = await _getRequest(path);
 
-  //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
 
-  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-      [int page = 1, String? search]) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    String url =
-        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
-
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search';
-    }
-
-    ////print('ApiService.getAllChats: Requesting URL: $url');
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-        // //print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
-        // //print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
-        return pagination;
-      } else {
-        // //print('ApiService.getAllChats: No result found in response');
-        throw ('Результат отсутствует в ответе');
-      }
+    if (data['result'] != null) {
+      return UserTaskCompletionManager.fromJson(data);
     } else {
-      // //print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
-      throw ('Ошибка ${response.statusCode}: ${response.body}');
+      throw ('Нет данных графика в ответе');
     }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('Неизвестная ошибка');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
+
+//_________________________________ START_____API_SCREEN__CHATS____________________________________________//
+
+Future<PaginationDTO<Chats>> getAllChats(
+  String endPoint, [
+  int page = 1,
+  String? search,
+  int? salesFunnelId, // Новый параметр
+]) async {
+  final token = await getToken();
+  // Формируем базовый путь
+  String path = '/chat/getMyChats/$endPoint?page=$page';
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getAllChats - Generated path: $path');
   }
 
-  Future<String> sendMessages(List<int> messageIds) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    // Construct the URL
-    final url = Uri.parse('$baseUrl/chat/read?organization_id=$organizationId');
-
-    // Prepare the body
-    final body = json.encode({'message_ids': messageIds});
-
-    // Make the POST request
-    final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['message'] ?? 'Success';
-    } else {
-      throw Exception('Error ${response.statusCode}!');
-    }
+  // Добавляем search и funnel_id, если они есть
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
   }
+  if (salesFunnelId != null && endPoint == 'lead') {
+    path += '&funnel_id=$salesFunnelId';
+  }
+
+  print('ApiService.getAllChats: Requesting URL: $baseUrl$path');
+
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
+        return Chats.fromJson(e);
+      });
+      print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
+      print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
+      return pagination;
+    } else {
+      print('ApiService.getAllChats: No result found in response');
+      throw ('Результат отсутствует в ответе');
+    }
+  } else {
+    print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
+    throw ('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+Future<String> sendMessages(List<int> messageIds) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/read');
+  if (kDebugMode) {
+    print('ApiService: sendMessages - Generated path: $path');
+  }
+
+  // Prepare the body
+  final body = json.encode({'message_ids': messageIds});
+
+  // Make the POST request
+  final response = await http.post(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data['message'] ?? 'Success';
+  } else {
+    throw Exception('Error ${response.statusCode}!');
+  }
+}
 
 // Метод для получения сообщений по chatId
-  Future<List<Message>> getMessages(
-    int chatId, {
-    String? search,
-  }) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+Future<List<Message>> getMessages(
+  int chatId, {
+  String? search,
+}) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = '/chat/getMessages/$chatId';
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getMessages - Generated path: $path');
+  }
 
-    String url =
-        '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
 
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search';
-    }
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((msg) => Message.fromJson(msg))
-            .toList();
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((msg) => Message.fromJson(msg))
+          .toList();
     } else {
-      throw Exception('Ошибка ${response.statusCode}!');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+Future<void> closeChatSocket(int chatId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/clearCache/$chatId');
+  if (kDebugMode) {
+    print('ApiService: closeChatSocket - Generated path: $path');
   }
 
-  Future<void> closeChatSocket(int chatId) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
+  final response = await _postRequest(path, {});
 
-    if (response.statusCode != 200) {
-      throw Exception('close sokcet!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('close sokcet!');
+  }
+}
+
+Future<IntegrationForLead> getIntegrationForLead(int chatId) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/get-integration/$chatId');
+  if (kDebugMode) {
+    print('ApiService: getIntegrationForLead - Generated path: $path');
   }
 
-  Future<IntegrationForLead> getIntegrationForLead(int chatId) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
 
-    final url =
-        '$baseUrl/chat/get-integration/$chatId?organization_id=$organizationId';
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      debugPrint('API response: $data'); // Лог для отладки
-      if (data['result'] != null) {
-        return IntegrationForLead.fromJson(
-            data['result']); // Парсим весь result
-      } else {
-        debugPrint('Integration not found in response: $data');
-        throw Exception('Интеграция не найдена в ответе');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    debugPrint('API response: $data'); // Лог для отладки
+    if (data['result'] != null) {
+      return IntegrationForLead.fromJson(data['result']);
     } else {
-      debugPrint('API error: ${response.statusCode}, body: ${response.body}');
-      throw Exception(
-          'Ошибка ${response.statusCode}: Не удалось получить интеграцию');
+      debugPrint('Integration not found in response: $data');
+      throw Exception('Интеграция не найдена в ответе');
     }
+  } else {
+    debugPrint('API error: ${response.statusCode}, body: ${response.body}');
+    throw Exception('Ошибка ${response.statusCode}: Не удалось получить интеграцию');
   }
+}
 
 // Метод для отправки текстового сообщения
-  Future<void> sendMessage(int chatId, String message,
-      {String? replyMessageId}) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'message': message,
-          if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
-        });
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки сообщения!');
-    }
+Future<void> sendMessage(int chatId, String message, {String? replyMessageId}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/sendMessage/$chatId');
+  if (kDebugMode) {
+    print('ApiService: sendMessage - Generated path: $path');
   }
 
-  Future<void> pinMessage(String messageId) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
+  final response = await _postRequest(
+      path,
+      {
+        'message': message,
+        if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+      });
 
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка закрепления сообщения!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки сообщения!');
+  }
+}
+
+Future<void> pinMessage(String messageId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/pinMessage/$messageId');
+  if (kDebugMode) {
+    print('ApiService: pinMessage - Generated path: $path');
   }
 
-  Future<void> unpinMessage(String messageId) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
+  final response = await _postRequest(path, {});
 
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка закрепления сообщения!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка закрепления сообщения!');
+  }
+}
+
+Future<void> unpinMessage(String messageId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/pinMessage/$messageId');
+  if (kDebugMode) {
+    print('ApiService: unpinMessage - Generated path: $path');
   }
 
-  Future<void> editMessage(String messageId, String message) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/chat/editMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'message': message,
-        });
+  final response = await _postRequest(path, {});
 
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка изменения сообщения!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка закрепления сообщения!');
+  }
+}
+
+Future<void> editMessage(String messageId, String message) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/editMessage/$messageId');
+  if (kDebugMode) {
+    print('ApiService: editMessage - Generated path: $path');
   }
 
-  // Метод для отправки audio file
-  Future<void> sendChatAudioFile(int chatId, File audio) async {
-    final token = await getToken(); // Получаем токен
-    final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+      path,
+      {
+        'message': message,
+      });
 
-    String requestUrl =
-        '$baseUrl/chat/sendVoice/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    Dio dio = Dio();
-    try {
-      final voice = await MultipartFile.fromFile(audio.path,
-          contentType: MediaType('audio', 'm4a')
-          // "/Users/diyorjonnasriddinov/Downloads/2024-10-30\ 17.35.27.ogg",
-          );
-      FormData formData = FormData.fromMap({'voice': voice});
-
-      var response = await dio.post(requestUrl,
-          data: formData,
-          options: Options(
-            headers: {
-              "Authorization": "Bearer $token",
-              // "Accept": "application/json",
-              // 'Content-Type': 'multipart/form-data'
-            },
-            // contentType: 'multipart/form-data',
-          ));
-      if (kDebugMode) {
-        //print('response.statusCode!');
-      }
-
-      if (response.statusCode == 200) {
-        if (kDebugMode) {
-          //print('Audio message sent successfully!');
-        }
-      } else {
-        if (kDebugMode) {
-          //print('Error sending audio message: ${response.data}');
-        }
-        throw Exception('Error sending audio message: ${response.data}');
-      }
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        //print('Exception caught!');
-      }
-      if (kDebugMode) {
-        //print(e.response?.data);
-      }
-      throw Exception('Failed to send audio message due to an exception!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка изменения сообщения!');
   }
+}
 
 // Метод для отправки audio file
-  Future<void> sendChatFile(int chatId, String pathFile) async {
-    final token = await getToken(); // Получаем токен
-    final organizationId = await getSelectedOrganization();
+Future<void> sendChatAudioFile(int chatId, File audio) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/sendVoice/$chatId');
+  if (kDebugMode) {
+    print('ApiService: sendChatAudioFile - Generated path: $path');
+  }
 
-    String requestUrl =
-        '$baseUrl/chat/sendFile/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
-    try {
-      FormData formData =
-          FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
+  Dio dio = Dio();
+  try {
+    final voice = await MultipartFile.fromFile(audio.path,
+        contentType: MediaType('audio', 'm4a'));
+    FormData formData = FormData.fromMap({'voice': voice});
 
-      var response = await dio.post(requestUrl,
-          data: formData,
-          options: Options(
-            headers: {
-              "Authorization": "Bearer $token",
-              "Accept": "application/json",
-              'Device': 'mobile'
-            },
-            contentType: 'multipart/form-data',
-          ));
+    var response = await dio.post(
+      requestUrl,
+      data: formData,
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
+    if (kDebugMode) {
+      //print('response.statusCode!');
+    }
+
+    if (response.statusCode == 200) {
       if (kDebugMode) {
-        //print('response.statusCode!');
+        //print('Audio message sent successfully!');
       }
-
-      if (response.statusCode == 200) {
-        if (kDebugMode) {
-          //print('Audio message sent successfully!');
-        }
-      } else {
-        if (kDebugMode) {
-          //print('Error sending audio message: ${response.data}');
-        }
-        throw Exception('Error sending audio message: ${response.data}');
-      }
-    } catch (e) {
+    } else {
       if (kDebugMode) {
-        //print('Exception caught!');
+        //print('Error sending audio message: ${response.data}');
       }
-      throw Exception('Failed to send audio message due to an exception!');
+      throw Exception('Error sending audio message: ${response.data}');
     }
+  } on DioException catch (e) {
+    if (kDebugMode) {
+      //print('Exception caught!');
+    }
+    if (kDebugMode) {
+      //print(e.response?.data);
+    }
+    throw Exception('Failed to send audio message due to an exception!');
+  }
+}
+
+// Метод для отправки audio file
+Future<void> sendChatFile(int chatId, String pathFile) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/sendFile/$chatId');
+  if (kDebugMode) {
+    print('ApiService: sendChatFile - Generated path: $path');
   }
 
-  // Метод для отправки файла
-  Future<void> sendFile(int chatId, String filePath) async {
-    // Если вы используете MultipartRequest для отправки файлов, создайте метод
-    // Для упрощения мы будем использовать _postRequest как пример
-    final organizationId = await getSelectedOrganization();
+  String requestUrl = '$baseUrl$path';
 
-    final response = await _postRequest(
-        '/chat/sendFile/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'file_path':
-              filePath, // Убедитесь, что вы используете правильные параметры
-        });
+  Dio dio = Dio();
+  try {
+    FormData formData =
+        FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
 
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки файла!');
+    var response = await dio.post(
+      requestUrl,
+      data: formData,
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          'Device': 'mobile'
+        },
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (kDebugMode) {
+      //print('response.statusCode!');
     }
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        //print('Audio message sent successfully!');
+      }
+    } else {
+      if (kDebugMode) {
+        //print('Error sending audio message: ${response.data}');
+      }
+      throw Exception('Error sending audio message: ${response.data}');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      //print('Exception caught!');
+    }
+    throw Exception('Failed to send audio message due to an exception!');
+  }
+}
+
+// Метод для отправки файла
+Future<void> sendFile(int chatId, String filePath) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/sendFile/$chatId');
+  if (kDebugMode) {
+    print('ApiService: sendFile - Generated path: $path');
   }
 
-  // Метод для отправки голосового сообщения
-  Future<void> sendVoice(int chatId, String voicePath) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+      path,
+      {
+        'file_path': filePath,
+      });
 
-    final response = await _postRequest(
-        '/chat/sendVoice/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'voice_path':
-              voicePath, // Убедитесь, что вы используете правильные параметры
-        });
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки голосового сообщения!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки файла!');
   }
+}
+
+// Метод для отправки голосового сообщения
+Future<void> sendVoice(int chatId, String voicePath) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/sendVoice/$chatId');
+  if (kDebugMode) {
+    print('ApiService: sendVoice - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
+      {
+        'voice_path': voicePath,
+      });
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки голосового сообщения!');
+  }
+}
 
 // //Метод для передачи всех iD-сообщениях чата в сервер
 //   Future<void> readChatMessages(int chatId, List<int> messageIds) async {
@@ -4866,610 +4962,701 @@ Future<List<Lead>> getLeads(
 //     }
 //   }
 
-  Future<Map<String, dynamic>> deleteChat(int chatId) async {
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      final response = await _deleteRequest(
-          '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        return {
-          'result': responseBody['result'],
-          'errors': responseBody['errors'],
-        };
-      } else if (response.statusCode == 400) {
-        // Ошибка запроса
-        throw Exception('Ошибка запроса: Неверные данные');
-      } else if (response.statusCode == 401) {
-        // Ошибка авторизации
-        throw Exception('Ошибка авторизации: Некорректные учетные данные');
-      } else if (response.statusCode == 403) {
-        // Ошибка доступа
-        throw Exception('Ошибка доступа: Недостаточно прав');
-      } else if (response.statusCode == 404) {
-        // Чат не найден
-        throw Exception('Ошибка: Чат не найден');
-      } else if (response.statusCode >= 500 && response.statusCode < 600) {
-        // Ошибка сервера
-        throw Exception('Ошибка сервера: Попробуйте позже');
-      } else {
-        // Обработка других ошибок
-        throw Exception('Неизвестная ошибка!');
-      }
-    } catch (e) {
-      // Обработка ошибок сети или других непредвиденных исключений
-      throw Exception('Не удалось выполнить запрос!');
+  // Метод для удаления чата
+Future<Map<String, dynamic>> deleteChat(int chatId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/chat/$chatId');
+    if (kDebugMode) {
+      print('ApiService: deleteChat - Generated path: $path');
     }
-  }
 
-  // get all users
-  Future<UsersDataResponse> getAllUser() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/department/get/users${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    late UsersDataResponse dataUser;
+    final response = await _deleteRequest(path);
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+      final responseBody = jsonDecode(response.body);
+      return {
+        'result': responseBody['result'],
+        'errors': responseBody['errors'],
+      };
+    } else if (response.statusCode == 400) {
+      // Ошибка запроса
+      throw Exception('Ошибка запроса: Неверные данные');
+    } else if (response.statusCode == 401) {
+      // Ошибка авторизации
+      throw Exception('Ошибка авторизации: Некорректные учетные данные');
+    } else if (response.statusCode == 403) {
+      // Ошибка доступа
+      throw Exception('Ошибка доступа: Недостаточно прав');
+    } else if (response.statusCode == 404) {
+      // Чат не найден
+      throw Exception('Ошибка: Чат не найден');
+    } else if (response.statusCode >= 500 && response.statusCode < 600) {
+      // Ошибка сервера
+      throw Exception('Ошибка сервера: Попробуйте позже');
+    } else {
+      // Обработка других ошибок
+      throw Exception('Неизвестная ошибка!');
     }
+  } catch (e) {
+    // Обработка ошибок сети или других непредвиденных исключений
+    throw Exception('Не удалось выполнить запрос!');
+  }
+}
 
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-    }
-    if (kDebugMode) {
-      // //print('getAll user!');
-    }
-
-    return dataUser;
+// get all users
+Future<UsersDataResponse> getAllUser() async {
+  final token = await getToken(); // Получаем токен перед запросом
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/department/get/users');
+  if (kDebugMode) {
+    print('ApiService: getAllUser - Generated path: $path');
   }
 
-  Future<UsersDataResponse> getAnotherUsers() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+  late UsersDataResponse dataUser;
 
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/user/getAnotherUsers/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    late UsersDataResponse dataUser;
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
     }
-
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-    }
-    if (kDebugMode) {
-      // //print('getAll user!');
-    }
-
-    return dataUser;
   }
 
-  // addUserToGroup
-  Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' +
-          (organizationId != null ? '?organization_id=$organizationId' : '')),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-
-    late UsersDataResponse dataUser;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-    }
-    if (kDebugMode) {
-      // //print('getUsersNotInChat!');
-    }
-
-    return dataUser;
+  if (kDebugMode) {
+    // //print('Статус ответа!');
   }
+  if (kDebugMode) {
+    // //print('getAll user!');
+  }
+
+  return dataUser;
+}
+
+Future<UsersDataResponse> getAnotherUsers() async {
+  final token = await getToken(); // Получаем токен перед запросом
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/user/getAnotherUsers/');
+  if (kDebugMode) {
+    print('ApiService: getAnotherUsers - Generated path: $path');
+  }
+
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+  late UsersDataResponse dataUser;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  }
+
+  if (kDebugMode) {
+    // //print('Статус ответа!');
+  }
+  if (kDebugMode) {
+    // //print('getAll user!');
+  }
+
+  return dataUser;
+}
+
+// addUserToGroup
+Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/user/users-not-in-chat/$chatId');
+  if (kDebugMode) {
+    print('ApiService: getUsersNotInChat - Generated path: $path');
+  }
+
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+
+  late UsersDataResponse dataUser;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  }
+
+  if (kDebugMode) {
+    // //print('Статус ответа!');
+  }
+  if (kDebugMode) {
+    // //print('getUsersNotInChat!');
+  }
+
+  return dataUser;
+}
 
 //Список юзеров Корпорт чата  для созд с польз
-  Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/chat/users/without-corporate-chat/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    //print(
-    // '----------------------------------------------------------------------');
-    //print(
-    // '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
-    //print(response);
-
-    late UsersDataResponse dataUser;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-    }
-    if (kDebugMode) {
-      // //print('getAll user!');
-    }
-
-    return dataUser;
+Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
+  final token = await getToken(); // Получаем токен перед запросом
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/users/without-corporate-chat/');
+  if (kDebugMode) {
+    print('ApiService: getUsersWihtoutCorporateChat - Generated path: $path');
   }
 
-  // create new client
-  Future<Map<String, dynamic>> createNewClient(String userID) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+  //print(
+  // '----------------------------------------------------------------------');
+  //print(
+  // '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
+  //print(response);
 
-    final response = await http.post(
-      Uri.parse(
-          '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
+  late UsersDataResponse dataUser;
 
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-      // //print('data!');
-    }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body);
-      var chatId = jsonResponse['result']['id']; // Извлекаем chatId
-      return {'chatId': chatId}; // Возвращаем chatId
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
     } else {
-      throw Exception('Failed to create chat');
+      throw Exception('Результат отсутствует в ответе');
     }
   }
 
-  // Метод для создания Групповго чата
-  Future<Map<String, dynamic>> createGroupChat({
-    required String name,
-    List<int>? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'name': name,
-        'users': userId?.map((id) => {'id': id}).toList() ?? [],
+  if (kDebugMode) {
+    // //print('Статус ответа!');
+  }
+  if (kDebugMode) {
+    // //print('getAll user!');
+  }
+
+  return dataUser;
+}
+
+// create new client
+Future<Map<String, dynamic>> createNewClient(String userID) async {
+  final token = await getToken();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/createChat/$userID');
+  if (kDebugMode) {
+    print('ApiService: createNewClient - Generated path: $path');
+  }
+
+  final response = await http.post(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+
+  if (kDebugMode) {
+    // //print('Статус ответа!');
+    // //print('data!');
+  }
+
+  if (response.statusCode == 200) {
+    var jsonResponse = jsonDecode(response.body);
+    var chatId = jsonResponse['result']['id']; // Извлекаем chatId
+    return {'chatId': chatId}; // Возвращаем chatId
+  } else {
+    throw Exception('Failed to create chat');
+  }
+}
+
+// Метод для создания Групповго чата
+Future<Map<String, dynamic>> createGroupChat({
+  required String name,
+  List<int>? userId,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'name': name,
+      'users': userId?.map((id) => {'id': id}).toList() ?? [],
+    };
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/chat/createGroup');
+    if (kDebugMode) {
+      print('ApiService: createGroupChat - Generated path: $path');
+    }
+
+    final response = await _postRequest(
+      path,
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'group_chat_created_successfully',
       };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'group_chat_created_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'invalid_name_length',
-          };
-        }
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
         return {
           'success': false,
-          'message': 'error_validation',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'error_create_group_chat',
+          'message': 'invalid_name_length',
         };
       }
-    } catch (e) {
+      return {
+        'success': false,
+        'message': 'error_validation',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'error_server_text',
+      };
+    } else {
       return {
         'success': false,
         'message': 'error_create_group_chat',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_create_group_chat',
+    };
   }
+}
 
-// Метод для создания Групповго чата
-  Future<Map<String, dynamic>> addUserToGroup({
-    required int chatId,
-    int? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'chatId': chatId,
-        'userId': userId,
+// Метод для добавления пользователя в групповой чат
+Future<Map<String, dynamic>> addUserToGroup({
+  required int chatId,
+  int? userId,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'chatId': chatId,
+      'userId': userId,
+    };
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/chat/addUserToGroup/$chatId/$userId');
+    if (kDebugMode) {
+      print('ApiService: addUserToGroup - Generated path: $path');
+    }
+
+    final response = await _postRequest(
+      path,
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Участник успешно добавлен.',
       };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Участник успешно добавлен.',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Ошибка добавления участника!',
-        };
-      }
-    } catch (e) {
+    } else if (response.statusCode == 500) {
       return {
         'success': false,
-        'message': 'Ошибка при добавление участника !',
+        'message': 'Ошибка на сервере. Попробуйте позже.',
       };
-    }
-  }
-
-// Метод для создания Групповго чата
-  Future<Map<String, dynamic>> deleteUserFromGroup({
-    required int chatId,
-    int? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'chatId': chatId,
-        'userId': userId,
-      };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Участник успешно добавлен.',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Ошибка добавления участника!',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при добавление участника !',
-      };
-    }
-  }
-
-// Метод для удаления сообщение
-  Future<void> DeleteMessage({int? messageId}) async {
-    if (messageId == null) {
-      throw Exception('MessageId не может быть null');
-    }
-
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/chat/delete-message/$messageId?organization_id=$organizationId';
-
-    //print('Sending DELETE request to API with path: $path');
-
-    // Используем _deleteRequest для отправки DELETE-запроса
-    final response = await _deleteRequest(path);
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
-
-    final data = json.decode(response.body);
-    if (data['result'] == 'deleted') {
-      return;
     } else {
-      throw Exception('Ошибка удаления уведомления');
+      return {
+        'success': false,
+        'message': 'Ошибка добавления участника!',
+      };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при добавление участника !',
+    };
+  }
+}
+
+// Метод для удаления пользователя из группового чата
+Future<Map<String, dynamic>> deleteUserFromGroup({
+  required int chatId,
+  int? userId,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'chatId': chatId,
+      'userId': userId,
+    };
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/chat/removeUserFromGroup/$chatId/$userId');
+    if (kDebugMode) {
+      print('ApiService: deleteUserFromGroup - Generated path: $path');
+    }
+
+    final response = await _postRequest(
+      path,
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Участник успешно добавлен.',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка добавления участника!',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при добавление участника !',
+    };
+  }
+}
+
+// Метод для удаления сообщения
+Future<void> DeleteMessage({int? messageId}) async {
+  if (messageId == null) {
+    throw Exception('MessageId не может быть null');
   }
 
-  //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/chat/delete-message/$messageId');
+  if (kDebugMode) {
+    print('ApiService: DeleteMessage - Generated path: $path');
+  }
 
-  //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
+  //print('Sending DELETE request to API with path: $path');
 
-  Future<ChatProfile> getChatProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+  // Используем _deleteRequest для отправки DELETE-запроса
+  final response = await _deleteRequest(path);
 
-      final response = await _getRequest(
-        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений!');
+  }
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        if (decodedJson['result'] != null) {
-          return ChatProfile.fromJson(decodedJson['result']);
-        } else {
-          throw Exception('Данные профиля не найдены');
-        }
-      } else if (response.statusCode == 404) {
-        throw ('Такого Лида не существует');
+  final data = json.decode(response.body);
+  if (data['result'] == 'deleted') {
+    return;
+  } else {
+    throw Exception('Ошибка удаления уведомления');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__CHATS____________________________________________//
+
+//_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
+Future<ChatProfile> getChatProfile(int chatId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/lead/getByChat/$chatId');
+    if (kDebugMode) {
+      print('ApiService: getChatProfile - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      if (decodedJson['result'] != null) {
+        return ChatProfile.fromJson(decodedJson['result']);
       } else {
-        //print('Ошибка загрузки профиля чата!');
-        throw Exception('${response.statusCode}');
+        throw Exception('Данные профиля не найдены');
       }
-    } catch (e) {
-      //print('Ошибка в getChatProfile!');
-      throw ('$e');
+    } else if (response.statusCode == 404) {
+      throw ('Такого Лида не существует');
+    } else {
+      //print('Ошибка загрузки профиля чата!');
+      throw Exception('${response.statusCode}');
     }
+  } catch (e) {
+    //print('Ошибка в getChatProfile!');
+    throw ('Ошибка загрузки профиля чата!');
   }
+}
 
-  Future<TaskProfile> getTaskProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      //print('Organization ID: $organizationId'); // Добавим логирование
+Future<TaskProfile> getTaskProfile(int chatId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/getByChat/$chatId');
+    if (kDebugMode) {
+      print('ApiService: getTaskProfile - Generated path: $path');
+    }
 
-      final response = await _getRequest(
-        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
+    //print('Organization ID: $organizationId'); // Добавим логирование
 
-      //print('Response status code!'); // Логируем статус ответа
-      //print('Response body!'); // Логируем тело ответа
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        try {
-          final dynamic decodedJson = json.decode(response.body);
-          //print(
-          // 'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
-          //print('Decoded JSON: $decodedJson'); // Отладочный вывод
+    //print('Response status code!'); // Логируем статус ответа
+    //print('Response body!'); // Логируем тело ответа
 
-          if (decodedJson is Map<String, dynamic>) {
-            if (decodedJson['result'] != null) {
-              //print(
-              // 'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
-              return TaskProfile.fromJson(decodedJson['result']);
-            } else {
-              //print('Result is null');
-              throw Exception('Данные задачи не найдены');
-            }
+    if (response.statusCode == 200) {
+      try {
+        final dynamic decodedJson = json.decode(response.body);
+        //print(
+        // 'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
+        //print('Decoded JSON: $decodedJson'); // Отладочный вывод
+
+        if (decodedJson is Map<String, dynamic>) {
+          if (decodedJson['result'] != null) {
+            //print(
+            // 'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
+            return TaskProfile.fromJson(decodedJson['result']);
           } else {
-            //print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
-            throw Exception('Неверный формат ответа');
+            //print('Result is null');
+            throw Exception('Данные задачи не найдены');
           }
-        } catch (parseError) {
-          //print('Ошибка парсинга JSON: $parseError');
-          throw Exception('Ошибка парсинга ответа: $parseError');
+        } else {
+          //print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+          throw Exception('Неверный формат ответа');
         }
-      } else {
-        //print('Ошибка загрузки задачи!');
-        throw Exception('Ошибка загрузки задачи!');
+      } catch (parseError) {
+        //print('Ошибка парсинга JSON: $parseError');
+        throw Exception('Ошибка парсинга ответа: $parseError');
       }
-    } catch (e) {
-      //print('Полная ошибка в getTaskProfile!');
-      //print('Трассировка стека: ${StackTrace.current}');
+    } else {
+      //print('Ошибка загрузки задачи!');
       throw Exception('Ошибка загрузки задачи!');
     }
+  } catch (e) {
+    //print('Полная ошибка в getTaskProfile!');
+    //print('Трассировка стека: ${StackTrace.current}');
+    throw Exception('Ошибка загрузки задачи!');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
+//_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
+
+// Метод для получения Организации
+Future<List<Organization>> getOrganization() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/organization');
+  if (kDebugMode) {
+    print('ApiService: getOrganization - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
+  final response = await _getRequest(path);
 
-  //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    //print('Тело ответа: $data'); // Для отладки
 
-  // Метод для получения Организации
-  Future<List<Organization>> getOrganization() async {
-    final response = await _getRequest('/organization');
+    if (data['result'] != null && data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((organization) => Organization.fromJson(organization))
+          .toList();
+    } else {
+      throw Exception('Организация не найдено');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+// Сохранение выбранной организации
+Future<void> saveSelectedOrganization(String organizationId) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selectedOrganization', organizationId);
+}
+
+// Получение выбранной организации
+Future<String?> getSelectedOrganization() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('selectedOrganization');
+}
+
+// Метод для удаления токена (используется при логауте)
+Future<void> _removeOrganizationId() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('selectedOrganization'); // Удаляем токен
+}
+
+Future<void> logoutAccount() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/logout');
+  if (kDebugMode) {
+    print('ApiService: logoutAccount - Generated path: $path');
+  }
+
+  final response = await _postRequest(path, {});
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка logout аккаунта!');
+  }
+}
+
+// Существующий метод для получения выбранной воронки
+Future<String?> getSelectedSalesFunnel() async {
+  print('ApiService: Getting selected sales funnel from SharedPreferences');
+  final prefs = await SharedPreferences.getInstance();
+  final funnelId = prefs.getString('selected_sales_funnel');
+  print('ApiService: Retrieved selected funnel ID: $funnelId');
+  return funnelId;
+}
+
+// Существующий метод для сохранения выбранной воронки
+Future<void> saveSelectedSalesFunnel(String funnelId) async {
+  print('ApiService: Saving selected sales funnel ID: $funnelId');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_sales_funnel', funnelId);
+  print('ApiService: Selected sales funnel ID saved');
+}
+
+Future<void> saveSelectedDealSalesFunnel(String funnelId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('deal_selected_sales_funnel', funnelId);
+  print('ApiService: Saved deal funnel ID $funnelId to SharedPreferences');
+}
+
+Future<String?> getSelectedDealSalesFunnel() async {
+  final prefs = await SharedPreferences.getInstance();
+  final funnelId = prefs.getString('deal_selected_sales_funnel');
+  print('ApiService: Retrieved deal funnel ID $funnelId from SharedPreferences');
+  return funnelId;
+}
+
+Future<void> saveSelectedEventSalesFunnel(String funnelId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('event_selected_sales_funnel', funnelId);
+  print('ApiService: Saved event funnel ID $funnelId to SharedPreferences');
+}
+
+Future<String?> getSelectedEventSalesFunnel() async {
+  final prefs = await SharedPreferences.getInstance();
+  final funnelId = prefs.getString('event_selected_sales_funnel');
+  print('ApiService: Retrieved event funnel ID $funnelId from SharedPreferences');
+  return funnelId;
+}
+
+Future<void> saveSelectedChatSalesFunnel(String funnelId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('chat_selected_sales_funnel', funnelId);
+  print('ApiService: Saved chat funnel ID $funnelId to SharedPreferences');
+}
+
+Future<String?> getSelectedChatSalesFunnel() async {
+  final prefs = await SharedPreferences.getInstance();
+  final funnelId = prefs.getString('chat_selected_sales_funnel');
+  print('ApiService: Retrieved chat funnel ID $funnelId from SharedPreferences');
+  return funnelId;
+}
+
+// Новый метод для сохранения списка воронок в кэш
+Future<void> cacheSalesFunnels(List<SalesFunnel> funnels) async {
+  print('ApiService: Caching sales funnels');
+  final prefs = await SharedPreferences.getInstance();
+  final funnelsJson = funnels.map((funnel) => funnel.toJson()).toList();
+  await prefs.setString('cached_sales_funnels', json.encode(funnelsJson));
+  print('ApiService: Cached ${funnels.length} sales funnels');
+}
+
+// Новый метод для получения списка воронок из кэша
+Future<List<SalesFunnel>> getCachedSalesFunnels() async {
+  print('ApiService: Retrieving cached sales funnels');
+  final prefs = await SharedPreferences.getInstance();
+  final funnelsJson = prefs.getString('cached_sales_funnels');
+  if (funnelsJson != null) {
+    final List<dynamic> decoded = json.decode(funnelsJson);
+    final funnels =
+        decoded.map((json) => SalesFunnel.fromJson(json)).toList();
+    print(
+        'ApiService: Retrieved ${funnels.length} cached sales funnels: $funnels');
+    return funnels;
+  }
+  print('ApiService: No cached sales funnels found');
+  return [];
+}
+
+// Новый метод для очистки кэша воронок
+Future<void> clearCachedSalesFunnels() async {
+  print('ApiService: Clearing cached sales funnels');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('cached_sales_funnels');
+  print('ApiService: Cached sales funnels cleared');
+}
+
+// Предполагаемый существующий метод для загрузки воронок с сервера
+Future<List<SalesFunnel>> getSalesFunnels() async {
+  print('ApiService: Starting getSalesFunnels request');
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/sales-funnel');
+  if (kDebugMode) {
+    print('ApiService: getSalesFunnels - Generated path: $path');
+  }
+
+  try {
+    final response = await _getRequest(path);
+    print(
+        'ApiService: getSalesFunnels response status: ${response.statusCode}');
+    print('ApiService: getSalesFunnels response body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      //print('Тело ответа: $data'); // Для отладки
+      print('ApiService: Decoded JSON data: $data');
 
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((organization) => Organization.fromJson(organization))
+      if (data['result'] != null && data['result'] is List) {
+        List<SalesFunnel> funnels = (data['result'] as List)
+            .map((funnel) => SalesFunnel.fromJson(funnel))
             .toList();
+        print('ApiService: Parsed ${funnels.length} sales funnels: $funnels');
+        // Сохраняем воронки в кэш после успешной загрузки
+        await cacheSalesFunnels(funnels);
+        return funnels;
       } else {
-        throw Exception('Организация не найдено');
+        print('ApiService: No funnels found in response');
+        throw Exception('Воронки продаж не найдены');
       }
     } else {
+      print('ApiService: Failed with status code ${response.statusCode}');
       throw Exception('Ошибка ${response.statusCode}!');
     }
+  } catch (e) {
+    print('ApiService: Error in getSalesFunnels');
+    rethrow;
   }
+}
 
-  // Сохранение выбранной организации
-  Future<void> saveSelectedOrganization(String organizationId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selectedOrganization', organizationId);
-  }
+// Список endpoint'ов, для которых не нужно добавлять sales_funnel_id
+static const List<String> _excludedEndpoints = [
+  '/login',
+  '/checkDomain',
+  '/logout',
+  '/forgotPin',
+  '/add-fcm-token',
+];
 
-  // Получение выбранной организации
-  Future<String?> getSelectedOrganization() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('selectedOrganization');
-  }
-
-  // Метод для удаления токена (используется при логауте)
-  Future<void> _removeOrganizationId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('selectedOrganization'); // Удаляем токен
-  }
-
-  Future<void> logoutAccount() async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-        '/logout${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка logout аккаунта!');
-    }
-  }
-
-// Существующий метод для получения выбранной воронки
-  Future<String?> getSelectedSalesFunnel() async {
-    print('ApiService: Getting selected sales funnel from SharedPreferences');
-    final prefs = await SharedPreferences.getInstance();
-    final funnelId = prefs.getString('selected_sales_funnel');
-    print('ApiService: Retrieved selected funnel ID: $funnelId');
-    return funnelId;
-  }
-
-  // Существующий метод для сохранения выбранной воронки
-  Future<void> saveSelectedSalesFunnel(String funnelId) async {
-    print('ApiService: Saving selected sales funnel ID: $funnelId');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_sales_funnel', funnelId);
-    print('ApiService: Selected sales funnel ID saved');
-  }
-
-  // Новый метод для сохранения списка воронок в кэш
-  Future<void> cacheSalesFunnels(List<SalesFunnel> funnels) async {
-    print('ApiService: Caching sales funnels');
-    final prefs = await SharedPreferences.getInstance();
-    final funnelsJson = funnels.map((funnel) => funnel.toJson()).toList();
-    await prefs.setString('cached_sales_funnels', json.encode(funnelsJson));
-    print('ApiService: Cached ${funnels.length} sales funnels');
-  }
-
-  // Новый метод для получения списка воронок из кэша
-  Future<List<SalesFunnel>> getCachedSalesFunnels() async {
-    print('ApiService: Retrieving cached sales funnels');
-    final prefs = await SharedPreferences.getInstance();
-    final funnelsJson = prefs.getString('cached_sales_funnels');
-    if (funnelsJson != null) {
-      final List<dynamic> decoded = json.decode(funnelsJson);
-      final funnels =
-          decoded.map((json) => SalesFunnel.fromJson(json)).toList();
-      print(
-          'ApiService: Retrieved ${funnels.length} cached sales funnels: $funnels');
-      return funnels;
-    }
-    print('ApiService: No cached sales funnels found');
-    return [];
-  }
-
-  // Новый метод для очистки кэша воронок
-  Future<void> clearCachedSalesFunnels() async {
-    print('ApiService: Clearing cached sales funnels');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('cached_sales_funnels');
-    print('ApiService: Cached sales funnels cleared');
-  }
-
-  // Предполагаемый существующий метод для загрузки воронок с сервера
-  Future<List<SalesFunnel>> getSalesFunnels() async {
-    print('ApiService: Starting getSalesFunnels request');
-    try {
-      final response = await _getRequest('/sales-funnel');
-      print(
-          'ApiService: getSalesFunnels response status: ${response.statusCode}');
-      print('ApiService: getSalesFunnels response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('ApiService: Decoded JSON data: $data');
-
-        if (data['result'] != null && data['result'] is List) {
-          List<SalesFunnel> funnels = (data['result'] as List)
-              .map((funnel) => SalesFunnel.fromJson(funnel))
-              .toList();
-          print('ApiService: Parsed ${funnels.length} sales funnels: $funnels');
-          // Сохраняем воронки в кэш после успешной загрузки
-          await cacheSalesFunnels(funnels);
-          return funnels;
-        } else {
-          print('ApiService: No funnels found in response');
-          throw Exception('Воронки продаж не найдены');
-        }
-      } else {
-        print('ApiService: Failed with status code ${response.statusCode}');
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      print('ApiService: Error in getSalesFunnels: $e');
-      rethrow;
-    }
-  }
-
-  /// Список endpoint'ов, для которых не нужно добавлять sales_funnel_id
-  static const List<String> _excludedEndpoints = [
-    '/login',
-    '/checkDomain',
-    '/logout',
-    '/forgotPin',
-    '/add-fcm-token',
-  ];
-
-/// Централизованный метод для добавления query-параметров
+// Централизованный метод для добавления query-параметров
 Future<String> _appendQueryParams(String path) async {
   final organizationId = await getSelectedOrganization();
   final salesFunnelId = await getSelectedSalesFunnel();
@@ -5477,6 +5664,9 @@ Future<String> _appendQueryParams(String path) async {
   if (kDebugMode) {
     print('ApiService: _appendQueryParams called for path: $path');
     print('ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
+    if (salesFunnelId == null) {
+      print('ApiService: Warning - sales_funnel_id is null in SharedPreferences');
+    }
   }
 
   // Разделяем путь на основную часть и query-часть
@@ -5488,15 +5678,11 @@ Future<String> _appendQueryParams(String path) async {
     print('ApiService: basePath: $basePath, existingQueryParams: $existingQueryParams');
   }
 
-  // Создаём новый список query-параметров, поддерживающий множественные значения
   final Map<String, List<String>> newQueryParams = {};
-
-  // Копируем существующие query-параметры, сохраняя массивы
   existingQueryParams.forEach((key, values) {
     newQueryParams[key] = values.map((value) => value.toString()).toList();
   });
 
-  // Добавляем organization_id, если он не null и ещё не присутствует
   if (organizationId != null && !newQueryParams.containsKey('organization_id')) {
     newQueryParams['organization_id'] = [organizationId.toString()];
     if (kDebugMode) {
@@ -5504,7 +5690,6 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-  // Добавляем sales_funnel_id, если путь не исключён и sales_funnel_id не null
   bool isExcluded = _excludedEndpoints.any((endpoint) => basePath.startsWith(endpoint));
   if (kDebugMode) {
     print('ApiService: isExcluded: $isExcluded for path: $basePath');
@@ -5514,16 +5699,18 @@ Future<String> _appendQueryParams(String path) async {
     if (kDebugMode) {
       print('ApiService: Added sales_funnel_id=$salesFunnelId');
     }
+  } else if (!isExcluded && salesFunnelId == null) {
+    if (kDebugMode) {
+      print('ApiService: Skipped adding sales_funnel_id because it is null');
+    }
   }
 
-  // Формируем новую query-строку, сохраняя массивы
   final queryString = newQueryParams.entries
       .map((entry) => entry.value
           .map((value) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(value)}')
           .join('&'))
       .join('&');
 
-  // Возвращаем путь с обновлённой query-строкой
   final finalPath = queryString.isEmpty ? basePath : '$basePath?$queryString';
   if (kDebugMode) {
     print('ApiService: Generated queryString: $queryString');
@@ -5535,625 +5722,546 @@ Future<String> _appendQueryParams(String path) async {
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
 
-  // Метод для получения список Уведомления
-  Future<List<Notifications>> getAllNotifications(
-      {int page = 1, int perPage = 20}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/notification/unread?page=$page&per_page=$perPage';
+// Метод для получения списка Уведомлений
+Future<List<Notifications>> getAllNotifications(
+    {int page = 1, int perPage = 20}) async {
+  String path = await _appendQueryParams('/notification/unread?page=$page&per_page=$perPage');
+  if (kDebugMode) {
+    print('ApiService: getAllNotifications - Generated path: $path');
+  }
 
-    path += '&organization_id=$organizationId';
+  final response = await _getRequest(path);
 
-    // //print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
+  if (response.statusCode == 200) {
+    try {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
         return (data['result']['data'] as List)
-            .map((json) => Notifications.fromJson(json))
+            .map((json) {
+              try {
+                return Notifications.fromJson(json);
+              } catch (e) {
+                print('Ошибка десериализации уведомления: $e, JSON: $json');
+                rethrow;
+              }
+            })
             .toList();
       } else {
         throw Exception('Нет данных о уведомлениях в ответе');
       }
-    } else {
-      throw Exception('Ошибка загрузки уведомлений!');
+    } catch (e) {
+      print('Ошибка декодирования ответа: $e');
+      throw Exception('Ошибка обработки ответа сервера: $e');
     }
+  } else {
+    throw Exception('Ошибка загрузки уведомлений: ${response.statusCode}');
+  }
+}
+
+// Метод для прочтения всех Уведомлений
+Future<void> DeleteAllNotifications() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/notification/readAll');
+  if (kDebugMode) {
+    print('ApiService: DeleteAllNotifications - Generated path: $path');
   }
 
-  // Метод для прочтения всех  Уведомлении
-  Future<void> DeleteAllNotifications() async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/notification/readAll?organization_id=$organizationId';
+  //print('Sending POST request to API with path: $path');
 
-    //print('Sending POST request to API with path: $path');
+  final response = await _postRequest(path, {});
 
-    final response = await _postRequest(path, {});
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений!');
   }
+}
 
 // Метод для удаления Уведомлений
-  Future<void> DeleteNotifications({int? notificationId}) async {
-    final organizationId = await getSelectedOrganization();
-
-    String path = '/notification/read/$notificationId';
-
-    Map<String, dynamic> body = {
-      'notificationId': notificationId,
-      'organization_id': organizationId,
-    };
-
-    //print('Sending POST request to API with path: $path');
-
-    final response = await _postRequest(path, body);
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
-    final data = json.decode(response.body);
-    if (data['result'] == 'Success') {
-      return;
-    } else {
-      throw Exception('Ошибка удаления уведомления');
-    }
+Future<void> DeleteNotifications({int? notificationId}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/notification/read/$notificationId');
+  if (kDebugMode) {
+    print('ApiService: DeleteNotifications - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+  Map<String, dynamic> body = {
+    'notificationId': notificationId,
+    'organization_id': await getSelectedOrganization(),
+  };
 
-  //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
+  //print('Sending POST request to API with path: $path');
+
+  final response = await _postRequest(path, body);
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений!');
+  }
+  final data = json.decode(response.body);
+  if (data['result'] == 'Success') {
+    return;
+  } else {
+    throw Exception('Ошибка удаления уведомления');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+
+//_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
+
 //Метод для получения Пользователя через его ID
-  Future<UserByIdProfile> getUserById(int userId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-          '/user/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonUser = decodedJson['result'];
-
-        if (jsonUser == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        final userProfile = UserByIdProfile.fromJson(jsonUser);
-
-        // Сохраняем unique_id в SharedPreferences
-        if (userProfile.uniqueId != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('unique_id', userProfile.uniqueId!);
-          //print('unique_id сохранён: ${userProfile.uniqueId}');
-        } else {
-          //print('unique_id не получен от сервера');
-        }
-
-        return userProfile;
-      } else {
-        throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки User ID: $e');
-      throw Exception('Ошибка загрузки User ID: $e');
+Future<UserByIdProfile> getUserById(int userId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/user/$userId');
+    if (kDebugMode) {
+      print('ApiService: getUserById - Generated path: $path');
     }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonUser = decodedJson['result'];
+
+      if (jsonUser == null) {
+        throw Exception('Некорректные данные от API');
+      }
+
+      final userProfile = UserByIdProfile.fromJson(jsonUser);
+
+      // Сохраняем unique_id в SharedPreferences
+      if (userProfile.uniqueId != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('unique_id', userProfile.uniqueId!);
+        //print('unique_id сохранён: ${userProfile.uniqueId}');
+      } else {
+        //print('unique_id не получен от сервера');
+      }
+
+      return userProfile;
+    } else {
+      throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
+    }
+  } catch (e) {
+    //print('Ошибка загрузки User ID: $e');
+    throw Exception('Ошибка загрузки User ID');
+  }
+}
+
+// Метод для Редактирования профиля
+Future<Map<String, dynamic>> updateProfile({
+  required int userId,
+  required String name,
+  required String sname,
+  required String phone,
+  String? email,
+  String? filePath,
+}) async {
+  try {
+    final token = await getToken(); // Получаем токен
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/profile/$userId');
+    if (kDebugMode) {
+      print('ApiService: updateProfile - Generated path: $path');
+    }
+
+    // Создаем URL для обновления профиля
+    var uri = Uri.parse('$baseUrl$path');
+
+    // Создаем multipart запрос
+    var request = http.MultipartRequest('POST', uri);
+
+    // Добавляем заголовки с токеном
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем поля
+    request.fields['name'] = name;
+    request.fields['lastname'] = sname;
+    request.fields['phone'] = phone;
+
+    if (email != null) {
+      request.fields['email'] = email;
+    }
+
+    // Добавляем файл, если указан путь
+    if (filePath != null) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final fileName = file.path.split('/').last;
+        final fileStream = http.ByteStream(file.openRead());
+        final length = await file.length();
+
+        final multipartFile = http.MultipartFile(
+          'image', // Название поля в API, куда передается файл
+          fileStream,
+          length,
+          filename: fileName,
+        );
+        request.files.add(multipartFile);
+      }
+    }
+
+    // Отправляем запрос
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'profile_updated_successfully'};
+    } else if (response.statusCode == 422) {
+      return {'success': false, 'message': 'error_validation_data'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'error_update_profile'};
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_update_profile',
+    };
+  }
+}
+
+//_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+
+//_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
+
+Future<MyTaskById> getMyTaskById(int taskId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task/$taskId');
+    if (kDebugMode) {
+      print('ApiService: getMyTaskById - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    //print('Response status code: ${response.statusCode}');
+    //print('Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? result = decodedJson['result'];
+
+      if (result == null) {
+        throw ('Некорректные данные от API: result is null');
+      }
+
+      return MyTaskById.fromJson(result, 0);
+    } else {
+      throw ('HTTP Error');
+    }
+  } catch (e) {
+    //print('Error in getMyTaskById: $e');
+    throw ('Ошибка загрузки task ID');
+  }
+}
+
+Future<bool> checkOverdueTasks() async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task/check/overdue');
+    if (kDebugMode) {
+      print('ApiService: checkOverdueTasks - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      return decodedJson['res'] ?? false;
+    } else {
+      throw Exception('Failed to check overdue tasks');
+    }
+  } catch (e) {
+    throw Exception('Error checking overdue tasks');
+  }
+}
+
+Future<List<MyTask>> getMyTasks(
+  int? taskStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+}) async {
+  // Формируем базовый путь
+  String path = '/my-task?page=$page&per_page=$perPage';
+
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (taskStatusId != null) {
+    // Условие: если нет userId
+    path += '&task_status_id=$taskStatusId';
   }
 
-  // Метод для Редактирование профиля
-  Future<Map<String, dynamic>> updateProfile({
-    required int userId,
-    required String name,
-    required String sname,
-    required String phone,
-    String? email,
-    String? filePath,
-  }) async {
-    try {
-      final token = await getToken(); // Получаем токен
-      final organizationId = await getSelectedOrganization();
-
-      // Создаем URL для обновления профиля
-      var uri = Uri.parse(
-          '${baseUrl}/profile/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      // Создаем multipart запрос
-      var request = http.MultipartRequest('POST', uri);
-
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      // Добавляем поля
-      request.fields['name'] = name;
-      request.fields['lastname'] = sname;
-      request.fields['phone'] = phone;
-
-      if (email != null) {
-        request.fields['email'] = email;
-      }
-
-      // Добавляем файл, если указан путь
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileName = file.path.split('/').last;
-          final fileStream = http.ByteStream(file.openRead());
-          final length = await file.length();
-
-          final multipartFile = http.MultipartFile(
-            'image', // Название поля в API, куда передается файл
-            fileStream,
-            length,
-            filename: fileName,
-          );
-          request.files.add(multipartFile);
-        }
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        return {'success': true, 'message': 'profile_updated_successfully'};
-      } else if (response.statusCode == 422) {
-        return {'success': false, 'message': 'error_validation_data'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      } else {
-        return {'success': false, 'message': 'error_update_profile'};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'error_update_profile',
-      };
-    }
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getMyTasks - Generated path: $path');
   }
 
-  //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+  // Логируем конечный URL запроса
+  // //print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
 
-  //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
-
-  Future<MyTaskById> getMyTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final response = await _getRequest(
-        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      //print('Response status code: ${response.statusCode}');
-      //print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? result = decodedJson['result'];
-
-        if (result == null) {
-          throw ('Некорректные данные от API: result is null');
-        }
-
-        return MyTaskById.fromJson(result, 0);
-      } else {
-        throw ('HTTP Error');
-      }
-    } catch (e) {
-      //print('Error in getMyTaskById: $e');
-      throw ('Ошибка загрузки task ID');
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => MyTask.fromJson(json, taskStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
     }
+  } else {
+    // Логирование ошибки с ответом сервера
+    //print('Error response! - ${response.body}');
+    throw Exception('Ошибка загрузки задач!');
   }
+}
 
-  Future<bool> checkOverdueTasks() async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final response = await _getRequest(
-        '/my-task/check/overdue${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
+// Метод для получения статусов задач
+Future<List<MyTaskStatus>> getMyTaskStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        return decodedJson['res'] ?? false;
-      } else {
-        throw Exception('Failed to check overdue tasks');
-      }
-    } catch (e) {
-      throw Exception('Error checking overdue tasks: $e');
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task-status');
+    if (kDebugMode) {
+      print('ApiService: getMyTaskStatuses - Generated path: $path');
     }
-  }
 
-  Future<List<MyTask>> getMyTasks(
-    int? taskStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/my-task?page=$page&per_page=$perPage';
-
-    path += '&organization_id=$organizationId';
-
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    } else if (taskStatusId != null) {
-      // Условие: если нет userId
-      path += '&task_status_id=$taskStatusId';
-    }
-    // Логируем конечный URL запроса
-    // //print('Sending request to API with path: $path');
+    // Отправляем запрос на сервер
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => MyTask.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      // Логирование ошибки с ответом сервера
-      //print('Error response! - ${response.body}');
-      throw Exception('Ошибка загрузки задач!');
-    }
-  }
-
-// Метод для получения статусов задач
-  Future<List<MyTaskStatus>> getMyTaskStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      // Отправляем запрос на сервер
-      final response = await _getRequest(
-          '/my-task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedMyTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedMyTaskStatuses_$organizationId',
-              json.encode(data['result']));
-          // //print(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // //print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          return (data['result'] as List)
-              .map((status) => MyTaskStatus.fromJson(status))
-              .toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
+      if (data['result'] != null) {
+        // Принт старых кэшированных данных (если они есть)
+        final cachedStatuses =
+            prefs.getString('cachedMyTaskStatuses_${await getSelectedOrganization()}');
+        if (cachedStatuses != null) {
+          final decodedData = json.decode(cachedStatuses);
         }
-      } else {
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedMyTaskStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
+
+        // Обновляем кэш новыми данными
+        await prefs.setString('cachedMyTaskStatuses_${await getSelectedOrganization()}',
+            json.encode(data['result']));
+        // //print(
+        //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+        // //print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+        return (data['result'] as List)
             .map((status) => MyTaskStatus.fromJson(status))
             .toList();
-        return cachedList;
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
+        throw Exception('Результат отсутствует в ответе');
       }
-    }
-  }
-
-  Future<bool> checkIfStatusHasMyTasks(int taskStatusId) async {
-    try {
-      // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<MyTask> tasks =
-          await getMyTasks(taskStatusId, page: 1, perPage: 1);
-
-      // Если список лидов не пуст, значит статус содержит элементы
-      return tasks.isNotEmpty;
-    } catch (e) {
-      //print('Error while checking if status has deals!');
-      return false;
-    }
-  }
-
-//Обновление статуса карточки Задачи  в колонке
-
-  Future<void> updateMyTaskStatus(
-      int taskId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/my-task/change-status/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'position': 1,
-          'status_id': statusId,
-        });
-
-    if (response.statusCode == 200) {
-      //print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      throw MyTaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления задач сделки!');
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    //print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+    // Если запрос не удался, пытаемся загрузить данные из кэша
+    final cachedStatuses =
+        prefs.getString('cachedMyTaskStatuses_${await getSelectedOrganization()}');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => MyTaskStatus.fromJson(status))
+          .toList();
+      return cachedList;
+    } else {
+      throw Exception(
+          'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
     }
   }
+}
 
-  Map<String, dynamic> _handleMyTaskResponse(
-      http.Response response, String operation) {
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = json.decode(response.body);
+Future<bool> checkIfStatusHasMyTasks(int taskStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<MyTask> tasks =
+        await getMyTasks(taskStatusId, page: 1, perPage: 1);
 
-      // Проверяем наличие ошибок в ответе
-      if (data['errors'] != null) {
-        return {
-          'success': false,
-          'message': 'Ошибка ${operation} задачи: ${data['errors']}',
-        };
+    // Если список лидов не пуст, значит статус содержит элементы
+    return tasks.isNotEmpty;
+  } catch (e) {
+    //print('Error while checking if status has deals!');
+    return false;
+  }
+}
+
+// Обновление статуса карточки Задачи в колонке
+Future<void> updateMyTaskStatus(
+    int taskId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task/change-status/$taskId');
+  if (kDebugMode) {
+    print('ApiService: updateMyTaskStatus - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
+      {
+        'position': 1,
+        'status_id': statusId,
+      });
+
+  if (response.statusCode == 200) {
+    //print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    throw MyTaskStatusUpdateException(
+        422, 'Вы не можете переместить задачу на этот статус');
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
+  }
+}
+
+Map<String, dynamic> _handleMyTaskResponse(
+    http.Response response, String operation) {
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    final data = json.decode(response.body);
+
+    // Проверяем наличие ошибок в ответе
+    if (data['errors'] != null) {
+      return {
+        'success': false,
+        'message': 'Ошибка ${operation} задачи: ${data['errors']}',
+      };
+    }
+
+    return {
+      'success': true,
+      'message':
+          'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+      'data': data['result'],
+    };
+  }
+
+  if (response.statusCode == 422) {
+    final data = json.decode(response.body);
+    final validationErrors = {
+      'name': 'Название задачи должно содержать минимум 3 символа.',
+      'from': 'Неверный формат даты начала.',
+      'to': 'Неверный формат даты окончания.',
+      'project_id': 'Указанный проект не существует.',
+      'user_id': 'Указанный пользователь не существует.',
+      // Убрана валидация файла
+    };
+
+    // Игнорируем ошибки валидации файла
+    if (data['errors']?['file'] != null) {
+      data['errors'].remove('file');
+    }
+
+    // Проверяем каждое поле на наличие ошибки, кроме файла
+    for (var entry in validationErrors.entries) {
+      if (data['errors']?[entry.key] != null) {
+        return {'success': false, 'message': entry.value};
       }
+    }
 
+    // Если остались только ошибки файла, считаем что валидация прошла успешно
+    if (data['errors']?.isEmpty ?? true) {
       return {
         'success': true,
         'message':
             'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
-        'data': data['result'],
-      };
-    }
-
-    if (response.statusCode == 422) {
-      final data = json.decode(response.body);
-      final validationErrors = {
-        'name': 'Название задачи должно содержать минимум 3 символа.',
-        'from': 'Неверный формат даты начала.',
-        'to': 'Неверный формат даты окончания.',
-        'project_id': 'Указанный проект не существует.',
-        'user_id': 'Указанный пользователь не существует.',
-        // Убрана валидация файла
-      };
-
-      // Игнорируем ошибки валидации файла
-      if (data['errors']?['file'] != null) {
-        data['errors'].remove('file');
-      }
-
-      // Проверяем каждое поле на наличие ошибки, кроме файла
-      for (var entry in validationErrors.entries) {
-        if (data['errors']?[entry.key] != null) {
-          return {'success': false, 'message': entry.value};
-        }
-      }
-
-      // Если остались только ошибки файла, считаем что валидация прошла успешно
-      if (data['errors']?.isEmpty ?? true) {
-        return {
-          'success': true,
-          'message':
-              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
-        };
-      }
-
-      return {
-        'success': false,
-        'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
       };
     }
 
     return {
       'success': false,
-      'message': 'Ошибка ${operation} задачи!',
+      'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
     };
   }
 
-  // // Общий метод обработки ошибок
-  // Exception _handleErrorResponse(http.Response response, String operation) {
-  //   try {
-  //     final data = json.decode(response.body);
-  //     final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-  //     return Exception(
-  //         'Ошибка ${operation}! - $errorMessage');
-  //   } catch (e) {
-  //     return Exception(
-  //         'Ошибка ${operation}! - ${response.body}');
-  //   }
-  // }
-  /// Создает новый статус задачи
-  Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
-    required String statusName,
-    bool? finalStep,
-  }) async {
-    try {
-      // Формируем данные для запроса
-      final Map<String, dynamic> data = {
-        'title': statusName,
-        'color': "#000",
-      };
-      if (finalStep != null) {
-        data['final_step'] = finalStep;
-      }
+  return {
+    'success': false,
+    'message': 'Ошибка ${operation} задачи!',
+  };
+}
 
-      // Получаем идентификатор организации
-      final organizationIdProfile = await getSelectedOrganization();
+// Создает новый статус задачи
+Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
+  required String statusName,
+  bool? finalStep,
+}) async {
+  try {
+    // Формируем данные для запроса
+    final Map<String, dynamic> data = {
+      'title': statusName,
+      'color': "#000",
+    };
+    if (finalStep != null) {
+      data['final_step'] = finalStep;
+    }
 
-      // Формируем URL с учетом organization_id
-      final String url =
-          '/my-task-status${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}';
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task-status');
+    if (kDebugMode) {
+      print('ApiService: CreateMyTaskStatusAdd - Generated path: $path');
+    }
 
-      // Выполняем запрос
-      final response = await _postRequest(url, data);
+    // Выполняем запрос
+    final response = await _postRequest(path, data);
 
-      // Проверяем успешность запроса
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        return {
-          'success': true,
-          'message': 'Статус задачи успешно создан',
-          'data': responseData,
-        };
-      }
-
-      // Получаем текст ошибки в зависимости от кода ответа
-      final errorMessage = _getErrorMessage(response.statusCode);
-
+    // Проверяем успешность запроса
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = json.decode(response.body);
       return {
-        'success': false,
-        'message': errorMessage,
-        'statusCode': response.statusCode,
-        'details': response.body,
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при создании статуса',
-        'error': e.toString(),
+        'success': true,
+        'message': 'Статус задачи успешно создан',
+        'data': responseData,
       };
     }
-  }
 
-  /// Возвращает сообщение об ошибке по коду статуса
-  String _getErrorMessage(int statusCode) {
-    switch (statusCode) {
-      case 400:
-        return 'Неверные данные для создания статуса';
-      case 401:
-        return 'Необходима авторизация';
-      case 403:
-        return 'Недостаточно прав для создания статуса';
-      case 404:
-        return 'Ресурс не найден';
-      case 409:
-        return 'Статус с таким названием уже существует';
-      case 500:
-        return 'Внутренняя ошибка сервера';
-      default:
-        return 'Произошла ошибка при создании статуса (код: $statusCode)';
-    }
+    // Получаем текст ошибки в зависимости от кода ответа
+    final errorMessage = _getErrorMessage(response.statusCode);
+
+    return {
+      'success': false,
+      'message': errorMessage,
+      'statusCode': response.statusCode,
+      'details': response.body,
+    };
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при создании статуса',
+      'error': e.toString(),
+    };
   }
+}
+
+/// Возвращает сообщение об ошибке по коду статуса
+String _getErrorMessage(int statusCode) {
+  switch (statusCode) {
+    case 400:
+      return 'Неверные данные для создания статуса';
+    case 401:
+      return 'Необходима авторизация';
+    case 403:
+      return 'Недостаточно прав для создания статуса';
+    case 404:
+      return 'Ресурс не найден';
+    case 409:
+      return 'Статус с таким названием уже существует';
+    case 500:
+      return 'Внутренняя ошибка сервера';
+    default:
+      return 'Произошла ошибка при создании статуса (код: $statusCode)';
+  }
+}
 
 // Метод для создания задачи
-  Future<Map<String, dynamic>> createMyTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? description,
-    List<String>? filePaths,
-    int position = 1,
-    required bool setPush,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/my-task${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
-
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
-      request.fields['send_notification'] = setPush ? '1' : '0';
-
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        return {
-          'success': true,
-          'message': 'Задача успешно создана',
-          'data': responseData,
-        };
-      } else {
-        // Обрабатываем различные коды ошибок
-        String errorMessage;
-        switch (response.statusCode) {
-          case 400:
-            errorMessage = 'Неверные данные запроса';
-            break;
-          case 401:
-            errorMessage = 'Необходима авторизация';
-            break;
-          case 403:
-            errorMessage = 'Недостаточно прав для создания задачи';
-            break;
-          case 404:
-            errorMessage = 'Ресурс не найден';
-            break;
-          case 409:
-            errorMessage = 'Конфликт при создании задачи';
-            break;
-          case 500:
-            errorMessage = 'Внутренняя ошибка сервера';
-            break;
-          default:
-            errorMessage = 'Произошла ошибка при создании задачи';
-        }
-        return {
-          'success': false,
-          'message': '$errorMessage!',
-          'statusCode': response.statusCode,
-        };
-      }
-    } catch (e) {
-      //print('Detailed error: $e');
-      return {
-        'success': false,
-        'message': 'Ошибка при выполнении запроса!',
-        'error': e.toString(),
-      };
-    }
-  }
-
-/*// Метод для создания задачи
-  // Метод для создания задачи с поддержкой нескольких файлов
 Future<Map<String, dynamic>> createMyTask({
   required String name,
   required int? statusId,
@@ -6161,564 +6269,150 @@ Future<Map<String, dynamic>> createMyTask({
   DateTime? startDate,
   DateTime? endDate,
   String? description,
-  List<String>? filePaths, // Изменено на список путей к файлам
+  List<String>? filePaths,
   int position = 1,
   required bool setPush,
 }) async {
   try {
-    // Формируем данные для запроса
-    final Map<String, dynamic> data = {
-      'name': name,
-      'status_id': statusId,
-      'task_status_id': taskStatusId,
-      'position': position,
-      'send_notification': setPush, // Передаем как true/false для boolean
-      if (startDate != null) 'from': startDate.toIso8601String(),
-      if (endDate != null) 'to': endDate.toIso8601String(),
-      if (description != null) 'description': description,
-    };
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task');
+    if (kDebugMode) {
+      print('ApiService: createMyTask - Generated path: $path');
+    }
 
-    // Получаем идентификатор организации
-    final organizationIdProfile = await getSelectedOrganization();
+    var uri = Uri.parse('$baseUrl$path');
 
-    // Создаем multipart запрос для загрузки файлов
-    final uri = Uri.parse(
-        '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}');
-    final request = http.MultipartRequest('POST', uri);
+    // Создаем multipart request
+    var request = http.MultipartRequest('POST', uri);
 
-    // Добавляем поля данных
-    request.fields.addAll(data.map((key, value) => MapEntry(key, value.toString())));
+    // Добавляем заголовки с токеном
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем все поля в формате form-data
+    request.fields['name'] = name;
+    request.fields['status_id'] = statusId.toString();
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
+    request.fields['send_notification'] = setPush ? '1' : '0';
+
+    if (startDate != null) {
+      request.fields['from'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toIso8601String();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
 
     // Добавляем файлы, если они есть
     if (filePaths != null && filePaths.isNotEmpty) {
       for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files', filePath);
+        final file = await http.MultipartFile.fromPath(
+            'files[]', filePath); // Используем 'files[]'
         request.files.add(file);
       }
     }
 
-    // Выполняем запрос
-    final response = await request.send();
+    // Отправляем запрос
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-    // Проверяем статус ответа
     if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseData = await response.stream.bytesToString();
+      final responseData = json.decode(response.body);
       return {
         'success': true,
         'message': 'Задача успешно создана',
-        'data': json.decode(responseData),
+        'data': responseData,
+      };
+    } else {
+      // Обрабатываем различные коды ошибок
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для создания задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при создании задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при создании задачи';
+      }
+      return {
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
       };
     }
-
-    // Обрабатываем различные коды ошибок
-    String errorMessage;
-    switch (response.statusCode) {
-      case 400:
-        errorMessage = 'Неверные данные запроса';
-        break;
-      case 401:
-        errorMessage = 'Необходима авторизация';
-        break;
-      case 403:
-        errorMessage = 'Недостаточно прав для создания задачи';
-        break;
-      case 404:
-        errorMessage = 'Ресурс не найден';
-        break;
-      case 409:
-        errorMessage = 'Конфликт при создании задачи';
-        break;
-      case 500:
-        errorMessage = 'Внутренняя ошибка сервера';
-        break;
-      default:
-        errorMessage = 'Произошла ошибка при создании задачи';
-    }
-
-    return {
-      'success': false,
-      'message': '$errorMessage!',
-      'statusCode': response.statusCode,
-    };
   } catch (e) {
+    //print('Detailed error: $e');
     return {
       'success': false,
       'message': 'Ошибка при выполнении запроса!',
       'error': e.toString(),
     };
   }
-}*/
-  Future<Map<String, dynamic>> updateMyTask({
-    required int taskId,
-    required String name,
-    required int? taskStatusId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? description,
-    List<String>? filePaths,
-    required bool setPush,
-    List<MyTaskFiles>? existingFiles,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+}
 
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
-
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['send_notification'] = setPush ? '1' : '0';
-
-      if (endDate != null) {
-        request.fields['to'] =
-            '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
-      }
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-
-      // Добавляем новые файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      // Добавляем информацию о существующих файлах
-      if (existingFiles != null && existingFiles.isNotEmpty) {
-        List<Map<String, dynamic>> existingFilesList = existingFiles
-            .map(
-                (file) => {'id': file.id, 'name': file.name, 'path': file.path})
-            .toList();
-
-        request.fields['existing_files'] = json.encode(existingFilesList);
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        return {
-          'success': true,
-          'message': 'Задача успешно обновлена',
-          'data': responseData,
-        };
-      } else {
-        String errorMessage;
-        switch (response.statusCode) {
-          case 400:
-            errorMessage = 'Неверные данные запроса';
-            break;
-          case 401:
-            errorMessage = 'Необходима авторизация';
-            break;
-          case 403:
-            errorMessage = 'Недостаточно прав для обновления задачи';
-            break;
-          case 404:
-            errorMessage = 'Ресурс не найден';
-            break;
-          case 409:
-            errorMessage = 'Конфликт при обновлении задачи';
-            break;
-          case 500:
-            errorMessage = 'Внутренняя ошибка сервера';
-            break;
-          default:
-            errorMessage = 'Произошла ошибка при обновлении задачи';
-        }
-        return {
-          'success': false,
-          'message': '$errorMessage!',
-          'statusCode': response.statusCode,
-        };
-      }
-    } catch (e) {
-      //print('Detailed error: $e');
-      return {
-        'success': false,
-        'message': 'Ошибка при выполнении запроса!',
-        'error': e.toString(),
-      };
-    }
-  }
-
-// Метод для получения Истории Задачи
-  Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest(
-          '/my-task/history/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic> jsonList = decodedJson['result']['history'];
-        return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
-      } else {
-        //print('Failed to load task history!');
-        throw Exception('Ошибка загрузки истории задач!');
-      }
-    } catch (e) {
-      //print('Error occurred!');
-      throw Exception('Ошибка загрузки истории задач!');
-    }
-  }
-
-// Метод для получения Cтатуса задачи
-  Future<List<MyStatusName>> getMyStatusName() async {
-    final organizationId = await getSelectedOrganization();
-
-    //print('Начало запроса статусов задач'); // Отладочный вывод
-    final response = await _getRequest(
-        '/my-taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    //print('Статус код ответа!'); // Отладочный вывод
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      //print('Полученные данные: $data'); // Отладочный вывод
-
-      if (data['result'] != null) {
-        final statusList = (data['result'] as List)
-            .map((name) => MyStatusName.fromJson(name))
-            .toList();
-        //print(
-        // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
-        return statusList;
-      } else {
-        throw Exception('Статусы задач не найдены');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  }
-
-  // Метод для Удаления Задачи
-  Future<Map<String, dynamic>> deleteMyTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete task!');
-    }
-  }
-
-  // Метод для Удаления Статуса Задачи
-
-  Future<Map<String, dynamic>> deleteMyTaskStatuses(int taskStatusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/my-task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete taskStatus!');
-    }
-  }
-
-  // Метод для завершения задачи
-  Future<Map<String, dynamic>> finishMyTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/my-task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'task_id': taskId,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача успешно завершена'};
-    } else if (response.statusCode == 422) {
-      try {
-        final responseData = jsonDecode(response.body);
-        final errorMessage = responseData['message'] ??
-            'Неизвестная ошибка при завершении задачи';
-        return {
-          'success': false,
-          'message': errorMessage,
-        };
-      } catch (e) {
-        return {
-          'success': false,
-          'message': 'Ошибка обработки ответа сервера',
-        };
-      }
-    } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
-    }
-  }
-
-  //Метод для получение кастомных полей Задачи
-  Future<Map<String, dynamic>> getMyCustomFields() async {
-    final organizationId = await getSelectedOrganization();
-
-    // Выполняем запрос
-    final response = await _getRequest(
-      '/my-task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return data; // Возвращаем данные, если они есть
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  }
-
-  Future<MyTaskStatus> getMyTaskStatus(int myTaskStatusId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null) {
-        return MyTaskStatus.fromJson(data['result']);
-      }
-      throw Exception('Invalid response format');
-    } else {
-      throw Exception('Failed to fetch deal status!');
-    }
-  }
-
-  Future<Map<String, dynamic>> updateMyTaskStatusEdit(int myTaskStatusId,
-      String title, bool finalStep, AppLocalizations localizations) async {
-    final organizationId = await getSelectedOrganization();
-    final payload = {
-      "title": title,
-      "organization_id": organizationId,
-      "color": "#000",
-      "final_step": finalStep ? 1 : 0, // Конвертируем bool в 1/0
-    };
-    final response = await _patchRequest(
-      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      payload,
-    );
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update leadStatus!');
-    }
-  }
-
-  //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
-
-  Future<List<NoticeEvent>> getEvents({
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? managers,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    DateTime? noticefromDate,
-    DateTime? noticetoDate,
-  }) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      String path = '/notices?page=$page&per_page=$perPage';
-      path += '&organization_id=$organizationId'; // organization_id в URL
-
-      if (search != null && search.isNotEmpty) {
-        path += '&search=$search';
-      }
-
-      if (managers != null && managers.isNotEmpty) {
-        for (int i = 0; i < managers.length; i++) {
-          path += '&managers[$i]=${managers[i]}';
-        }
-      }
-
-      if (statuses != null) {
-        path += '&event_status_id=$statuses';
-        bool isFinished = statuses == 2;
-        path +=
-            '&isFinished=${isFinished ? '1' : '0'}'; // Передаем 1 или 0 вместо true/false
-      }
-
-      if (fromDate != null && toDate != null) {
-        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-        path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
-      }
-
-      if (noticefromDate != null && noticetoDate != null) {
-        final formattedFromDate =
-            DateFormat('yyyy-MM-dd').format(noticefromDate);
-        final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate);
-        path += '&push_from=$formattedFromDate&push_to=$formattedToDate';
-      }
-
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null && data['result']['data'] != null) {
-          return (data['result']['data'] as List)
-              .map((json) => NoticeEvent.fromJson(json))
-              .toList();
-        } else {
-          throw ('Нет данных о событиях в ответе');
-        }
-      } else {
-        throw ('Ошибка загрузки событий!');
-      }
-    } catch (e) {
-      throw ('Ошибка загрузки событий');
-    }
-  }
-
-  Future<Notice> getNoticeById(int noticeId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-          '/notices/show/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonNotice = decodedJson['result'];
-
-        if (jsonNotice == null) {
-          throw ('Некорректные данные от API');
-        }
-
-        return Notice.fromJson(jsonNotice);
-      } else {
-        throw ('Ошибка загрузки notice ID!');
-      }
-    } catch (e) {
-      throw ('Ошибка загрузки notice ID!');
-    }
-  }
-
-  Future<Map<String, dynamic>> createNotice({
-    String? title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required int sendNotification,
-    required List<int> users,
-    List<String>? filePaths,
-  }) async {
-    try {
-      // Формируем путь с query-параметрами
-      final updatedPath = await _appendQueryParams('/notices');
-      var request =
-          http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-
-      // Добавляем поля в запрос
-      if (title != null && title.isNotEmpty) {
-        request.fields['title'] = title;
-      }
-      request.fields['body'] = body;
-      request.fields['lead_id'] = leadId.toString();
-      if (date != null) {
-        request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
-      }
-      request.fields['send_notification'] = sendNotification.toString();
-
-      // Добавляем массив users
-      for (int i = 0; i < users.length; i++) {
-        request.fields['users[$i]'] = users[i].toString();
-      }
-
-      // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      final response = await _multipartPostRequest('/notices', request);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'notice_create_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('title')) {
-          return {'success': false, 'message': 'invalid_title_length'};
-        }
-        if (response.body.contains('users')) {
-          return {'success': false, 'message': 'error_users'};
-        }
-        return {'success': false, 'message': 'validation_error'};
-      } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      } else {
-        return {'success': false, 'message': 'error_notice_create'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'error_notice_create'};
-    }
-  }
-
-  Future<Map<String, dynamic>> updateNotice({
-    required int noticeId,
-    String? title,
-    required String body,
-    required int leadId,
-    DateTime? date,
-    required int sendNotification,
-    required List<int> users,
-    List<String>? filePaths,
-    List<NoticeFiles>? existingFiles,
-  }) async {
-    // Формируем путь с query-параметрами
-    final updatedPath = await _appendQueryParams('/notices/$noticeId');
-    var request =
-        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-
-    // Добавляем поля явно
-    if (title != null) request.fields['title'] = title;
-    request.fields['body'] = body;
-    request.fields['lead_id'] = leadId.toString();
-    if (date != null)
-      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
-    request.fields['send_notification'] = sendNotification.toString();
-
-    // Добавляем пользователей
-    if (users.isNotEmpty) {
-      for (int i = 0; i < users.length; i++) {
-        request.fields['users[$i]'] = users[i].toString();
-      }
+Future<Map<String, dynamic>> updateMyTask({
+  required int taskId,
+  required String name,
+  required int? taskStatusId,
+  DateTime? startDate,
+  DateTime? endDate,
+  String? description,
+  List<String>? filePaths,
+  required bool setPush,
+  List<MyTaskFiles>? existingFiles,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task/$taskId');
+    if (kDebugMode) {
+      print('ApiService: updateMyTask - Generated path: $path');
     }
 
-    // Добавляем ID существующих файлов
-    if (existingFiles != null && existingFiles.isNotEmpty) {
-      final existingFileIds = existingFiles.map((file) => file.id).toList();
-      for (int i = 0; i < existingFileIds.length; i++) {
-        request.fields['existing_file_ids[$i]'] = existingFileIds[i].toString();
-      }
+    var uri = Uri.parse('$baseUrl$path');
+
+    // Создаем multipart request
+    var request = http.MultipartRequest('POST', uri);
+
+    // Добавляем заголовки с токеном
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    // Добавляем все поля в формате form-data
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['send_notification'] = setPush ? '1' : '0';
+
+    if (endDate != null) {
+      request.fields['to'] =
+          '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+    }
+    if (description != null) {
+      request.fields['description'] = description;
     }
 
     // Добавляем новые файлы, если они есть
@@ -6729,1589 +6423,2177 @@ Future<Map<String, dynamic>> createMyTask({
       }
     }
 
-    final response = await _multipartPostRequest('/notices/$noticeId', request);
+    // Добавляем информацию о существующих файлах
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      List<Map<String, dynamic>> existingFilesList = existingFiles
+          .map(
+              (file) => {'id': file.id, 'name': file.name, 'path': file.path})
+          .toList();
+
+      request.fields['existing_files'] = json.encode(existingFilesList);
+    }
+
+    // Отправляем запрос
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'notice_updated_successfully'};
+      final responseData = json.decode(response.body);
+      return {
+        'success': true,
+        'message': 'Задача успешно обновлена',
+        'data': responseData,
+      };
+    } else {
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для обновления задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при обновлении задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при обновлении задачи';
+      }
+      return {
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
+      };
+    }
+  } catch (e) {
+    //print('Detailed error: $e');
+    return {
+      'success': false,
+      'message': 'Ошибка при выполнении запроса!',
+      'error': e.toString(),
+    };
+  }
+}
+
+// Метод для получения Истории Задачи
+Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/my-task/history/$taskId');
+    if (kDebugMode) {
+      print('ApiService: getMyTaskHistory - Generated path: $path');
+    }
+
+    // Используем метод _getRequest вместо прямого выполнения запроса
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
+    } else {
+      //print('Failed to load task history!');
+      throw Exception('Ошибка загрузки истории задач!');
+    }
+  } catch (e) {
+    //print('Error occurred!');
+    throw Exception('Ошибка загрузки истории задач!');
+  }
+}
+
+// Метод для получения Статуса задачи
+Future<List<MyStatusName>> getMyStatusName() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-taskStatusName');
+  if (kDebugMode) {
+    print('ApiService: getMyStatusName - Generated path: $path');
+  }
+
+  //print('Начало запроса статусов задач'); // Отладочный вывод
+  final response = await _getRequest(path);
+  //print('Статус код ответа!'); // Отладочный вывод
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    //print('Полученные данные: $data'); // Отладочный вывод
+
+    if (data['result'] != null) {
+      final statusList = (data['result'] as List)
+          .map((name) => MyStatusName.fromJson(name))
+          .toList();
+      //print(
+      // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
+      return statusList;
+    } else {
+      throw Exception('Статусы задач не найдены');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+// Метод для Удаления Задачи
+Future<Map<String, dynamic>> deleteMyTask(int taskId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task/$taskId');
+  if (kDebugMode) {
+    print('ApiService: deleteMyTask - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete task!');
+  }
+}
+
+// Метод для Удаления Статуса Задачи
+Future<Map<String, dynamic>> deleteMyTaskStatuses(int taskStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task-status/$taskStatusId');
+  if (kDebugMode) {
+    print('ApiService: deleteMyTaskStatuses - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete taskStatus!');
+  }
+}
+
+// Метод для завершения задачи
+Future<Map<String, dynamic>> finishMyTask(int taskId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task/finish');
+  if (kDebugMode) {
+    print('ApiService: finishMyTask - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+      path,
+      {
+        'task_id': taskId,
+      });
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача успешно завершена'};
+  } else if (response.statusCode == 422) {
+    try {
+      final responseData = jsonDecode(response.body);
+      final errorMessage = responseData['message'] ??
+          'Неизвестная ошибка при завершении задачи';
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка обработки ответа сервера',
+      };
+    }
+  } else {
+    return {'success': false, 'message': 'Ошибка завершения задачи!'};
+  }
+}
+
+//Метод для получения кастомных полей Задачи
+Future<Map<String, dynamic>> getMyCustomFields() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task/get/custom-fields');
+  if (kDebugMode) {
+    print('ApiService: getMyCustomFields - Generated path: $path');
+  }
+
+  // Выполняем запрос
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
+Future<MyTaskStatus> getMyTaskStatus(int myTaskStatusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task-status/$myTaskStatusId');
+  if (kDebugMode) {
+    print('ApiService: getMyTaskStatus - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null) {
+      return MyTaskStatus.fromJson(data['result']);
+    }
+    throw Exception('Invalid response format');
+  } else {
+    throw Exception('Failed to fetch deal status!');
+  }
+}
+
+Future<Map<String, dynamic>> updateMyTaskStatusEdit(int myTaskStatusId,
+    String title, bool finalStep, AppLocalizations localizations) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/my-task-status/$myTaskStatusId');
+  if (kDebugMode) {
+    print('ApiService: updateMyTaskStatusEdit - Generated path: $path');
+  }
+
+  final payload = {
+    "title": title,
+    "organization_id": await getSelectedOrganization(),
+    "color": "#000",
+    "final_step": finalStep ? 1 : 0, // Конвертируем bool в 1/0
+  };
+  final response = await _patchRequest(path, payload);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update leadStatus!');
+  }
+}
+
+//_________________________________ START_____API_SCREEN__EVENT____________________________________________//
+
+Future<List<NoticeEvent>> getEvents({
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? managers,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  DateTime? noticefromDate,
+  DateTime? noticetoDate,
+  int? salesFunnelId, // Новый параметр
+}) async {
+  try {
+    // Формируем базовый путь
+    String path = '/notices?page=$page&per_page=$perPage';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
+    if (statuses != null) {
+      path += '&event_status_id=$statuses';
+      bool isFinished = statuses == 2;
+      path +=
+          '&isFinished=${isFinished ? '1' : '0'}'; // Передаем 1 или 0 вместо true/false
+    }
+    if (salesFunnelId != null) {
+      path += '&sales_funnel_id=$salesFunnelId';
+    }
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+    }
+
+    if (noticefromDate != null && noticetoDate != null) {
+      final formattedFromDate =
+          DateFormat('yyyy-MM-dd').format(noticefromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate);
+      path += '&push_from=$formattedFromDate&push_to=$formattedToDate';
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getEvents - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => NoticeEvent.fromJson(json))
+            .toList();
+      } else {
+        throw ('Нет данных о событиях в ответе');
+      }
+    } else {
+      throw ('Ошибка загрузки событий!');
+    }
+  } catch (e) {
+    throw ('Ошибка загрузки событий');
+  }
+}
+
+Future<Notice> getNoticeById(int noticeId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/notices/show/$noticeId');
+    if (kDebugMode) {
+      print('ApiService: getNoticeById - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonNotice = decodedJson['result'];
+
+      if (jsonNotice == null) {
+        throw ('Некорректные данные от API');
+      }
+
+      return Notice.fromJson(jsonNotice);
+    } else {
+      throw ('Ошибка загрузки notice ID!');
+    }
+  } catch (e) {
+    throw ('Ошибка загрузки notice ID!');
+  }
+}
+
+Future<Map<String, dynamic>> createNotice({
+  String? title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required int sendNotification,
+  required List<int> users,
+  List<String>? filePaths,
+}) async {
+  try {
+    // Формируем путь с query-параметрами
+    final path = await _appendQueryParams('/notices');
+    if (kDebugMode) {
+      print('ApiService: createNotice - Generated path: $path');
+    }
+
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+
+    // Добавляем поля в запрос
+    if (title != null && title.isNotEmpty) {
+      request.fields['title'] = title;
+    }
+    request.fields['body'] = body;
+    request.fields['lead_id'] = leadId.toString();
+    if (date != null) {
+      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    }
+    request.fields['send_notification'] = sendNotification.toString();
+
+    // Добавляем массив users
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
+    }
+
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
+
+    final response = await _multipartPostRequest(path, request);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'notice_create_successfully',
+      };
     } else if (response.statusCode == 422) {
+      if (response.body.contains('title')) {
+        return {'success': false, 'message': 'invalid_title_length'};
+      }
+      if (response.body.contains('users')) {
+        return {'success': false, 'message': 'error_users'};
+      }
       return {'success': false, 'message': 'validation_error'};
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'error_notice_update'};
+      return {'success': false, 'message': 'error_notice_create'};
+    }
+  } catch (e) {
+    return {'success': false, 'message': 'error_notice_create'};
+  }
+}
+
+Future<Map<String, dynamic>> updateNotice({
+  required int noticeId,
+  String? title,
+  required String body,
+  required int leadId,
+  DateTime? date,
+  required int sendNotification,
+  required List<int> users,
+  List<String>? filePaths,
+  List<NoticeFiles>? existingFiles,
+}) async {
+  // Формируем путь с query-параметрами
+  final path = await _appendQueryParams('/notices/$noticeId');
+  if (kDebugMode) {
+    print('ApiService: updateNotice - Generated path: $path');
+  }
+
+  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+
+  // Добавляем поля явно
+  if (title != null) request.fields['title'] = title;
+  request.fields['body'] = body;
+  request.fields['lead_id'] = leadId.toString();
+  if (date != null)
+    request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+  request.fields['send_notification'] = sendNotification.toString();
+
+  // Добавляем пользователей
+  if (users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      request.fields['users[$i]'] = users[i].toString();
     }
   }
 
-  Future<Map<String, dynamic>> deleteNotice(int noticeId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/notices/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw ('Failed to delete notice!');
+  // Добавляем ID существующих файлов
+  if (existingFiles != null && existingFiles.isNotEmpty) {
+    final existingFileIds = existingFiles.map((file) => file.id).toList();
+    for (int i = 0; i < existingFileIds.length; i++) {
+      request.fields['existing_file_ids[$i]'] = existingFileIds[i].toString();
     }
   }
 
-  Future<Map<String, dynamic>> finishNotice(
-      int noticeId, String conclusion) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _patchRequest(
-        '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {"conclusion": conclusion, "organization_id": organizationId});
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw ('Failed to finish notice!');
+  // Добавляем новые файлы, если они есть
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
     }
   }
 
-  Future<SubjectDataResponse> getAllSubjects() async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _multipartPostRequest(path, request);
 
-    final response = await _getRequest(
-        '/noteSubject${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return SubjectDataResponse.fromJson(data);
-    } else {
-      throw ('Failed to load subjects');
-    }
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'notice_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    return {'success': false, 'message': 'validation_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_notice_update'};
   }
+}
+
+Future<Map<String, dynamic>> deleteNotice(int noticeId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/notices/$noticeId');
+  if (kDebugMode) {
+    print('ApiService: deleteNotice - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw ('Failed to delete notice!');
+  }
+}
+
+Future<Map<String, dynamic>> finishNotice(
+    int noticeId, String conclusion) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/notices/finish/$noticeId');
+  if (kDebugMode) {
+    print('ApiService: finishNotice - Generated path: $path');
+  }
+
+  final response = await _patchRequest(
+      path,
+      {"conclusion": conclusion, "organization_id": await getSelectedOrganization()});
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw ('Failed to finish notice!');
+  }
+}
+
+Future<SubjectDataResponse> getAllSubjects() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
+  if (kDebugMode) {
+    print('ApiService: getAllSubjects - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return SubjectDataResponse.fromJson(data);
+  } else {
+    throw ('Failed to load subjects');
+  }
+}
 
 // get all authors
-  Future<AuthorsDataResponse> getAllAuthor() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    late AuthorsDataResponse dataAuthor;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataAuthor = AuthorsDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      // //print('Статус ответа!');
-    }
-    if (kDebugMode) {
-      // //print('getAll author!');
-    }
-
-    return dataAuthor;
+Future<AuthorsDataResponse> getAllAuthor() async {
+  final token = await getToken(); // Получаем токен перед запросом
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/user');
+  if (kDebugMode) {
+    print('ApiService: getAllAuthor - Generated path: $path');
   }
 
-  String getRecordingUrl(String recordPath) {
-    if (recordPath.isEmpty) return '';
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+  late AuthorsDataResponse dataAuthor;
 
-    // Если путь уже содержит полный URL, возвращаем его
-    if (recordPath.startsWith('') || recordPath.startsWith('')) {
-      return recordPath;
-    }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-    // Убираем '/api' из baseUrl и добавляем путь к записи
-    String cleanBaseUrl = baseUrl?.replaceAll('', '') ?? '';
-    return recordPath.startsWith('/call-recordings/')
-        ? '$cleanBaseUrl$recordPath'
-        : '$cleanBaseUrl/storage/$recordPath';
-  }
-  //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
-
-  //_________________________________ START_____API_SCREEN__TUTORIAL____________________________________________//a
-
-  Future<Map<String, dynamic>> getTutorialProgress() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-      '/tutorials/getProgress${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data;
+    if (data['result'] != null) {
+      dataAuthor = AuthorsDataResponse.fromJson(data);
     } else {
-      throw Exception(
-          'Failed to get tutorial progress: ${response.statusCode}');
+      throw Exception('Результат отсутствует в ответе');
     }
   }
 
-  Future<Map<String, dynamic>> getSettings(String? organizationId) async {
-    final response = await _getRequest(
-      '/setting${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data;
-    } else {
-      throw Exception('Failed to get settings: ${response.statusCode}');
-    }
+  if (kDebugMode) {
+    // //print('Статус ответа!');
   }
+  if (kDebugMode) {
+    // //print('getAll author!');
+  }
+
+  return dataAuthor;
+}
+
+String getRecordingUrl(String recordPath) {
+  if (recordPath.isEmpty) return '';
+
+  // Если путь уже содержит полный URL, возвращаем его
+  if (recordPath.startsWith('') || recordPath.startsWith('')) {
+    return recordPath;
+  }
+
+  // Убираем '/api' из baseUrl и добавляем путь к записи
+  String cleanBaseUrl = baseUrl?.replaceAll('', '') ?? '';
+  return recordPath.startsWith('/call-recordings/')
+      ? '$cleanBaseUrl$recordPath'
+      : '$cleanBaseUrl/storage/$recordPath';
+}
+
+//_________________________________ END_____API_SCREEN__EVENT____________________________________________//
+
+//_________________________________ START_____API_SCREEN__TUTORIAL____________________________________________//
+
+Future<Map<String, dynamic>> getTutorialProgress() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/tutorials/getProgress');
+  if (kDebugMode) {
+    print('ApiService: getTutorialProgress - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data;
+  } else {
+    throw Exception(
+        'Failed to get tutorial progress: ${response.statusCode}');
+  }
+}
+
+Future<Map<String, dynamic>> getSettings(String? organizationId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/setting');
+  if (kDebugMode) {
+    print('ApiService: getSettings - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data;
+  } else {
+    throw Exception('Failed to get settings: ${response.statusCode}');
+  }
+}
 
 // api/service/api_service.dart
-  Future<List<MiniAppSettings>> getMiniAppSettings(
-      String? organizationId) async {
-    final response = await _getRequest(
-      '/mini-app/setting${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
+Future<List<MiniAppSettings>> getMiniAppSettings(
+    String? organizationId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/mini-app/setting');
+  if (kDebugMode) {
+    print('ApiService: getMiniAppSettings - Generated path: $path');
+  }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null && data['result'] is List) {
-        return (data['result'] as List)
-            .map((item) => MiniAppSettings.fromJson(item))
-            .toList();
-      } else {
-        throw Exception(
-            'Invalid response format: result is missing or not a list');
-      }
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null && data['result'] is List) {
+      return (data['result'] as List)
+          .map((item) => MiniAppSettings.fromJson(item))
+          .toList();
     } else {
       throw Exception(
-          'Failed to get mini-app settings: ${response.statusCode}');
+          'Invalid response format: result is missing or not a list');
+    }
+  } else {
+    throw Exception(
+        'Failed to get mini-app settings: ${response.statusCode}');
+  }
+}
+
+Future<void> markPageCompleted(String section, String pageType) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/tutorials/markPageCompleted');
+  if (kDebugMode) {
+    print('ApiService: markPageCompleted - Generated path: $path');
+  }
+
+  final response = await _postRequest(
+    path,
+    {
+      "section": section,
+      "page_type": pageType,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to mark page completed: ${response.statusCode}');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//
+
+//_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
+
+Future<CharacteristicListDataResponse> getAllCharacteristics() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/attribute');
+  if (kDebugMode) {
+    print('ApiService: getAllCharacteristics - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return CharacteristicListDataResponse.fromJson(data);
+  } else {
+    throw ('Ошибка загрузки списка характеритсикии');
+  }
+}
+
+Future<List<CategoryData>> getCategory({String? search}) async {
+  String path = '/category';
+  if (search != null && search.isNotEmpty) {
+    path += '?search=$search';
+  }
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getCategory - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data.containsKey('result') && data['result'] is List) {
+      return (data['result'] as List)
+          .map((category) =>
+              CategoryData.fromJson(category as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки категории: ${response.statusCode}');
+  }
+}
+
+Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/category/get-by-parent-id/$categoryId');
+    if (kDebugMode) {
+      print('ApiService: getSubCategoryById - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      //print(decodedJson);
+      return SubCategoryResponseASD.fromJson(decodedJson);
+    } else {
+      throw Exception(
+          'Failed to load subcategories. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Failed to load subcategories: ${e.toString()}');
+  }
+}
+
+Future<Map<String, dynamic>> createCategory({
+  required String name,
+  required int parentId,
+  required List<Map<String, dynamic>> attributes,
+  File? image,
+  required String displayType,
+  required bool hasPriceCharacteristics,
+  required bool isParent, // Добавляем новый параметр
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/category');
+    if (kDebugMode) {
+      print('ApiService: createCategory - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    if (parentId != 0) {
+      request.fields['parent_id'] = parentId.toString();
+    }
+    request.fields['display_type'] = displayType;
+    request.fields['has_price_characteristics'] =
+        hasPriceCharacteristics ? '1' : '0';
+    request.fields['is_parent'] =
+        isParent ? '1' : '0'; // Добавляем поле is_parent
+
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
+      request.fields['attributes[$i][is_individual]'] =
+          attributes[i]['is_individual'] ? '1' : '0';
+    }
+
+    if (image != null) {
+      final imageFile =
+          await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'category_created_successfully',
+        'data': CategoryData.fromJson(responseBody),
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to create category',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: ',
+    };
+  }
+}
+
+Future<Map<String, dynamic>> updateCategory({
+  required int categoryId,
+  required String name,
+  File? image,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/category/update/$categoryId');
+    if (kDebugMode) {
+      print('ApiService: updateCategory - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+
+    if (image != null) {
+      final imageFile =
+          await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Категория успешно обновлена',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update category',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'An error occurred: ',
+    };
+  }
+}
+
+Future<Map<String, dynamic>> deleteCategory(int categoryId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/category/$categoryId');
+  if (kDebugMode) {
+    print('ApiService: deleteCategory - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete category!');
+  }
+}
+
+Future<Map<String, dynamic>> updateSubCategory({
+  required int subCategoryId,
+  required String name,
+  File? image,
+  required List<Map<String, dynamic>> attributes,
+  required String displayType,
+  required bool hasPriceCharacteristics,
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/category/update/$subCategoryId');
+    if (kDebugMode) {
+      print('ApiService: updateSubCategory - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+
+    request.fields['name'] = name;
+    request.fields['display_type'] = displayType;
+    request.fields['has_price_characteristics'] =
+        hasPriceCharacteristics ? '1' : '0';
+
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
+      request.fields['attributes[$i][is_individual]'] =
+          attributes[i]['is_individual'] ? '1' : '0';
+    }
+
+    if (image != null) {
+      final imageFile =
+          await http.MultipartFile.fromPath('image', image.path);
+      request.files.add(imageFile);
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'subcategory_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'failed_to_update_subcategory',
+        'error': responseBody,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'error_occurred: ',
+    };
+  }
+}
+
+//_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
+
+//_________________________________ START_____API_SCREEN__GOODS____________________________________________//
+
+Future<List<Goods>> getGoods({
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  String path = '/good?page=$page&per_page=$perPage';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  if (filters != null) {
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
+        (filters['category_id'] as List).isNotEmpty) {
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
+      }
+    }
+
+    if (filters.containsKey('discount_percent')) {
+      path += '&discount=${filters['discount_percent']}';
+    }
+
+    if (filters.containsKey('label_id') &&
+        filters['label_id'] is List &&
+        (filters['label_id'] as List).isNotEmpty) {
+      final labelIds = filters['label_id'] as List<String>;
+      for (var labelId in labelIds) {
+        path += '&label_id[]=$labelId';
+      }
+      if (kDebugMode) {
+        print('ApiService: Добавлены label_id: $labelIds');
+      }
+    }
+
+    if (filters.containsKey('is_active')) {
+      path += '&is_active=${filters['is_active'] ? 1 : 0}';
+      if (kDebugMode) {
+        print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+      }
     }
   }
 
-  Future<void> markPageCompleted(String section, String pageType) async {
-    final organizationId = await getSelectedOrganization();
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getGoods - Generated path: $path');
+  }
 
-    final response = await _postRequest(
-      '/tutorials/markPageCompleted${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        "section": section,
-        "page_type": pageType,
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    print(
+        'ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      final goods = (data['result']['data'] as List)
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
+      final total = data['result']['total'] ?? goods.length;
+      final totalPages = data['result']['total_pages'] ??
+          (goods.length < perPage ? page : page + 1);
+      if (kDebugMode) {
+        print(
+            'ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
+      }
+      return goods;
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка формата данных: $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+  }
+}
+
+Future<List<Variant>> getVariants({
+  int page = 1,
+  int perPage = 15,
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  String path = '/good/get/variant?page=$page&per_page=$perPage';
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  if (filters != null) {
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
+        (filters['category_id'] as List).isNotEmpty) {
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
+      }
+    }
+    if (filters.containsKey('is_active')) {
+      path += '&is_active=${filters['is_active'] ? 1 : 0}';
+      if (kDebugMode) {
+        //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+      }
+    }
+  }
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getVariants - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    //print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      final variants = (data['result']['data'] as List)
+          .map((item) => Variant.fromJson(item as Map<String, dynamic>))
+          .toList();
+      final paginationData = data['result']['pagination'] ?? {};
+      final total = paginationData['total'] ?? variants.length;
+      final totalPages = paginationData['total_pages'] ??
+          (variants.length < perPage ? page : page + 1);
+      if (kDebugMode) {
+        //print('ApiService: Успешно получено ${variants.length} вариантов, всего: $total, страниц: $totalPages');
+      }
+      return variants;
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка формата данных: $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: Ошибка загрузки вариантов: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
+  }
+}
+
+Future<List<Goods>> getGoodsById(int goodsId,
+    {bool isFromOrder = false}) async {
+  // Выбираем эндпоинт в зависимости от контекста
+  final String path = isFromOrder
+      ? '/good/variant-by-id/$goodsId'
+      : '/good/$goodsId';
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final updatedPath = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: getGoodsById - Generated path: $updatedPath');
+  }
+
+  final response = await _getRequest(updatedPath);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result')) {
+      return [Goods.fromJson(data['result'] as Map<String, dynamic>)];
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception(
+        'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+  }
+}
+
+Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/category/get/subcategories');
+  if (kDebugMode) {
+    print('ApiService: getSubCategoryAttributes - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    //print('Response data: $data'); // Debug: Print the response
+    if (data.containsKey('data')) {
+      return (data['data'] as List).map((item) {
+        //print('Item: $item'); // Debug: Print each item
+        return SubCategoryAttributesData.fromJson(
+            item as Map<String, dynamic>);
+      }).toList();
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception(
+        'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+  }
+}
+
+Future<Map<String, dynamic>> createGoods({
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<Map<String, dynamic>> attributes,
+  required List<Map<String, dynamic>> variants,
+  required List<File> images,
+  required bool isActive,
+  double? discountPrice,
+  int? branch,
+  double? price,
+  int? mainImageIndex,
+  int? labelId, // Parameter for label ID
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/good');
+    if (kDebugMode) {
+      print('ApiService: createGoods - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+      'Content-Type': 'multipart/form-data; charset=utf-8',
+    });
+
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive ? '1' : '0';
+
+    // Pass the actual labelId if it exists
+    if (labelId != null) {
+      request.fields['label_id'] = labelId.toString();
+    }
+
+    if (price != null) {
+      request.fields['price'] = price.toString();
+    }
+
+    if (discountPrice != null) {
+      request.fields['discount_price'] = discountPrice.toString();
+    }
+
+    if (branch != null) {
+      request.fields['branches[0][branch_id]'] = branch.toString();
+    }
+
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][category_attribute_id]'] =
+          attributes[i]['category_attribute_id'].toString();
+      request.fields['attributes[$i][value]'] =
+          attributes[i]['value'].toString();
+    }
+
+    for (int i = 0; i < variants.length; i++) {
+      request.fields['variants[$i][is_active]'] =
+          variants[i]['is_active'] ? '1' : '0';
+      final variantPrice = variants[i]['price'] ?? 0.0;
+      request.fields['variants[$i][price]'] = variantPrice.toString();
+
+      List<dynamic> variantAttributes =
+          variants[i]['variant_attributes'] ?? [];
+      for (int j = 0; j < variantAttributes.length; j++) {
+        request.fields[
+                'variants[$i][variant_attributes][$j][category_attribute_id]'] =
+            variantAttributes[j]['category_attribute_id'].toString();
+        request.fields['variants[$i][variant_attributes][$j][value]'] =
+            variantAttributes[j]['value'].toString();
+      }
+
+      List<File> variantFiles = variants[i]['files'] ?? [];
+      for (int j = 0; j < variantFiles.length; j++) {
+        File file = variantFiles[j];
+        if (await file.exists()) {
+          final imageFile = await http.MultipartFile.fromPath(
+              'variants[$i][files][$j]', file.path);
+          request.files.add(imageFile);
+        }
+      }
+    }
+
+    for (int i = 0; i < images.length; i++) {
+      File file = images[i];
+      if (await file.exists()) {
+        final imageFile =
+            await http.MultipartFile.fromPath('files[$i][file]', file.path);
+        request.files.add(imageFile);
+        request.fields['files[$i][is_main]'] =
+            (i == (mainImageIndex ?? 0)) ? '1' : '0';
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Товар успешно создан',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Не удалось создать товар',
+        'error': responseBody,
+      };
+    }
+  } catch (e, stackTrace) {
+    // print('ApiService: Error in createGoods: $e');
+    // print('ApiService: Stack trace: $stackTrace');
+    return {
+      'success': false,
+      'message': 'Произошла ошибка',
+    };
+  }
+}
+
+Future<Map<String, dynamic>> updateGoods({
+  required int goodId,
+  required String name,
+  required int parentId,
+  required String description,
+  required int quantity,
+  required List<Map<String, dynamic>> attributes,
+  required List<Map<String, dynamic>> variants,
+  required List<File> images,
+  required bool isActive,
+  double? discountPrice,
+  int? branch,
+  String? comments,
+  int? mainImageIndex,
+  int? labelId, // Добавляем параметр для ID метки
+}) async {
+  try {
+    final token = await getToken();
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/good/$goodId');
+    if (kDebugMode) {
+      print('ApiService: updateGoods - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+      'Content-Type': 'multipart/form-data; charset=utf-8',
+    });
+
+    //print('ApiService: Sending updateGoods request:');
+    //print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
+    //print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
+    //print('ApiService: attributes: $attributes');
+    //print('ApiService: variants: $variants');
+    //print('ApiService: images: ${images.map((file) => file.path).toList()}');
+
+    request.fields['name'] = name;
+    request.fields['category_id'] = parentId.toString();
+    request.fields['description'] = description;
+    request.fields['quantity'] = quantity.toString();
+    request.fields['is_active'] = isActive ? '1' : '0';
+    request.fields['label_id'] =
+        labelId != null ? labelId.toString() : ''; // Add label fields
+
+    if (branch != null) {
+      request.fields['branches[0][branch_id]'] = branch.toString();
+      //print('ApiService: Added branch: $branch');
+    }
+    if (comments != null && comments.isNotEmpty) {
+      request.fields['comments'] = comments;
+      //print('ApiService: Added comments: $comments');
+    }
+    if (discountPrice != null) {
+      request.fields['price'] = discountPrice.toString();
+      //print('ApiService: Added discount_price: $discountPrice');
+    }
+
+    for (int i = 0; i < attributes.length; i++) {
+      request.fields['attributes[$i][category_attribute_id]'] =
+          attributes[i]['category_attribute_id'].toString();
+      request.fields['attributes[$i][value]'] =
+          attributes[i]['value'].toString();
+      //print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
+    }
+
+    for (int i = 0; i < variants.length; i++) {
+      if (variants[i].containsKey('id')) {
+        request.fields['variants[$i][id]'] = variants[i]['id'].toString();
+        //print('ApiService: Added variant ID $i: ${variants[i]['id']}');
+      }
+      request.fields['variants[$i][is_active]'] =
+          variants[i]['is_active'] ? '1' : '0';
+      request.fields['variants[$i][price]'] =
+          (variants[i]['price'] ?? 0.0).toString();
+      //print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
+
+      List<dynamic> variantAttributes =
+          variants[i]['variant_attributes'] ?? [];
+      for (int j = 0; j < variantAttributes.length; j++) {
+        if (variantAttributes[j].containsKey('id')) {
+          request.fields['variants[$i][variant_attributes][$j][id]'] =
+              variantAttributes[j]['id'].toString();
+          //print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
+        }
+        request.fields[
+                'variants[$i][variant_attributes][$j][category_attribute_id]'] =
+            variantAttributes[j]['category_attribute_id'].toString();
+        request.fields['variants[$i][variant_attributes][$j][value]'] =
+            variantAttributes[j]['value'].toString();
+        //print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
+      }
+
+      List<File> variantFiles = variants[i]['files'] ?? [];
+      for (int j = 0; j < variantFiles.length; j++) {
+        File file = variantFiles[j];
+        if (await file.exists()) {
+          final imageFile = await http.MultipartFile.fromPath(
+              'variants[$i][files][$j]', file.path);
+          request.files.add(imageFile);
+          //print('ApiService: Added variant file $i-$j: ${file.path}');
+        } else {
+          //print('ApiService: Variant file not found, skipping: ${file.path}');
+        }
+      }
+    }
+
+    for (int i = 0; i < images.length; i++) {
+      File file = images[i];
+      if (await file.exists()) {
+        final imageFile =
+            await http.MultipartFile.fromPath('files[$i][file]', file.path);
+        request.files.add(imageFile);
+        request.fields['files[$i][is_main]'] =
+            i == (mainImageIndex ?? 0) ? '1' : '0';
+        //print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
+      } else {
+        //print('ApiService: General image not found, skipping: ${file.path}');
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseBody = json.decode(response.body);
+
+    //print('ApiService: Response status: ${response.statusCode}');
+    //print('ApiService: Response body: $responseBody');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'goods_updated_successfully',
+        'data': responseBody,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': responseBody['message'] ?? 'Failed to update goods',
+        'error': responseBody,
+      };
+    }
+  } catch (e, stackTrace) {
+    //print('ApiService: Error in updateGoods: ');
+    //print('ApiService: Stack trace: $stackTrace');
+    return {
+      'success': false,
+      'message': 'An error occurred: ',
+    };
+  }
+}
+
+Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/good/$goodId');
+    if (kDebugMode) {
+      print('ApiService: deleteGoods - Generated path: $path');
+    }
+
+    var uri = Uri.parse('$baseUrl$path');
+
+    final response = await http.delete(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile',
       },
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark page completed: ${response.statusCode}');
-    }
-  }
-
-  //_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//
-
-  //_________________________________ START_____API_SCREEN__CATEGORY____________________________________________//
-
-  Future<CharacteristicListDataResponse> getAllCharacteristics() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/attribute${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      return CharacteristicListDataResponse.fromJson(data);
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
     } else {
-      throw ('Ошибка загрузки списка характеритсикии');
-    }
-  }
-
-  Future<List<CategoryData>> getCategory({String? search}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/category';
-    path += '?organization_id=$organizationId';
-
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data.containsKey('result') && data['result'] is List) {
-        return (data['result'] as List)
-            .map((category) =>
-                CategoryData.fromJson(category as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
-      throw Exception('Ошибка загрузки категории: ${response.statusCode}');
-    }
-  }
-
-  Future<SubCategoryResponseASD> getSubCategoryById(int categoryId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      final url =
-          '/category/get-by-parent-id/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-      final response = await _getRequest(url);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        //print(decodedJson);
-        return SubCategoryResponseASD.fromJson(decodedJson);
-      } else {
-        throw Exception(
-            'Failed to load subcategories. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to load subcategories: ${e.toString()}');
-    }
-  }
-
-  Future<Map<String, dynamic>> createCategory({
-    required String name,
-    required int parentId,
-    required List<Map<String, dynamic>> attributes,
-    File? image,
-    required String displayType,
-    required bool hasPriceCharacteristics,
-    required bool isParent, // Добавляем новый параметр
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      var request = http.MultipartRequest('POST', uri);
-
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      request.fields['name'] = name;
-      if (parentId != 0) {
-        request.fields['parent_id'] = parentId.toString();
-      }
-      request.fields['display_type'] = displayType;
-      request.fields['has_price_characteristics'] =
-          hasPriceCharacteristics ? '1' : '0';
-      request.fields['is_parent'] =
-          isParent ? '1' : '0'; // Добавляем поле is_parent
-
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
-        request.fields['attributes[$i][is_individual]'] =
-            attributes[i]['is_individual'] ? '1' : '0';
-      }
-
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'category_created_successfully',
-          'data': CategoryData.fromJson(responseBody),
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to create category',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'An error occurred: ',
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> updateCategory({
-    required int categoryId,
-    required String name,
-    File? image,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category/update/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      var request = http.MultipartRequest('POST', uri);
-
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      request.fields['name'] = name;
-
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Категория успешно обновлена',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to update category',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'An error occurred: ',
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> deleteCategory(int categoryId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _deleteRequest(
-        '/category/$categoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete category!');
-    }
-  }
-
-  Future<Map<String, dynamic>> updateSubCategory({
-    required int subCategoryId,
-    required String name,
-    File? image,
-    required List<Map<String, dynamic>> attributes,
-    required String displayType,
-    required bool hasPriceCharacteristics,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/category/update/$subCategoryId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      var request = http.MultipartRequest('POST', uri);
-
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
-
-      request.fields['name'] = name;
-      request.fields['display_type'] = displayType;
-      request.fields['has_price_characteristics'] =
-          hasPriceCharacteristics ? '1' : '0';
-
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][attribute]'] = attributes[i]['name'];
-        request.fields['attributes[$i][is_individual]'] =
-            attributes[i]['is_individual'] ? '1' : '0';
-      }
-
-      if (image != null) {
-        final imageFile =
-            await http.MultipartFile.fromPath('image', image.path);
-        request.files.add(imageFile);
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'subcategory_updated_successfully',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'failed_to_update_subcategory',
-          'error': responseBody,
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'error_occurred: ',
-      };
-    }
-  }
-  //_________________________________ END_____API_SCREEN__CATEGORY____________________________________________//
-
-  //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
-
-  Future<List<Goods>> getGoods({
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    Map<String, dynamic>? filters,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path =
-        '/good?page=$page&per_page=$perPage&organization_id=$organizationId';
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    if (filters != null) {
-      if (filters.containsKey('category_id') &&
-          filters['category_id'] is List &&
-          (filters['category_id'] as List).isNotEmpty) {
-        final categoryIds = filters['category_id'] as List;
-        for (int i = 0; i < categoryIds.length; i++) {
-          path += '&category_id[]=${categoryIds[i]}';
-        }
-      }
-
-      if (filters.containsKey('discount_percent')) {
-        path += '&discount=${filters['discount_percent']}';
-      }
-
-      if (filters.containsKey('label_id') &&
-          filters['label_id'] is List &&
-          (filters['label_id'] as List).isNotEmpty) {
-        final labelIds = filters['label_id'] as List<String>;
-        for (var labelId in labelIds) {
-          path += '&label_id[]=$labelId';
-        }
-        if (kDebugMode) {
-          print('ApiService: Добавлены label_id: $labelIds');
-        }
-      }
-
-      if (filters.containsKey('is_active')) {
-        path += '&is_active=${filters['is_active'] ? 1 : 0}';
-        if (kDebugMode) {
-          print(
-              'ApiService: Добавлен параметр is_active: ${filters['is_active']}');
-        }
-      }
-    }
-
-    if (kDebugMode) {
-      print('ApiService: Формирование запроса товаров: $path');
-    }
-    final response = await _getRequest(path);
-    if (kDebugMode) {
-      print(
-          'ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
-    }
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        final goods = (data['result']['data'] as List)
-            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
-            .toList();
-        final total = data['result']['total'] ?? goods.length;
-        final totalPages = data['result']['total_pages'] ??
-            (goods.length < perPage ? page : page + 1);
-        if (kDebugMode) {
-          print(
-              'ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
-        }
-        return goods;
-      } else {
-        if (kDebugMode) {
-          print('ApiService: Ошибка формата данных: $data');
-        }
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
-      if (kDebugMode) {
-        print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
-      }
-      throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
-    }
-  }
-
-  Future<List<Variant>> getVariants({
-    int page = 1,
-    int perPage =
-        15, // Соответствует предоставленным данным (15 элементов на страницу)
-    String? search,
-    Map<String, dynamic>? filters,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path =
-        '/good/get/variant?page=$page&per_page=$perPage&organization_id=$organizationId';
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    if (filters != null) {
-      if (filters.containsKey('category_id') &&
-          filters['category_id'] is List &&
-          (filters['category_id'] as List).isNotEmpty) {
-        final categoryIds = filters['category_id'] as List;
-        for (int i = 0; i < categoryIds.length; i++) {
-          path += '&category_id[]=${categoryIds[i]}';
-        }
-      }
-      if (filters.containsKey('is_active')) {
-        path += '&is_active=${filters['is_active'] ? 1 : 0}';
-        if (kDebugMode) {
-          //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
-        }
-      }
-    }
-
-    if (kDebugMode) {
-      //print('ApiService: Формирование запроса вариантов: $path');
-    }
-    final response = await _getRequest(path);
-    if (kDebugMode) {
-      //print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
-    }
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        final variants = (data['result']['data'] as List)
-            .map((item) => Variant.fromJson(item as Map<String, dynamic>))
-            .toList();
-        final paginationData = data['result']['pagination'] ?? {};
-        final total = paginationData['total'] ?? variants.length;
-        final totalPages = paginationData['total_pages'] ??
-            (variants.length < perPage ? page : page + 1);
-        if (kDebugMode) {
-          //print('ApiService: Успешно получено ${variants.length} вариантов, всего: $total, страниц: $totalPages');
-        }
-        return variants;
-      } else {
-        if (kDebugMode) {
-          //print('ApiService: Ошибка формата данных: $data');
-        }
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
-      if (kDebugMode) {
-        //print('ApiService: Ошибка загрузки вариантов: ${response.statusCode}');
-      }
-      throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
-    }
-  }
-
-  Future<List<Goods>> getGoodsById(int goodsId,
-      {bool isFromOrder = false}) async {
-    final organizationId = await getSelectedOrganization();
-    // Выбираем эндпоинт в зависимости от контекста
-    final String path = isFromOrder
-        ? '/good/variant-by-id/$goodsId?organization_id=$organizationId'
-        : '/good/$goodsId?organization_id=$organizationId';
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result')) {
-        return [Goods.fromJson(data['result'] as Map<String, dynamic>)];
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
+      final jsonResponse = jsonDecode(response.body);
       throw Exception(
-          'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+          jsonResponse['message'] ?? 'Ошибка при удалении товара');
     }
+  } catch (e) {
+    //print('Ошибка удаления товара: ');
+    return false;
+  }
+}
+
+Future<List<Label>> getLabels() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/label');
+  if (kDebugMode) {
+    print('ApiService: getLabels - Generated path: $path');
   }
 
-  Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
-    final organizationId = await getSelectedOrganization();
-    final String path =
-        '/category/get/subcategories?organization_id=$organizationId';
+  final response = await _getRequest(path);
 
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      //print('Response data: $data'); // Debug: Print the response
-      if (data.containsKey('data')) {
-        return (data['data'] as List).map((item) {
-          //print('Item: $item'); // Debug: Print each item
-          return SubCategoryAttributesData.fromJson(
-              item as Map<String, dynamic>);
-        }).toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((label) => Label.fromJson(label))
+          .toList();
     } else {
-      throw Exception(
-          'Ошибка загрузки просмотра товаров: ${response.statusCode}');
+      throw Exception('Ошибка: поле "result" отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка загрузки меток');
+  }
+}
+
+//_________________________________ END____API_SCREEN__GOODS____________________________________________//
+
+//_________________________________ START_____API_SCREEN__ORDER____________________________________________//
+
+Future<List<OrderStatus>> getOrderStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status');
+  if (kDebugMode) {
+    print('ApiService: getOrderStatuses - Generated path: $path');
   }
 
-  Future<Map<String, dynamic>> createGoods({
-    required String name,
-    required int parentId,
-    required String description,
-    required int quantity,
-    required List<Map<String, dynamic>> attributes,
-    required List<Map<String, dynamic>> variants,
-    required List<File> images,
-    required bool isActive,
-    double? discountPrice,
-    int? branch,
-    double? price,
-    int? mainImageIndex,
-    int? labelId, // Parameter for label ID
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '$baseUrl/good${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
-
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-
-      // Pass the actual labelId if it exists
-      if (labelId != null) {
-        request.fields['label_id'] = labelId.toString();
-      }
-
-      if (price != null) {
-        request.fields['price'] = price.toString();
-      }
-
-      if (discountPrice != null) {
-        request.fields['discount_price'] = discountPrice.toString();
-      }
-
-      if (branch != null) {
-        request.fields['branches[0][branch_id]'] = branch.toString();
-      }
-
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-      }
-
-      for (int i = 0; i < variants.length; i++) {
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        final variantPrice = variants[i]['price'] ?? 0.0;
-        request.fields['variants[$i][price]'] = variantPrice.toString();
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
-        }
-
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
-          }
-        }
-      }
-
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
-        if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i][file]', file.path);
-          request.files.add(imageFile);
-          request.fields['files[$i][is_main]'] =
-              (i == (mainImageIndex ?? 0)) ? '1' : '0';
-        }
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Товар успешно создан',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Не удалось создать товар',
-          'error': responseBody,
-        };
-      }
-    } catch (e, stackTrace) {
-      // print('ApiService: Error in createGoods: $e');
-      // print('ApiService: Stack trace: $stackTrace');
-      return {
-        'success': false,
-        'message': 'Произошла ошибка: $e',
-      };
-    }
-  }
-
-  // Метод для обновления товара
-  Future<Map<String, dynamic>> updateGoods({
-    required int goodId,
-    required String name,
-    required int parentId,
-    required String description,
-    required int quantity,
-    required List<Map<String, dynamic>> attributes,
-    required List<Map<String, dynamic>> variants,
-    required List<File> images,
-    required bool isActive,
-    double? discountPrice,
-    int? branch,
-    String? comments,
-    int? mainImageIndex,
-    int? labelId, // Добавляем параметр для ID метки
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '$baseUrl/good/$goodId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
-
-      //print('ApiService: Sending updateGoods request:');
-      //print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-      //print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
-      //print('ApiService: attributes: $attributes');
-      //print('ApiService: variants: $variants');
-      //print('ApiService: images: ${images.map((file) => file.path).toList()}');
-
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-      request.fields['label_id'] =
-          labelId != null ? labelId.toString() : ''; // Add label fields
-
-      if (branch != null) {
-        request.fields['branches[0][branch_id]'] = branch.toString();
-        //print('ApiService: Added branch: $branch');
-      }
-      if (comments != null && comments.isNotEmpty) {
-        request.fields['comments'] = comments;
-        //print('ApiService: Added comments: $comments');
-      }
-      if (discountPrice != null) {
-        request.fields['price'] = discountPrice.toString();
-        //print('ApiService: Added discount_price: $discountPrice');
-      }
-
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-        //print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
-      }
-
-      for (int i = 0; i < variants.length; i++) {
-        if (variants[i].containsKey('id')) {
-          request.fields['variants[$i][id]'] = variants[i]['id'].toString();
-          //print('ApiService: Added variant ID $i: ${variants[i]['id']}');
-        }
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        request.fields['variants[$i][price]'] =
-            (variants[i]['price'] ?? 0.0).toString();
-        //print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          if (variantAttributes[j].containsKey('id')) {
-            request.fields['variants[$i][variant_attributes][$j][id]'] =
-                variantAttributes[j]['id'].toString();
-            //print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
-          }
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
-          //print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
-        }
-
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
-            //print('ApiService: Added variant file $i-$j: ${file.path}');
-          } else {
-            //print('ApiService: Variant file not found, skipping: ${file.path}');
-          }
-        }
-      }
-
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
-        if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i][file]', file.path);
-          request.files.add(imageFile);
-          request.fields['files[$i][is_main]'] =
-              i == (mainImageIndex ?? 0) ? '1' : '0';
-          //print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
-        } else {
-          //print('ApiService: General image not found, skipping: ${file.path}');
-        }
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
-
-      //print('ApiService: Response status: ${response.statusCode}');
-      //print('ApiService: Response body: $responseBody');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'goods_updated_successfully',
-          'data': responseBody,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': responseBody['message'] ?? 'Failed to update goods',
-          'error': responseBody,
-        };
-      }
-    } catch (e, stackTrace) {
-      //print('ApiService: Error in updateGoods: ');
-      //print('ApiService: Stack trace: $stackTrace');
-      return {
-        'success': false,
-        'message': 'An error occurred: ',
-      };
-    }
-  }
-
-  Future<bool> deleteGoods(int goodId, {int? organizationId}) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final orgId = await getSelectedOrganization();
-      final effectiveOrgId = organizationId ??
-          orgId; // Используем переданный organizationId или из getSelectedOrganization
-      var uri = Uri.parse(
-        '$baseUrl/good/$goodId${effectiveOrgId != null ? '?organization_id=ffectiveOrgId' : ''}',
-      );
-
-      final response = await http.delete(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Device': 'mobile',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при удалении товара');
-      }
-    } catch (e) {
-      //print('Ошибка удаления товара: ');
-      return false;
-    }
-  }
-
-  // Метод для получения меток
-  Future<List<Label>> getLabels() async {
-    final organizationId = await getSelectedOrganization();
-    final path = '/label?organization_id=$organizationId';
-
+  try {
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
+        await prefs.setString('cachedOrderStatuses_${await getSelectedOrganization()}',
+            json.encode(data['result']));
         return (data['result'] as List)
-            .map((label) => Label.fromJson(label))
-            .toList();
-      } else {
-        throw Exception('Ошибка: поле "result" отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки меток');
-    }
-  }
-
-  //_________________________________ END____API_SCREEN__GOODS____________________________________________//
-
-  //_________________________________ START_____API_SCREEN__ORDER____________________________________________//
-// Метод для получение статусов заказы
-  Future<List<OrderStatus>> getOrderStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      final response = await _getRequest(
-          '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          await prefs.setString('cachedOrderStatuses_$organizationId',
-              json.encode(data['result']));
-          return (data['result'] as List)
-              .map((status) => OrderStatus.fromJson(status))
-              .toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        throw Exception('Ошибка сервера');
-      }
-    } catch (e) {
-      //print(
-      // 'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
-      final cachedStatuses =
-          prefs.getString('cachedOrderStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        return (decodedData as List)
             .map((status) => OrderStatus.fromJson(status))
             .toList();
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов заказов и нет кэшированных данных!');
-      }
-    }
-  }
-
-  // Метод для получение карточки
-  Future<OrderResponse> getOrders({
-    int page = 1,
-    int perPage = 20,
-    int? statusId,
-    String? query,
-    List<String>? managerIds,
-    List<String>? leadIds,
-    DateTime? fromDate,
-    DateTime? toDate,
-    String? status,
-    String? paymentMethod,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      String url =
-          '/order${organizationId != null ? '?organization_id=$organizationId' : ''}';
-      url += '&page=$page&per_page=$perPage';
-      if (statusId != null) {
-        url += '&order_status_id=$statusId';
-      }
-      if (query != null && query.isNotEmpty) {
-        url += '&search=$query';
-      }
-      if (managerIds != null && managerIds.isNotEmpty) {
-        for (int i = 0; i < managerIds.length; i++) {
-          url += '&managers[$i]=${managerIds[i]}';
-        }
-      }
-      if (leadIds != null && leadIds.isNotEmpty) {
-        for (int i = 0; i < leadIds.length; i++) {
-          url += '&leads[$i]=${leadIds[i]}';
-        }
-      }
-      if (fromDate != null) {
-        url += '&from=${fromDate.toIso8601String()}';
-      }
-      if (toDate != null) {
-        url += '&to=${toDate.toIso8601String()}';
-      }
-      if (status != null && status.isNotEmpty) {
-        url += '&status=$status';
-      }
-      if (paymentMethod != null && paymentMethod.isNotEmpty) {
-        url += '&payment_type=$paymentMethod';
-      }
-
-      final response = await _getRequest(url);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        final data = rawData['result'];
-        return OrderResponse.fromJson(data);
-      } else {
-        throw Exception('Ошибка сервера!');
-      }
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  //Метод для получение просмотра заказов
-  Future<Order> getOrderDetails(int orderId) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      final response = await _getRequest(
-        '/order/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body)['result'];
-        final order = Order.fromJson(data);
-        await prefs.setString('cachedOrder_$orderId', json.encode(data));
-        return order;
-      } else {
-        throw Exception('Ошибка сервера!');
-      }
-    } catch (e) {
-      //print(
-      // 'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
-      final cachedOrder = prefs.getString('cachedOrder_$orderId');
-      if (cachedOrder != null) {
-        final decodedData = json.decode(cachedOrder);
-        return Order.fromJson(decodedData);
-      } else {
-        throw Exception(
-            'Ошибка загрузки деталей заказа и нет кэшированных данных!');
-      }
-    }
-  }
-
-  Future<OrderResponse> getOrdersByLead({
-    required int leadId,
-    int page = 1,
-    int perPage = 20,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-
-    try {
-      String url = '/lead/get-orders/$leadId';
-      url += '?page=$page&per_page=$perPage';
-      if (organizationId != null) {
-        url += '&organization_id=$organizationId';
-      }
-
-      final response = await _getRequest(url);
-      if (kDebugMode) {
-        // print('Request URL: $url');
-        // print('Response status: ${response.statusCode}');
-      }
-
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        return OrderResponse.fromJson(rawData);
-      } else {
-        throw Exception('Ошибка сервера при загрузке заказов!');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        // print('Ошибка загрузки заказов по лиду: $e');
-      }
-      throw Exception('Ошибка загрузки заказов: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> createOrder({
-    required String phone,
-    required int leadId,
-    required bool delivery,
-    String? deliveryAddress,
-    int? deliveryAddressId,
-    required List<Map<String, dynamic>> goods,
-    required int organizationId,
-    required int statusId,
-    int? branchId,
-    String? commentToCourier,
-    int? managerId,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri = Uri.parse('$baseUrl/order?organization_id=$organizationId');
-      final body = {
-        'phone': phone,
-        'lead_id': leadId,
-        'deliveryType': delivery ? 'delivery' : 'pickup',
-        'goods': goods
-            .map((item) => {
-                  'variant_id': int.parse(item['variant_id'].toString()),
-                  'quantity': item['quantity'],
-                  'price': item['price'].toString(),
-                })
-            .toList(),
-        'organization_id': organizationId,
-        'status_id': statusId,
-        'comment_to_courier': commentToCourier,
-        'payment_type': 'cash',
-        'manager_id': managerId,
-      };
-
-      if (delivery) {
-        body['delivery_address_id'] = deliveryAddressId;
-      } else {
-        body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId;
-        }
-      }
-
-      //print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
-
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
-
-      //print('ApiService: Код ответа сервера: ${response.statusCode}');
-      //print('ApiService: Тело ответа сервера: ${response.body}');
-
-      if (<int>[200, 201, 202, 203, 204, 300, 301]
-          .contains(response.statusCode)) {
-        final jsonResponse = jsonDecode(response.body);
-        // Проверяем, есть ли в ответе данные заказа
-        if (jsonResponse['result'] == 'success') {
-          return {
-            'success': true,
-            'statusId': statusId, // Используем входной statusId
-            'order': null, // Данные заказа отсутствуют
-          };
-        } else if (jsonResponse['result'] is Map<String, dynamic>) {
-          // Обработка случая, когда сервер возвращает полный объект
-          final returnedStatusId = int.tryParse(
-                  jsonResponse['result']['status_id']?.toString() ?? '') ??
-              statusId;
-          return {
-            'success': true,
-            'statusId': returnedStatusId,
-            'order': jsonResponse['result'],
-          };
-        } else {
-          throw ('Неожиданная структура ответа сервера:');
-        }
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
-      }
-    } catch (e) {
-      //print('ApiService: Ошибка создания заказа: ');
-      return {'success': false, 'error': e.toString()};
-    }
-  }
-
-  Future<Map<String, dynamic>> updateOrder({
-    required int orderId,
-    required String phone,
-    required int leadId,
-    required bool delivery,
-    String? deliveryAddress,
-    int? deliveryAddressId,
-    required List<Map<String, dynamic>> goods,
-    required int organizationId,
-    int? branchId,
-    String? commentToCourier,
-    int? managerId, // Новое поле
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri =
-          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-      final body = {
-        'phone': phone,
-        'lead_id': leadId,
-        'deliveryType': delivery
-            ? 'delivery'
-            : 'pickup', // Исправлено: delivery=true -> "delivery"
-        'goods': goods
-            .map((item) => {
-                  'variant_id': int.parse(item['variant_id'].toString()),
-                  'quantity': item['quantity'],
-                  'price': item['price'].toString(),
-                })
-            .toList(),
-        'organization_id': organizationId.toString(),
-        'comment_to_courier': commentToCourier,
-        'payment_type': 'cash',
-        'manager_id': managerId?.toString(),
-      };
-
-      if (delivery) {
-        body['delivery_address'] = deliveryAddress;
-        body['delivery_address_id'] = deliveryAddressId?.toString();
-      } else {
-        body['delivery_address'] = null;
-        body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId.toString();
-        }
-      }
-
-      //print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
-
-      final response = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
-
-      //print('ApiService: Код ответа сервера: ${response.statusCode}');
-      //print('ApiService: Тело ответа сервера: ${response.body}');
-
-      // Обрабатываем коды ответа 200, 201, 202, 203, 204, 300, 301 как успешные
-      if (<int>[200, 201, 202, 203, 204, 300, 301]
-          .contains(response.statusCode)) {
-        final jsonResponse = jsonDecode(response.body);
-        if (jsonResponse['result'] == 'success') {
-          return {
-            'success': true,
-            'order': null, // Данные заказа отсутствуют
-          };
-        } else if (jsonResponse['result'] is Map<String, dynamic>) {
-          return {
-            'success': true,
-            'order': jsonResponse['result'],
-          };
-        } else {
-          throw Exception(
-              'Неожиданная структура ответа сервера: ${jsonResponse['result']}');
-        }
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
-      }
-    } catch (e, stackTrace) {
-      //print('ApiService: Ошибка обновления заказа: ');
-      //print('ApiService: StackTrace: $stackTrace');
-      return {'success': false, 'error': e.toString()};
-    }
-  }
-
-  Future<DeliveryAddressResponse> getDeliveryAddresses({
-    required int leadId,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      if (token == null) throw Exception('Токен не найден');
-
-      final response = await _getRequest(
-        '/delivery-address?lead_id=$leadId&organization_id=$organizationId',
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return DeliveryAddressResponse.fromJson(data);
-      } else {
-        throw Exception(
-            'Ошибка при получении адресов доставки: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Ошибка при получении адресов доставки: ');
-    }
-  }
-
-// In api_service.dart (you should implement this based on your API client)
-  Future<http.Response> createOrderStatus({
-    required String title,
-    required String notificationMessage,
-    required bool isSuccess,
-    required bool isFailed,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-      '/order-status${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'title': title,
-        'notification_message': notificationMessage,
-        'is_success': isSuccess,
-        'is_failed': isFailed,
-        'color': '#FFFFF', // Добавляем параметр color
-      },
-    );
-    return response;
-  }
-
-  Future<http.Response> updateOrderStatus({
-    required int statusId,
-    required String title,
-    required String notificationMessage,
-    required bool isSuccess,
-    required bool isFailed,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _patchRequest(
-      '/order-status/$statusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'title': title,
-        'notification_message': notificationMessage,
-        'is_success': isSuccess,
-        'is_failed': isFailed,
-      },
-    );
-    return response;
-  }
-
-  Future<bool> deleteOrderStatus(int statusId) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _deleteRequest(
-      '/order-status/$statusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-    return response.statusCode == 200 || response.statusCode == 204;
-  }
-
-  Future<bool> checkIfStatusHasOrders(int statusId) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/orders?status_id=$statusId${organizationId != null ? '&organization_id=$organizationId' : ''}',
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['data'] != null && data['data'].isNotEmpty;
-    }
-    return false;
-  }
-
-  Future<bool> deleteOrder({
-    required int orderId,
-    required int? organizationId,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri =
-          Uri.parse('$baseUrl/order/$orderId?organization_id=$organizationId');
-      final response = await http.delete(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при удалении заказа');
-      }
-    } catch (e) {
-      //print('Ошибка удаления заказа: ');
-      return false;
-    }
-  }
-
-// api_service.dart
-  Future<bool> changeOrderStatus({
-    required int orderId,
-    required int statusId,
-    required int? organizationId,
-  }) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri = Uri.parse(
-          '$baseUrl/order/changeStatus/$orderId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'status_id': statusId,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
-      }
-    } catch (e) {
-      //print('Ошибка смены статуса заказа: ');
-      return false;
-    }
-  }
-
-  Future<List<Branch>> getBranches() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/branch${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        List<Branch> branches = List<Branch>.from(
-            data['result'].map((branch) => Branch.fromJson(branch)));
-        return branches;
-      } else {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка сервера');
+    }
+  } catch (e) {
+    //print(
+    // 'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
+    final cachedStatuses =
+        prefs.getString('cachedOrderStatuses_${await getSelectedOrganization()}');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      return (decodedData as List)
+          .map((status) => OrderStatus.fromJson(status))
+          .toList();
+    } else {
+      throw Exception(
+          'Ошибка загрузки статусов заказов и нет кэшированных данных!');
     }
   }
+}
 
-  Future<List<LeadOrderData>> getLeadOrders() async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/lead?organization_id=$organizationId';
+Future<OrderResponse> getOrders({
+  int page = 1,
+  int perPage = 20,
+  int? statusId,
+  String? query,
+  List<String>? managerIds,
+  List<String>? leadIds,
+  DateTime? fromDate,
+  DateTime? toDate,
+  String? status,
+  String? paymentMethod,
+}) async {
+  String url = '/order';
+  url += '&page=$page&per_page=$perPage';
+  if (statusId != null) {
+    url += '&order_status_id=$statusId';
+  }
+  if (query != null && query.isNotEmpty) {
+    url += '&search=$query';
+  }
+  if (managerIds != null && managerIds.isNotEmpty) {
+    for (int i = 0; i < managerIds.length; i++) {
+      url += '&managers[$i]=${managerIds[i]}';
+    }
+  }
+  if (leadIds != null && leadIds.isNotEmpty) {
+    for (int i = 0; i < leadIds.length; i++) {
+      url += '&leads[$i]=${leadIds[i]}';
+    }
+  }
+  if (fromDate != null) {
+    url += '&from=${fromDate.toIso8601String()}';
+  }
+  if (toDate != null) {
+    url += '&to=${toDate.toIso8601String()}';
+  }
+  if (status != null && status.isNotEmpty) {
+    url += '&status=$status';
+  }
+  if (paymentMethod != null && paymentMethod.isNotEmpty) {
+    url += '&payment_type=$paymentMethod';
+  }
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(url);
+  if (kDebugMode) {
+    print('ApiService: getOrders - Generated path: $path');
+  }
+
+  try {
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body);
+      final data = rawData['result'];
+      return OrderResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка сервера!');
+    }
+  } catch (e) {
+    throw e;
+  }
+}
+
+Future<Order> getOrderDetails(int orderId) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order/$orderId');
+  if (kDebugMode) {
+    print('ApiService: getOrderDetails - Generated path: $path');
+  }
+
+  try {
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body)['result'];
+      final order = Order.fromJson(data);
+      await prefs.setString('cachedOrder_$orderId', json.encode(data));
+      return order;
+    } else {
+      throw Exception('Ошибка сервера!');
+    }
+  } catch (e) {
+    //print(
+    // 'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
+    final cachedOrder = prefs.getString('cachedOrder_$orderId');
+    if (cachedOrder != null) {
+      final decodedData = json.decode(cachedOrder);
+      return Order.fromJson(decodedData);
+    } else {
+      throw Exception(
+          'Ошибка загрузки деталей заказа и нет кэшированных данных!');
+    }
+  }
+}
+
+Future<OrderResponse> getOrdersByLead({
+  required int leadId,
+  int page = 1,
+  int perPage = 20,
+}) async {
+  String url = '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(url);
+  if (kDebugMode) {
+    print('ApiService: getOrdersByLead - Generated path: $path');
+  }
+
+  try {
+    final response = await _getRequest(path);
+    if (kDebugMode) {
+      // print('Request URL: $path');
+      // print('Response status: ${response.statusCode}');
+    }
+
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body);
+      return OrderResponse.fromJson(rawData);
+    } else {
+      throw Exception('Ошибка сервера при загрузке заказов!');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      // print('Ошибка загрузки заказов по лиду: $e');
+    }
+    throw Exception('Ошибка загрузки заказов:');
+  }
+}
+
+Future<Map<String, dynamic>> createOrder({
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  String? deliveryAddress,
+  int? deliveryAddressId,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+  required int statusId,
+  int? branchId,
+  String? commentToCourier,
+  int? managerId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order');
+    if (kDebugMode) {
+      print('ApiService: createOrder - Generated path: $path');
+    }
+
+    final uri = Uri.parse('$baseUrl$path');
+    final body = {
+      'phone': phone,
+      'lead_id': leadId,
+      'deliveryType': delivery ? 'delivery' : 'pickup',
+      'goods': goods
+          .map((item) => {
+                'variant_id': int.parse(item['variant_id'].toString()),
+                'quantity': item['quantity'],
+                'price': item['price'].toString(),
+              })
+          .toList(),
+      'organization_id': organizationId,
+      'status_id': statusId,
+      'comment_to_courier': commentToCourier,
+      'payment_type': 'cash',
+      'manager_id': managerId,
+    };
+
+    if (delivery) {
+      body['delivery_address_id'] = deliveryAddressId;
+    } else {
+      body['delivery_address_id'] = null;
+      if (branchId != null) {
+        body['branch_id'] = branchId;
+      }
+    }
+
+    //print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode(body),
+    );
+
+    //print('ApiService: Код ответа сервера: ${response.statusCode}');
+    //print('ApiService: Тело ответа сервера: ${response.body}');
+
+    if (<int>[200, 201, 202, 203, 204, 300, 301]
+        .contains(response.statusCode)) {
+      final jsonResponse = jsonDecode(response.body);
+      // Проверяем, есть ли в ответе данные заказа
+      if (jsonResponse['result'] == 'success') {
+        return {
+          'success': true,
+          'statusId': statusId, // Используем входной statusId
+          'order': null, // Данные заказа отсутствуют
+        };
+      } else if (jsonResponse['result'] is Map<String, dynamic>) {
+        // Обработка случая, когда сервер возвращает полный объект
+        final returnedStatusId = int.tryParse(
+                jsonResponse['result']['status_id']?.toString() ?? '') ??
+            statusId;
+        return {
+          'success': true,
+          'statusId': returnedStatusId,
+          'order': jsonResponse['result'],
+        };
+      } else {
+        throw ('Неожиданная структура ответа сервера:');
+      }
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
+    }
+  } catch (e) {
+    //print('ApiService: Ошибка создания заказа: ');
+    return {'success': false, 'error': e.toString()};
+  }
+}
+
+Future<Map<String, dynamic>> updateOrder({
+  required int orderId,
+  required String phone,
+  required int leadId,
+  required bool delivery,
+  String? deliveryAddress,
+  int? deliveryAddressId,
+  required List<Map<String, dynamic>> goods,
+  required int organizationId,
+  int? branchId,
+  String? commentToCourier,
+  int? managerId, // Новое поле
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order/$orderId');
+    if (kDebugMode) {
+      print('ApiService: updateOrder - Generated path: $path');
+    }
+
+    final uri = Uri.parse('$baseUrl$path');
+    final body = {
+      'phone': phone,
+      'lead_id': leadId,
+      'deliveryType': delivery
+          ? 'delivery'
+          : 'pickup', // Исправлено: delivery=true -> "delivery"
+      'goods': goods
+          .map((item) => {
+                'variant_id': int.parse(item['variant_id'].toString()),
+                'quantity': item['quantity'],
+                'price': item['price'].toString(),
+              })
+          .toList(),
+      'organization_id': organizationId.toString(),
+      'comment_to_courier': commentToCourier,
+      'payment_type': 'cash',
+      'manager_id': managerId?.toString(),
+    };
+
+    if (delivery) {
+      body['delivery_address'] = deliveryAddress;
+      body['delivery_address_id'] = deliveryAddressId?.toString();
+    } else {
+      body['delivery_address'] = null;
+      body['delivery_address_id'] = null;
+      if (branchId != null) {
+        body['branch_id'] = branchId.toString();
+      }
+    }
+
+    //print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode(body),
+    );
+
+    //print('ApiService: Код ответа сервера: ${response.statusCode}');
+    //print('ApiService: Тело ответа сервера: ${response.body}');
+
+    // Обрабатываем коды ответа 200, 201, 202, 203, 204, 300, 301 как успешные
+    if (<int>[200, 201, 202, 203, 204, 300, 301]
+        .contains(response.statusCode)) {
+      final jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['result'] == 'success') {
+        return {
+          'success': true,
+          'order': null, // Данные заказа отсутствуют
+        };
+      } else if (jsonResponse['result'] is Map<String, dynamic>) {
+        return {
+          'success': true,
+          'order': jsonResponse['result'],
+        };
+      } else {
+        throw Exception(
+            'Неожиданная структура ответа сервера: ${jsonResponse['result']}');
+      }
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+    }
+  } catch (e, stackTrace) {
+    //print('ApiService: Ошибка обновления заказа: ');
+    //print('ApiService: StackTrace: $stackTrace');
+    return {'success': false, 'error': e.toString()};
+  }
+}
+
+Future<DeliveryAddressResponse> getDeliveryAddresses({
+  required int leadId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/delivery-address?lead_id=$leadId');
+    if (kDebugMode) {
+      print('ApiService: getDeliveryAddresses - Generated path: $path');
+    }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        return (data['result']['data'] as List<dynamic>)
-            .map((e) => LeadOrderData.fromJson(e as Map<String, dynamic>))
-            .toList();
-      } else {
-        throw Exception('Ошибка: Неверный формат данных');
-      }
+      final data = json.decode(response.body);
+      return DeliveryAddressResponse.fromJson(data);
     } else {
-      throw Exception('Ошибка загрузки LeadOrder: ${response.statusCode}');
+      throw Exception(
+          'Ошибка при получении адресов доставки: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Ошибка при получении адресов доставки: ');
+  }
+}
+
+Future<http.Response> createOrderStatus({
+  required String title,
+  required String notificationMessage,
+  required bool isSuccess,
+  required bool isFailed,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status');
+  if (kDebugMode) {
+    print('ApiService: createOrderStatus - Generated path: $path');
   }
 
-  Future<List<CalendarEvent>> getCalendarEventsByMonth(
-    int month, {
-    String? search,
-    List<String>? types,
-    List<String>? userIds, // Added parameter for user IDs
-  }) async {
-    final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    path,
+    {
+      'title': title,
+      'notification_message': notificationMessage,
+      'is_success': isSuccess,
+      'is_failed': isFailed,
+      'color': '#FFFFF', // Добавляем параметр color
+    },
+  );
+  return response;
+}
 
-    String url = '/calendar/getByMonth?month=$month';
-
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search';
-    }
-
-    if (organizationId != null) {
-      url += '&organization_id=$organizationId';
-    }
-
-    if (types != null && types.isNotEmpty) {
-      url += types.map((type) => '&type[]=$type').join();
-    }
-
-    if (userIds != null && userIds.isNotEmpty) {
-      url += userIds
-          .map((userId) => '&user_id[]=$userId')
-          .join(); // Append user IDs
-    }
-
-    final response = await _getRequest(url);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['result'] != null && data['result'] is List) {
-        return (data['result'] as List)
-            .map((item) => CalendarEvent.fromJson(item))
-            .toList();
-      }
-      throw ('Ошибка формата загрузки календаря!');
-    } else {
-      throw ('Ошибка загрузки календаря!');
-    }
+Future<http.Response> updateOrderStatus({
+  required int statusId,
+  required String title,
+  required String notificationMessage,
+  required bool isSuccess,
+  required bool isFailed,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status/$statusId');
+  if (kDebugMode) {
+    print('ApiService: updateOrderStatus - Generated path: $path');
   }
 
-  //_________________________________ END_____API_SCREEN__ORDER____________________________________________//
+  final response = await _patchRequest(
+    path,
+    {
+      'title': title,
+      'notification_message': notificationMessage,
+      'is_success': isSuccess,
+      'is_failed': isFailed,
+    },
+  );
+  return response;
+}
 
-  //________________________________  START_______API_SCREEN__CALLS____________________________________________//
+Future<bool> deleteOrderStatus(int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status/$statusId');
+  if (kDebugMode) {
+    print('ApiService: deleteOrderStatus - Generated path: $path');
+  }
+
+  final response = await _deleteRequest(path);
+  return response.statusCode == 200 || response.statusCode == 204;
+}
+
+Future<bool> checkIfStatusHasOrders(int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/orders?status_id=$statusId');
+  if (kDebugMode) {
+    print('ApiService: checkIfStatusHasOrders - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['data'] != null && data['data'].isNotEmpty;
+  }
+  return false;
+}
+
+Future<bool> deleteOrder({
+  required int orderId,
+  required int? organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order/$orderId');
+    if (kDebugMode) {
+      print('ApiService: deleteOrder - Generated path: $path');
+    }
+
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.delete(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при удалении заказа');
+    }
+  } catch (e) {
+    //print('Ошибка удаления заказа: ');
+    return false;
+  }
+}
+
+Future<bool> changeOrderStatus({
+  required int orderId,
+  required int statusId,
+  required int? organizationId,
+}) async {
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order/changeStatus/$orderId');
+    if (kDebugMode) {
+      print('ApiService: changeOrderStatus - Generated path: $path');
+    }
+
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'status_id': statusId,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+    }
+  } catch (e) {
+    //print('Ошибка смены статуса заказа: ');
+    return false;
+  }
+}
+
+Future<List<Branch>> getBranches() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/branch');
+  if (kDebugMode) {
+    print('ApiService: getBranches - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      List<Branch> branches = List<Branch>.from(
+          data['result'].map((branch) => Branch.fromJson(branch)));
+      return branches;
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных: ${response.statusCode}');
+  }
+}
+
+Future<List<LeadOrderData>> getLeadOrders() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: getLeadOrders - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      return (data['result']['data'] as List<dynamic>)
+          .map((e) => LeadOrderData.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки LeadOrder: ${response.statusCode}');
+  }
+}
+
+Future<List<CalendarEvent>> getCalendarEventsByMonth(
+  int month, {
+  String? search,
+  List<String>? types,
+  List<String>? userIds, // Added parameter for user IDs
+}) async {
+  String url = '/calendar/getByMonth?month=$month';
+
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search';
+  }
+
+  if (types != null && types.isNotEmpty) {
+    url += types.map((type) => '&type[]=$type').join();
+  }
+
+  if (userIds != null && userIds.isNotEmpty) {
+    url += userIds
+        .map((userId) => '&user_id[]=$userId')
+        .join(); // Append user IDs
+  }
+
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams(url);
+  if (kDebugMode) {
+    print('ApiService: getCalendarEventsByMonth - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['result'] != null && data['result'] is List) {
+      return (data['result'] as List)
+          .map((item) => CalendarEvent.fromJson(item))
+          .toList();
+    }
+    throw ('Ошибка формата загрузки календаря!');
+  } else {
+    throw ('Ошибка загрузки календаря!');
+  }
+}
+
+//_________________________________ END_____API_SCREEN__ORDER____________________________________________//
+
+//________________________________  START_______API_SCREEN__CALLS____________________________________________//
+
 Future<Map<String, dynamic>> getAllCalls({
   required int page,
   required int perPage,
   String? searchQuery,
   Map<String, dynamic>? filters,
 }) async {
-  final organizationId = await getSelectedOrganization();
-  String path =
-      '/calls?page=$page&per_page=$perPage&organization_id=$organizationId';
+  String path = '/calls?page=$page&per_page=$perPage';
 
   if (searchQuery != null && searchQuery.isNotEmpty) {
     path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -8374,9 +8656,12 @@ Future<Map<String, dynamic>> getAllCalls({
     }
   }
 
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
   if (kDebugMode) {
-    print('ApiService: Request path for getAllCalls: $path');
+    print('ApiService: getAllCalls - Generated path: $path');
   }
+
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
@@ -8410,9 +8695,7 @@ Future<Map<String, dynamic>> getIncomingCalls({
   String? searchQuery,
   Map<String, dynamic>? filters,
 }) async {
-  final organizationId = await getSelectedOrganization();
-  String path =
-      '/calls?incoming=1&missed=0&page=$page&per_page=$perPage&organization_id=$organizationId';
+  String path = '/calls?incoming=1&missed=0&page=$page&per_page=$perPage';
 
   if (searchQuery != null && searchQuery.isNotEmpty) {
     path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -8475,9 +8758,12 @@ Future<Map<String, dynamic>> getIncomingCalls({
     }
   }
 
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
   if (kDebugMode) {
-    print('ApiService: Request path for getIncomingCalls: $path');
+    print('ApiService: getIncomingCalls - Generated path: $path');
   }
+
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
@@ -8511,9 +8797,7 @@ Future<Map<String, dynamic>> getOutgoingCalls({
   String? searchQuery,
   Map<String, dynamic>? filters,
 }) async {
-  final organizationId = await getSelectedOrganization();
-  String path =
-      '/calls?incoming=0&missed=0&page=$page&per_page=$perPage&organization_id=$organizationId';
+  String path = '/calls?incoming=0&missed=0&page=$page&per_page=$perPage';
 
   if (searchQuery != null && searchQuery.isNotEmpty) {
     path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -8576,9 +8860,12 @@ Future<Map<String, dynamic>> getOutgoingCalls({
     }
   }
 
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
   if (kDebugMode) {
-    print('ApiService: Request path for getOutgoingCalls: $path');
+    print('ApiService: getOutgoingCalls - Generated path: $path');
   }
+
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
@@ -8612,9 +8899,7 @@ Future<Map<String, dynamic>> getMissedCalls({
   String? searchQuery,
   Map<String, dynamic>? filters,
 }) async {
-  final organizationId = await getSelectedOrganization();
-  String path =
-      '/calls?missed=1&page=$page&per_page=$perPage&organization_id=$organizationId';
+  String path = '/calls?missed=1&page=$page&per_page=$perPage';
 
   if (searchQuery != null && searchQuery.isNotEmpty) {
     path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -8677,9 +8962,12 @@ Future<Map<String, dynamic>> getMissedCalls({
     }
   }
 
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  path = await _appendQueryParams(path);
   if (kDebugMode) {
-    print('ApiService: Request path for getMissedCalls: $path');
+    print('ApiService: getMissedCalls - Generated path: $path');
   }
+
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
@@ -8706,110 +8994,118 @@ Future<Map<String, dynamic>> getMissedCalls({
     throw ('Ошибка загрузки пропущенных звонков');
   }
 }
-  Future<CallById> getCallById({
-    required int callId,
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/calls/$callId?organization_id=$organizationId';
 
+Future<CallById> getCallById({
+  required int callId,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/calls/$callId');
+  if (kDebugMode) {
+    print('ApiService: getCallById - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print("API response for getCallById: $data");
+    if (data['result'] != null && data['result'] is Map<String, dynamic>) {
+      return CallById.fromJson(data['result'] as Map<String, dynamic>);
+    } else {
+      throw ('Invalid or missing call data in response');
+    }
+  } else {
+    throw ('Failed to load call data');
+  }
+}
+
+Future<CallStatistics> getCallStatistics() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/calls/statistic/get-call-statistics');
+  if (kDebugMode) {
+    print('ApiService: getCallStatistics - Generated path: $path');
+  }
+
+  try {
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print("API response for getCallById: $data");
-      if (data['result'] != null && data['result'] is Map<String, dynamic>) {
-        return CallById.fromJson(data['result'] as Map<String, dynamic>);
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
+        return CallStatistics.fromJson(jsonData);
       } else {
-        throw ('Invalid or missing call data in response');
+        throw ('Нет данных статистики звонков в ответе');
       }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
     } else {
-      throw ('Failed to load call data');
+      throw ('Ошибка загрузки данных статистики звонков');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных статистики звонков');
+  }
+}
+
+Future<CallAnalytics> getCallAnalytics() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/calls/statistic/get-call-analytics');
+  if (kDebugMode) {
+    print('ApiService: getCallAnalytics - Generated path: $path');
   }
 
-  Future<CallStatistics> getCallStatistics() async {
-    final organizationId = await getSelectedOrganization();
+  try {
+    final response = await _getRequest(path);
 
-    String path =
-        '/calls/statistic/get-call-statistics${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
-          return CallStatistics.fromJson(jsonData);
-        } else {
-          throw ('Нет данных статистики звонков в ответе');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера: 500');
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null) {
+        return CallAnalytics.fromJson(jsonData);
       } else {
-        throw ('Ошибка загрузки данных статистики звонков');
+        throw ('Нет данных статистики звонков в ответе');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных статистики звонков');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных статистики звонков');
+  }
+}
+
+Future<MonthlyCallStats> getMonthlyCallStats(int operatorId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/calls/statistic/monthly-stats?operator_id=$operatorId');
+  if (kDebugMode) {
+    print('ApiService: getMonthlyCallStats - Generated path: $path');
   }
 
-  Future<CallAnalytics> getCallAnalytics() async {
-    final organizationId = await getSelectedOrganization();
+  try {
+    final response = await _getRequest(path);
 
-    String path =
-        '/calls/statistic/get-call-analytics${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['result'] != null) {
-          return CallAnalytics.fromJson(jsonData);
-        } else {
-          throw ('Нет данных статистики звонков в ответе');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера: 500');
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
+        return MonthlyCallStats.fromJson(jsonData);
       } else {
-        throw ('Ошибка загрузки данных статистики звонков');
+        throw ('Нет данных месячной статистики звонков в ответе');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных месячной статистики звонков');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных месячной статистики звонков');
   }
+}
 
-  Future<MonthlyCallStats> getMonthlyCallStats(int operatorId) async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/calls/statistic/monthly-stats?operator_id=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
-
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['result'] != null && jsonData['result'].isNotEmpty) {
-          return MonthlyCallStats.fromJson(jsonData);
-        } else {
-          throw ('Нет данных месячной статистики звонков в ответе');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера: 500');
-      } else {
-        throw ('Ошибка загрузки данных месячной статистики звонков');
-      }
-    } catch (e) {
-      throw ('Ошибка получения данных месячной статистики звонков');
-    }
+Future<CallSummaryStats> getCallSummaryStats(int operatorId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/calls/statistic/summary?operator_id=$operatorId');
+  if (kDebugMode) {
+    print('ApiService: getCallSummaryStats - Generated path: $path');
   }
-
- Future<CallSummaryStats> getCallSummaryStats(int operatorId) async {
-  final organizationId = await getSelectedOrganization();
-
-  // Формируем URL с operator_id и organization_id (если есть)
-  String path = '/calls/statistic/summary?operator_id=$operatorId${organizationId != null ? '&organization_id=$organizationId' : ''}';
 
   try {
     final response = await _getRequest(path);
@@ -8827,74 +9123,86 @@ Future<Map<String, dynamic>> getMissedCalls({
       throw ('Ошибка загрузки данных сводной статистики звонков: ${response.statusCode}');
     }
   } catch (e) {
-    throw ('Ошибка получения данных сводной статистики звонков: $e');
+    throw ('Ошибка получения данных сводной статистики звонков');
   }
 }
 
-  Future<void> setCallRating({
-    required int callId,
-    required int rating,
-    required int organizationId,
-  }) async {
-    String path = '/calls/set-rating/$callId?organization_id=$organizationId';
-    final body = {
-      'rating': rating,
-      'organization_id': organizationId,
-    };
+Future<void> setCallRating({
+  required int callId,
+  required int rating,
+  required int organizationId,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/calls/set-rating/$callId');
+  if (kDebugMode) {
+    print('ApiService: setCallRating - Generated path: $path');
+  }
+  final body = {
+    'rating': rating,
+    'organization_id': organizationId,
+  };
 
+  if (kDebugMode) {
     print("API Request: setCallRating (PUT) with path: $path, body: $body");
-    final response = await _putRequest(path, body); // заменили на PUT
-
-    if (response.statusCode != 200) {
-      throw ('Ошибка при установке рейтинга');
-    }
   }
+  final response = await _putRequest(path, body); // заменили на PUT
 
-  Future<void> addCallReport({
-    required int callId,
-    required String report,
-    required int organizationId,
-  }) async {
-    String path = '/calls/add-report/$callId?organization_id=$organizationId';
-    final body = {
-      'report': report,
-      'organization_id': organizationId,
-    };
+  if (response.statusCode != 200) {
+    throw ('Ошибка при установке рейтинга');
+  }
+}
 
+Future<void> addCallReport({
+  required int callId,
+  required String report,
+  required int organizationId,
+}) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/calls/add-report/$callId');
+  if (kDebugMode) {
+    print('ApiService: addCallReport - Generated path: $path');
+  }
+  final body = {
+    'report': report,
+    'organization_id': organizationId,
+  };
+
+  if (kDebugMode) {
     print("API Request: addCallReport (PUT) with path: $path, body: $body");
-    final response = await _putRequest(path, body); // заменили на PUT
+  }
+  final response = await _putRequest(path, body); // заменили на PUT
 
-    if (response.statusCode != 200) {
-      throw (
-          'Ошибка при добавлении замечания');
-    }
+  if (response.statusCode != 200) {
+    throw ('Ошибка при добавлении замечания');
+  }
+}
+
+Future<OperatorList> getOperators() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String path = await _appendQueryParams('/operators');
+  if (kDebugMode) {
+    print('ApiService: getOperators - Generated path: $path');
   }
 
-  Future<OperatorList> getOperators() async {
-    final organizationId = await getSelectedOrganization();
+  try {
+    final response = await _getRequest(path);
 
-    String path =
-        '/operators${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['result'] != null) {
-          return OperatorList.fromJson(jsonData);
-        } else {
-          throw ('Нет данных операторов в ответе');
-        }
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера: 500');
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['result'] != null) {
+        return OperatorList.fromJson(jsonData);
       } else {
-        throw ('Ошибка загрузки данных операторов');
+        throw ('Нет данных операторов в ответе');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных операторов');
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных операторов');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных операторов');
   }
+}
 
 //________________________________  END_______API_SCREEN__CALLS____________________________________________//
 }

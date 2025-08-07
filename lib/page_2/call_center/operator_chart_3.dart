@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -27,20 +28,54 @@ class _OperatorChart3State extends State<OperatorChart3> {
     const Color(0xFFEF4444), // Пропущенные - красный
   ];
 
-  final List<String> segmentLabels = [
-    'Входящие',
-    'Исходящие',
-    'Исходящие без ответа',
-    'Пропущенные'
-  ];
+  List<String> getCallTypes(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('incoming'),
+      localizations.translate('outgoing'),
+      localizations.translate('unanswered'),
+      localizations.translate('missed'),
+    ];
+  }
 
-  final List<String> monthNames = [
-    'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-    'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
-  ];
+  List<String> getMonthNames(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('jan'),
+      localizations.translate('feb'),
+      localizations.translate('mar'),
+      localizations.translate('apr'),
+      localizations.translate('may'),
+      localizations.translate('jun'),
+      localizations.translate('jul'),
+      localizations.translate('aug'),
+      localizations.translate('sep'),
+      localizations.translate('oct'),
+      localizations.translate('nov'),
+      localizations.translate('dec'),
+    ];
+  }
+
+  String formatNumber(int value, BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}${localizations.translate('million')}';
+    } else if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}${localizations.translate('thousand')}';
+    } else {
+      return value.toString();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final monthNames = getMonthNames(context);
+    final callTypes = getCallTypes(context);
+    final chartData = _getChartData();
+    final hasData = widget.monthlyStats.isNotEmpty &&
+        widget.monthlyStats.any((stat) => stat.total > 0);
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -57,9 +92,9 @@ class _OperatorChart3State extends State<OperatorChart3> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Эффективность работы',
-            style: TextStyle(
+          Text(
+            localizations.translate('operator_efficiency'),
+            style: const TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -67,7 +102,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildInteractiveLegend(),
+          if (hasData) _buildInteractiveLegend(),
           const SizedBox(height: 20),
           Stack(
             children: [
@@ -78,8 +113,9 @@ class _OperatorChart3State extends State<OperatorChart3> {
                     alignment: BarChartAlignment.spaceEvenly,
                     maxY: _getMaxY(),
                     barTouchData: BarTouchData(
-                      enabled: true,
+                      enabled: hasData,
                       touchCallback: (FlTouchEvent event, barTouchResponse) {
+                        if (!hasData) return;
                         if (event is FlTapUpEvent && barTouchResponse != null) {
                           final touchedGroup = barTouchResponse.spot?.touchedBarGroup;
                           if (touchedGroup != null) {
@@ -101,10 +137,10 @@ class _OperatorChart3State extends State<OperatorChart3> {
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Text(
                                   monthNames[monthIndex],
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 10,
-                                    color: Color(0xFF9CA3AF),
+                                    color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
                                   ),
                                 ),
                               );
@@ -121,11 +157,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
                           getTitlesWidget: (value, meta) {
                             if (value > _getMaxY()) return const SizedBox.shrink();
                             return Text(
-                              value.toInt().toString(),
-                              style: const TextStyle(
+                              formatNumber(value.toInt(), context),
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 11,
-                                color: Color(0xFF9CA3AF),
+                                color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
                               ),
                             );
                           },
@@ -134,7 +170,13 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    borderData: FlBorderData(show: false),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                        left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                      ),
+                    ),
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
@@ -142,18 +184,30 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       getDrawingHorizontalLine: (value) {
                         if (value > _getMaxY()) return const FlLine(color: Colors.transparent);
                         return FlLine(
-                          color: const Color(0xFFF8F9FA),
+                          color: hasData ? const Color(0xFFF8F9FA) : Colors.grey.withOpacity(0.1),
                           strokeWidth: 0.5,
                         );
                       },
                     ),
-                    barGroups: _buildInteractiveBarGroups(),
+                    barGroups: _buildInteractiveBarGroups(hasData),
                   ),
                 ),
               ),
-              _buildInteractiveChartLabels(),
-              if (selectedBarIndex != null && selectedSegmentIndex != null)
+              if (hasData) _buildInteractiveChartLabels(),
+              if (hasData && selectedBarIndex != null && selectedSegmentIndex != null)
                 _buildValuePopup(),
+              if (!hasData)
+                Center(
+                  child: Text(
+                    localizations.translate('no_data_to_display'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
@@ -164,8 +218,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
   double _getMaxY() {
     if (widget.monthlyStats.isEmpty) return 100;
 
-    final chartData = _getChartData();
-    final maxTotal = chartData.map((values) => values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b);
+    final maxTotal = widget.monthlyStats.map((stat) => stat.total).reduce((a, b) => a > b ? a : b);
 
     if (maxTotal == 0) return 100;
     return (maxTotal * 1.2).ceilToDouble();
@@ -199,12 +252,66 @@ class _OperatorChart3State extends State<OperatorChart3> {
     return chartData;
   }
 
+  List<BarChartGroupData> _buildInteractiveBarGroups(bool hasData) {
+    final chartData = _getChartData();
+    return chartData.asMap().entries.map((entry) {
+      final index = entry.key;
+      final values = entry.value;
+      final total = widget.monthlyStats.isNotEmpty && index < widget.monthlyStats.length
+          ? widget.monthlyStats.firstWhere((stat) => stat.month == index + 1, orElse: () => MonthlyCallStat(month: index + 1, incoming: 0, outgoing: 0, unanswered: 0, missed: 0, total: 0)).total
+          : 0;
+      final isSelected = selectedBarIndex == index;
+
+      final displayTotal = total == 0 ? 0.1 : total.toDouble();
+
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: displayTotal,
+            color: hasData ? Colors.transparent : Colors.grey.withOpacity(0.3),
+            width: hasData && isSelected ? 24 : 20,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(4),
+              topRight: Radius.circular(4),
+            ),
+            rodStackItems: hasData && total > 0
+                ? [
+                    if (values[0] > 0) BarChartRodStackItem(0, values[0].toDouble(), segmentColors[0]),
+                    if (values[1] > 0)
+                      BarChartRodStackItem(
+                        values[0].toDouble(),
+                        (values[0] + values[1]).toDouble(),
+                        segmentColors[1],
+                      ),
+                    if (values[2] > 0)
+                      BarChartRodStackItem(
+                        (values[0] + values[1]).toDouble(),
+                        (values[0] + values[1] + values[2]).toDouble(),
+                        segmentColors[2],
+                      ),
+                    if (values[3] > 0)
+                      BarChartRodStackItem(
+                        (values[0] + values[1] + values[2]).toDouble(),
+                        total.toDouble(),
+                        segmentColors[3],
+                      ),
+                  ]
+                : [],
+          ),
+        ],
+        showingTooltipIndicators: [],
+      );
+    }).toList();
+  }
+
   Widget _buildInteractiveLegend() {
     final chartData = _getChartData();
+    final callTypes = getCallTypes(context);
     return Wrap(
       spacing: 16,
       runSpacing: 8,
-      children: segmentLabels.asMap().entries.map((entry) {
+      children: callTypes.asMap().entries.map((entry) {
         final index = entry.key;
         final label = entry.value;
         final isSelected = selectedSegmentIndex == index;
@@ -267,7 +374,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      chartData[selectedBarIndex!][index].toString(),
+                      formatNumber(chartData[selectedBarIndex!][index], context),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
@@ -285,55 +392,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
     );
   }
 
-  List<BarChartGroupData> _buildInteractiveBarGroups() {
-    final chartData = _getChartData();
-    return chartData.asMap().entries.map((entry) {
-      final index = entry.key;
-      final values = entry.value;
-      final total = values.reduce((a, b) => a + b);
-      final isSelected = selectedBarIndex == index;
-
-      final displayTotal = total == 0 ? 0.1 : total.toDouble();
-
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: displayTotal,
-            color: total == 0 ? Colors.grey.withOpacity(0.2) : Colors.transparent,
-            width: isSelected ? 24 : 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-            rodStackItems: total == 0 ? [] : [
-              if (values[0] > 0) BarChartRodStackItem(0, values[0].toDouble(), segmentColors[0]),
-              if (values[1] > 0) BarChartRodStackItem(
-                values[0].toDouble(), 
-                (values[0] + values[1]).toDouble(), 
-                segmentColors[1]
-              ),
-              if (values[2] > 0) BarChartRodStackItem(
-                (values[0] + values[1]).toDouble(), 
-                (values[0] + values[1] + values[2]).toDouble(), 
-                segmentColors[2]
-              ),
-              if (values[3] > 0) BarChartRodStackItem(
-                (values[0] + values[1] + values[2]).toDouble(), 
-                total.toDouble(), 
-                segmentColors[3]
-              ),
-            ],
-          ),
-        ],
-        showingTooltipIndicators: [],
-      );
-    }).toList();
-  }
-
   Widget _buildInteractiveChartLabels() {
     final chartData = _getChartData();
-    final totals = chartData.map((values) => values.reduce((a, b) => a + b)).toList();
+    final totals = widget.monthlyStats.isNotEmpty
+        ? List.generate(12, (index) => widget.monthlyStats.firstWhere((stat) => stat.month == index + 1, orElse: () => MonthlyCallStat(month: index + 1, incoming: 0, outgoing: 0, unanswered: 0, missed: 0, total: 0)).total)
+        : List.generate(12, (_) => 0);
 
     return Positioned.fill(
       child: LayoutBuilder(
@@ -351,8 +414,8 @@ class _OperatorChart3State extends State<OperatorChart3> {
 
               if (total == 0) return const SizedBox.shrink();
 
-              final topPosition = constraints.maxHeight - 
-                  (total / maxY * (constraints.maxHeight - 50)) - 
+              final topPosition = constraints.maxHeight -
+                  (total / maxY * (constraints.maxHeight - 50)) -
                   (isSelected ? 28 : 20);
 
               return AnimatedPositioned(
@@ -379,7 +442,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       ],
                     ),
                     child: Text(
-                      total.toString(),
+                      formatNumber(total, context),
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
@@ -399,10 +462,12 @@ class _OperatorChart3State extends State<OperatorChart3> {
 
   Widget _buildValuePopup() {
     final chartData = _getChartData();
+    final callTypes = getCallTypes(context);
+    final monthNames = getMonthNames(context);
     if (selectedBarIndex == null || selectedSegmentIndex == null) {
       return const SizedBox.shrink();
     }
-    
+
     final selectedValue = chartData[selectedBarIndex!][selectedSegmentIndex!];
 
     return Positioned(
@@ -426,7 +491,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              segmentLabels[selectedSegmentIndex!],
+              callTypes[selectedSegmentIndex!],
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 11,
@@ -436,7 +501,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
             ),
             const SizedBox(height: 2),
             Text(
-              selectedValue.toString(),
+              formatNumber(selectedValue, context),
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 20,
@@ -461,8 +526,10 @@ class _OperatorChart3State extends State<OperatorChart3> {
 
   void _handleBarTap(int barIndex, Offset localPosition) {
     final values = _getChartData()[barIndex];
-    final total = values.reduce((a, b) => a + b);
-    
+    final total = widget.monthlyStats.isNotEmpty
+        ? widget.monthlyStats.firstWhere((stat) => stat.month == barIndex + 1, orElse: () => MonthlyCallStat(month: barIndex + 1, incoming: 0, outgoing: 0, unanswered: 0, missed: 0, total: 0)).total
+        : 0;
+
     if (total == 0) return;
 
     setState(() {
@@ -507,8 +574,10 @@ class _OperatorChart3State extends State<OperatorChart3> {
 
   void _handleTotalTap(int barIndex) {
     final chartData = _getChartData();
-    final total = chartData[barIndex].reduce((a, b) => a + b);
-    
+    final total = widget.monthlyStats.isNotEmpty
+        ? widget.monthlyStats.firstWhere((stat) => stat.month == barIndex + 1, orElse: () => MonthlyCallStat(month: barIndex + 1, incoming: 0, outgoing: 0, unanswered: 0, missed: 0, total: 0)).total
+        : 0;
+
     if (total == 0) return;
 
     setState(() {

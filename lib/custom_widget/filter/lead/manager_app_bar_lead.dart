@@ -376,22 +376,22 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: LeadStatusRadioGroupWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          onSelectStatus: (LeadStatus selectedStatusData) {
-                            setState(() {
-                              _selectedStatuses = selectedStatusData.id;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(height: 8),
+                    // Card(
+                    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(8),
+                    //     child: LeadStatusRadioGroupWidget(
+                    //       selectedStatus: _selectedStatuses?.toString(),
+                    //       onSelectStatus: (LeadStatus selectedStatusData) {
+                    //         setState(() {
+                    //           _selectedStatuses = selectedStatusData.id;
+                    //         });
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -5,7 +5,7 @@ class Notifications {
   final int modelId;
   final String modelType;
   final String message;
-  final int isRead;
+  final bool isRead; // Изменено с int на bool
   final int userId;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -25,7 +25,6 @@ class Notifications {
     required this.organizationId,
   });
 
-  // Метод для десериализации из JSON
   factory Notifications.fromJson(Map<String, dynamic> json) {
     return Notifications(
       id: json['id'] as int,
@@ -34,7 +33,7 @@ class Notifications {
       modelId: json['model_id'] as int,
       modelType: json['model_type'] as String,
       message: json['message'] as String,
-      isRead: json['is_read'] as int,
+      isRead: json['is_read'] as bool, // Изменено на bool
       userId: json['user_id'] as int,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -42,7 +41,6 @@ class Notifications {
     );
   }
 
-  // Метод для сериализации в JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,

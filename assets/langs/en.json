@@ -1125,7 +1125,25 @@
 "all_calls": "All calls",
 "outgoing": "Outgoing",
 "missed": "Missed",
-"no_calls_found": "No calls found"
+"no_calls_found": "No calls found",
+"remarks": "Remarks",
+"date_range": "Date range",
+"sales_funnel": "Sales funnel",
+"select_sales_funnel": "Select a funnel",
+"field_required_sales_funnel": "Sales funnel field is required",
+"sales_funnel_details": "Sales funnel:",
+"incoming": "Incoming",
+"total_calls": "Total calls",
+"call_type_stats": "Call count",
+"operator_efficiency": "Operator efficiency",
+"unanswered": "Unanswered",
+"duplicate_options": "Transfer function",
+"duplicate": "Duplicate",
+"transfer_and_delete": "Transfer completely and delete",
+"user_id_not_found": "Unable to determine current user ID",
+"not_available": "00:00",
+"average_rating": "Average rating"
+
 
 
 

@@ -3,9 +3,13 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
+import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -63,6 +67,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _isTaskScreenTutorialCompleted = false;
 
   bool _isTabControllerInitialized = false;
+  SalesFunnel? _selectedFunnel; // Новый параметр для текущей воронки
 
   // Создаём отдельные PagingController для каждой вкладки
   final Map<String, PagingController<int, Chats>> _pagingControllers = {
@@ -122,17 +127,54 @@ class _ChatsScreenState extends State<ChatsScreen>
           _isTabControllerInitialized = true;
         });
         setUpServices();
+        // Загружаем воронки
+        context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+        print('ChatsScreen: initState - Dispatched FetchSalesFunnels');
+
+        // Загружаем сохранённую воронку для чатов
+        apiService.getSelectedChatSalesFunnel().then((funnelId) {
+          print('ChatsScreen: initState - Retrieved selected chat funnel ID: $funnelId');
+          if (funnelId != null && mounted) {
+            context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
+              SalesFunnel(
+                id: int.parse(funnelId),
+                name: '',
+                organizationId: 1,
+                isActive: true,
+                createdAt: '',
+                updatedAt: '',
+              ),
+            ));
+            print('ChatsScreen: initState - Dispatched SelectSalesFunnel with ID: $funnelId');
+          }
+        });
+
+        // Слушаем изменения состояния SalesFunnelBloc
+        context.read<SalesFunnelBloc>().stream.listen((state) {
+          if (state is SalesFunnelLoaded && mounted) {
+            print('ChatsScreen: initState - SalesFunnelLoaded received, selectedFunnel: ${state.selectedFunnel}');
+            setState(() {
+              _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+            });
+            // Обновляем чаты только для вкладки lead
+            if (endPointInTab == 'lead') {
+              _chatsBlocs[endPointInTab]!.add(ClearChats());
+              _pagingControllers[endPointInTab]!.itemList = null;
+              _pagingControllers[endPointInTab]!.refresh();
+              _chatsBlocs[endPointInTab]!.add(FetchChats(
+                endPoint: endPointInTab,
+                salesFunnelId: _selectedFunnel?.id,
+              ));
+            }
+          }
+        });
       }
       _fetchTutorialProgress();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initTutorialTargets();
-    });
 
-    // Инициализируем слушатели для каждого PagingController
     _pagingControllers.forEach((endPoint, controller) {
       controller.addPageRequestListener((pageKey) {
-        //print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+        print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
         if (pageKey == 0) {
           controller.refresh();
         }
@@ -172,7 +214,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           !isTutorialShown &&
           !_isTutorialShown &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
       //print('Error fetching tutorial progress: $e');
@@ -194,10 +236,124 @@ class _ChatsScreenState extends State<ChatsScreen>
             !isTutorialShown &&
             !_isTutorialShown &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
+  }
+  // Новый метод для построения заголовка с выбором воронки
+  Widget _buildTitleWidget(BuildContext context) {
+    print('ChatsScreen: Entering _buildTitleWidget');
+    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+      builder: (context, state) {
+        print('ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
+        String title = AppLocalizations.of(context)!.translate('appbar_chats');
+        SalesFunnel? selectedFunnel;
+        if (state is SalesFunnelLoading) {
+          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
+          title = AppLocalizations.of(context)!.translate('appbar_chats');
+        } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
+          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
+          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+          _selectedFunnel = selectedFunnel;
+          print('ChatsScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
+          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_chats');
+          print('ChatsScreen: _buildTitleWidget - Title set to: $title');
+        } else if (state is SalesFunnelError) {
+          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
+          title = 'Ошибка загрузки';
+        }
+        print('ChatsScreen: _buildTitleWidget - Rendering title: $title');
+        return Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (state is SalesFunnelLoaded && state.funnels.length > 1 && endPointInTab == 'lead')
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: PopupMenuButton<SalesFunnel>(
+                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  color: Colors.white,
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.2),
+                  offset: Offset(0, 40),
+                  onSelected: (SalesFunnel funnel) async {
+                    print('ChatsScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
+                    try {
+                      await apiService.saveSelectedChatSalesFunnel(funnel.id.toString());
+                      print('ChatsScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
+                      setState(() {
+                        _selectedFunnel = funnel;
+                        _isSearching = false;
+                        searchController.clear();
+                        searchQuery = '';
+                        print('ChatsScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
+                      });
+                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                      _chatsBlocs[endPointInTab]!.add(ClearChats());
+                      _pagingControllers[endPointInTab]!.itemList = null;
+                      _pagingControllers[endPointInTab]!.refresh();
+                      _chatsBlocs[endPointInTab]!.add(FetchChats(
+                        endPoint: endPointInTab,
+                        salesFunnelId: funnel.id,
+                      ));
+                    } catch (e) {
+                      print('ChatsScreen: Error switching funnel: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Ошибка при смене воронки',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    print('ChatsScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
+                    return state.funnels
+                        .map((funnel) => PopupMenuItem<SalesFunnel>(
+                              value: funnel,
+                              child: Text(
+                                funnel.name,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ))
+                        .toList();
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   void _initTutorialTargets() {
@@ -291,28 +447,29 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   Timer? _debounce;
 
-  void _onSearch(String query) {
+ void _onSearch(String query) {
     setState(() {
       searchQuery = query;
       _isSearching = query.isNotEmpty;
     });
 
     final endPoint = endPointInTab;
-
     final chatsBloc = _chatsBlocs[endPoint]!;
     chatsBloc.add(ClearChats());
 
     if (_debounce?.isActive ?? false) _debounce?.cancel();
 
     _debounce = Timer(const Duration(milliseconds: 600), () {
-      chatsBloc.add(FetchChats(endPoint: endPoint, query: query));
+      chatsBloc.add(FetchChats(
+        endPoint: endPoint,
+        query: query,
+        salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
+      ));
     });
   }
-
-  Future<void> updateFromSocket() async {
+ Future<void> updateFromSocket() async {
     _chatsBlocs[endPointInTab]!.add(UpdateChatsFromSocket());
   }
-
   Future<void> setUpServices() async {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
@@ -416,96 +573,119 @@ await socketClient.connect();
       );
     }
     return Unfocuser(
-      child: Scaffold(
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          elevation: 1,
-          title: CustomAppBar(
-            title: isClickAvatarIcon
-                ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_chats'),
-            onClickProfileAvatar: () {
-              setState(() {
-                isClickAvatarIcon = !isClickAvatarIcon;
-                if (!isClickAvatarIcon) {
-                  _chatsBlocs[endPointInTab]!.add(FetchChats(endPoint: endPointInTab));
-                }
-              });
-            },
-            textEditingController: TextEditingController(),
-            focusNode: FocusNode(),
-            showFilterIcon: false,
-            showFilterTaskIcon: false,
-            showMyTaskIcon: false,
-            showMenuIcon: false,
-            showCallCenter: true,
-            onChangedSearchInput: (String value) {
-              setState(() {
-                _isSearching = value.isNotEmpty;
-              });
-              _onSearch(value);
-            },
-            clearButtonClick: (isSearching) {
-              if (!isSearching) {
-                searchController.clear();
-                if (!isClickAvatarIcon) {
-                  if (_debounce?.isActive ?? false) _debounce?.cancel();
-                  _debounce = Timer(const Duration(seconds: 1), () {
-                    final chatsBloc = _chatsBlocs[endPointInTab]!;
-                    chatsBloc.add(ClearChats());
-                    chatsBloc.add(FetchChats(endPoint: endPointInTab));
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _chatsBlocs['lead']!),
+          BlocProvider.value(value: _chatsBlocs['task']!),
+          BlocProvider.value(value: _chatsBlocs['corporate']!),
+          BlocProvider.value(value: context.read<SalesFunnelBloc>()), // Добавляем SalesFunnelBloc
+        ],
+        child: Scaffold(
+          appBar: AppBar(
+            forceMaterialTransparency: true,
+            elevation: 1,
+            title: CustomAppBar(
+              title: '',
+              titleWidget: isClickAvatarIcon
+                  ? Text(
+                      localizations!.translate('appbar_settings'),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                    )
+                  : _buildTitleWidget(context), // Используем новый виджет заголовка
+              onClickProfileAvatar: () {
+                setState(() {
+                  isClickAvatarIcon = !isClickAvatarIcon;
+                  if (!isClickAvatarIcon) {
+                    _chatsBlocs[endPointInTab]!.add(FetchChats(
+                      endPoint: endPointInTab,
+                      salesFunnelId: _selectedFunnel?.id,
+                    ));
+                  }
+                });
+              },
+              textEditingController: TextEditingController(),
+              focusNode: FocusNode(),
+              showFilterIcon: false,
+              showFilterTaskIcon: false,
+              showMyTaskIcon: false,
+              showMenuIcon: false,
+              showCallCenter: true,
+              onChangedSearchInput: (String value) {
+                setState(() {
+                  _isSearching = value.isNotEmpty;
+                });
+                _onSearch(value);
+              },
+              clearButtonClick: (isSearching) {
+                if (!isSearching) {
+                  searchController.clear();
+                  if (!isClickAvatarIcon) {
+                    if (_debounce?.isActive ?? false) _debounce?.cancel();
+                    _debounce = Timer(const Duration(seconds: 1), () {
+                      final chatsBloc = _chatsBlocs[endPointInTab]!;
+                      chatsBloc.add(ClearChats());
+                      chatsBloc.add(FetchChats(
+                        endPoint: endPointInTab,
+                        salesFunnelId: _selectedFunnel?.id,
+                      ));
+                    });
+                  }
+                  setState(() {
+                    _isSearching = false;
                   });
                 }
-                setState(() {
-                  _isSearching = false;
-                });
-              }
-            },
-            clearButtonClickFiltr: (bool) {},
+              },
+              clearButtonClickFiltr: (bool) {},
+            ),
+            backgroundColor: Colors.white,
           ),
           backgroundColor: Colors.white,
-        ),
-        backgroundColor: Colors.white,
-        body: isClickAvatarIcon
-            ? ProfileScreen()
-            : _isPermissionsChecked
-                ? Column(
-                    children: [
-                      SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: List.generate(_tabTitles.length, (index) {
-                            if ((index == 0 && !_showLeadChat) ||
-                                (index == 2 && !_showCorporateChat)) {
-                              return Container();
-                            }
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: _buildTabButton(index),
-                            );
-                          }),
+          body: isClickAvatarIcon
+              ? ProfileScreen()
+              : _isPermissionsChecked
+                  ? Column(
+                      children: [
+                        SizedBox(height: 12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: List.generate(_tabTitles.length, (index) {
+                              if ((index == 0 && !_showLeadChat) ||
+                                  (index == 2 && !_showCorporateChat)) {
+                                return Container();
+                              }
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                child: _buildTabButton(index),
+                              );
+                            }),
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 12),
-                      Expanded(child: _buildTabBarView()),
-                    ],
-                  )
-                : Center(child: CircularProgressIndicator()),
-        floatingActionButton: (selectTabIndex == 2)
-            ? FloatingActionButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AddClientDialog(),
-                  );
-                },
-                backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
-              )
-            : null,
+                        SizedBox(height: 12),
+                        Expanded(child: _buildTabBarView()),
+                      ],
+                    )
+                  : Center(child: CircularProgressIndicator()),
+          floatingActionButton: (selectTabIndex == 2)
+              ? FloatingActionButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AddClientDialog(),
+                    );
+                  },
+                  backgroundColor: Color(0xff1E2E52),
+                  child: Image.asset('assets/icons/tabBar/add.png',
+                      width: 24, height: 24),
+                )
+              : null,
+        ),
       ),
     );
   }
@@ -524,7 +704,7 @@ await socketClient.connect();
 
     return GestureDetector(
       onTap: () {
-        //print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
+        print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
         setState(() {
           selectTabIndex = index;
         });
@@ -537,18 +717,14 @@ await socketClient.connect();
                 : 'corporate';
         endPointInTab = newEndPoint;
 
-        // Очищаем данные перед загрузкой новых
-        //print('ChatsScreen._buildTabButton: Triggering ClearChats for endpoint $endPointInTab');
         final chatsBloc = _chatsBlocs[newEndPoint]!;
         chatsBloc.add(ClearChats());
-
-        // Очищаем PagingController для новой вкладки
         _pagingControllers[newEndPoint]!.itemList = null;
         _pagingControllers[newEndPoint]!.refresh();
-
-        // Загружаем чаты для новой вкладки
-        //print('ChatsScreen._buildTabButton: Fetching chats for endpoint $endPointInTab');
-        chatsBloc.add(FetchChats(endPoint: newEndPoint));
+        chatsBloc.add(FetchChats(
+          endPoint: newEndPoint,
+          salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
+        ));
       },
       child: Container(
         key: tabKey,
@@ -566,7 +742,6 @@ await socketClient.connect();
       ),
     );
   }
-
   Widget _buildTabBarView() {
     return TabBarView(
       controller: _tabController,

@@ -193,9 +193,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               // Проверка на наличие данных
               if (callStatistics.result.isEmpty &&
                   !callAnalytics.result.isNotEmpty) {
-                return const Center(
+                return  Center(
                   child: Text(
-                    'Нет данных для отображения',
+                      AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -227,9 +228,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             } else {
               // На случай, если snapshot.data == null
-              return const Center(
+              return  Center(
                 child: Text(
-                  'Нет данных для отображения',
+                     AppLocalizations.of(context)!
+                              .translate('no_data_to_display'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
