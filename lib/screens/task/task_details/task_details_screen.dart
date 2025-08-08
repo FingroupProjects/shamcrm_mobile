@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -174,10 +173,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final GlobalKey keyTaskForReview = GlobalKey();
   final GlobalKey keyTaskHistory = GlobalKey();
 
-  List<TargetFocus> targets = [];
-  bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false;
-  Map<String, dynamic>? tutorialProgress;
+  // List<TargetFocus> targets = [];
+  // bool _isTutorialShown = false;
+  // bool _isTutorialInProgress = false;
+  // Map<String, dynamic>? tutorialProgress;
 
   @override
   void initState() {
@@ -187,7 +186,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     context
         .read<TaskByIdBloc>()
         .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
-    _fetchTutorialProgress();
+    // _fetchTutorialProgress();
   }
 
   Future<void> _checkPermissions() async {
@@ -209,10 +208,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _canCreateTask = results[2] as bool;
         _hasTaskCreateForMySelfPermission = results[3] as bool;
         _currentUserId = userId;
-        _isAuthor = userId != null && currentTask != null && currentTask!.author?.id != null && userId == currentTask!.author!.id;
+        // _isAuthor обновляется в _updateDetails, чтобы избежать зависимости от null currentTask
       });
-
-      print('TaskDetailsScreen: Permissions - task.update: $_canEditTask, task.delete: $_canDeleteTask, task.create: $_canCreateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId, isAuthor: $_isAuthor');
     } catch (e) {
       print('TaskDetailsScreen: Error checking permissions or userID: $e');
       setState(() {
@@ -226,172 +223,171 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  void _initTutorialTargets() {
-    targets.addAll([
-      createTarget(
-        identify: "TaskEdit",
-        keyTarget: keyTaskEdit,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
-        createTarget(
-          identify: "TaskDelete",
-          keyTarget: keyTaskDelete,
-          title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
-          align: ContentAlign.bottom,
-          context: context,
-          contentPosition: ContentPosition.above,
-        ),
-      createTarget(
-        identify: "TaskNavigateChat",
-        keyTarget: keyTaskNavigateChat,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      createTarget(
-        identify: "TaskForReview",
-        keyTarget: keyTaskForReview,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      createTarget(
-          identify: "TaskHistory",
-          keyTarget: keyTaskHistory,
-          title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
-          align: ContentAlign.top,
-          context: context,
-          contentPosition: ContentPosition.above,
-          contentPadding: EdgeInsets.only(bottom: 70)),
-    ]);
-  }
+  // void _initTutorialTargets() {
+  //   targets.addAll([
+  //     createTarget(
+  //       identify: "TaskEdit",
+  //       keyTarget: keyTaskEdit,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //       contentPosition: ContentPosition.above,
+  //     ),
+  //     if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+  //       createTarget(
+  //         identify: "TaskDelete",
+  //         keyTarget: keyTaskDelete,
+  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
+  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
+  //         align: ContentAlign.bottom,
+  //         context: context,
+  //         contentPosition: ContentPosition.above,
+  //       ),
+  //     createTarget(
+  //       identify: "TaskNavigateChat",
+  //       keyTarget: keyTaskNavigateChat,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //     ),
+  //     createTarget(
+  //       identify: "TaskForReview",
+  //       keyTarget: keyTaskForReview,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //     ),
+  //     createTarget(
+  //         identify: "TaskHistory",
+  //         keyTarget: keyTaskHistory,
+  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
+  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
+  //         align: ContentAlign.top,
+  //         context: context,
+  //         contentPosition: ContentPosition.above,
+  //         contentPadding: EdgeInsets.only(bottom: 70)),
+  //   ]);
+  // }
 
-  void showTutorial() async {
-    if (_isTutorialInProgress) {
-      return;
-    }
+  // void showTutorial() async {
+  //   if (_isTutorialInProgress) {
+  //     return;
+  //   }
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
 
-    if (tutorialProgress == null ||
-        tutorialProgress!['tasks']?['view'] == true ||
-        isTutorialShown ||
-        _isTutorialShown) {
-      return;
-    }
+  //   if (tutorialProgress == null ||
+  //       tutorialProgress!['tasks']?['view'] == true ||
+  //       isTutorialShown ||
+  //       _isTutorialShown) {
+  //     return;
+  //   }
 
-    setState(() {
-      _isTutorialInProgress = true;
-    });
-    await Future.delayed(const Duration(milliseconds: 500));
+  //   setState(() {
+  //     _isTutorialInProgress = true;
+  //   });
+  //   await Future.delayed(const Duration(milliseconds: 500));
 
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        prefs.setBool('isTutorialShownTasksDet', true);
-        _apiService.markPageCompleted("tasks", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
-        return true;
-      },
-      onFinish: () {
-        prefs.setBool('isTutorialShownTasksDet', true);
-        _apiService.markPageCompleted("tasks", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
-      },
-    ).show(context: context);
-  }
+  //   TutorialCoachMark(
+  //     targets: targets,
+  //     textSkip: AppLocalizations.of(context)!.translate('skip'),
+  //     textStyleSkip: TextStyle(
+  //       color: Colors.white,
+  //       fontFamily: 'Gilroy',
+  //       fontSize: 20,
+  //       fontWeight: FontWeight.w600,
+  //       shadows: [
+  //         Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+  //         Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+  //         Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+  //         Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+  //       ],
+  //     ),
+  //     colorShadow: Color(0xff1E2E52),
+  //     onSkip: () {
+  //       prefs.setBool('isTutorialShownTasksDet', true);
+  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
+  //       setState(() {
+  //         _isTutorialShown = true;
+  //         _isTutorialInProgress = false;
+  //       });
+  //       return true;
+  //     },
+  //     onFinish: () {
+  //       prefs.setBool('isTutorialShownTasksDet', true);
+  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
+  //       setState(() {
+  //         _isTutorialShown = true;
+  //         _isTutorialInProgress = false;
+  //       });
+  //     },
+  //   ).show(context: context);
+  // }
 
-  Future<void> _fetchTutorialProgress() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final progress = await _apiService.getTutorialProgress();
-      setState(() {
-        tutorialProgress = progress['result'];
-      });
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+  // Future<void> _fetchTutorialProgress() async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final progress = await _apiService.getTutorialProgress();
+  //     setState(() {
+  //       tutorialProgress = progress['result'];
+  //     });
+  //     await prefs.setString('tutorial_progress', json.encode(progress['result']));
 
-      bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-      setState(() {
-        _isTutorialShown = isTutorialShown;
-      });
+  //     bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+  //     setState(() {
+  //       _isTutorialShown = isTutorialShown;
+  //     });
 
-      _initTutorialTargets();
+  //     _initTutorialTargets();
 
-      if (tutorialProgress != null &&
-          tutorialProgress!['tasks']?['view'] == false &&
-          !isTutorialShown &&
-          !_isTutorialInProgress &&
-          targets.isNotEmpty &&
-          mounted) {
-        //showTutorial();
-      }
-    } catch (e) {
-      final prefs = await SharedPreferences.getInstance();
-      final savedProgress = prefs.getString('tutorial_progress');
-      if (savedProgress != null) {
-        setState(() {
-          tutorialProgress = json.decode(savedProgress);
-        });
-        bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-        setState(() {
-          _isTutorialShown = isTutorialShown;
-        });
+  //     if (tutorialProgress != null &&
+  //         tutorialProgress!['tasks']?['view'] == false &&
+  //         !isTutorialShown &&
+  //         !_isTutorialInProgress &&
+  //         targets.isNotEmpty &&
+  //         mounted) {
+  //       //showTutorial();
+  //     }
+  //   } catch (e) {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final savedProgress = prefs.getString('tutorial_progress');
+  //     if (savedProgress != null) {
+  //       setState(() {
+  //         tutorialProgress = json.decode(savedProgress);
+  //       });
+  //       bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+  //       setState(() {
+  //         _isTutorialShown = isTutorialShown;
+  //       });
 
-        _initTutorialTargets();
+  //       _initTutorialTargets();
 
-        if (tutorialProgress != null &&
-            tutorialProgress!['tasks']?['view'] == false &&
-            !isTutorialShown &&
-            !_isTutorialInProgress &&
-            targets.isNotEmpty &&
-            mounted) {
-          //showTutorial();
-        }
-      }
-    }
-  }
+  //       if (tutorialProgress != null &&
+  //           tutorialProgress!['tasks']?['view'] == false &&
+  //           !isTutorialShown &&
+  //           !_isTutorialInProgress &&
+  //           targets.isNotEmpty &&
+  //           mounted) {
+  //         //showTutorial();
+  //       }
+  //     }
+  //   }
+  // }
 
   void _updateDetails(TaskById? task) {
     if (task == null) {
       currentTask = null;
       details.clear();
+      _isAuthor = false; // Обновляем _isAuthor
       return;
     }
 
-    setState(() {
-      currentTask = task;
-      _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
-    });
+    currentTask = task;
+    _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
 
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
@@ -467,14 +463,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    if (!_isTutorialShown) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        //showTutorial();
-        setState(() {
-          _isTutorialShown = true;
-        });
-      });
-    }
+    // Закомментирован код туториала
+    // if (!_isTutorialShown) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     //showTutorial();
+    //     setState(() {
+    //       _isTutorialShown = true;
+    //     });
+    //   });
+    // }
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -1071,14 +1068,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     return BlocListener<TaskByIdBloc, TaskByIdState>(
       listener: (context, state) {
-        if (state is TaskByIdLoaded) {
-          // Обновляем детали задачи и _isAuthor
-          _updateDetails(state.task);
-        } else if (state is TaskByIdError) {
+        if (state is TaskByIdError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                state.message,
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -1101,6 +1095,89 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
         builder: (context, state) {
+          // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
+          if (state is TaskByIdLoaded && state.task != null) {
+            // Обновляем данные без setState
+            currentTask = state.task;
+            _isAuthor = _currentUserId != null && state.task!.author?.id != null && _currentUserId == state.task!.author!.id;
+
+            final Map<int, String> priorityLevels = {
+              1: AppLocalizations.of(context)!.translate('normal'),
+              2: AppLocalizations.of(context)!.translate('normal'),
+              3: AppLocalizations.of(context)!.translate('urgent'),
+            };
+
+            details = [
+              {
+                'label': AppLocalizations.of(context)!.translate('task_name'),
+                'value': state.task!.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+                'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('description_details'),
+                'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('assignee'),
+                'value': state.task!.user != null && state.task!.user!.isNotEmpty
+                    ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+                    : '',
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('project_details'),
+                'value': state.task!.project?.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('dead_line'),
+                'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
+                    ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
+                    : ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('status_details'),
+                'value': state.task!.taskStatus?.taskStatus?.name ?? '',
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('author_details'),
+                'value': state.task!.author?.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+                'value': formatDate(state.task!.createdAt)
+              },
+              if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
+                {
+                  'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+                  'value': state.task!.deal!.name!
+                },
+              if (state.task!.files != null && state.task!.files!.isNotEmpty)
+                {
+                  'label': AppLocalizations.of(context)!.translate('files_details'),
+                  'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+                },
+            ];
+
+            for (var field in state.task!.taskCustomFields) {
+              details.add({'label': '${field.key}:', 'value': field.value});
+            }
+
+            if (state.task!.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
+              for (var dirValue in state.task!.directoryValues!) {
+                details.add({
+                  'label': '${dirValue.entry.directory.name}:',
+                  'value': dirValue.entry.values['value'] ?? '',
+                });
+              }
+            }
+          } else {
+            currentTask = null;
+            details.clear();
+            _isAuthor = false;
+          }
+
           if (state is TaskByIdLoading) {
             return Scaffold(
               body: Center(
@@ -1118,7 +1195,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               );
             }
             TaskById task = state.task!;
-            _updateDetails(task);
 
             return Scaffold(
               appBar: _buildAppBar(context, '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
@@ -1218,9 +1294,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                               ),
-                                              child: _isLoading 
-                                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                                : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
+                                              child: _isLoading
+                                                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                                  : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
                                             ),
                                           ),
                                         ),

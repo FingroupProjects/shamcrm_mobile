@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
+import 'package:crm_task_manager/custom_widget/gps_screen_for_admin.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
@@ -50,7 +51,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showCalendar;
   final bool showCalendarDashboard;
   final bool showCallCenter; // Новый параметр
-
+  final bool showGps; // Новый параметр
   final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
 
 final bool showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
@@ -255,6 +256,8 @@ this.showDashboardIcon = false,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
     this.titleWidget, // Добавляем в конструктор
     this.onFiltersReset,
+        this.showGps = true, // Добавляем по умолчанию true
+
   });
 
   @override
@@ -283,6 +286,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCallCenter = false;
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
+    bool _canReadGps = false; // Новая переменная для GPS
+
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
     bool _areFiltersActive = false; // Добавляем эту переменную
@@ -495,11 +500,14 @@ void resetFilterIconState() {
     // final canReadCalendar = await _apiService.hasPermission('notice.read');
     final canReadCalendar = await _apiService.hasPermission('calendar');
     final canReadCallCenter = await _apiService.hasPermission('call-center'); // Исправлено
+    final canReadGps = await _apiService.hasPermission('call-center'); // Проверка прав для GPS
     setState(() {
       _canReadNotice = canReadNotice;
       _canReadCalendar = canReadCalendar;
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
+            _canReadGps = canReadGps;
+
     });
   }
 
@@ -1187,6 +1195,14 @@ void resetFilterIconState() {
                             ),
                           );
                           break;
+                             case 'gps':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GpsScreenForAdmin(),
+                      ),
+                    );
+                    break;
                       }
                     },
                     itemBuilder: (BuildContext context) =>
@@ -1325,6 +1341,22 @@ if (widget.showCallCenter && _canReadCallCenter)
       ],
     ),
   ),
+  if (widget.showGps && _canReadGps) // Новый пункт для GPS
+              PopupMenuItem<String>(
+                value: 'gps',
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
+                      width: 24,
+                      height: 24,
+                      color: _iconColor,
+                    ),
+                    SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.translate('gps')),
+                  ],
+                ),
+              ),
                         ]))
         ]));
   }

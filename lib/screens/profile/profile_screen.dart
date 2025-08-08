@@ -436,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: Color.fromARGB(255, 6, 44, 231),
-                      decoration: TextDecoration.underline,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),

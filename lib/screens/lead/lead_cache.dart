@@ -80,6 +80,28 @@ class LeadCache {
 
   }
 
+static Future<void> updateLeadCount(int statusId, int count) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+    List<Map<String, dynamic>> statuses = [];
+
+    if (cachedStatuses != null) {
+      statuses = (json.decode(cachedStatuses) as List<dynamic>)
+          .map((status) => Map<String, dynamic>.from(status))
+          .toList();
+    }
+
+    final index = statuses.indexWhere((status) => status['id'] == statusId);
+    if (index != -1) {
+      statuses[index]['leads_count'] = count;
+    } else {
+      statuses.add({'id': statusId, 'leads_count': count});
+    }
+
+    await prefs.setString(_cachedLeadStatusesKey, json.encode(statuses));
+    print('LeadCache: Updated leads_count for statusId: $statusId to $count');
+  }
+
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cachedLeadStatusesKey);
