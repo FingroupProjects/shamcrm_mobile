@@ -1341,22 +1341,22 @@ if (widget.showCallCenter && _canReadCallCenter)
       ],
     ),
   ),
-  if (widget.showGps && _canReadGps) // Новый пункт для GPS
-              PopupMenuItem<String>(
-                value: 'gps',
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
-                      width: 24,
-                      height: 24,
-                      color: _iconColor,
-                    ),
-                    SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.translate('gps')),
-                  ],
-                ),
-              ),
+  // if (widget.showGps && _canReadGps) // Новый пункт для GPS
+  //             PopupMenuItem<String>(
+  //               value: 'gps',
+  //               child: Row(
+  //                 children: [
+  //                   Image.asset(
+  //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
+  //                     width: 24,
+  //                     height: 24,
+  //                     color: _iconColor,
+  //                   ),
+  //                   SizedBox(width: 8),
+  //                   Text(AppLocalizations.of(context)!.translate('gps')),
+  //                 ],
+  //               ),
+  //             ),
                         ]))
         ]));
   }

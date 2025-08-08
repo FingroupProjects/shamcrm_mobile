@@ -1426,7 +1426,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles: currentLead!.files ?? [],
+        existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
       ));
 
       await completer.future;

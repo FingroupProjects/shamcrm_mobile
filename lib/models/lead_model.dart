@@ -185,22 +185,22 @@ class LeadStatus {
     required this.isFailure,
   });
 
-  factory LeadStatus.fromJson(Map<String, dynamic> json) {
-    return LeadStatus(
-      id: json['id'],
-      title: json['title'] ?? json['name'] ?? '',
-      color: json['color'],
-      lead_status_id: json['lead_status_id'] ?? null,
-      leadsCount: json['leads_count'] ?? 0,
-      isSuccess: json['is_success'] == true || json['is_success'] == 1,
-      position: json['position'] ?? 0,
-      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
-      leads: (json['leads'] as List<dynamic>?)
-              ?.map((lead) => Lead.fromJson(lead, json['id']))
-              .toList() ??
-          [],
-    );
-  }
+factory LeadStatus.fromJson(Map<String, dynamic> json) {
+  return LeadStatus(
+    id: json['id'],
+    title: json['title'] ?? json['name'] ?? '',
+    color: json['color'],
+    lead_status_id: json['lead_status_id'] ?? null,
+    leadsCount: json['leads_count'] ?? 0, // Убедимся, что leads_count читается
+    isSuccess: json['is_success'] == true || json['is_success'] == 1,
+    position: json['position'] ?? 0,
+    isFailure: json['is_failure'] == true || json['is_failure'] == 1,
+    leads: (json['leads'] as List<dynamic>?)
+            ?.map((lead) => Lead.fromJson(lead, json['id']))
+            .toList() ??
+        [],
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {

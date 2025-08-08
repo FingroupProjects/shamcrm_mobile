@@ -895,59 +895,59 @@ if (selectedSalesFunnel != null && selectedSalesFunnel != widget.salesFunnelId) 
     });
   },
 ),
-                        if (_showDuplicateOptions) ...[
-  const SizedBox(height: 8),
-  Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('duplicate_options'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      RadioListTile<DuplicateOption>(
-        title: Text(
-          AppLocalizations.of(context)!.translate('duplicate'),
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        value: DuplicateOption.duplicate,
-        groupValue: _duplicateOption,
-        onChanged: (DuplicateOption? value) {
-          setState(() {
-            _duplicateOption = value;
-          });
-        },
-        activeColor: Color(0xff4759FF),
-      ),
-      RadioListTile<DuplicateOption>(
-        title: Text(
-          AppLocalizations.of(context)!.translate('transfer_and_delete'),
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        value: DuplicateOption.transferAndDelete,
-        groupValue: _duplicateOption,
-        onChanged: (DuplicateOption? value) {
-          setState(() {
-            _duplicateOption = value;
-          });
-        },
-        activeColor: Color(0xff4759FF),
-      ),
-    ],
-  ),
-],
+//                         if (_showDuplicateOptions) ...[
+//   const SizedBox(height: 8),
+//   Column(
+//     crossAxisAlignment: CrossAxisAlignment.start,
+//     children: [
+//       Text(
+//         AppLocalizations.of(context)!.translate('duplicate_options'),
+//         style: TextStyle(
+//           fontSize: 16,
+//           fontWeight: FontWeight.w500,
+//           fontFamily: 'Gilroy',
+//           color: Color(0xff1E2E52),
+//         ),
+//       ),
+//       RadioListTile<DuplicateOption>(
+//         title: Text(
+//           AppLocalizations.of(context)!.translate('duplicate'),
+//           style: TextStyle(
+//             fontSize: 16,
+//             fontFamily: 'Gilroy',
+//             color: Color(0xff1E2E52),
+//           ),
+//         ),
+//         value: DuplicateOption.duplicate,
+//         groupValue: _duplicateOption,
+//         onChanged: (DuplicateOption? value) {
+//           setState(() {
+//             _duplicateOption = value;
+//           });
+//         },
+//         activeColor: Color(0xff4759FF),
+//       ),
+//       RadioListTile<DuplicateOption>(
+//         title: Text(
+//           AppLocalizations.of(context)!.translate('transfer_and_delete'),
+//           style: TextStyle(
+//             fontSize: 16,
+//             fontFamily: 'Gilroy',
+//             color: Color(0xff1E2E52),
+//           ),
+//         ),
+//         value: DuplicateOption.transferAndDelete,
+//         groupValue: _duplicateOption,
+//         onChanged: (DuplicateOption? value) {
+//           setState(() {
+//             _duplicateOption = value;
+//           });
+//         },
+//         activeColor: Color(0xff4759FF),
+//       ),
+//     ],
+//   ),
+// ],
                         const SizedBox(height: 8),
                         CustomPhoneNumberInput(
                           controller: whatsAppController,
