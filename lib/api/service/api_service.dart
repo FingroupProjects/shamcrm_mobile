@@ -4569,7 +4569,7 @@ Future<PaginationDTO<Chats>> getAllChats(
 ]) async {
   final token = await getToken();
   // Формируем базовый путь
-  String path = '/chat/getMyChats/$endPoint?page=$page';
+  String path = 'v2/chat/getMyChats/$endPoint?page=$page';
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   path = await _appendQueryParams(path);
   if (kDebugMode) {
