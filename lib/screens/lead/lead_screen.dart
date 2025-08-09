@@ -1186,72 +1186,80 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     });
   }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+ Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
 
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        int leadCount = 0;
+  return BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      int leadCount = 0;
 
-        if (state is LeadLoaded) {
-          final statusId = _tabTitles[index]['id'];
-          final leadStatus = state.leadStatuses.firstWhere(
-            (status) => status.id == statusId,
-            orElse: () => LeadStatus(
-                id: 0, title: '', leadsCount: 0, isSuccess: false, position: 1, isFailure: false),
-          );
-          leadCount = leadStatus.leadsCount ?? 0;
-        }
-
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            _showStatusOptions(context, index);
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      leadCount.toString(),
-                      style: TextStyle(
-                        color: isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      if (state is LeadLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final leadStatus = state.leadStatuses.firstWhere(
+          (status) => status.id == statusId,
+          orElse: () => LeadStatus(
+            id: 0,
+            title: '',
+            leadsCount: 0,
+            isSuccess: false,
+            position: 1,
+            isFailure: false,
           ),
         );
-      },
-    );
-  }
+        leadCount = leadStatus.leadsCount;
+      } else if (state is LeadDataLoaded) {
+        leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          _showStatusOptions(context, index);
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
   void _deleteLeadStatus(int index) {
     _showDeleteDialog(index);
@@ -1303,181 +1311,148 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTabBarView() {
-    return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) async {
-        if (state is LeadLoaded) {
-          await LeadCache.cacheLeadStatuses(
-              state.leadStatuses.map((status) => {'id': status.id, 'title': status.title}).toList());
-          if (mounted) {
-            setState(() {
-              _tabTitles = state.leadStatuses
-                  .where((status) => _canReadLeadStatus)
-                  .map((status) => {'id': status.id, 'title': status.title})
-                  .toList();
-              _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-              _isSwitchingFunnel = false;
-              print('LeadScreen: _buildTabBarView - _isSwitchingFunnel set to false, statuses loaded');
-
-              if (_tabTitles.isNotEmpty) {
-                _tabController = TabController(length: _tabTitles.length, vsync: this);
-                _tabController.addListener(() {
-                  if (!_tabController.indexIsChanging) {
-                    setState(() {
-                      _currentTabIndex = _tabController.index;
-                    });
-                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                    if (tabScrollController.hasClients) {
-                      _scrollToActiveTab();
-                    }
-                    context.read<LeadBloc>().add(FetchLeads(
-                      currentStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: true,
-                    ));
-                  }
-                });
-                int initialIndex = state.leadStatuses
-                    .indexWhere((status) => status.id == widget.initialStatusId);
-                if (initialIndex != -1) {
-                  _tabController.index = initialIndex;
-                  _currentTabIndex = initialIndex;
-                } else {
-                  _tabController.index = _currentTabIndex;
-                }
-
-                if (tabScrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
-
-                if (navigateToEnd) {
-                  navigateToEnd = false;
-                  _tabController.animateTo(_tabTitles.length - 1);
-                }
-
-                if (navigateAfterDelete) {
-                  navigateAfterDelete = false;
-                  if (_deletedIndex != null) {
-                    if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                      _tabController.animateTo(1);
-                    } else if (_deletedIndex == _tabTitles.length) {
-                      _tabController.animateTo(_tabTitles.length - 1);
-                    } else {
-                      _tabController.animateTo(_deletedIndex! - 1);
-                    }
-                  }
-                }
-              }
-            });
-          }
-        } else if (state is LeadError) {
+ Widget _buildTabBarView() {
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) async {
+      if (state is LeadLoaded) {
+        await LeadCache.cacheLeadStatuses(state.leadStatuses);
+        if (mounted) {
           setState(() {
+            _tabTitles = state.leadStatuses
+                .where((status) => _canReadLeadStatus)
+                .map((status) => {
+                      'id': status.id,
+                      'title': status.title,
+                      'leads_count': status.leadsCount,
+                    })
+                .toList();
+            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
             _isSwitchingFunnel = false;
+
+            if (_tabTitles.isNotEmpty) {
+              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController.addListener(() {
+                if (!_tabController.indexIsChanging) {
+                  setState(() {
+                    _currentTabIndex = _tabController.index;
+                  });
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  if (tabScrollController.hasClients) {
+                    _scrollToActiveTab();
+                  }
+                  context.read<LeadBloc>().add(FetchLeads(
+                    currentStatusId,
+                    salesFunnelId: _selectedFunnel?.id,
+                    ignoreCache: false, // Используем кэш
+                  ));
+                }
+              });
+              int initialIndex = state.leadStatuses
+                  .indexWhere((status) => status.id == widget.initialStatusId);
+              if (initialIndex != -1) {
+                _tabController.index = initialIndex;
+                _currentTabIndex = initialIndex;
+              } else {
+                _tabController.index = _currentTabIndex;
+              }
+
+              if (tabScrollController.hasClients) {
+                _scrollToActiveTab();
+              }
+
+              if (navigateToEnd) {
+                navigateToEnd = false;
+                _tabController.animateTo(_tabTitles.length - 1);
+              }
+
+              if (navigateAfterDelete) {
+                navigateAfterDelete = false;
+                if (_deletedIndex != null) {
+                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                    _tabController.animateTo(1);
+                  } else if (_deletedIndex == _tabTitles.length) {
+                    _tabController.animateTo(_tabTitles.length - 1);
+                  } else {
+                    _tabController.animateTo(_deletedIndex! - 1);
+                  }
+                }
+              }
+            }
           });
-          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
-          } else if (state.message.contains(
-              AppLocalizations.of(context)!.translate('no_internet_connection'))) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
         }
-      },
-      child: Stack(
-        children: [
-          BlocBuilder<LeadBloc, LeadState>(
-            builder: (context, state) {
-              if (_tabTitles.isEmpty && !_isSwitchingFunnel) {
-                return RefreshIndicator(
-                  onRefresh: () => _onRefresh(0),
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  child: const Center(
-                    child: SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      child: Text(''),
-                    ),
+      } else if (state is LeadError) {
+        // Обработка ошибок
+      }
+    },
+    child: Stack(
+      children: [
+        BlocBuilder<LeadBloc, LeadState>(
+          builder: (context, state) {
+            if (_tabTitles.isEmpty && !_isSwitchingFunnel) {
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(0),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: const Center(
+                  child: SingleChildScrollView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    child: Text(''),
                   ),
-                );
-              }
-              if (state is LeadDataLoaded) {
-                return RefreshIndicator(
-                  onRefresh: () => _onRefresh(_tabTitles[_currentTabIndex]['id']),
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  child: searchWidget(state.leads),
-                );
-              }
-              if (state is LeadLoading && !_isSwitchingFunnel) {
-                return const Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                );
-              }
-              return TabBarView(
-                controller: _tabController,
-                children: _tabTitles.map((status) {
-                  return RefreshIndicator(
-                    onRefresh: () => _onRefresh(status['id']),
-                    color: const Color(0xff1E2E52),
-                    backgroundColor: Colors.white,
-                    child: LeadColumn(
-                      isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-                      statusId: status['id'],
-                      title: status['title'],
-                      onStatusId: (newStatusId) {
-                        print('LeadScreen: onStatusId called with id: $newStatusId');
-                        final index =
-                            _tabTitles.indexWhere((status) => status['id'] == newStatusId);
-                        if (index != -1) {
-                          _tabController.animateTo(index);
-                        }
-                      },
-                    ),
-                  );
-                }).toList(),
+                ),
               );
-            },
-          ),
-          if (_isSwitchingFunnel)
-            const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
+            }
+            if (state is LeadDataLoaded) {
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(_tabTitles[_currentTabIndex]['id']),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: searchWidget(state.leads),
+              );
+            }
+            if (state is LeadLoading && !_isSwitchingFunnel) {
+              return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
+            }
+            return TabBarView(
+              controller: _tabController,
+              children: _tabTitles.map((status) {
+                return RefreshIndicator(
+                  onRefresh: () => _onRefresh(status['id']),
+                  color: const Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  child: LeadColumn(
+                    isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+                    statusId: status['id'],
+                    title: status['title'],
+                    onStatusId: (newStatusId) {
+                      print('LeadScreen: onStatusId called with id: $newStatusId');
+                      final index =
+                          _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                      if (index != -1) {
+                        _tabController.animateTo(index);
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        if (_isSwitchingFunnel)
+          const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
             ),
-        ],
-      ),
-    );
-  }
+          ),
+      ],
+    ),
+  );
+}
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;

@@ -10,19 +10,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LeadStatusEditpWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(LeadStatus) onSelectStatus;
+  final String? salesFunnelId; // Новый параметр
 
   LeadStatusEditpWidget({
     Key? key,
     required this.onSelectStatus,
     this.selectedStatus,
+    this.salesFunnelId,
   }) : super(key: key);
 
   @override
-  State<LeadStatusEditpWidget> createState() =>_LeadStatusEditpWidgetState();
+  State<LeadStatusEditpWidget> createState() => _LeadStatusEditpWidgetState();
 }
 
-class _LeadStatusEditpWidgetState
-    extends State<LeadStatusEditpWidget> {
+class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
   List<LeadStatus> statusList = [];
   LeadStatus? selectedStatusData;
 
@@ -36,7 +37,7 @@ class _LeadStatusEditpWidgetState
   @override
   void initState() {
     super.initState();
-    context.read<LeadBloc>().add(FetchLeadStatuses());
+    // Не вызываем FetchLeadStatuses здесь, так как это делается в SalesFunnelWidget
   }
 
   @override
@@ -44,52 +45,50 @@ class _LeadStatusEditpWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        BlocBuilder<LeadBloc, LeadState>(
-          builder: (context, state) {
-            if (state is LeadLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        BlocListener<LeadBloc, LeadState>(
+          listener: (context, state) {
             if (state is LeadError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: statusTextStyle.copyWith(color: Colors.white),
                   ),
-                );
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            } else if (state is LeadLoaded) {
+              setState(() {
+                statusList = state.leadStatuses;
+                // Сбрасываем текущий статус, если он не входит в новый список
+                if (widget.selectedStatus != null && statusList.isNotEmpty) {
+                  try {
+                    selectedStatusData = statusList.firstWhere(
+                      (status) => status.id.toString() == widget.selectedStatus,
+                    );
+                  } catch (e) {
+                    selectedStatusData = null; // Сбрасываем, если статус не найден
+                    widget.onSelectStatus(statusList.first); // Выбираем первый статус по умолчанию
+                  }
+                } else if (statusList.isNotEmpty) {
+                  selectedStatusData = statusList.first;
+                  widget.onSelectStatus(statusList.first);
+                }
               });
             }
-
-            if (state is LeadLoaded) {
-              statusList = state.leadStatuses;
-
-              if (statusList.length == 1 && selectedStatusData == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onSelectStatus(statusList[0]);
-                  setState(() {
-                    selectedStatusData = statusList[0];
-                  });
-                });
-              } else if (widget.selectedStatus != null &&
-                  statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                  );
-                } catch (e) {
-                  selectedStatusData = null;
-                }
+          },
+          child: BlocBuilder<LeadBloc, LeadState>(
+            builder: (context, state) {
+              if (state is LeadLoading) {
+                return const Center(child: CircularProgressIndicator());
               }
 
               return Column(
@@ -128,8 +127,7 @@ class _LeadStatusEditpWidgetState
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return Text(
                           item.title,
                           style: statusTextStyle,
@@ -160,9 +158,8 @@ class _LeadStatusEditpWidgetState
                   ),
                 ],
               );
-            }
-            return const SizedBox();
-          },
+            },
+          ),
         ),
       ],
     );

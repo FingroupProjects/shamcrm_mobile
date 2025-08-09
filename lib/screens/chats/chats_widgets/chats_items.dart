@@ -56,15 +56,15 @@ class ChatListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // Показываем иконку мессенджера только если НЕ "Лиды"
-                    if (!isLeadsSection) ...[
-                      Image.asset(
-                        chatItem.icon,
-                        width: 28,
-                        height: 28,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
+                    // // Показываем иконку мессенджера только если НЕ "Лиды"
+                    // if (!isLeadsSection) ...[
+                    //   Image.asset(
+                    //     chatItem.icon,
+                    //     width: 28,
+                    //     height: 28,
+                    //   ),
+                    //   const SizedBox(width: 4),
+                    // ],
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty

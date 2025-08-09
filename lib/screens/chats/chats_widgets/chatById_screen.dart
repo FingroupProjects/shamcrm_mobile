@@ -324,7 +324,7 @@ class UserProfileScreen extends StatelessWidget {
                                                     managerId: parsedUserId,
                                                     leadStatusId: profile.leadStatus?.id ?? 0,
                                                     localizations: localizations,
-                                                    existingFiles: [],
+                                                    existingFiles: [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
                                                   ));
 
                                                   await completer.future;

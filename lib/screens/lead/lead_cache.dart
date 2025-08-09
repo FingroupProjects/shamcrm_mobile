@@ -6,22 +6,22 @@ class LeadCache {
   static const String _cachedLeadStatusesKey = 'cachedLeadStatuses';
   static const String _cachedLeadsKey = 'cachedLeads';
 
-  static Future<void> cacheLeadStatuses(List<Map<String, dynamic>> leadStatuses) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedStatuses = json.encode(leadStatuses);
-    await prefs.setString(_cachedLeadStatusesKey, encodedStatuses);
-  }
+  // static Future<void> cacheLeadStatuses(List<Map<String, dynamic>> leadStatuses) async {
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final String encodedStatuses = json.encode(leadStatuses);
+  //   await prefs.setString(_cachedLeadStatusesKey, encodedStatuses);
+  // }
 
-  static Future<List<Map<String, dynamic>>> getLeadStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+  // static Future<List<Map<String, dynamic>>> getLeadStatuses() async {
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
     
-    if (cachedStatuses != null) {
-      final List<dynamic> decodedData = json.decode(cachedStatuses);
-      return decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
-    }
-    return [];
-  }
+  //   if (cachedStatuses != null) {
+  //     final List<dynamic> decodedData = json.decode(cachedStatuses);
+  //     return decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+  //   }
+  //   return [];
+  // }
 
   static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -80,8 +80,92 @@ class LeadCache {
 
   }
 
+// static Future<void> updateLeadCount(int statusId, int count) async {
+//     final SharedPreferences prefs = await SharedPreferences.getInstance();
+//     final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+//     List<Map<String, dynamic>> statuses = [];
+
+//     if (cachedStatuses != null) {
+//       statuses = (json.decode(cachedStatuses) as List<dynamic>)
+//           .map((status) => Map<String, dynamic>.from(status))
+//           .toList();
+//     }
+
+//     final index = statuses.indexWhere((status) => status['id'] == statusId);
+//     if (index != -1) {
+//       statuses[index]['leads_count'] = count;
+//     } else {
+//       statuses.add({'id': statusId, 'leads_count': count});
+//     }
+
+//     await prefs.setString(_cachedLeadStatusesKey, json.encode(statuses));
+//     print('LeadCache: Updated leads_count for statusId: $statusId to $count');
+//   }
+
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cachedLeadStatusesKey);
   }
+// static Future<void> cacheLeadStatuses(List<Map<String, dynamic>> leadStatuses) async {
+//     final SharedPreferences prefs = await SharedPreferences.getInstance();
+//     final String encodedStatuses = json.encode(leadStatuses);
+//     await prefs.setString(_cachedLeadStatusesKey, encodedStatuses);
+//     print('LeadCache: Cached lead statuses with leads_count: $leadStatuses');
+//   }
+
+  // static Future<List<Map<String, dynamic>>> getLeadStatuses() async {
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+    
+  //   if (cachedStatuses != null) {
+  //     final List<dynamic> decodedData = json.decode(cachedStatuses);
+  //     return decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+  //   }
+  //   return [];
+  // }
+
+  static Future<void> updateLeadCount(int statusId, int count) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+    List<Map<String, dynamic>> statuses = [];
+
+    if (cachedStatuses != null) {
+      statuses = (json.decode(cachedStatuses) as List<dynamic>)
+          .map((status) => Map<String, dynamic>.from(status))
+          .toList();
+    }
+
+    final index = statuses.indexWhere((status) => status['id'] == statusId);
+    if (index != -1) {
+      statuses[index]['leads_count'] = count;
+    } else {
+      statuses.add({'id': statusId, 'title': '', 'leads_count': count});
+    }
+
+    await prefs.setString(_cachedLeadStatusesKey, json.encode(statuses));
+    print('LeadCache: Updated leads_count for statusId: $statusId to $count');
+  }
+
+  static Future<void> cacheLeadStatuses(List<LeadStatus> leadStatuses) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final List<Map<String, dynamic>> statusesToCache = leadStatuses.map((status) => {
+    'id': status.id,
+    'title': status.title,
+    'leads_count': status.leadsCount, // Добавляем leads_count
+  }).toList();
+  final String encodedStatuses = json.encode(statusesToCache);
+  await prefs.setString(_cachedLeadStatusesKey, encodedStatuses);
+  print('LeadCache: Cached statuses with leads_count: $statusesToCache');
+}
+
+static Future<List<Map<String, dynamic>>> getLeadStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+  
+  if (cachedStatuses != null) {
+    final List<dynamic> decodedData = json.decode(cachedStatuses);
+    return decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+  }
+  return [];
+}
 }

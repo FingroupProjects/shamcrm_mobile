@@ -84,63 +84,51 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
 
-    if (!await _checkInternetConnection()) {
-      print('LeadBloc: _fetchLeads - No internet connection');
-      final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
-      print('LeadBloc: _fetchLeads - Retrieved cached leads: ${cachedLeads.length}');
-      if (cachedLeads.isNotEmpty) {
-        emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
-      } else {
-        emit(LeadError('Нет подключения к интернету и нет данных в кэше!'));
+    List<Lead> leads = [];
+    if (!event.ignoreCache) {
+      leads = await LeadCache.getLeadsForStatus(event.statusId);
+      if (leads.isNotEmpty) {
+        print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}');
+        emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
       }
-      return;
     }
 
-    // Проверяем кэш даже при ignoreCache, если он актуален
-    final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
-    if (cachedLeads.isNotEmpty && !event.ignoreCache) {
-      print('LeadBloc: _fetchLeads - Emitting cached leads: ${cachedLeads.length}');
-      emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
+    if (await _checkInternetConnection()) {
+      leads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+        managers: event.managerIds,
+        regions: event.regionsIds,
+        sources: event.sourcesIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+        hasSuccessDeals: event.hasSuccessDeals,
+        hasInProgressDeals: event.hasInProgressDeals,
+        hasFailureDeals: event.hasFailureDeals,
+        hasNotices: event.hasNotices,
+        hasContact: event.hasContact,
+        hasChat: event.hasChat,
+        hasNoReplies: event.hasNoReplies,
+        hasUnreadMessages: event.hasUnreadMessages,
+        hasDeal: event.hasDeal,
+        daysWithoutActivity: event.daysWithoutActivity,
+        directoryValues: event.directoryValues,
+        salesFunnelId: event.salesFunnelId,
+      );
+
+      // Кэшируем лиды
+      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+      // Обновляем leads_count в кэше
+      await LeadCache.updateLeadCount(event.statusId, leads.length);
+      print('LeadBloc: _fetchLeads - Cached leads for statusId: ${event.statusId}, count: ${leads.length}');
     }
 
-    // Запрашиваем данные с сервера
-    print('LeadBloc: _fetchLeads - Fetching from server, statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
-    final leads = await apiService.getLeads(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-      managers: event.managerIds,
-      regions: event.regionsIds,
-      sources: event.sourcesIds,
-      statuses: event.statusIds,
-      fromDate: event.fromDate,
-      toDate: event.toDate,
-      hasSuccessDeals: event.hasSuccessDeals,
-      hasInProgressDeals: event.hasInProgressDeals,
-      hasFailureDeals: event.hasFailureDeals,
-      hasNotices: event.hasNotices,
-      hasContact: event.hasContact,
-      hasChat: event.hasChat,
-      hasNoReplies: event.hasNoReplies,
-      hasUnreadMessages: event.hasUnreadMessages,
-      hasDeal: event.hasDeal,
-      daysWithoutActivity: event.daysWithoutActivity,
-      directoryValues: event.directoryValues,
-      salesFunnelId: event.salesFunnelId,
-    );
-
-    // Кэшируем новые данные
-    await LeadCache.cacheLeadsForStatus(event.statusId, leads);
-    print('LeadBloc: _fetchLeads - Cached leads for statusId: ${event.statusId}, count: ${leads.length}');
-
-    final leadCounts = Map<int, int>.from(_leadCounts);
-    for (var lead in leads) {
-      leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
-    }
-
+    _leadCounts[event.statusId] = leads.length;
     allLeadsFetched = leads.isEmpty;
-    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
+    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
   } catch (e) {
     print('LeadBloc: _fetchLeads - Error: $e');
     emit(LeadError('Не удалось загрузить данные!'));
@@ -148,7 +136,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     isFetching = false;
   }
 }
-  Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
+ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
   print('LeadBloc: _fetchLeadStatuses - Starting');
   emit(LeadLoading());
 
@@ -157,7 +145,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     final cachedStatuses = await LeadCache.getLeadStatuses();
     if (cachedStatuses.isNotEmpty) {
       final statuses = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
-      print('LeadBloc: _fetchLeadStatuses - Emitting cached statuses: ${statuses.map((s) => {'id': s.id, 'title': s.title})}');
+      print('LeadBloc: _fetchLeadStatuses - Emitting cached statuses: ${statuses.map((s) => {'id': s.id, 'title': s.title, 'leads_count': s.leadsCount})}');
       emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
     } else {
       print('LeadBloc: _fetchLeadStatuses - No cached statuses available');
@@ -168,22 +156,24 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
 
   try {
     final response = await apiService.getLeadStatuses();
-    print('LeadBloc: _fetchLeadStatuses - Retrieved statuses: ${response.map((s) => {'id': s.id, 'title': s.title})}');
+    print('LeadBloc: _fetchLeadStatuses - Retrieved statuses: ${response.map((s) => {'id': s.id, 'title': s.title, 'leads_count': s.leadsCount})}');
 
-    await LeadCache.cacheLeadStatuses(response
-        .map((status) => {'id': status.id, 'title': status.title})
-        .toList());
+    // Кэшируем статусы
+    await LeadCache.cacheLeadStatuses(response);
 
-    final futures = response.map((status) {
-      return apiService.getLeads(status.id, page: 1, perPage: 1);
+    // Обновляем счетчики
+    final futures = response.map((status) async {
+      final leads = await apiService.getLeads(status.id, page: 1, perPage: 1);
+      return {status.id: leads.length};
     }).toList();
 
     final leadCountsResults = await Future.wait(futures);
-    for (int i = 0; i < response.length; i++) {
-      _leadCounts[response[i].id] = leadCountsResults[i].length;
+    _leadCounts.clear();
+    for (var result in leadCountsResults) {
+      _leadCounts.addAll(result);
     }
 
-    print('LeadBloc: _fetchLeadStatuses - Emitting LeadLoaded with statuses: ${response.map((s) => {'id': s.id, 'title': s.title})}');
+    print('LeadBloc: _fetchLeadStatuses - Emitting LeadLoaded with statuses: ${response.map((s) => {'id': s.id, 'title': s.title, 'leads_count': s.leadsCount})}');
     emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
   } catch (e) {
     print('LeadBloc: _fetchLeadStatuses - Error: $e');
