@@ -82,6 +82,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -158,6 +160,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                       ),
+                         maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
@@ -170,6 +174,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                           fontFamily: 'Gilroy',
                           color: Color(0xff1E2E52),
                         ),
+                           maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                       );
                     }
                     return Text(
@@ -182,6 +188,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                         maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
@@ -192,6 +200,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       fontFamily: 'Gilroy',
                       color: Color(0xff1E2E52),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   excludeSelected: false,
                   initialItem: selectedManagerData,
@@ -210,7 +220,10 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     style: const TextStyle(
                       color: Color.fromARGB(255, 241, 50, 36),
                     ),
+                       maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+
                 ],
               ],
             );

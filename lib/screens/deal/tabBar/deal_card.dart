@@ -214,6 +214,7 @@ class _DealCardState extends State<DealCard> {
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
+                              
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -256,7 +257,10 @@ class _DealCardState extends State<DealCard> {
                             fontWeight: FontWeight.w500,
                             color: Color(0xff99A4BA),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+
                       ],
                     ),
                     Container(

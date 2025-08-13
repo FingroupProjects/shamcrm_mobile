@@ -1,17 +1,22 @@
-
 import 'dart:io';
 
+import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/tamplate_chat.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/templates_panel.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_media_recorder/audio_encoder_type.dart';
+import 'package:social_media_recorder/screen/social_media_recorder.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:social_media_recorder/audio_encoder_type.dart';
-import 'package:social_media_recorder/screen/social_media_recorder.dart';
+
 
 class InputField extends StatefulWidget {
   final Function onSend;
@@ -38,29 +43,16 @@ class InputField extends StatefulWidget {
 }
 
 class _InputFieldState extends State<InputField> with SingleTickerProviderStateMixin {
-  final Map<String, String> templates = {
-    '/1С Строительство': 'Уточните, пожалуйста, детали проекта. Мы свяжемся с вами в течение 24 часов.',
-    '/shamCRM': 'Наш разработчик подготовит демонстрацию. Ожидайте звонка.',
-    '/Общий запрос': 'Спасибо за обращение! Мы обработаем ваш запрос и ответим скоро.',
-    '/Техподдержка': 'Проблема зафиксирована. Ожидайте решение в течение 48 часов.',
-    '/Консультация': 'Запишитесь на консультацию через форму на сайте.',
-    '/Обновление': 'Новый релиз shamCRM доступен. Хотите обновить?',
-    '/Ошибка 1С': 'Опишите ошибку подробнее, приложите скриншот.',
-    '/Срочный запрос': 'Пожалуйста, укажите срочность и детали задачи.',
-    '/Документация': 'Высылаем документацию на ваш email.',
-    '/Тестирование': 'Тестирование shamCRM завершено, готовы к демонстрации.',
-    '/Цена': 'Уточните бюджет, чтобы мы подобрали решение.',
-    '/Интеграция': 'Интеграция с 1С возможна, обсудим детали.',
-    '/Установка': 'Установка займет 2-3 дня, согласуем дату.',
-    '/Обучение': 'Предлагаем обучение по shamCRM, запишитесь сейчас.',
-    '/Поддержка 24/7': 'Обращайтесь в любое время для экстренной помощи.',
-  };
-
   OverlayEntry? _overlayEntry;
+  OverlayEntry? _formattingOverlay;
   bool _showTemplates = false;
+  bool _showFormattingPanel = false;
   String _currentQuery = '';
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  String _htmlContent = '';
+  String _displayText = '';
 
   @override
   void initState() {
@@ -73,27 +65,68 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+
+    widget.messageController.addListener(_handleSelectionChange);
+    _htmlContent = widget.messageController.text;
+    _displayText = _htmlToDisplayText(_htmlContent);
   }
 
   @override
   void dispose() {
     _removeOverlay();
+    _removeFormattingOverlay();
     _animationController.dispose();
+    widget.messageController.removeListener(_handleSelectionChange);
     super.dispose();
   }
 
-  void _handleTextChange(String text) {
+  String _htmlToDisplayText(String html) {
+    return html
+        .replaceAll('<strong>', '')
+        .replaceAll('</strong>', '')
+        .replaceAll('<em>', '')
+        .replaceAll('</em>', '')
+        .replaceAll('<s>', '')
+        .replaceAll('</s>', '')
+        .replaceAllMapped(RegExp(r'<a href="[^"]*"[^>]*>([^<]*)</a>'), (match) => match.group(1) ?? '');
+  }
+
+  String _getHtmlContent() {
+    return _htmlContent;
+  }
+
+ void _handleTextChange(String text) {
+    print('InputField: _handleTextChange called with text: "$text"');
+    
+    _displayText = text;
+    _htmlContent = text;
+
     setState(() {
       if (text.startsWith('/')) {
+        print('InputField: Detected template query: ${text.substring(1)}');
         _currentQuery = text.substring(1).toLowerCase();
         _showTemplates = true;
+        context.read<TemplateBloc>().add(FilterTemplates(_currentQuery));
         _updateOverlay();
         _animationController.forward();
       } else {
+        print('InputField: Normal text input, hiding templates');
         _showTemplates = false;
         _animationController.reverse().then((_) => _removeOverlay());
       }
     });
+  }
+  void _handleSelectionChange() {
+    final selection = widget.messageController.selection;
+    if (selection.isValid && selection.start != selection.end && widget.focusNode.hasFocus) {
+      SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+      _showFormattingPanel = true;
+      _updateFormattingOverlay();
+      _animationController.forward();
+    } else {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    }
   }
 
   void _updateOverlay() {
@@ -109,6 +142,19 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     _overlayEntry = null;
   }
 
+  void _updateFormattingOverlay() {
+    _removeFormattingOverlay();
+    if (_showFormattingPanel) {
+      _formattingOverlay = _createFormattingOverlayEntry();
+      Overlay.of(context)!.insert(_formattingOverlay!);
+    }
+  }
+
+  void _removeFormattingOverlay() {
+    _formattingOverlay?.remove();
+    _formattingOverlay = null;
+  }
+
   OverlayEntry _createOverlayEntry() {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -118,17 +164,18 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       builder: (context) => Positioned(
         left: offset.dx,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width),
-        top: offset.dy - 210, // Позиционируем на 210 пикселей выше поля ввода
+        top: offset.dy - 210,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Material(
             elevation: 4,
             borderRadius: BorderRadius.circular(12),
             child: TemplateSuggestions(
-              templates: templates,
               query: _currentQuery,
               onTemplateSelected: (templateText) {
                 widget.messageController.text = templateText;
+                _htmlContent = templateText;
+                _displayText = templateText;
                 setState(() {
                   _showTemplates = false;
                   _animationController.reverse().then((_) => _removeOverlay());
@@ -140,6 +187,321 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
         ),
       ),
     );
+  }
+
+  OverlayEntry _createFormattingOverlayEntry() {
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: offset.dx,
+        right: MediaQuery.of(context).size.width - (offset.dx + size.width),
+        top: offset.dy - 60,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildFormattingButton(
+                    icon: Icons.format_bold,
+                    label: 'Жирный',
+                    onTap: () => _applyFormatting('bold'),
+                  ),
+                  _buildFormattingButton(
+                    icon: Icons.format_italic,
+                    label: 'Курсив',
+                    onTap: () => _applyFormatting('italic'),
+                  ),
+                  _buildFormattingButton(
+                    icon: Icons.format_strikethrough,
+                    label: 'Зачеркнутый',
+                    onTap: () => _applyFormatting('strikethrough'),
+                  ),
+                  _buildFormattingButton(
+                    icon: Icons.link,
+                    label: 'Ссылка',
+                    onTap: () => _applyLinkFormatting(context),
+                  ),
+                  _buildFormattingButton(
+                    icon: Icons.select_all,
+                    label: 'Выбрать все',
+                    onTap: _selectAll,
+                  ),
+                  _buildFormattingButton(
+                    icon: Icons.paste,
+                    label: 'Вставить',
+                    onTap: _paste,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormattingButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Color(0xff1E2E52)),
+            SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _applyFormatting(String type) {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) return;
+
+    final text = widget.messageController.text;
+    final selectedText = text.substring(selection.start, selection.end);
+
+    String tagStart, tagEnd;
+    switch (type) {
+      case 'bold':
+        tagStart = '<strong>';
+        tagEnd = '</strong>';
+        break;
+      case 'italic':
+        tagStart = '<em>';
+        tagEnd = '</em>';
+        break;
+      case 'strikethrough':
+        tagStart = '<s>';
+        tagEnd = '</s>';
+        break;
+      default:
+        return;
+    }
+
+    _htmlContent = _htmlContent.replaceRange(
+      selection.start,
+      selection.end,
+      '$tagStart$selectedText$tagEnd',
+    );
+
+    widget.messageController.text = text;
+    widget.messageController.selection = TextSelection(
+      baseOffset: selection.start,
+      extentOffset: selection.end,
+    );
+
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+    widget.focusNode.requestFocus();
+  }
+
+  void _applyLinkFormatting(BuildContext context) async {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) return;
+
+    final text = widget.messageController.text;
+    final selectedText = text.substring(selection.start, selection.end);
+
+    final urlController = TextEditingController();
+    String? url;
+
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 8,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Вставьте ссылку',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  color: Colors.grey.shade50,
+                ),
+                child: TextField(
+                  controller: urlController,
+                  autofocus: true,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'https://example.com',
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    child: Text(
+                      'Отмена',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      url = urlController.text;
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xff1E2E52),
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Добавить',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (url != null && url!.isNotEmpty) {
+      _htmlContent = _htmlContent.replaceRange(
+        selection.start,
+        selection.end,
+        '<a href="$url" target="_blank">$selectedText</a>',
+      );
+
+      widget.messageController.selection = TextSelection(
+        baseOffset: selection.start,
+        extentOffset: selection.end,
+      );
+    }
+
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+    widget.focusNode.requestFocus();
+  }
+
+  void _selectAll() {
+    widget.messageController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: widget.messageController.text.length,
+    );
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+    widget.focusNode.requestFocus();
+  }
+
+  void _paste() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (clipboardData != null && clipboardData.text != null) {
+      final selection = widget.messageController.selection;
+      final text = widget.messageController.text;
+      final newText = text.replaceRange(
+        selection.start,
+        selection.end,
+        clipboardData.text!,
+      );
+      widget.messageController.text = newText;
+      _htmlContent = _htmlContent.replaceRange(
+        selection.start,
+        selection.end,
+        clipboardData.text!,
+      );
+      widget.messageController.selection = TextSelection.collapsed(
+        offset: selection.start + clipboardData.text!.length,
+      );
+    }
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+    widget.focusNode.requestFocus();
   }
 
   @override
@@ -157,6 +519,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
     if (editingMessage != null && widget.messageController.text.isEmpty) {
       widget.messageController.text = editingMessage.text;
+      _htmlContent = editingMessage.text;
     }
 
     return Container(
@@ -287,6 +650,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                     onPressed: () {
                       messagingCubit.clearEditingMessage();
                       widget.messageController.clear();
+                      _htmlContent = '';
                     },
                   ),
                 ],
@@ -311,6 +675,13 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                                 controller: widget.messageController,
                                 focusNode: widget.focusNode,
                                 onChanged: _handleTextChange,
+                                enableInteractiveSelection: true,
+                                toolbarOptions: ToolbarOptions(
+                                  copy: false,
+                                  cut: false,
+                                  paste: false,
+                                  selectAll: false,
+                                ),
                                 decoration: InputDecoration(
                                   hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
                                   hintStyle: TextStyle(
@@ -336,16 +707,16 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                               ),
                             ),
                           ),
-                    // if (widget.isLeadChat)
-                    //   Positioned(
-                    //     right: 35,
-                    //     child: IconButton(
-                    //       icon: Image.asset('assets/icons/chats/menu-button.png', width: 24, height: 24),
-                    //       onPressed: () {
-                    //         _showTemplatesPanel(context);
-                    //       },
-                    //     ),
-                    //   ),
+                    if (widget.isLeadChat)
+                      Positioned(
+                        right: 35,
+                        child: IconButton(
+                          icon: Image.asset('assets/icons/chats/menu-button.png', width: 24, height: 24),
+                          onPressed: () {
+                            _showTemplatesPanel(context);
+                          },
+                        ),
+                      ),
                     Positioned(
                       right: widget.isLeadChat ? 0 : 0,
                       child: IconButton(
@@ -430,15 +801,21 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                       onPressed: () {
                         if (widget.messageController.text.isNotEmpty) {
                           if (editingMessage != null) {
-                            messagingCubit.editMessage(widget.messageController.text);
+                            messagingCubit.editMessage(_getHtmlContent());
                           } else {
-                            widget.onSend(widget.messageController.text, replyMsgId);
+                            widget.onSend(_getHtmlContent(), replyMsgId);
                             messagingCubit.clearReplyMessage();
                           }
                           widget.messageController.clear();
+                          _htmlContent = '';
+                          _displayText = '';
                           setState(() {
                             _showTemplates = false;
-                            _animationController.reverse().then((_) => _removeOverlay());
+                            _showFormattingPanel = false;
+                            _animationController.reverse().then((_) {
+                              _removeOverlay();
+                              _removeFormattingOverlay();
+                            });
                           });
                         }
                       },
@@ -450,221 +827,40 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     );
   }
 
-  void _showTemplatesPanel(BuildContext context) {
+void _showTemplatesPanel(BuildContext context) {
+    print('InputField: Opening TemplatesPanel');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TemplatesPanel(
-        onTemplateSelected: (text) {
-          widget.messageController.text = text;
-          Navigator.pop(context);
+      enableDrag: true,
+      isDismissible: true,
+      builder: (BuildContext bottomSheetContext) => TemplatesPanel(
+        onTemplateSelected: (String selectedText) {
+          print('InputField: Selected template text: $selectedText');
+          
+          // Сначала закрываем modal
+          Navigator.of(bottomSheetContext).pop();
+          
+          // Затем в следующем фрейме устанавливаем текст
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.messageController.text = selectedText;
+            _htmlContent = selectedText;
+            _displayText = selectedText;
+            
+            print('InputField: Message controller text: ${widget.messageController.text}');
+            print('InputField: Template successfully applied');
+            
+            // Устанавливаем фокус на поле ввода
+            widget.focusNode.requestFocus();
+            
+            // Принудительно обновляем состояние
+            if (mounted) {
+              setState(() {});
+            }
+          });
         },
       ),
-    );
-  }
-}
-
-class TemplateSuggestions extends StatelessWidget {
-  final Map<String, String> templates;
-  final String query;
-  final Function(String) onTemplateSelected;
-
-  const TemplateSuggestions({
-    Key? key,
-    required this.templates,
-    required this.query,
-    required this.onTemplateSelected,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final filteredTemplates = templates.entries
-        .where((entry) => entry.key.toLowerCase().contains(query))
-        .toList();
-
-    return Container(
-      constraints: BoxConstraints(maxHeight: 200),
-      width: double.infinity, // Соответствует ширине TextField
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: filteredTemplates.isEmpty
-          ? Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                AppLocalizations.of(context)!.translate('no_templates_found'),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            )
-          : ListView.builder(
-              shrinkWrap: true,
-              itemCount: filteredTemplates.length,
-              itemBuilder: (context, index) {
-                final entry = filteredTemplates[index];
-                return Column(
-                  children: [
-                    ListTile(
-                      title: Text(
-                        entry.key,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      subtitle: Text(
-                        entry.value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      onTap: () {
-                        onTemplateSelected(entry.value);
-                      },
-                    ),
-                    if (index < filteredTemplates.length - 1)
-                      Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
-                  ],
-                );
-              },
-            ),
-    );
-  }
-}
-
-class TemplatesPanel extends StatefulWidget {
-  final Function(String) onTemplateSelected;
-
-  const TemplatesPanel({super.key, required this.onTemplateSelected});
-
-  @override
-  _TemplatesPanelState createState() => _TemplatesPanelState();
-}
-
-class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 300),
-    );
-    _animation = Tween<Offset>(
-      begin: Offset(0.0, 1.0),
-      end: Offset(0.0, 0.0),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _animation,
-      child: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Container(
-          color: Colors.black.withOpacity(0.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                constraints: BoxConstraints(maxHeight: 500),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('templates'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Expanded(
-                      child: _buildTemplateList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTemplateList() {
-    final templates = [
-      '1. 1С Строительство: Уточните, пожалуйста, детали проекта. Мы свяжемся с вами в течение 24 часов.',
-      '2. shamCRM: Наш разработчик подготовит демонстрацию. Ожидайте звонка.',
-      '3. Общий запрос: Спасибо за обращение! Мы обработаем ваш запрос и ответим скоро.',
-      '4. Техподдержка: Проблема зафиксирована. Ожидайте решение в течение 48 часов.',
-      '5. Консультация: Запишитесь на консультацию через форму на сайте.',
-      '6. Обновление: Новый релиз shamCRM доступен. Хотите обновить?',
-      '7. Ошибка 1С: Опишите ошибку подробнее, приложите скриншот.',
-      '8. Срочный запрос: Пожалуйста, укажите срочность и детали задачи.',
-      '9. Документация: Высылаем документацию на ваш email.',
-      '10. Тестирование: Тестирование shamCRM завершено, готовы к демонстрации.',
-      '11. Цена: Уточните бюджет, чтобы мы подобрали решение.',
-      '12. Интеграция: Интеграция с 1С возможна, обсудим детали.',
-      '13. Установка: Установка займет 2-3 дня, согласуем дату.',
-      '14. Обучение: Предлагаем обучение по shamCRM, запишитесь сейчас.',
-      '15. Поддержка 24/7: Обращайтесь в любое время для экстренной помощи.',
-    ];
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: templates.length,
-      itemBuilder: (context, index) {
-        return Column(
-          children: [
-            ListTile(
-              title: Text(
-                templates[index],
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              onTap: () {
-                widget.onTemplateSelected(templates[index].split(': ')[1]);
-              },
-            ),
-            if (index < templates.length - 1)
-              Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
-          ],
-        );
-      },
     );
   }
 }

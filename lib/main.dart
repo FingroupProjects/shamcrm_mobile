@@ -13,6 +13,7 @@ import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
@@ -302,7 +303,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => CallCenterBloc(ApiService()),),
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
-
+        BlocProvider(create: (context) => TemplateBloc(ApiService())),
         
       ],
       child: MaterialApp(

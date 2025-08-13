@@ -185,6 +185,8 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                       ),
+                          maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {

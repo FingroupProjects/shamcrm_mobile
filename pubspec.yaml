@@ -67,6 +67,8 @@ dependencies:
   # geolocator: ^14.0.2
   # flutter_foreground_task: ^9.1.0
   # background_fetch: ^1.4.0
+  flutter_html: ^3.0.0
+  flutter_quill: ^11.4.2
 
   
   

@@ -13,6 +13,7 @@ import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
@@ -41,7 +42,6 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {

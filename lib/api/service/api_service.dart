@@ -87,6 +87,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/template_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
@@ -4569,7 +4570,7 @@ Future<PaginationDTO<Chats>> getAllChats(
 ]) async {
   final token = await getToken();
   // Формируем базовый путь
-  String path = 'v2/chat/getMyChats/$endPoint?page=$page';
+  String path = '/v2/chat/getMyChats/$endPoint?page=$page';
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   path = await _appendQueryParams(path);
   if (kDebugMode) {
@@ -4616,7 +4617,7 @@ Future<PaginationDTO<Chats>> getAllChats(
 Future<String> sendMessages(List<int> messageIds) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/read');
+  final path = await _appendQueryParams('/v2/chat/read');
   if (kDebugMode) {
     print('ApiService: sendMessages - Generated path: $path');
   }
@@ -4649,7 +4650,7 @@ Future<List<Message>> getMessages(
 }) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  String path = '/chat/getMessages/$chatId';
+  String path = '/v2/chat/getMessages/$chatId';
   path = await _appendQueryParams(path);
   if (kDebugMode) {
     print('ApiService: getMessages - Generated path: $path');
@@ -4683,7 +4684,7 @@ Future<List<Message>> getMessages(
 
 Future<void> closeChatSocket(int chatId) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/clearCache/$chatId');
+  final path = await _appendQueryParams('/v2/chat/clearCache/$chatId');
   if (kDebugMode) {
     print('ApiService: closeChatSocket - Generated path: $path');
   }
@@ -4698,7 +4699,7 @@ Future<void> closeChatSocket(int chatId) async {
 Future<IntegrationForLead> getIntegrationForLead(int chatId) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/get-integration/$chatId');
+  final path = await _appendQueryParams('/v2/chat/get-integration/$chatId');
   if (kDebugMode) {
     print('ApiService: getIntegrationForLead - Generated path: $path');
   }
@@ -4729,7 +4730,7 @@ Future<IntegrationForLead> getIntegrationForLead(int chatId) async {
 // Метод для отправки текстового сообщения
 Future<void> sendMessage(int chatId, String message, {String? replyMessageId}) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/sendMessage/$chatId');
+  final path = await _appendQueryParams('/v2/chat/sendMessage/$chatId');
   if (kDebugMode) {
     print('ApiService: sendMessage - Generated path: $path');
   }
@@ -4748,7 +4749,7 @@ Future<void> sendMessage(int chatId, String message, {String? replyMessageId}) a
 
 Future<void> pinMessage(String messageId) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/pinMessage/$messageId');
+  final path = await _appendQueryParams('/v2/chat/pinMessage/$messageId');
   if (kDebugMode) {
     print('ApiService: pinMessage - Generated path: $path');
   }
@@ -4762,7 +4763,7 @@ Future<void> pinMessage(String messageId) async {
 
 Future<void> unpinMessage(String messageId) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/pinMessage/$messageId');
+  final path = await _appendQueryParams('/v2/chat/pinMessage/$messageId');
   if (kDebugMode) {
     print('ApiService: unpinMessage - Generated path: $path');
   }
@@ -4776,7 +4777,7 @@ Future<void> unpinMessage(String messageId) async {
 
 Future<void> editMessage(String messageId, String message) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/editMessage/$messageId');
+  final path = await _appendQueryParams('/v2/chat/editMessage/$messageId');
   if (kDebugMode) {
     print('ApiService: editMessage - Generated path: $path');
   }
@@ -4796,7 +4797,7 @@ Future<void> editMessage(String messageId, String message) async {
 Future<void> sendChatAudioFile(int chatId, File audio) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/sendVoice/$chatId');
+  final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
   if (kDebugMode) {
     print('ApiService: sendChatAudioFile - Generated path: $path');
   }
@@ -4847,7 +4848,7 @@ Future<void> sendChatAudioFile(int chatId, File audio) async {
 Future<void> sendChatFile(int chatId, String pathFile) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/sendFile/$chatId');
+  final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
   if (kDebugMode) {
     print('ApiService: sendChatFile - Generated path: $path');
   }
@@ -4896,7 +4897,7 @@ Future<void> sendChatFile(int chatId, String pathFile) async {
 // Метод для отправки файла
 Future<void> sendFile(int chatId, String filePath) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/sendFile/$chatId');
+  final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
   if (kDebugMode) {
     print('ApiService: sendFile - Generated path: $path');
   }
@@ -4915,7 +4916,7 @@ Future<void> sendFile(int chatId, String filePath) async {
 // Метод для отправки голосового сообщения
 Future<void> sendVoice(int chatId, String voicePath) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/sendVoice/$chatId');
+  final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
   if (kDebugMode) {
     print('ApiService: sendVoice - Generated path: $path');
   }
@@ -4966,7 +4967,7 @@ Future<void> sendVoice(int chatId, String voicePath) async {
 Future<Map<String, dynamic>> deleteChat(int chatId) async {
   try {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/chat/$chatId');
+    final path = await _appendQueryParams('/v2/chat/$chatId');
     if (kDebugMode) {
       print('ApiService: deleteChat - Generated path: $path');
     }
@@ -5008,7 +5009,7 @@ Future<Map<String, dynamic>> deleteChat(int chatId) async {
 Future<UsersDataResponse> getAllUser() async {
   final token = await getToken(); // Получаем токен перед запросом
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/department/get/users');
+  final path = await _appendQueryParams('/v2/department/get/users');
   if (kDebugMode) {
     print('ApiService: getAllUser - Generated path: $path');
   }
@@ -5083,7 +5084,7 @@ Future<UsersDataResponse> getAnotherUsers() async {
 Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/user/users-not-in-chat/$chatId');
+  final path = await _appendQueryParams('/v2/user/users-not-in-chat/$chatId');
   if (kDebugMode) {
     print('ApiService: getUsersNotInChat - Generated path: $path');
   }
@@ -5166,7 +5167,7 @@ Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
 Future<Map<String, dynamic>> createNewClient(String userID) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/createChat/$userID');
+  final path = await _appendQueryParams('/v2/chat/createChat/$userID');
   if (kDebugMode) {
     print('ApiService: createNewClient - Generated path: $path');
   }
@@ -5205,7 +5206,7 @@ Future<Map<String, dynamic>> createGroupChat({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/chat/createGroup');
+    final path = await _appendQueryParams('/v2/chat/createGroup');
     if (kDebugMode) {
       print('ApiService: createGroupChat - Generated path: $path');
     }
@@ -5262,7 +5263,7 @@ Future<Map<String, dynamic>> addUserToGroup({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/chat/addUserToGroup/$chatId/$userId');
+    final path = await _appendQueryParams('/v2/chat/addUserToGroup/$chatId/$userId');
     if (kDebugMode) {
       print('ApiService: addUserToGroup - Generated path: $path');
     }
@@ -5308,7 +5309,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/chat/removeUserFromGroup/$chatId/$userId');
+    final path = await _appendQueryParams('/v2/chat/removeUserFromGroup/$chatId/$userId');
     if (kDebugMode) {
       print('ApiService: deleteUserFromGroup - Generated path: $path');
     }
@@ -5349,7 +5350,7 @@ Future<void> DeleteMessage({int? messageId}) async {
   }
 
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/delete-message/$messageId');
+  final path = await _appendQueryParams('/v2/chat/delete-message/$messageId');
   if (kDebugMode) {
     print('ApiService: DeleteMessage - Generated path: $path');
   }
@@ -5370,6 +5371,34 @@ Future<void> DeleteMessage({int? messageId}) async {
     throw Exception('Ошибка удаления уведомления');
   }
 }
+
+
+Future<TemplateResponse> getTemplates() async {
+    final token = await getToken();
+    final path = await _appendQueryParams('/v2/chat/templates');
+    if (kDebugMode) {
+      print('ApiService: getTemplates - Generated path: $path');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return TemplateResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при загрузке шаблонов: ${response.statusCode}');
+    }
+  }
 
 //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 

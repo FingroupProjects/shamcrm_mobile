@@ -116,6 +116,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
                         ),
+                            maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                       );
                     },
                     headerBuilder: (context, selectedItem, enabled) {

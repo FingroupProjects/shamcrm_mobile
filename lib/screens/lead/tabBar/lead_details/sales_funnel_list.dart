@@ -150,6 +150,8 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                          maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
