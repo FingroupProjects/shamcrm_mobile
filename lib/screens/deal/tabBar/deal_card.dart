@@ -263,26 +263,29 @@ class _DealCardState extends State<DealCard> {
 
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFE9EDF5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${widget.deal.manager?.name ?? "Система"}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                    const SizedBox(width: 12),
+                   Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Color(0xFFE9EDF5),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          '${widget.deal.manager?.name ?? "Система"}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ),
+  ],
+),
               ],
             ),
           ],

@@ -645,6 +645,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
         label == AppLocalizations.of(context)!.translate('description_details') ||
         label == AppLocalizations.of(context)!.translate('project_details') ||
+        label == AppLocalizations.of(context)!.translate('author_details') ||
         label == AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
         onTap: () {

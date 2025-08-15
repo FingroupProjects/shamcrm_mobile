@@ -91,8 +91,10 @@ class ChatListItem extends StatelessWidget {
                       child: Text(
                         chatItem.message,
                         style: AppStyles.chatMessageStyle,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      //920007100
                     ),
                     const SizedBox(width: 2),
                     SizedBox(
@@ -112,8 +114,8 @@ class ChatListItem extends StatelessWidget {
                                     : '+9',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                   fontFamily: 'Gilroy',
                                 ),
                               ),
@@ -229,6 +231,8 @@ Widget _buildAvatar(String avatar) {
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
               ),
+                 maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
             ),
           ),

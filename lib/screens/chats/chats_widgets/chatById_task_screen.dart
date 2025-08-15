@@ -261,6 +261,8 @@ class TaskByIdScreen extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   color: Color(0xff6E7C97),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               Text(
                 value,
@@ -270,6 +272,8 @@ class TaskByIdScreen extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   color: Color(0xff1E2E52),
                 ),
+                   maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

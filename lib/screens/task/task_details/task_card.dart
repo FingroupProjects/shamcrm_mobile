@@ -293,6 +293,8 @@ class _TaskCardState extends State<TaskCard> {
                     fontWeight: FontWeight.w500,
                     color: Color(0xff99A4BA),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 0),
                 Row(

@@ -5009,7 +5009,7 @@ Future<Map<String, dynamic>> deleteChat(int chatId) async {
 Future<UsersDataResponse> getAllUser() async {
   final token = await getToken(); // Получаем токен перед запросом
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/v2/department/get/users');
+  final path = await _appendQueryParams('/department/get/users');
   if (kDebugMode) {
     print('ApiService: getAllUser - Generated path: $path');
   }
@@ -5084,7 +5084,7 @@ Future<UsersDataResponse> getAnotherUsers() async {
 Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/v2/user/users-not-in-chat/$chatId');
+  final path = await _appendQueryParams('/user/users-not-in-chat/$chatId');
   if (kDebugMode) {
     print('ApiService: getUsersNotInChat - Generated path: $path');
   }
@@ -5167,7 +5167,7 @@ Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
 Future<Map<String, dynamic>> createNewClient(String userID) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/v2/chat/createChat/$userID');
+  final path = await _appendQueryParams('/chat/createChat/$userID');
   if (kDebugMode) {
     print('ApiService: createNewClient - Generated path: $path');
   }
@@ -5206,7 +5206,7 @@ Future<Map<String, dynamic>> createGroupChat({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/v2/chat/createGroup');
+    final path = await _appendQueryParams('/chat/createGroup');
     if (kDebugMode) {
       print('ApiService: createGroupChat - Generated path: $path');
     }
@@ -5263,7 +5263,7 @@ Future<Map<String, dynamic>> addUserToGroup({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/v2/chat/addUserToGroup/$chatId/$userId');
+    final path = await _appendQueryParams('/chat/addUserToGroup/$chatId/$userId');
     if (kDebugMode) {
       print('ApiService: addUserToGroup - Generated path: $path');
     }
@@ -5309,7 +5309,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     };
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/v2/chat/removeUserFromGroup/$chatId/$userId');
+    final path = await _appendQueryParams('/chat/removeUserFromGroup/$chatId/$userId');
     if (kDebugMode) {
       print('ApiService: deleteUserFromGroup - Generated path: $path');
     }

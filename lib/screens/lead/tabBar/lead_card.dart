@@ -385,7 +385,9 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
                             ),
                           ],
                         ),
-                        Container(
+                          const SizedBox(width: 12),
+                   Flexible(
+      child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -406,6 +408,7 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                   ),
                       ],
                     ),
                   ],

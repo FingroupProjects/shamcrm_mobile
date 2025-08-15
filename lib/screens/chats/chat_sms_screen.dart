@@ -203,7 +203,7 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: 420,
+                height: 450, // Увеличиваем высоту для корректного отображения дней недели
                 width: double.maxFinite,
                 color: Colors.white,
                 child: TableCalendar(
@@ -225,12 +225,46 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
                     outsideDaysVisible: true,
                     outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
                   ),
+                  // Добавляем стиль для дней недели чтобы они не обрезались
+                  daysOfWeekStyle: const DaysOfWeekStyle(
+                    weekdayStyle: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    weekendStyle: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                  ),
                   headerStyle: HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
                     leftChevronVisible: true,
                     rightChevronVisible: true,
                     titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
+                    // Добавляем форматирование заголовка для заглавной буквы
+                    titleTextFormatter: (date, locale) {
+                      final monthNames = {
+                        1: 'Январь',
+                        2: 'Февраль', 
+                        3: 'Март',
+                        4: 'Апрель',
+                        5: 'Май',
+                        6: 'Июнь',
+                        7: 'Июль',
+                        8: 'Август',
+                        9: 'Сентябрь',
+                        10: 'Октябрь',
+                        11: 'Ноябрь',
+                        12: 'Декабрь'
+                      };
+                      
+                      final monthName = monthNames[date.month] ?? '';
+                      return '$monthName ${date.year} г.';
+                    },
                   ),
                   calendarBuilders: CalendarBuilders(
                     markerBuilder: (context, date, events) {

@@ -39,7 +39,7 @@ class Lead {
     this.chats,
   });
 
-  factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
+ factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
       id: json['id'] ?? 0,
       name: json['name']?.toString() ?? 'Без имени',
@@ -58,9 +58,15 @@ class Lead {
           ? LeadStatus.fromJson(json['leadStatus'])
           : null,
       phone: json['phone']?.toString() ?? '',
-      inProgressDealsCount: json['in_progress_deals_count'],
-      successefullyDealsCount: json['successful_deals_count'],
-      failedDealsCount: json['failed_deals_count'],
+      inProgressDealsCount: json['in_progress_deals_count'] != null
+          ? int.tryParse(json['in_progress_deals_count'].toString())
+          : null,
+      successefullyDealsCount: json['successful_deals_count'] != null
+          ? int.tryParse(json['successful_deals_count'].toString())
+          : null,
+      failedDealsCount: json['failed_deals_count'] != null
+          ? int.tryParse(json['failed_deals_count'].toString())
+          : null,
       lastUpdate: json['last_update'],
       messageStatus: json['messageStatus']?.toString(),
       chats: json['chats'] != null

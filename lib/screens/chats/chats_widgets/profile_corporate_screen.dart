@@ -122,6 +122,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
             ),
+              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: Colors.white,
           leading: IconButton(
@@ -173,6 +175,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   fontWeight: FontWeight.w600,
                   color: Color(0xff1E2E52),
                 ),
+                  maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -286,6 +290,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               fontFamily: 'Gilroy',
                               color: Colors.white,
                             ),
+                              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -430,6 +436,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Colors.black,
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (isOwner)
@@ -442,6 +450,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Color(0xff1E2E52),
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 )
                               else if (isCurrentUser)
                                 Text(
