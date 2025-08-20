@@ -50,6 +50,8 @@ class _ChatsScreenState extends State<ChatsScreen>
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
+   Map<String, dynamic>? _activeFilters; // Хранит активные фильтры
+  bool _hasActiveFilters = false; // Показывает есть ли активные фильтры
 
   Map<String, dynamic>? tutorialProgress;
 
@@ -111,6 +113,106 @@ class _ChatsScreenState extends State<ChatsScreen>
       _isPermissionsChecked = true;
     });
   }
+  // НОВЫЙ МЕТОД: Обработка фильтров от ChatLeadFilterScreen
+ void _handleFiltersApplied(Map<String, dynamic> filters) {
+  print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
+  
+  setState(() {
+    _activeFilters = filters;
+    _hasActiveFilters = _checkIfFiltersActive(filters);
+  });
+
+  // Применяем фильтры к текущей вкладке
+  if (endPointInTab == 'lead' || endPointInTab == 'task') {
+    final chatsBloc = _chatsBlocs[endPointInTab]!;
+    chatsBloc.add(ClearChats());
+    _pagingControllers[endPointInTab]!.itemList = null;
+    _pagingControllers[endPointInTab]!.refresh();
+    
+    chatsBloc.add(FetchChats(
+      endPoint: endPointInTab,
+      salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+      filters: filters, // Передаем фильтры как есть
+    ));
+  }
+
+    setState(() {
+      _activeFilters = filters;
+      _hasActiveFilters = _checkIfFiltersActive(filters);
+    });
+
+    // Применяем фильтры только к вкладке lead
+    if (endPointInTab == 'lead') {
+      final chatsBloc = _chatsBlocs['lead']!;
+      chatsBloc.add(ClearChats());
+      _pagingControllers['lead']!.itemList = null;
+      _pagingControllers['lead']!.refresh();
+      
+      chatsBloc.add(FetchChats(
+        endPoint: 'lead',
+        salesFunnelId: _selectedFunnel?.id,
+        filters: filters, // Передаем фильтры
+      ));
+    }
+  }
+
+  // НОВЫЙ МЕТОД: Проверка активности фильтров
+  bool _checkIfFiltersActive(Map<String, dynamic> filters) {
+  if (endPointInTab == 'lead') {
+    return filters['managers']?.isNotEmpty == true ||
+        filters['regions']?.isNotEmpty == true ||
+        filters['sources']?.isNotEmpty == true ||
+        filters['statuses'] != null ||
+        filters['fromDate'] != null ||
+        filters['toDate'] != null ||
+        filters['hasSuccessDeals'] == true ||
+        filters['hasInProgressDeals'] == true ||
+        filters['hasFailureDeals'] == true ||
+        filters['hasNotices'] == true ||
+        filters['hasContact'] == true ||
+        filters['hasChat'] == true ||
+        filters['hasNoReplies'] == true ||
+        filters['unreadOnly'] == true ||
+        filters['hasUnreadMessages'] == true ||
+        filters['hasDeal'] == true ||
+        filters['daysWithoutActivity'] != null ||
+        filters['directory_values']?.isNotEmpty == true;
+  } else if (endPointInTab == 'task') {
+    return filters['department_id'] != null ||
+        filters['task_created_from'] != null ||
+        filters['task_created_to'] != null ||
+        filters['deadline_from'] != null ||
+        filters['deadline_to'] != null ||
+        filters['executor_ids']?.isNotEmpty == true ||
+        filters['author_ids']?.isNotEmpty == true ||
+        filters['project_ids']?.isNotEmpty == true ||
+        filters['task_status_ids']?.isNotEmpty == true ||
+        filters['unread_only'] == true;
+  }
+  return false;
+}
+
+  // НОВЫЙ МЕТОД: Сброс фильтров
+  void _resetFilters() {
+    print('ChatsScreen._resetFilters: Resetting filters');
+    
+    setState(() {
+      _activeFilters = null;
+      _hasActiveFilters = false;
+    });
+
+    if (endPointInTab == 'lead') {
+      final chatsBloc = _chatsBlocs['lead']!;
+      chatsBloc.add(ClearChats());
+      _pagingControllers['lead']!.itemList = null;
+      _pagingControllers['lead']!.refresh();
+      
+      chatsBloc.add(FetchChats(
+        endPoint: 'lead',
+        salesFunnelId: _selectedFunnel?.id,
+      ));
+    }
+  }
 
   @override
   void initState() {
@@ -127,6 +229,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           _isTabControllerInitialized = true;
         });
         setUpServices();
+        
         // Загружаем воронки
         context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
         print('ChatsScreen: initState - Dispatched FetchSalesFunnels');
@@ -156,7 +259,8 @@ class _ChatsScreenState extends State<ChatsScreen>
             setState(() {
               _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
             });
-            // Обновляем чаты только для вкладки lead
+            
+            // Обновляем чаты только для вкладки lead с учетом фильтров
             if (endPointInTab == 'lead') {
               _chatsBlocs[endPointInTab]!.add(ClearChats());
               _pagingControllers[endPointInTab]!.itemList = null;
@@ -164,6 +268,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               _chatsBlocs[endPointInTab]!.add(FetchChats(
                 endPoint: endPointInTab,
                 salesFunnelId: _selectedFunnel?.id,
+                filters: _activeFilters, // ВАЖНО: Передаем фильтры
               ));
             }
           }
@@ -172,6 +277,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       _fetchTutorialProgress();
     });
 
+    // Настройка контроллеров пагинации
     _pagingControllers.forEach((endPoint, controller) {
       controller.addPageRequestListener((pageKey) {
         print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
@@ -241,7 +347,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       }
     }
   }
-  // Новый метод для построения заголовка с выбором воронки
+  // ОБНОВЛЕННЫЙ МЕТОД: Переключение воронок с сохранением фильтров
   Widget _buildTitleWidget(BuildContext context) {
     print('ChatsScreen: Entering _buildTitleWidget');
     return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
@@ -249,6 +355,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         print('ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
         String title = AppLocalizations.of(context)!.translate('appbar_chats');
         SalesFunnel? selectedFunnel;
+        
         if (state is SalesFunnelLoading) {
           print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
           title = AppLocalizations.of(context)!.translate('appbar_chats');
@@ -263,6 +370,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           print('ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
           title = 'Ошибка загрузки';
         }
+        
         print('ChatsScreen: _buildTitleWidget - Rendering title: $title');
         return Row(
           children: [
@@ -307,9 +415,12 @@ class _ChatsScreenState extends State<ChatsScreen>
                       _chatsBlocs[endPointInTab]!.add(ClearChats());
                       _pagingControllers[endPointInTab]!.itemList = null;
                       _pagingControllers[endPointInTab]!.refresh();
+                      
+                      // ВАЖНО: Передаем фильтры при переключении воронки
                       _chatsBlocs[endPointInTab]!.add(FetchChats(
                         endPoint: endPointInTab,
                         salesFunnelId: funnel.id,
+                        filters: _activeFilters, // Сохраняем активные фильтры
                       ));
                     } catch (e) {
                       print('ChatsScreen: Error switching funnel: $e');
@@ -355,6 +466,86 @@ class _ChatsScreenState extends State<ChatsScreen>
       },
     );
   }
+// НОВЫЙ МЕТОД: Получение текста активных фильтров для отображения
+ String _getActiveFiltersText() {
+  if (_activeFilters == null || !_hasActiveFilters) {
+    return 'Применены фильтры';
+  }
+
+  List<String> activeFiltersList = [];
+
+  if (endPointInTab == 'lead') {
+    // Существующая логика для лидов
+    if (_activeFilters!['managers']?.isNotEmpty == true) {
+      activeFiltersList.add('Менеджеры (${_activeFilters!['managers'].length})');
+    }
+    if (_activeFilters!['regions']?.isNotEmpty == true) {
+      activeFiltersList.add('Регионы (${_activeFilters!['regions'].length})');
+    }
+    if (_activeFilters!['sources']?.isNotEmpty == true) {
+      activeFiltersList.add('Источники (${_activeFilters!['sources'].length})');
+    }
+    if (_activeFilters!['statuses'] != null) {
+      activeFiltersList.add('Статус');
+    }
+    if (_activeFilters!['fromDate'] != null || _activeFilters!['toDate'] != null) {
+      activeFiltersList.add('Период');
+    }
+    List<String> booleanFilters = [];
+    if (_activeFilters!['hasSuccessDeals'] == true) booleanFilters.add('Успешные сделки');
+    if (_activeFilters!['hasInProgressDeals'] == true) booleanFilters.add('Сделки в работе');
+    if (_activeFilters!['hasFailureDeals'] == true) booleanFilters.add('Неуспешные сделки');
+    if (_activeFilters!['hasNotices'] == true) booleanFilters.add('С заметками');
+    if (_activeFilters!['hasContact'] == true) booleanFilters.add('С контактами');
+    if (_activeFilters!['hasChat'] == true) booleanFilters.add('С чатом');
+    if (_activeFilters!['hasNoReplies'] == true) booleanFilters.add('Без ответов');
+    if (_activeFilters!['hasUnreadMessages'] == true) booleanFilters.add('Непрочитанные');
+    if (_activeFilters!['hasDeal'] == true) booleanFilters.add('Без сделок');
+    if (booleanFilters.isNotEmpty) {
+      activeFiltersList.addAll(booleanFilters);
+    }
+    if (_activeFilters!['daysWithoutActivity'] != null && _activeFilters!['daysWithoutActivity'] > 0) {
+      activeFiltersList.add('Без активности (${_activeFilters!['daysWithoutActivity']} дн.)');
+    }
+  } else if (endPointInTab == 'task') {
+    // Новая логика для задач
+    if (_activeFilters!['department_id'] != null) {
+      activeFiltersList.add('Отдел');
+    }
+    if (_activeFilters!['task_created_from'] != null || _activeFilters!['task_created_to'] != null) {
+      activeFiltersList.add('Период создания');
+    }
+    if (_activeFilters!['deadline_from'] != null || _activeFilters!['deadline_to'] != null) {
+      activeFiltersList.add('Период дедлайна');
+    }
+    if (_activeFilters!['executor_ids']?.isNotEmpty == true) {
+      activeFiltersList.add('Исполнители (${_activeFilters!['executor_ids'].length})');
+    }
+    if (_activeFilters!['author_ids']?.isNotEmpty == true) {
+      activeFiltersList.add('Авторы (${_activeFilters!['author_ids'].length})');
+    }
+    if (_activeFilters!['project_ids']?.isNotEmpty == true) {
+      activeFiltersList.add('Проекты (${_activeFilters!['project_ids'].length})');
+    }
+    if (_activeFilters!['task_status_ids']?.isNotEmpty == true) {
+      activeFiltersList.add('Статусы (${_activeFilters!['task_status_ids'].length})');
+    }
+    if (_activeFilters!['unread_only'] == true) {
+      activeFiltersList.add('Только непрочитанные');
+    }
+  }
+
+  if (activeFiltersList.isEmpty) {
+    return 'Применены фильтры';
+  }
+
+  if (activeFiltersList.length <= 2) {
+    return activeFiltersList.join(', ');
+  } else {
+    return '${activeFiltersList.take(2).join(', ')} и еще ${activeFiltersList.length - 2}';
+  }
+}
+
 
   void _initTutorialTargets() {
     targets.addAll([
@@ -464,6 +655,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         endPoint: endPoint,
         query: query,
         salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
+        filters: endPoint == 'lead' ? _activeFilters : null, // ДОБАВЛЯЕМ фильтры в поиск
       ));
     });
   }
@@ -572,13 +764,14 @@ await socketClient.connect();
         initialIndex: selectTabIndex.clamp(0, _tabTitles.length - 1),
       );
     }
+
     return Unfocuser(
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _chatsBlocs['lead']!),
           BlocProvider.value(value: _chatsBlocs['task']!),
           BlocProvider.value(value: _chatsBlocs['corporate']!),
-          BlocProvider.value(value: context.read<SalesFunnelBloc>()), // Добавляем SalesFunnelBloc
+          BlocProvider.value(value: context.read<SalesFunnelBloc>()),
         ],
         child: Scaffold(
           appBar: AppBar(
@@ -596,7 +789,7 @@ await socketClient.connect();
                         color: Color(0xff1E2E52),
                       ),
                     )
-                  : _buildTitleWidget(context), // Используем новый виджет заголовка
+                  : _buildTitleWidget(context),
               onClickProfileAvatar: () {
                 setState(() {
                   isClickAvatarIcon = !isClickAvatarIcon;
@@ -604,6 +797,7 @@ await socketClient.connect();
                     _chatsBlocs[endPointInTab]!.add(FetchChats(
                       endPoint: endPointInTab,
                       salesFunnelId: _selectedFunnel?.id,
+                      filters: endPointInTab == 'lead' ? _activeFilters : null, // Передаем фильтры
                     ));
                   }
                 });
@@ -615,6 +809,15 @@ await socketClient.connect();
               showMyTaskIcon: false,
               showMenuIcon: false,
               showCallCenter: true,
+              // ОБНОВЛЯЕМ: Передаем информацию о фильтрах в CustomAppBar
+              showFilterIconChat: endPointInTab == 'lead' ? true : false,
+              showFilterIconTaskChat: endPointInTab == 'task' ? true : false,
+              // ДОБАВЛЯЕМ: Обработчики для фильтров
+              onChatLeadFiltersApplied: _handleFiltersApplied, // Новый параметр
+              onChatLeadFiltersReset: _resetFilters, // Новый параметр
+              hasActiveChatFilters: _hasActiveFilters, // Новый параметр
+              initialChatFilters: _activeFilters, // Новый параметр
+              currentSalesFunnelId: _selectedFunnel?.id, // ИЗМЕНЕНО: Добавили передачу
               onChangedSearchInput: (String value) {
                 setState(() {
                   _isSearching = value.isNotEmpty;
@@ -632,6 +835,7 @@ await socketClient.connect();
                       chatsBloc.add(FetchChats(
                         endPoint: endPointInTab,
                         salesFunnelId: _selectedFunnel?.id,
+                        filters: endPointInTab == 'lead' ? _activeFilters : null, // Передаем фильтры
                       ));
                     });
                   }
@@ -651,6 +855,46 @@ await socketClient.connect();
                   ? Column(
                       children: [
                         SizedBox(height: 12),
+                        // ДОБАВЛЯЕМ: Индикатор активных фильтров
+                        if (_hasActiveFilters && endPointInTab == 'lead')
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue, width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.filter_list, color: Colors.blue, size: 18),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Применены фильтры',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 14,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _resetFilters,
+                                  child: Text(
+                                    'Сбросить',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 14,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (_hasActiveFilters && endPointInTab == 'lead')
+                          SizedBox(height: 8),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -660,8 +904,7 @@ await socketClient.connect();
                                 return Container();
                               }
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 child: _buildTabButton(index),
                               );
                             }),
@@ -690,6 +933,7 @@ await socketClient.connect();
     );
   }
 
+  // ОБНОВЛЯЕМ: _buildTabButton для передачи фильтров
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
     GlobalKey? tabKey;
@@ -724,6 +968,7 @@ await socketClient.connect();
         chatsBloc.add(FetchChats(
           endPoint: newEndPoint,
           salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
+          filters: newEndPoint == 'lead' ? _activeFilters : null, // ДОБАВЛЯЕМ фильтры
         ));
       },
       child: Container(
@@ -734,14 +979,14 @@ await socketClient.connect();
           child: Text(
             _tabTitles[index],
             style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
             ),
           ),
         ),
       ),
     );
   }
+
   Widget _buildTabBarView() {
     return TabBarView(
       controller: _tabController,

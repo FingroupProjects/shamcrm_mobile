@@ -17,7 +17,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_svg/svg.dart';
 
-
 class InputField extends StatefulWidget {
   final Function onSend;
   final VoidCallback onAttachFile;
@@ -26,7 +25,7 @@ class InputField extends StatefulWidget {
   final Function(File soundFile, String time) sendRequestFunction;
   final FocusNode focusNode;
   final bool isLeadChat;
-
+  
   const InputField({
     super.key,
     required this.onSend,
@@ -95,7 +94,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     return _htmlContent;
   }
 
- void _handleTextChange(String text) {
+  void _handleTextChange(String text) {
     print('InputField: _handleTextChange called with text: "$text"');
     
     _displayText = text;
@@ -116,6 +115,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       }
     });
   }
+
   void _handleSelectionChange() {
     final selection = widget.messageController.selection;
     if (selection.isValid && selection.start != selection.end && widget.focusNode.hasFocus) {
@@ -153,6 +153,56 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
   void _removeFormattingOverlay() {
     _formattingOverlay?.remove();
     _formattingOverlay = null;
+  }
+
+  // Проверка доступности функций устройства
+  Map<String, bool> _checkDeviceCapabilities() {
+    return {
+      'record': true, // Запись текста доступна всегда
+      'wps': Platform.isAndroid || Platform.isIOS, // WPS доступен на мобильных устройствах
+      'textToSpeech': true, // Предположим, что TTS доступен (для реальной проверки нужен flutter_tts)
+      'chatGPT': true, // Предположим, что API ChatGPT доступен (для реальной проверки нужен http)
+    };
+  }
+
+  // Методы для новых кнопок
+  void _recordText() {
+    final text = widget.messageController.text;
+    print('Saving text: $text');
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+  }
+
+  void _openWPS() {
+    print('Opening in WPS');
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+  }
+
+  void _textToSpeech() {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) return;
+    final selectedText = widget.messageController.text.substring(selection.start, selection.end);
+    print('Text to speech: $selectedText');
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+  }
+
+  void _askChatGPT() {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) return;
+    final selectedText = widget.messageController.text.substring(selection.start, selection.end);
+    print('Asking ChatGPT: $selectedText');
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -194,6 +244,98 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
 
+    final capabilities = _checkDeviceCapabilities();
+
+    final primaryButtons = [
+      _buildFormattingButton(
+        icon: Icons.format_bold,
+        label: 'Жирный',
+        onTap: () => _applyFormatting('bold'),
+      ),
+      _buildFormattingButton(
+        icon: Icons.format_italic,
+        label: 'Курсив',
+        onTap: () => _applyFormatting('italic'),
+      ),
+      _buildFormattingButton(
+        icon: Icons.link,
+        label: 'Ссылка',
+        onTap: () => _applyLinkFormatting(context),
+      ),
+      if (capabilities['textToSpeech'] == true)
+        _buildFormattingButton(
+          icon: Icons.volume_up,
+          label: 'Озвучка',
+          onTap: _textToSpeech,
+        ),
+    ];
+
+    final secondaryButtons = [
+      if (capabilities['record'] == true)
+        PopupMenuItem(
+          value: 'record',
+          child: Row(
+            children: [
+              Icon(Icons.save, size: 18, color: Color(0xff1E2E52)),
+              SizedBox(width: 8),
+              Text('Записать', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+            ],
+          ),
+        ),
+      if (capabilities['wps'] == true)
+        PopupMenuItem(
+          value: 'wps',
+          child: Row(
+            children: [
+              Icon(Icons.description, size: 18, color: Color(0xff1E2E52)),
+              SizedBox(width: 8),
+              Text('WPS', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+            ],
+          ),
+        ),
+      if (capabilities['chatGPT'] == true)
+        PopupMenuItem(
+          value: 'chatGPT',
+          child: Row(
+            children: [
+              Icon(Icons.chat, size: 18, color: Color(0xff1E2E52)),
+              SizedBox(width: 8),
+              Text('ChatGPT', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+            ],
+          ),
+        ),
+      PopupMenuItem(
+        value: 'strikethrough',
+        child: Row(
+          children: [
+            Icon(Icons.format_strikethrough, size: 18, color: Color(0xff1E2E52)),
+            SizedBox(width: 8),
+            Text('Зачеркнутый', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'selectAll',
+        child: Row(
+          children: [
+            Icon(Icons.select_all, size: 18, color: Color(0xff1E2E52)),
+            SizedBox(width: 8),
+            Text('Выбрать все', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'paste',
+        child: Row(
+          children: [
+            Icon(Icons.paste, size: 18, color: Color(0xff1E2E52)),
+            SizedBox(width: 8),
+            Text('Вставить', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
+          ],
+        ),
+      ),
+    ];
+
     return OverlayEntry(
       builder: (context) => Positioned(
         left: offset.dx,
@@ -214,36 +356,34 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildFormattingButton(
-                    icon: Icons.format_bold,
-                    label: 'Жирный',
-                    onTap: () => _applyFormatting('bold'),
-                  ),
-                  _buildFormattingButton(
-                    icon: Icons.format_italic,
-                    label: 'Курсив',
-                    onTap: () => _applyFormatting('italic'),
-                  ),
-                  _buildFormattingButton(
-                    icon: Icons.format_strikethrough,
-                    label: 'Зачеркнутый',
-                    onTap: () => _applyFormatting('strikethrough'),
-                  ),
-                  _buildFormattingButton(
-                    icon: Icons.link,
-                    label: 'Ссылка',
-                    onTap: () => _applyLinkFormatting(context),
-                  ),
-                  _buildFormattingButton(
-                    icon: Icons.select_all,
-                    label: 'Выбрать все',
-                    onTap: _selectAll,
-                  ),
-                  _buildFormattingButton(
-                    icon: Icons.paste,
-                    label: 'Вставить',
-                    onTap: _paste,
-                  ),
+                  ...primaryButtons,
+                  if (secondaryButtons.isNotEmpty)
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_horiz, size: 18, color: Color(0xff1E2E52)),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'record':
+                            _recordText();
+                            break;
+                          case 'wps':
+                            _openWPS();
+                            break;
+                          case 'chatGPT':
+                            _askChatGPT();
+                            break;
+                          case 'strikethrough':
+                            _applyFormatting('strikethrough');
+                            break;
+                          case 'selectAll':
+                            _selectAll();
+                            break;
+                          case 'paste':
+                            _paste();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => secondaryButtons,
+                    ),
                 ],
               ),
             ),
@@ -827,7 +967,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     );
   }
 
-void _showTemplatesPanel(BuildContext context) {
+  void _showTemplatesPanel(BuildContext context) {
     print('InputField: Opening TemplatesPanel');
     showModalBottomSheet(
       context: context,
@@ -839,10 +979,8 @@ void _showTemplatesPanel(BuildContext context) {
         onTemplateSelected: (String selectedText) {
           print('InputField: Selected template text: $selectedText');
           
-          // Сначала закрываем modal
           Navigator.of(bottomSheetContext).pop();
           
-          // Затем в следующем фрейме устанавливаем текст
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.messageController.text = selectedText;
             _htmlContent = selectedText;
@@ -851,10 +989,8 @@ void _showTemplatesPanel(BuildContext context) {
             print('InputField: Message controller text: ${widget.messageController.text}');
             print('InputField: Template successfully applied');
             
-            // Устанавливаем фокус на поле ввода
             widget.focusNode.requestFocus();
             
-            // Принудительно обновляем состояние
             if (mounted) {
               setState(() {});
             }

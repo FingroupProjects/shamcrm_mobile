@@ -1163,7 +1163,9 @@
 "transfer_and_delete": "To‘liq ko‘chirib, o‘chirish",
 "user_id_not_found": "Foydalanuvchi IDsi aniqlanmadi",
 "not_available": "00:00",
-"average_rating": "O‘rtacha baho"
+"average_rating": "O‘rtacha baho",
+"unknown_channel": "Tanlanmagan kanal",
+"unread_only": "Faqat o‘qilganlar"  
 
 
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
@@ -2028,6 +2029,25 @@ Future<List<SourceLead>> getSourceLead() async {
     throw Exception('Ошибка загрузки источников');
   }
 }
+
+Future<List<LeadStatusForFilter>> getLeadStatusForFilter() async {
+  final path = await _appendQueryParams('/lead/statuses');
+  if (kDebugMode) {
+    print('ApiService: getLeadStatusForFilter - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List)
+        .map((leadStatus) => LeadStatusForFilter.fromJson(leadStatus))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки статусов лидов');
+  }
+}
+
 
 Future<List<PriceType>> getPriceType() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -4566,51 +4586,169 @@ Future<PaginationDTO<Chats>> getAllChats(
   String endPoint, [
   int page = 1,
   String? search,
-  int? salesFunnelId, // Новый параметр
+  int? salesFunnelId,
+  Map<String, dynamic>? filters,
 ]) async {
   final token = await getToken();
+  
   // Формируем базовый путь
   String path = '/v2/chat/getMyChats/$endPoint?page=$page';
+  
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   path = await _appendQueryParams(path);
+  
   if (kDebugMode) {
     print('ApiService: getAllChats - Generated path: $path');
+    print('ApiService: getAllChats - Received filters: $filters');
   }
 
-  // Добавляем search и funnel_id, если они есть
+  // Добавляем search параметр
   if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
+    path += '&search=${Uri.encodeComponent(search)}';
   }
+  
+  // Добавляем funnel_id для лидов
   if (salesFunnelId != null && endPoint == 'lead') {
     path += '&funnel_id=$salesFunnelId';
   }
 
-  print('ApiService.getAllChats: Requesting URL: $baseUrl$path');
-
-  final response = await http.get(
-    Uri.parse('$baseUrl$path'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
-        return Chats.fromJson(e);
-      });
-      print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
-      print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
-      return pagination;
-    } else {
-      print('ApiService.getAllChats: No result found in response');
-      throw ('Результат отсутствует в ответе');
+  // Обрабатываем фильтры для endPoint = 'lead'
+  if (filters != null && endPoint == 'lead') {
+    print('ApiService: getAllChats - Processing filters for lead endpoint');
+    
+    // Managers - отправляем как отдельные параметры для массива
+    if (filters['managers'] != null && filters['managers'].isNotEmpty) {
+      List<int> managerIds = (filters['managers'] as List).map((m) => m.id as int).toList();
+      for (int managerId in managerIds) {
+        path += '&managers[]=$managerId';
+      }
     }
-  } else {
-    print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
-    throw ('Ошибка ${response.statusCode}: ${response.body}');
+
+    // Lead Statuses - отправляем как отдельные параметры для массива
+      if (filters['statuses'] != null && filters['statuses'].isNotEmpty) {
+        List<String> statusIds = (filters['statuses'] as List<String>).toList();
+        for (String statusId in statusIds) {
+          path += '&leadStatuses[]=$statusId';
+        }
+      }
+
+    // Sources - отправляем как отдельные параметры для массива
+    if (filters['sources'] != null && filters['sources'].isNotEmpty) {
+      List<int> sourceIds = (filters['sources'] as List).map((s) => s.id as int).toList();
+      for (int sourceId in sourceIds) {
+        path += '&sources[]=$sourceId';
+      }
+    }
+
+    // Regions - отправляем как отдельные параметры для массива
+    if (filters['regions'] != null && filters['regions'].isNotEmpty) {
+      List<int> regionIds = (filters['regions'] as List).map((r) => r.id as int).toList();
+      for (int regionId in regionIds) {
+        path += '&regions[]=$regionId';
+      }
+    }
+
+    // Boolean flags
+    if (filters['hasSuccessDeals'] == true) {
+      path += '&hasSuccessDeals=1';
+    }
+    
+    if (filters['hasFailureDeals'] == true) {
+      path += '&hasFailureDeals=1';
+    }
+    
+    if (filters['hasInProgressDeals'] == true) {
+      path += '&hasInProgressDeals=1';
+    }
+    
+    if (filters['hasNotices'] == true) {
+      path += '&hasNotices=1';
+    }
+    
+    if (filters['hasContact'] == true) {
+      path += '&hasContact=1';
+    }
+    
+    if (filters['hasChat'] == true) {
+      path += '&hasChat=1';
+    }
+    
+    if (filters['hasNoReplies'] == true) {
+      path += '&hasNoReplies=1';
+    }
+    
+    if (filters['hasUnreadMessages'] == true) {
+      path += '&hasUnreadMessages=1';
+    }
+    
+    if (filters['hasDeal'] == true) {
+      path += '&hasDeal=1';
+    }
+
+    // Days without activity
+    if (filters['daysWithoutActivity'] != null && filters['daysWithoutActivity'] > 0) {
+      path += '&lastUpdate=${filters['daysWithoutActivity']}';
+    }
+
+    // Date range
+    if (filters['fromDate'] != null) {
+      DateTime fromDate = filters['fromDate'] as DateTime;
+      String formattedFromDate = '${fromDate.year}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
+      path += '&createdFrom=$formattedFromDate';
+    }
+    
+    if (filters['toDate'] != null) {
+      DateTime toDate = filters['toDate'] as DateTime;
+      String formattedToDate = '${toDate.year}-${toDate.month.toString().padLeft(2, '0')}-${toDate.day.toString().padLeft(2, '0')}';
+      path += '&createdTo=$formattedToDate';
+    }
+
+    print('ApiService: getAllChats - Final path with filters: $path');
+  }
+
+  final fullUrl = '$baseUrl$path';
+  print('ApiService.getAllChats: Requesting URL: $fullUrl');
+
+  try {
+    final response = await http.get(
+      Uri.parse(fullUrl),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'FlutterApp/1.0', // Добавляем User-Agent
+        'Cache-Control': 'no-cache', // Отключаем кеширование
+      },
+    );
+
+    print('ApiService.getAllChats: Response status: ${response.statusCode}');
+    print('ApiService.getAllChats: Response headers: ${response.headers}');
+    
+    if (response.statusCode == 302) {
+      print('ApiService.getAllChats: Got 302 redirect to: ${response.headers['location']}');
+      throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
+        print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
+        print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
+        return pagination;
+      } else {
+        print('ApiService.getAllChats: No result found in response');
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('ApiService.getAllChats: Exception caught: $e');
+    rethrow;
   }
 }
 
@@ -8620,14 +8758,24 @@ Future<Map<String, dynamic>> getAllCalls({
   required int page,
   required int perPage,
   String? searchQuery,
+  int? salesFunnelId, // ИЗМЕНЕНО: Добавили параметр для воронки
   Map<String, dynamic>? filters,
 }) async {
+  // Формируем базовый путь
   String path = '/calls?page=$page&per_page=$perPage';
 
+  // ИЗМЕНЕНО: Если пользователь выбрал воронку, добавляем sales_funnel_id сразу,
+  // чтобы _appendQueryParams не добавил текущую (из-за containsKey).
+  if (salesFunnelId != null) {
+    path += '&sales_funnel_id=$salesFunnelId';
+  }
+
+  // Добавляем search параметр
   if (searchQuery != null && searchQuery.isNotEmpty) {
     path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
   }
 
+  // Обрабатываем фильтры
   if (filters != null) {
     if (filters.containsKey('startDate') && filters['startDate'] != null) {
       path += '&from=${Uri.encodeQueryComponent(filters['startDate'])}';
@@ -8640,6 +8788,10 @@ Future<Map<String, dynamic>> getAllCalls({
       if (kDebugMode) {
         print('ApiService: Добавлен параметр to: ${filters['endDate']}');
       }
+    }
+    // Добавляем обработку unreadOnly
+    if (filters.containsKey('unread_only') && filters['unread_only'] == true) {
+      path += '&unread_only=1';
     }
     if (filters.containsKey('leads') &&
         filters['leads'] is List &&
@@ -8685,7 +8837,7 @@ Future<Map<String, dynamic>> getAllCalls({
     }
   }
 
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id (только если не добавлена выше)
   path = await _appendQueryParams(path);
   if (kDebugMode) {
     print('ApiService: getAllCalls - Generated path: $path');
@@ -8717,7 +8869,6 @@ Future<Map<String, dynamic>> getAllCalls({
     throw ('Ошибка загрузки звонков');
   }
 }
-
 Future<Map<String, dynamic>> getIncomingCalls({
   required int page,
   required int perPage,

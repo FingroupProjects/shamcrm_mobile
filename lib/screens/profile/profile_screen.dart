@@ -331,8 +331,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openSupportChat() async {
-    const tgUrl = 'https://t.me/shamcrm_bot';
-    const webUrl = 'https://t.me/shamcrm_bot';
+    const tgUrl = 'https://t.me/shamcrm_support_bot';
+    const webUrl = 'https://t.me/shamcrm_support_bot:';
     if (await canLaunchUrl(Uri.parse(tgUrl))) {
       await launchUrl(Uri.parse(tgUrl), mode: LaunchMode.externalApplication);
     } else {

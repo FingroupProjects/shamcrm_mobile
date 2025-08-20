@@ -216,10 +216,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           children: [
             SizedBox(height: 10),
             Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 6),
-              ),
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   border: Border.all(color: Colors.black, width: 6),
+              // ),
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 backgroundImage: isGroupChat

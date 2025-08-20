@@ -34,6 +34,7 @@ import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_status_for_filter/lead_status_for_filter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
@@ -207,7 +208,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
@@ -304,6 +304,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
         BlocProvider(create: (context) => TemplateBloc(ApiService())),
+        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         
       ],
       child: MaterialApp(

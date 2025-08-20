@@ -1,3 +1,5 @@
+
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:crm_task_manager/utils/app_colors.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -20,6 +21,7 @@ class MessageBubble extends StatelessWidget {
   final bool isHighlighted;
   final bool isChanged;
   final bool isRead;
+  final bool isNote;
 
   MessageBubble({
     Key? key,
@@ -33,6 +35,7 @@ class MessageBubble extends StatelessWidget {
     this.isHighlighted = false,
     required this.isChanged,
     required this.isRead,
+    required this.isNote,
   }) : super(key: key);
 
   @override
@@ -99,9 +102,11 @@ class MessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: isSender
-                      ? ChatSmsStyles.messageBubbleSenderColor
-                      : ChatSmsStyles.messageBubbleReceiverColor,
+                  color: isNote
+                      ? ChatSmsStyles.messageBubbleNoteColor
+                      : isSender
+                          ? ChatSmsStyles.messageBubbleSenderColor
+                          : ChatSmsStyles.messageBubbleReceiverColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -149,7 +154,9 @@ class MessageBubble extends StatelessWidget {
                       Icon(
                         isRead ? Icons.done_all : Icons.done_all,
                         size: 18,
-                        color: isRead ? const Color.fromARGB(255, 45, 28, 235) : Colors.grey.shade400,
+                        color: isRead
+                            ? const Color.fromARGB(255, 45, 28, 235)
+                            : Colors.grey.shade400,
                       ),
                   ],
                 ),
@@ -189,9 +196,12 @@ class MessageBubble extends StatelessWidget {
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
-                  final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-                  final RenderBox messageBox = context.findRenderObject() as RenderBox;
-                  final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+                  final RenderBox overlay =
+                      Overlay.of(context).context.findRenderObject() as RenderBox;
+                  final RenderBox messageBox =
+                      context.findRenderObject() as RenderBox;
+                  final Offset position =
+                      messageBox.localToGlobal(Offset.zero, ancestor: overlay);
 
                   showMenu(
                     context: context,
@@ -208,12 +218,14 @@ class MessageBubble extends StatelessWidget {
                     items: [
                       _buildMenuItem(
                         icon: 'assets/icons/chats/menu_icons/open.svg',
-                        text: AppLocalizations.of(context)!.translate('open_url_source'),
+                        text: AppLocalizations.of(context)!
+                            .translate('open_url_source'),
                         iconColor: Colors.black,
                         textColor: Colors.black,
                         onTap: () async {
                           Navigator.pop(context);
-                          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                          launchUrl(Uri.parse(url),
+                              mode: LaunchMode.externalApplication);
                         },
                       ),
                       _buildMenuItem(
@@ -227,7 +239,8 @@ class MessageBubble extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                AppLocalizations.of(context)!.translate('copy_url_source_text'),
+                                AppLocalizations.of(context)!
+                                    .translate('copy_url_source_text'),
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
@@ -236,13 +249,15 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                               behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               backgroundColor: Colors.green,
                               elevation: 3,
-                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
                               duration: Duration(seconds: 3),
                             ),
                           );
@@ -262,9 +277,12 @@ class MessageBubble extends StatelessWidget {
       }
     }
 
-    final baseStyle = isSender
-        ? ChatSmsStyles.senderMessageTextStyle
-        : ChatSmsStyles.receiverMessageTextStyle;
+    // Определяем базовый стиль текста в зависимости от isNote
+    final baseStyle = isNote
+        ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
+        : isSender
+            ? ChatSmsStyles.senderMessageTextStyle
+            : ChatSmsStyles.receiverMessageTextStyle;
 
     for (var node in document.body!.nodes) {
       parseNode(node, baseStyle);

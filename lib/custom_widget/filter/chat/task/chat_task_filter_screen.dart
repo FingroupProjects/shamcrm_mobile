@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
@@ -16,14 +20,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
-import 'dart:convert';
 
-class UserFilterScreen extends StatefulWidget {
+class ChatTaskFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
-  final List? initialUsers;
+  final List<UserData>? initialUsers;
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
@@ -31,7 +34,6 @@ class UserFilterScreen extends StatefulWidget {
   final bool? initialHasFile;
   final bool? initialHasDeal;
   final bool? initialIsUrgent;
-  final bool? initialUnreadOnly;
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
@@ -39,7 +41,7 @@ class UserFilterScreen extends StatefulWidget {
   final String? initialDepartment;
   final List<Map<String, dynamic>>? initialDirectoryValues;
 
-  UserFilterScreen({
+  ChatTaskFilterScreen({
     Key? key,
     this.onUsersSelected,
     this.onStatusSelected,
@@ -51,7 +53,6 @@ class UserFilterScreen extends StatefulWidget {
     this.initialToDate,
     this.initialIsOverdue,
     this.initialHasFile,
-    this.initialUnreadOnly,
     this.initialHasDeal,
     this.initialIsUrgent,
     this.initialDeadlineFromDate,
@@ -63,12 +64,13 @@ class UserFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _UserFilterScreenState createState() => _UserFilterScreenState();
+  _ChatTaskFilterScreenState createState() => _ChatTaskFilterScreenState();
 }
 
-class _UserFilterScreenState extends State<UserFilterScreen> {
-  List _selectedUsers = [];
+class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
+  List<UserData> _selectedUsers = [];
   List<String> _selectedAuthors = [];
+  List<String> _selectedProjects = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -82,6 +84,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   bool _isDepartmentEnabled = false;
   Map<int, MainField?> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
+  bool? _unreadOnly;
 
   @override
   void initState() {
@@ -98,6 +101,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
     _selectedDepartment = widget.initialDepartment;
+    context.read<GetAllClientBloc>().add(GetAllClientEv());
     _loadDepartmentStatus();
     _loadFilterState();
     _fetchDirectoryLinks();
@@ -260,6 +264,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 widget.onResetFilters?.call();
                 _selectedUsers.clear();
                 _selectedAuthors.clear();
+                _selectedProjects.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
@@ -300,48 +305,53 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               await TaskCache.clearAllTasks();
               await _saveFilterState();
 
-              final filters = {
-                'users': _selectedUsers,
-                'statuses': _selectedStatuses,
-                'fromDate': _fromDate,
-                'toDate': _toDate,
-                'overdue': _isOverdue,
-                'hasFile': _hasFile,
-                'hasDeal': _hasDeal,
-                'urgent': _isUrgent,
-                'deadlinefromDate': _deadlinefromDate,
-                'deadlinetoDate': _deadlinetoDate,
-                'authors': _selectedAuthors,
-                'department': _selectedDepartment,
-                'directory_values': _selectedDirectoryFields.entries
-                    .where((entry) => entry.value != null)
-                    .map((entry) => {
-                          'directory_id': _directoryLinks
-                              .firstWhere((link) => link.id == entry.key)
-                              .directory
-                              .id,
-                          'entry_id': entry.value!.id,
-                        })
-                    .toList(),
-              };
+              final filters = <String, dynamic>{};
 
-              final bool hasFilters = _selectedUsers.isNotEmpty ||
-                  _selectedStatuses != null ||
-                  (_fromDate != null && _toDate != null) ||
-                  _isOverdue ||
-                  _hasFile ||
-                  _hasDeal ||
-                  _isUrgent ||
-                  (_deadlinefromDate != null && _deadlinetoDate != null) ||
-                  _selectedAuthors.isNotEmpty ||
-                  _selectedDepartment != null ||
-                  _selectedDirectoryFields.values.any((field) => field != null);
+              if (_selectedDepartment != null) {
+                filters['department_id'] = int.tryParse(_selectedDepartment!);
+              }
+
+              if (_fromDate != null) {
+                filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
+              }
+              if (_toDate != null) {
+                filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
+              }
+
+              if (_deadlinefromDate != null) {
+                filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
+              }
+              if (_deadlinetoDate != null) {
+                filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
+              }
+
+              if (_selectedUsers.isNotEmpty) {
+                filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
+              }
+
+              if (_selectedAuthors.isNotEmpty) {
+                filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
+              }
+
+              if (_selectedProjects.isNotEmpty) {
+                filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
+              }
+
+              if (_selectedStatuses != null) {
+                filters['task_status_ids'] = [_selectedStatuses!];
+              }
+
+              if (_unreadOnly == true) {
+                filters['unread_only'] = true;
+              }
+
+              final bool hasFilters = filters.isNotEmpty;
 
               if (hasFilters) {
-                print('APPLYING FILTERS');
+                print('APPLYING TASK FILTERS: $filters');
                 widget.onUsersSelected?.call(filters);
               } else {
-                print('NOTHING!!!!!!');
+                print('NO TASK FILTERS APPLIED');
               }
 
               Navigator.pop(context);
@@ -389,8 +399,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_date_range'),
+                            : AppLocalizations.of(context)!.translate('select_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -418,8 +427,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       Text(
                         _deadlinefromDate != null && _deadlinetoDate != null
                             ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_deadline_range'),
+                            : AppLocalizations.of(context)!.translate('select_deadline_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -428,7 +436,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -440,9 +448,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: UserMultiSelectWidget(
-                          selectedUsers: _selectedUsers
-                              .map((user) => user.id.toString())
-                              .toList(),
+                          selectedUsers: _selectedUsers.map((user) => user.id.toString()).toList(),
                           onSelectUsers: (List<UserData> selectedUsersData) {
                             setState(() {
                               _selectedUsers = selectedUsersData;
@@ -475,10 +481,28 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
+                        child: ProjectMultiSelectWidget(
+                          selectedProjects: _selectedProjects,
+                          onSelectProjects: (List<ProjectTask> selectedProjectsData) {
+                            setState(() {
+                              _selectedProjects = selectedProjectsData
+                                  .map((project) => project.id.toString())
+                                  .toList();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
                         child: AuthorMultiSelectWidget(
                           selectedAuthors: _selectedAuthors,
-                          onSelectAuthors:
-                              (List<AuthorData> selectedAuthorsData) {
+                          onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
                             setState(() {
                               _selectedAuthors = selectedAuthorsData
                                   .map((author) => author.id.toString())
@@ -488,28 +512,6 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    if (_directoryLinks.isNotEmpty) ...[
-                      for (var link in _directoryLinks)
-                        Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: DirectoryDropdownWidget(
-                              directoryId: link.directory.id,
-                              directoryName: link.directory.name,
-                              onSelectField: (MainField? field) {
-                                setState(() {
-                                  _selectedDirectoryFields[link.id] = field;
-                                });
-                              },
-                              initialField: _selectedDirectoryFields[link.id],
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                    ],
                     if (_isDepartmentEnabled)
                       Card(
                         shape: RoundedRectangleBorder(
@@ -530,32 +532,15 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 8),
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('overdue'),
-                            _isOverdue,
-                            (value) => setState(() => _isOverdue = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('has_file'),
-                            _hasFile,
-                            (value) => setState(() => _hasFile = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('has_deal'),
-                            _hasDeal,
-                            (value) => setState(() => _hasDeal = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('urgents'),
-                            _isUrgent,
-                            (value) => setState(() => _isUrgent = value),
+                            AppLocalizations.of(context)!.translate('unread_only'),
+                            _unreadOnly ?? false,
+                            (value) => setState(() => _unreadOnly = value),
                           ),
                         ],
                       ),

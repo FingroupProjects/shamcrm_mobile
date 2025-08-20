@@ -1150,7 +1150,8 @@
 "user_id_not_found": "Не удалось определить ID текущего пользователя",
 "not_available": "00:00",
 "average_rating": "Средняя оценка",
-"unknown_channel": "Неизвестный канал"
+"unknown_channel": "Неизвестный канал",
+"unread_only": "Только непрочитанные"
 
 
 

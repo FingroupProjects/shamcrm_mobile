@@ -24,6 +24,11 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   List<ManagerData> managersList = [];
   List<ManagerData> selectedManagersData = [];
   bool isInitialized = false;
+  final ManagerData systemManager = ManagerData(
+    id: 0,
+    name: "Система",
+    lastname: "",
+  );
 
   @override
   void initState() {
@@ -41,8 +46,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   void _initializeSelectedManagers(List<ManagerData> allManagers) {
     if (isInitialized) return;
 
-    if (widget.selectedManagers != null &&
-        widget.selectedManagers!.isNotEmpty) {
+    if (widget.selectedManagers != null && widget.selectedManagers!.isNotEmpty) {
       selectedManagersData = allManagers
           .where((manager) =>
               widget.selectedManagers!.contains(manager.id.toString()))
@@ -52,6 +56,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
     }
 
     isInitialized = true;
+    // Remove setState() from here - it will be handled by the build method
   }
 
   @override
@@ -69,18 +74,17 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
             }
 
             if (state is GetAllManagerSuccess) {
-              final systemManager = ManagerData(
-                id: 0,
-                name: "Система",
-                lastname: "",
-              );
-
               managersList = [
                 systemManager,
                 ...state.dataManager.result ?? [],
               ];
 
               _initializeSelectedManagers(managersList);
+
+              // Фильтруем selectedManagersData, чтобы гарантировать наличие в managersList
+              selectedManagersData = selectedManagersData
+                  .where((manager) => managersList.contains(manager))
+                  .toList();
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +107,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration:  CustomDropdownDecoration(
+                    decoration: CustomDropdownDecoration(
                       closedFillColor: Color(0xffF4F7FD),
                       expandedFillColor: Colors.white,
                       closedBorder: Border.all(
@@ -193,6 +197,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     onListChanged: (values) {
+                      // print('Selected managers: $values');
                       setState(() {
                         selectedManagersData = values;
                       });
@@ -244,18 +249,18 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Загрузка...',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            //   const SizedBox(width: 8),
+            //   Text(
+            //     'Загрузка...',
+            //     style: const TextStyle(
+            //       fontSize: 14,
+            //       fontWeight: FontWeight.w500,
+            //       fontFamily: 'Gilroy',
+            //       color: Color(0xff1E2E52),
+            //     ),
+            //     maxLines: 1,
+            //     overflow: TextOverflow.ellipsis,
+            //   ),
             ],
           ),
         ),

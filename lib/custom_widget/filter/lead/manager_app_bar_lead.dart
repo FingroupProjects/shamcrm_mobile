@@ -32,9 +32,11 @@ class ManagerFilterScreen extends StatefulWidget {
   final bool? initialHasNoReplies;
   final bool? initialHasUnreadMessages;
   final bool? initialHasDeal;
+  final bool? initialUnreadOnly;
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
   final List<Map<String, dynamic>>? initialDirectoryValues;
+
 
   ManagerFilterScreen({
     Key? key,
@@ -54,6 +56,7 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialHasNoReplies,
     this.initialHasUnreadMessages,
     this.initialHasDeal,
+    this.initialUnreadOnly, // ИЗМЕНЕНО: Добавили параметр для фильтрации по непрочитанным сообщениям
     this.initialDaysWithoutActivity,
     this.onResetFilters,
     this.initialDirectoryValues, 

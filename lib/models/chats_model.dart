@@ -290,6 +290,7 @@ class Message {
   bool isPinned;
   bool isChanged;
   bool isRead;
+  final bool isNote; // Новое поле
   final ReadStatus? readStatus;
   final String? referralBody;
 
@@ -308,6 +309,7 @@ class Message {
     this.forwardedMessage,
     this.isPinned = false,
     this.isChanged = false,
+    this.isNote = false, // Инициализация по умолчанию
     this.isRead = false,
     this.readStatus,
     this.referralBody,
@@ -330,6 +332,8 @@ class Message {
     bool? isPinned,
     bool? isChanged,
     bool? isRead,
+    bool? isNote, // Новое поле
+
     ReadStatus? readStatus,
   }) {
     return Message(
@@ -349,6 +353,7 @@ class Message {
       isChanged: isChanged ?? this.isChanged,
       isRead: isRead ?? this.isRead,
       readStatus: readStatus ?? this.readStatus,
+      isNote: isNote ?? this.isNote, // Новое поле
     );
   }
 
@@ -388,6 +393,7 @@ class Message {
         forwardedMessage: forwardedMessage,
         isRead: json['is_read'] ?? false,
         readStatus: readStatus,
+        isNote: json['is_note'] ?? false, // Парсинг is_note
         duration: Duration(
           seconds: json['voice_duration'] != null
               ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0

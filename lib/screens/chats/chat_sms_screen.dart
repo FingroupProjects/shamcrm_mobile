@@ -1445,6 +1445,7 @@ class MessageItemWidget extends StatelessWidget {
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
+          isNote: message.isNote, // Передаем is_note
         );
       case 'image':
         return ImageMessageBubble(
@@ -1494,42 +1495,13 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 
-  Widget textState() {
-    String? replyMessageText;
-    if (message.forwardedMessage != null &&
-        message.forwardedMessage!.type == 'voice') {
-      replyMessageText = "Голосовое сообщение";
-    } else {
-      replyMessageText = message.forwardedMessage?.text;
+  String time(String createMessateTime) {
+    try {
+      final dateTime = DateTime.parse(createMessateTime).toLocal();
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return '';
     }
-    return MessageBubble(
-      message: message.text,
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      senderName: message.senderName.toString(),
-      replyMessage: replyMessageText,
-      replyMessageId: message.forwardedMessage?.id,
-      onReplyTap: (int replyMessageId) {
-        onReplyTap?.call(replyMessageId);
-      },
-      isHighlighted: highlightedMessageId == message.id,
-      isChanged: message.isChanged,
-      isRead: message.isRead,
-    );
-  }
-
-  Widget imageState() {
-    return ImageMessageBubble(
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      filePath: message.filePath ?? 'Unknown file format',
-      fileName: message.text,
-      message: message,
-      senderName: message.senderName,
-      replyMessage: message.forwardedMessage?.text,
-      isHighlighted: highlightedMessageId == message.id,
-      isRead: message.isRead,
-    );
   }
 
   void _showMessageContextMenu(
@@ -1580,8 +1552,6 @@ class MessageItemWidget extends StatelessWidget {
       final List<PopupMenuItem> menuItems = [];
 
       if (showReadersList) {
-        final List<PopupMenuItem> menuItems = [];
-
         menuItems.add(
           PopupMenuItem(
             child: InkWell(
