@@ -1144,7 +1144,19 @@
 "not_available": "00:00",
 "average_rating": "Average rating",
 "unknown_channel": "Unknown channel",
-"unread_only": "Unread only"
+"no_filters_applied": "No filters applied",
+"regions": "Regions",
+"sources": "Sources",
+"without_deal": "Without deal",
+"unread_only": "Unread only",
+"directory_values": "Directory values",
+"task_creation_period": "Task creation period",
+"deadline_period": "Deadline period",
+"executors": "Executors",
+"authors": "Authors",
+"and_more": "and more",
+"no_statuses_available": ""
+
 
 
 

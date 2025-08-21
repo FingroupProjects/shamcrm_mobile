@@ -1165,7 +1165,19 @@
 "not_available": "00:00",
 "average_rating": "O‘rtacha baho",
 "unknown_channel": "Tanlanmagan kanal",
-"unread_only": "Faqat o‘qilganlar"  
+"no_filters_applied": "Filtrlar qoʻllanilmagan",
+"regions": "Hududlar",
+"sources": "Manbalar",
+"without_deal": "Bitimsiz",
+"unread_only": "Faqat oʻqilmaganlar",
+"directory_values": "Maʼlumotnomalar",
+"task_creation_period": "Vazifa yaratilgan davr",
+"deadline_period": "Muddat davri",
+"executors": "Bajaru vchilar",
+"authors": "Mualliflar",
+"and_more": "va yana",
+"no_statuses_available": ""
+
 
 
 }

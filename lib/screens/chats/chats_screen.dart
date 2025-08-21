@@ -114,48 +114,30 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
   // НОВЫЙ МЕТОД: Обработка фильтров от ChatLeadFilterScreen
- void _handleFiltersApplied(Map<String, dynamic> filters) {
+void _handleFiltersApplied(Map<String, dynamic> filters) {
   print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
-  
   setState(() {
     _activeFilters = filters;
     _hasActiveFilters = _checkIfFiltersActive(filters);
+    print('ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
   });
 
-  // Применяем фильтры к текущей вкладке
-  if (endPointInTab == 'lead' || endPointInTab == 'task') {
-    final chatsBloc = _chatsBlocs[endPointInTab]!;
-    chatsBloc.add(ClearChats());
-    _pagingControllers[endPointInTab]!.itemList = null;
-    _pagingControllers[endPointInTab]!.refresh();
-    
-    chatsBloc.add(FetchChats(
-      endPoint: endPointInTab,
-      salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-      filters: filters, // Передаем фильтры как есть
-    ));
-  }
+  // Сохраняем фильтры
+  SharedPreferences.getInstance().then((prefs) {
+    prefs.setString('active_chat_filters', json.encode(filters));
+    print('ChatsScreen: Saved active filters: $filters');
+  });
 
-    setState(() {
-      _activeFilters = filters;
-      _hasActiveFilters = _checkIfFiltersActive(filters);
-    });
-
-    // Применяем фильтры только к вкладке lead
-    if (endPointInTab == 'lead') {
-      final chatsBloc = _chatsBlocs['lead']!;
-      chatsBloc.add(ClearChats());
-      _pagingControllers['lead']!.itemList = null;
-      _pagingControllers['lead']!.refresh();
-      
-      chatsBloc.add(FetchChats(
-        endPoint: 'lead',
-        salesFunnelId: _selectedFunnel?.id,
-        filters: filters, // Передаем фильтры
-      ));
-    }
-  }
-
+  final chatsBloc = _chatsBlocs[endPointInTab]!;
+  chatsBloc.add(ClearChats());
+  _pagingControllers[endPointInTab]!.itemList = null;
+  _pagingControllers[endPointInTab]!.refresh();
+  chatsBloc.add(FetchChats(
+    endPoint: endPointInTab,
+    salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+    filters: filters,
+  ));
+}
   // НОВЫЙ МЕТОД: Проверка активности фильтров
   bool _checkIfFiltersActive(Map<String, dynamic> filters) {
   if (endPointInTab == 'lead') {
@@ -193,104 +175,109 @@ class _ChatsScreenState extends State<ChatsScreen>
 }
 
   // НОВЫЙ МЕТОД: Сброс фильтров
-  void _resetFilters() {
-    print('ChatsScreen._resetFilters: Resetting filters');
-    
-    setState(() {
-      _activeFilters = null;
-      _hasActiveFilters = false;
-    });
+void _resetFilters() {
+  print('ChatsScreen._resetFilters: Resetting filters');
+  setState(() {
+    _activeFilters = null;
+    _hasActiveFilters = false;
+  });
 
-    if (endPointInTab == 'lead') {
-      final chatsBloc = _chatsBlocs['lead']!;
-      chatsBloc.add(ClearChats());
-      _pagingControllers['lead']!.itemList = null;
-      _pagingControllers['lead']!.refresh();
+  final chatsBloc = _chatsBlocs[endPointInTab]!;
+  chatsBloc.add(ClearChats());
+  _pagingControllers[endPointInTab]!.itemList = null;
+  _pagingControllers[endPointInTab]!.refresh();
+  chatsBloc.add(FetchChats(
+    endPoint: endPointInTab,
+    salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+  ));
+}
+
+@override
+void initState() {
+  super.initState();
+  print('ChatsScreen: initState started');
+  _checkPermissions().then((_) {
+    if (_isPermissionsChecked) {
+      setState(() {
+        _tabTitles = _getTabTitles(context);
+        _tabController = TabController(
+          length: _tabTitles.length,
+          vsync: this,
+          initialIndex: selectTabIndex,
+        );
+        _isTabControllerInitialized = true;
+      });
+      setUpServices();
       
-      chatsBloc.add(FetchChats(
-        endPoint: 'lead',
-        salesFunnelId: _selectedFunnel?.id,
-      ));
-    }
-  }
+      print('ChatsScreen: Fetching sales funnels');
+      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
 
-  @override
-  void initState() {
-    super.initState();
-    _checkPermissions().then((_) {
-      if (_isPermissionsChecked) {
-        setState(() {
-          _tabTitles = _getTabTitles(context);
-          _tabController = TabController(
-            length: _tabTitles.length,
-            vsync: this,
-            initialIndex: selectTabIndex,
+      // Загружаем сохранённую воронку
+      apiService.getSelectedChatSalesFunnel().then((funnelId) {
+        print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
+        if (funnelId != null && mounted) {
+          final funnel = SalesFunnel(
+            id: int.parse(funnelId),
+            name: '',
+            organizationId: 1,
+            isActive: true,
+            createdAt: '',
+            updatedAt: '',
           );
-          _isTabControllerInitialized = true;
-        });
-        setUpServices();
-        
-        // Загружаем воронки
-        context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-        print('ChatsScreen: initState - Dispatched FetchSalesFunnels');
-
-        // Загружаем сохранённую воронку для чатов
-        apiService.getSelectedChatSalesFunnel().then((funnelId) {
-          print('ChatsScreen: initState - Retrieved selected chat funnel ID: $funnelId');
-          if (funnelId != null && mounted) {
-            context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
-              SalesFunnel(
-                id: int.parse(funnelId),
-                name: '',
-                organizationId: 1,
-                isActive: true,
-                createdAt: '',
-                updatedAt: '',
-              ),
+          context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+          setState(() {
+            _selectedFunnel = funnel;
+          });
+          if (endPointInTab == 'lead') {
+            print('ChatsScreen: Dispatching FetchChats with saved funnelId: $funnelId, filters: $_activeFilters');
+            _chatsBlocs[endPointInTab]!.add(FetchChats(
+              endPoint: endPointInTab,
+              salesFunnelId: int.parse(funnelId),
+              filters: _activeFilters,
             ));
-            print('ChatsScreen: initState - Dispatched SelectSalesFunnel with ID: $funnelId');
           }
-        });
-
-        // Слушаем изменения состояния SalesFunnelBloc
-        context.read<SalesFunnelBloc>().stream.listen((state) {
-          if (state is SalesFunnelLoaded && mounted) {
-            print('ChatsScreen: initState - SalesFunnelLoaded received, selectedFunnel: ${state.selectedFunnel}');
-            setState(() {
-              _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-            });
-            
-            // Обновляем чаты только для вкладки lead с учетом фильтров
-            if (endPointInTab == 'lead') {
-              _chatsBlocs[endPointInTab]!.add(ClearChats());
-              _pagingControllers[endPointInTab]!.itemList = null;
-              _pagingControllers[endPointInTab]!.refresh();
-              _chatsBlocs[endPointInTab]!.add(FetchChats(
-                endPoint: endPointInTab,
-                salesFunnelId: _selectedFunnel?.id,
-                filters: _activeFilters, // ВАЖНО: Передаем фильтры
-              ));
-            }
-          }
-        });
-      }
-      _fetchTutorialProgress();
-    });
-
-    // Настройка контроллеров пагинации
-    _pagingControllers.forEach((endPoint, controller) {
-      controller.addPageRequestListener((pageKey) {
-        print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
-        if (pageKey == 0) {
-          controller.refresh();
-        }
-        if (endPointInTab == endPoint) {
-          _chatsBlocs[endPoint]!.add(GetNextPageChats());
+        } else {
+          print('ChatsScreen: No saved funnel ID found or widget not mounted');
         }
       });
-    });
-  }
 
+      // Слушаем изменения состояния SalesFunnelBloc
+      context.read<SalesFunnelBloc>().stream.listen((state) {
+        if (state is SalesFunnelLoaded && mounted) {
+          print('ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
+          setState(() {
+            _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+          });
+          if (endPointInTab == 'lead' && _selectedFunnel != null) {
+            print('ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
+            _chatsBlocs[endPointInTab]!.add(ClearChats());
+            _pagingControllers[endPointInTab]!.itemList = null;
+            _pagingControllers[endPointInTab]!.refresh();
+            _chatsBlocs[endPointInTab]!.add(FetchChats(
+              endPoint: endPointInTab,
+              salesFunnelId: _selectedFunnel!.id,
+              filters: _activeFilters,
+            ));
+          }
+        }
+      });
+    }
+    _fetchTutorialProgress();
+  });
+
+  _pagingControllers.forEach((endPoint, controller) {
+    controller.addPageRequestListener((pageKey) {
+      print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+      if (pageKey == 0) {
+        controller.refresh();
+      }
+      if (endPointInTab == endPoint) {
+        _chatsBlocs[endPoint]!.add(GetNextPageChats());
+      }
+    });
+  });
+  print('ChatsScreen: initState completed');
+}
   List<String> _getTabTitles(BuildContext context) {
     return [
       AppLocalizations.of(context)!.translate('tab_leads'),
@@ -469,83 +456,100 @@ class _ChatsScreenState extends State<ChatsScreen>
 // НОВЫЙ МЕТОД: Получение текста активных фильтров для отображения
  String _getActiveFiltersText() {
   if (_activeFilters == null || !_hasActiveFilters) {
-    return 'Применены фильтры';
+    return AppLocalizations.of(context)!.translate('no_filters_applied');
   }
 
   List<String> activeFiltersList = [];
 
   if (endPointInTab == 'lead') {
-    // Существующая логика для лидов
     if (_activeFilters!['managers']?.isNotEmpty == true) {
-      activeFiltersList.add('Менеджеры (${_activeFilters!['managers'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('managers')} (${_activeFilters!['managers'].length})');
     }
     if (_activeFilters!['regions']?.isNotEmpty == true) {
-      activeFiltersList.add('Регионы (${_activeFilters!['regions'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('regions')} (${_activeFilters!['regions'].length})');
     }
     if (_activeFilters!['sources']?.isNotEmpty == true) {
-      activeFiltersList.add('Источники (${_activeFilters!['sources'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('sources')} (${_activeFilters!['sources'].length})');
     }
-    if (_activeFilters!['statuses'] != null) {
-      activeFiltersList.add('Статус');
+    if (_activeFilters!['statuses']?.isNotEmpty == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('status'));
     }
     if (_activeFilters!['fromDate'] != null || _activeFilters!['toDate'] != null) {
-      activeFiltersList.add('Период');
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('date_range'));
     }
-    List<String> booleanFilters = [];
-    if (_activeFilters!['hasSuccessDeals'] == true) booleanFilters.add('Успешные сделки');
-    if (_activeFilters!['hasInProgressDeals'] == true) booleanFilters.add('Сделки в работе');
-    if (_activeFilters!['hasFailureDeals'] == true) booleanFilters.add('Неуспешные сделки');
-    if (_activeFilters!['hasNotices'] == true) booleanFilters.add('С заметками');
-    if (_activeFilters!['hasContact'] == true) booleanFilters.add('С контактами');
-    if (_activeFilters!['hasChat'] == true) booleanFilters.add('С чатом');
-    if (_activeFilters!['hasNoReplies'] == true) booleanFilters.add('Без ответов');
-    if (_activeFilters!['hasUnreadMessages'] == true) booleanFilters.add('Непрочитанные');
-    if (_activeFilters!['hasDeal'] == true) booleanFilters.add('Без сделок');
-    if (booleanFilters.isNotEmpty) {
-      activeFiltersList.addAll(booleanFilters);
+    if (_activeFilters!['hasSuccessDeals'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_successful_deal'));
+    }
+    if (_activeFilters!['hasInProgressDeals'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_deal_in_progress'));
+    }
+    if (_activeFilters!['hasFailureDeals'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_unsuccessful_deal'));
+    }
+    if (_activeFilters!['hasNotices'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_note'));
+    }
+    if (_activeFilters!['hasContact'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_contacts'));
+    }
+    if (_activeFilters!['hasChat'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_chat'));
+    }
+    if (_activeFilters!['hasNoReplies'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('without_replies'));
+    }
+    if (_activeFilters!['hasUnreadMessages'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('with_unread_messages'));
+    }
+    if (_activeFilters!['hasDeal'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('without_deal'));
+    }
+    if (_activeFilters!['unreadOnly'] == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('unread_only'));
     }
     if (_activeFilters!['daysWithoutActivity'] != null && _activeFilters!['daysWithoutActivity'] > 0) {
-      activeFiltersList.add('Без активности (${_activeFilters!['daysWithoutActivity']} дн.)');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('days_without_activity')} (${_activeFilters!['daysWithoutActivity']} дн.)');
+    }
+    if (_activeFilters!['directory_values']?.isNotEmpty == true) {
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('directory_values'));
     }
   } else if (endPointInTab == 'task') {
-    // Новая логика для задач
     if (_activeFilters!['department_id'] != null) {
-      activeFiltersList.add('Отдел');
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('department'));
     }
     if (_activeFilters!['task_created_from'] != null || _activeFilters!['task_created_to'] != null) {
-      activeFiltersList.add('Период создания');
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('task_creation_period'));
     }
     if (_activeFilters!['deadline_from'] != null || _activeFilters!['deadline_to'] != null) {
-      activeFiltersList.add('Период дедлайна');
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('deadline_period'));
     }
     if (_activeFilters!['executor_ids']?.isNotEmpty == true) {
-      activeFiltersList.add('Исполнители (${_activeFilters!['executor_ids'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('executors')} (${_activeFilters!['executor_ids'].length})');
     }
     if (_activeFilters!['author_ids']?.isNotEmpty == true) {
-      activeFiltersList.add('Авторы (${_activeFilters!['author_ids'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('authors')} (${_activeFilters!['author_ids'].length})');
     }
     if (_activeFilters!['project_ids']?.isNotEmpty == true) {
-      activeFiltersList.add('Проекты (${_activeFilters!['project_ids'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('projects')} (${_activeFilters!['project_ids'].length})');
     }
     if (_activeFilters!['task_status_ids']?.isNotEmpty == true) {
-      activeFiltersList.add('Статусы (${_activeFilters!['task_status_ids'].length})');
+      activeFiltersList.add('${AppLocalizations.of(context)!.translate('task_statuses')} (${_activeFilters!['task_status_ids'].length})');
     }
     if (_activeFilters!['unread_only'] == true) {
-      activeFiltersList.add('Только непрочитанные');
+      activeFiltersList.add(AppLocalizations.of(context)!.translate('unread_only'));
     }
   }
 
   if (activeFiltersList.isEmpty) {
-    return 'Применены фильтры';
+    return AppLocalizations.of(context)!.translate('no_filters_applied');
   }
 
   if (activeFiltersList.length <= 2) {
     return activeFiltersList.join(', ');
   } else {
-    return '${activeFiltersList.take(2).join(', ')} и еще ${activeFiltersList.length - 2}';
+    return '${activeFiltersList.take(2).join(', ')} ${AppLocalizations.of(context)!.translate('and_more')} ${activeFiltersList.length - 2}';
   }
 }
-
 
   void _initTutorialTargets() {
     targets.addAll([
@@ -638,27 +642,27 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   Timer? _debounce;
 
- void _onSearch(String query) {
-    setState(() {
-      searchQuery = query;
-      _isSearching = query.isNotEmpty;
-    });
+void _onSearch(String query) {
+  setState(() {
+    searchQuery = query;
+    _isSearching = query.isNotEmpty;
+  });
 
-    final endPoint = endPointInTab;
-    final chatsBloc = _chatsBlocs[endPoint]!;
-    chatsBloc.add(ClearChats());
+  final endPoint = endPointInTab;
+  final chatsBloc = _chatsBlocs[endPoint]!;
+  chatsBloc.add(ClearChats());
 
-    if (_debounce?.isActive ?? false) _debounce?.cancel();
+  if (_debounce?.isActive ?? false) _debounce?.cancel();
 
-    _debounce = Timer(const Duration(milliseconds: 600), () {
-      chatsBloc.add(FetchChats(
-        endPoint: endPoint,
-        query: query,
-        salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
-        filters: endPoint == 'lead' ? _activeFilters : null, // ДОБАВЛЯЕМ фильтры в поиск
-      ));
-    });
-  }
+  _debounce = Timer(const Duration(milliseconds: 600), () {
+    chatsBloc.add(FetchChats(
+      endPoint: endPoint,
+      query: query,
+      salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
+      filters: endPoint == 'lead' || endPoint == 'task' ? _activeFilters : null,
+    ));
+  });
+}
  Future<void> updateFromSocket() async {
     _chatsBlocs[endPointInTab]!.add(UpdateChatsFromSocket());
   }
@@ -818,6 +822,7 @@ await socketClient.connect();
               hasActiveChatFilters: _hasActiveFilters, // Новый параметр
               initialChatFilters: _activeFilters, // Новый параметр
               currentSalesFunnelId: _selectedFunnel?.id, // ИЗМЕНЕНО: Добавили передачу
+              onChatTaskFiltersApplied: _handleFiltersApplied, // Передаём для задач
               onChangedSearchInput: (String value) {
                 setState(() {
                   _isSearching = value.isNotEmpty;
@@ -849,72 +854,71 @@ await socketClient.connect();
             backgroundColor: Colors.white,
           ),
           backgroundColor: Colors.white,
-          body: isClickAvatarIcon
-              ? ProfileScreen()
-              : _isPermissionsChecked
-                  ? Column(
-                      children: [
-                        SizedBox(height: 12),
-                        // ДОБАВЛЯЕМ: Индикатор активных фильтров
-                        if (_hasActiveFilters && endPointInTab == 'lead')
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 16),
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue, width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.filter_list, color: Colors.blue, size: 18),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Применены фильтры',
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontSize: 14,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: _resetFilters,
-                                  child: Text(
-                                    'Сбросить',
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontSize: 14,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (_hasActiveFilters && endPointInTab == 'lead')
-                          SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: List.generate(_tabTitles.length, (index) {
-                              if ((index == 0 && !_showLeadChat) ||
-                                  (index == 2 && !_showCorporateChat)) {
-                                return Container();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: _buildTabButton(index),
-                              );
-                            }),
+body: isClickAvatarIcon
+    ? ProfileScreen()
+    : _isPermissionsChecked
+        ? Column(
+            children: [
+              SizedBox(height: 12),
+              // Индикатор активных фильтров для lead и task
+              if (_hasActiveFilters)
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.filter_list, color: Colors.blue, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _getActiveFiltersText(),
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
                           ),
                         ),
-                        SizedBox(height: 12),
-                        Expanded(child: _buildTabBarView()),
-                      ],
-                    )
-                  : Center(child: CircularProgressIndicator()),
+                      ),
+                      TextButton(
+                        onPressed: _resetFilters,
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('reset'),
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_hasActiveFilters) SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(_tabTitles.length, (index) {
+                    if ((index == 0 && !_showLeadChat) ||
+                        (index == 2 && !_showCorporateChat)) {
+                      return Container();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: _buildTabButton(index),
+                    );
+                  }),
+                ),
+              ),
+              SizedBox(height: 12),
+              Expanded(child: _buildTabBarView()),
+            ],
+          )
+        : Center(child: CircularProgressIndicator()),
           floatingActionButton: (selectTabIndex == 2)
               ? FloatingActionButton(
                   onPressed: () {
@@ -934,58 +938,58 @@ await socketClient.connect();
   }
 
   // ОБНОВЛЯЕМ: _buildTabButton для передачи фильтров
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    GlobalKey? tabKey;
+ Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
+  GlobalKey? tabKey;
 
-    if (index == 0) {
-      tabKey = keyChatLead;
-    } else if (index == 1) {
-      tabKey = keyChatTask;
-    } else if (index == 2) {
-      tabKey = keyChatCorporate;
-    }
+  if (index == 0) {
+    tabKey = keyChatLead;
+  } else if (index == 1) {
+    tabKey = keyChatTask;
+  } else if (index == 2) {
+    tabKey = keyChatCorporate;
+  }
 
-    return GestureDetector(
-      onTap: () {
-        print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
-        setState(() {
-          selectTabIndex = index;
-        });
-        _tabController.animateTo(index);
+  return GestureDetector(
+    onTap: () {
+      print('ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${['lead', 'task', 'corporate'][index]})');
+      setState(() {
+        selectTabIndex = index;
+      });
+      _tabController.animateTo(index);
 
-        String newEndPoint = index == 0
-            ? 'lead'
-            : index == 1
-                ? 'task'
-                : 'corporate';
-        endPointInTab = newEndPoint;
+      String newEndPoint = index == 0
+          ? 'lead'
+          : index == 1
+              ? 'task'
+              : 'corporate';
+      endPointInTab = newEndPoint;
 
-        final chatsBloc = _chatsBlocs[newEndPoint]!;
-        chatsBloc.add(ClearChats());
-        _pagingControllers[newEndPoint]!.itemList = null;
-        _pagingControllers[newEndPoint]!.refresh();
-        chatsBloc.add(FetchChats(
-          endPoint: newEndPoint,
-          salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
-          filters: newEndPoint == 'lead' ? _activeFilters : null, // ДОБАВЛЯЕМ фильтры
-        ));
-      },
-      child: Container(
-        key: tabKey,
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
+      final chatsBloc = _chatsBlocs[newEndPoint]!;
+      chatsBloc.add(ClearChats());
+      _pagingControllers[newEndPoint]!.itemList = null;
+      _pagingControllers[newEndPoint]!.refresh();
+      chatsBloc.add(FetchChats(
+        endPoint: newEndPoint,
+        salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
+        filters: newEndPoint == 'task' || newEndPoint == 'lead' ? _activeFilters : null,
+      ));
+    },
+    child: Container(
+      key: tabKey,
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Center(
+        child: Text(
+          _tabTitles[index],
+          style: TaskStyles.tabTextStyle.copyWith(
+            color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTabBarView() {
     return TabBarView(

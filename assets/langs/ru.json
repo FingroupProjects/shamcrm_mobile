@@ -1151,7 +1151,21 @@
 "not_available": "00:00",
 "average_rating": "Средняя оценка",
 "unknown_channel": "Неизвестный канал",
-"unread_only": "Только непрочитанные"
+"no_filters_applied": "Фильтры не применены",
+"regions": "Регионы",
+"sources": "Источники",
+"without_deal": "Без сделки",
+"unread_only": "Только непрочитанные",
+"directory_values": "Справочники",
+"task_creation_period": "Период создания задачи",
+"deadline_period": "Период дедлайна",
+"executors": "Исполнители",
+"authors": "Авторы",
+"and_more": "и еще",
+"no_statuses_available": "Загрузка статусов"
+
+
+
 
 
 

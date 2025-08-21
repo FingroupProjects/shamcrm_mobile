@@ -298,135 +298,133 @@ class _DealColumnState extends State<DealColumn> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    print('🏗️ DealColumn: Rendering - statusId: ${widget.statusId}, _canCreateDeal: $_canCreateDeal, _permissionChecked: $_permissionChecked');
-    return BlocProvider.value(
-      value: _dealBloc,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: BlocBuilder<DealBloc, DealState>(
-          builder: (context, state) {
-            print('🏗️ DealColumn: BlocBuilder - state: ${state.runtimeType}');
-            if (state is DealLoading) {
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
+ @override
+Widget build(BuildContext context) {
+  print('🏗️ DealColumn: Rendering - statusId: ${widget.statusId}, _canCreateDeal: $_canCreateDeal, _permissionChecked: $_permissionChecked');
+  return BlocProvider.value(
+    value: _dealBloc,
+    child: Scaffold(
+      backgroundColor: Colors.white,
+      body: BlocBuilder<DealBloc, DealState>(
+        builder: (context, state) {
+          print('🏗️ DealColumn: BlocBuilder - state: ${state.runtimeType}');
+          if (state is DealLoading) {
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          } else if (state is DealDataLoaded) {
+            final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
+            print('📋 DealColumn: DealDataLoaded - deals count: ${deals.length} for statusId: ${widget.statusId}');
+            if (deals.isNotEmpty) {
+              if (!_isInitialized && !_isTutorialShown && !widget.isDealScreenTutorialCompleted) {
+                _isInitialized = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _startTutorialLogic();
+                });
+              }
+              return ListView.builder(
+                controller: _scrollController,
+                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
+                itemCount: deals.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: DealCard(
+                      key: index == 0 ? keyDealCard : null,
+                      dropdownKey: index == 0 ? keyDropdown : null,
+                      deal: deals[index],
+                      title: widget.title,
+                      statusId: widget.statusId,
+                      onStatusUpdated: () {
+                        print('DealColumn: Deal status updated, fetching deals for statusId: ${widget.statusId}');
+                        _dealBloc.add(FetchDeals(widget.statusId));
+                      },
+                      onStatusId: (StatusDealId) {
+                        print('DealColumn: onStatusId called with id: $StatusDealId');
+                        widget.onStatusId(StatusDealId);
+                      },
+                    ),
+                  );
+                },
+              );
+            } else {
+              if (!_isInitialized && !_isTutorialShown && !widget.isDealScreenTutorialCompleted) {
+                _isInitialized = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _startTutorialLogic();
+                });
+              }
+              return ListView(
+                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+          } else if (state is DealError) {
+            print('❌ DealColumn: DealError: ${state.message}');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
               );
-            } else if (state is DealDataLoaded) {
-              final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
-              print('📋 DealColumn: DealDataLoaded - deals count: ${deals.length} for statusId: ${widget.statusId}');
-              if (deals.isNotEmpty) {
-                return RefreshIndicator(
-                  color: Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  onRefresh: _onRefresh,
-                  child: Column(
-                    children: [
-                      SizedBox(height: 15),
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          itemCount: deals.length,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: DealCard(
-                                key: index == 0 ? keyDealCard : null,
-                                dropdownKey: index == 0 ? keyDropdown : null,
-                                deal: deals[index],
-                                title: widget.title,
-                                statusId: widget.statusId,
-                                onStatusUpdated: () {
-                                  _dealBloc.add(FetchDeals(widget.statusId));
-                                },
-                                onStatusId: (StatusDealId) {
-                                  widget.onStatusId(StatusDealId);
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              } else {
-                return RefreshIndicator(
-                  backgroundColor: Colors.white,
-                  color: Color(0xff1E2E52),
-                  onRefresh: _onRefresh,
-                  child: ListView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            } else if (state is DealError) {
-              print('❌ DealColumn: DealError: ${state.message}');
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              });
-            }
-            return Container();
-          },
-        ),
-        floatingActionButton: _canCreateDeal
-            ? FloatingActionButton(
-                key: keyFloatingActionButton,
-                onPressed: () {
-                  print('➕ DealColumn: FloatingActionButton pressed');
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DealAddScreen(statusId: widget.statusId),
-                      ),
-                    ).then((_) {
-                      _dealBloc.add(FetchDeals(widget.statusId));
-                    });
-                  }
-                },
-                backgroundColor: Color(0xff1E2E52),
-                child: Icon(Icons.add, color: Colors.white),
-              )
-            : null,
+            });
+            return const SizedBox();
+          }
+          return const SizedBox();
+        },
       ),
-    );
-  }
+      floatingActionButton: _canCreateDeal
+          ? FloatingActionButton(
+              key: keyFloatingActionButton,
+              onPressed: () {
+                print('➕ DealColumn: FloatingActionButton pressed');
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DealAddScreen(statusId: widget.statusId),
+                    ),
+                  ).then((_) {
+                    _dealBloc.add(FetchDeals(widget.statusId));
+                  });
+                }
+              },
+              backgroundColor: Color(0xff1E2E52),
+              child: Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+    ),
+  );
+}
 }

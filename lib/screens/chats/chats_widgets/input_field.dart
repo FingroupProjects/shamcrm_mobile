@@ -25,7 +25,7 @@ class InputField extends StatefulWidget {
   final Function(File soundFile, String time) sendRequestFunction;
   final FocusNode focusNode;
   final bool isLeadChat;
-  
+
   const InputField({
     super.key,
     required this.onSend,
@@ -41,7 +41,7 @@ class InputField extends StatefulWidget {
   _InputFieldState createState() => _InputFieldState();
 }
 
-class _InputFieldState extends State<InputField> with SingleTickerProviderStateMixin {
+class _InputFieldState extends State<InputField> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   OverlayEntry? _overlayEntry;
   OverlayEntry? _formattingOverlay;
   bool _showTemplates = false;
@@ -52,6 +52,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
   String _htmlContent = '';
   String _displayText = '';
+  bool _wasKeyboardVisible = false;
 
   @override
   void initState() {
@@ -68,6 +69,8 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     widget.messageController.addListener(_handleSelectionChange);
     _htmlContent = widget.messageController.text;
     _displayText = _htmlToDisplayText(_htmlContent);
+
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -76,7 +79,25 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     _removeFormattingOverlay();
     _animationController.dispose();
     widget.messageController.removeListener(_handleSelectionChange);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bool isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    if (_wasKeyboardVisible != isKeyboardVisible) {
+      setState(() {
+        if (!isKeyboardVisible && _showFormattingPanel) {
+          _showFormattingPanel = false;
+          _animationController.reset();
+          _removeFormattingOverlay();
+        }
+        _wasKeyboardVisible = isKeyboardVisible;
+      });
+    }
   }
 
   String _htmlToDisplayText(String html) {
@@ -96,7 +117,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
   void _handleTextChange(String text) {
     print('InputField: _handleTextChange called with text: "$text"');
-    
+
     _displayText = text;
     _htmlContent = text;
 
@@ -118,14 +139,16 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
   void _handleSelectionChange() {
     final selection = widget.messageController.selection;
+
     if (selection.isValid && selection.start != selection.end && widget.focusNode.hasFocus) {
       SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
-      _showFormattingPanel = true;
-      _updateFormattingOverlay();
-      _animationController.forward();
+      setState(() {
+        _showFormattingPanel = true;
+        _updateFormattingOverlay();
+        _animationController.forward();
+      });
     } else {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
+      _closeFormattingPanel();
     }
   }
 
@@ -155,54 +178,24 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     _formattingOverlay = null;
   }
 
-  // Проверка доступности функций устройства
+  void _closeFormattingPanel() {
+    setState(() {
+      _showFormattingPanel = false;
+      _animationController.reverse().then((_) => _removeFormattingOverlay());
+    });
+    widget.focusNode.requestFocus();
+  }
+
   Map<String, bool> _checkDeviceCapabilities() {
     return {
-      'record': true, // Запись текста доступна всегда
-      'wps': Platform.isAndroid || Platform.isIOS, // WPS доступен на мобильных устройствах
-      'textToSpeech': true, // Предположим, что TTS доступен (для реальной проверки нужен flutter_tts)
-      'chatGPT': true, // Предположим, что API ChatGPT доступен (для реальной проверки нужен http)
+      'record': true,
     };
   }
 
-  // Методы для новых кнопок
   void _recordText() {
     final text = widget.messageController.text;
     print('Saving text: $text');
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-  }
-
-  void _openWPS() {
-    print('Opening in WPS');
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-  }
-
-  void _textToSpeech() {
-    final selection = widget.messageController.selection;
-    if (!selection.isValid || selection.start == selection.end) return;
-    final selectedText = widget.messageController.text.substring(selection.start, selection.end);
-    print('Text to speech: $selectedText');
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-  }
-
-  void _askChatGPT() {
-    final selection = widget.messageController.selection;
-    if (!selection.isValid || selection.start == selection.end) return;
-    final selectedText = widget.messageController.text.substring(selection.start, selection.end);
-    print('Asking ChatGPT: $selectedText');
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
+    _closeFormattingPanel();
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -246,7 +239,27 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
     final capabilities = _checkDeviceCapabilities();
 
-    final primaryButtons = [
+    final buttons = [
+      _buildFormattingButton(
+        icon: Icons.copy,
+        label: 'Копировать',
+        onTap: _copy,
+      ),
+      _buildFormattingButton(
+        icon: Icons.cut,
+        label: 'Вырезать',
+        onTap: _cut,
+      ),
+      _buildFormattingButton(
+        icon: Icons.paste,
+        label: 'Вставить',
+        onTap: _paste,
+      ),
+      _buildFormattingButton(
+        icon: Icons.select_all,
+        label: 'Выбрать все',
+        onTap: _selectAll,
+      ),
       _buildFormattingButton(
         icon: Icons.format_bold,
         label: 'Жирный',
@@ -262,77 +275,10 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
         label: 'Ссылка',
         onTap: () => _applyLinkFormatting(context),
       ),
-      if (capabilities['textToSpeech'] == true)
-        _buildFormattingButton(
-          icon: Icons.volume_up,
-          label: 'Озвучка',
-          onTap: _textToSpeech,
-        ),
-    ];
-
-    final secondaryButtons = [
-      if (capabilities['record'] == true)
-        PopupMenuItem(
-          value: 'record',
-          child: Row(
-            children: [
-              Icon(Icons.save, size: 18, color: Color(0xff1E2E52)),
-              SizedBox(width: 8),
-              Text('Записать', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-            ],
-          ),
-        ),
-      if (capabilities['wps'] == true)
-        PopupMenuItem(
-          value: 'wps',
-          child: Row(
-            children: [
-              Icon(Icons.description, size: 18, color: Color(0xff1E2E52)),
-              SizedBox(width: 8),
-              Text('WPS', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-            ],
-          ),
-        ),
-      if (capabilities['chatGPT'] == true)
-        PopupMenuItem(
-          value: 'chatGPT',
-          child: Row(
-            children: [
-              Icon(Icons.chat, size: 18, color: Color(0xff1E2E52)),
-              SizedBox(width: 8),
-              Text('ChatGPT', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-            ],
-          ),
-        ),
-      PopupMenuItem(
-        value: 'strikethrough',
-        child: Row(
-          children: [
-            Icon(Icons.format_strikethrough, size: 18, color: Color(0xff1E2E52)),
-            SizedBox(width: 8),
-            Text('Зачеркнутый', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-          ],
-        ),
-      ),
-      PopupMenuItem(
-        value: 'selectAll',
-        child: Row(
-          children: [
-            Icon(Icons.select_all, size: 18, color: Color(0xff1E2E52)),
-            SizedBox(width: 8),
-            Text('Выбрать все', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-          ],
-        ),
-      ),
-      PopupMenuItem(
-        value: 'paste',
-        child: Row(
-          children: [
-            Icon(Icons.paste, size: 18, color: Color(0xff1E2E52)),
-            SizedBox(width: 8),
-            Text('Вставить', style: TextStyle(fontFamily: 'Gilroy', fontSize: 14)),
-          ],
-        ),
+      _buildFormattingButton(
+        icon: Icons.format_strikethrough,
+        label: 'Зачеркнутый',
+        onTap: () => _applyFormatting('strikethrough'),
       ),
     ];
 
@@ -353,38 +299,12 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...primaryButtons,
-                  if (secondaryButtons.isNotEmpty)
-                    PopupMenuButton<String>(
-                      icon: Icon(Icons.more_horiz, size: 18, color: Color(0xff1E2E52)),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'record':
-                            _recordText();
-                            break;
-                          case 'wps':
-                            _openWPS();
-                            break;
-                          case 'chatGPT':
-                            _askChatGPT();
-                            break;
-                          case 'strikethrough':
-                            _applyFormatting('strikethrough');
-                            break;
-                          case 'selectAll':
-                            _selectAll();
-                            break;
-                          case 'paste':
-                            _paste();
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => secondaryButtons,
-                    ),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: buttons,
+                ),
               ),
             ),
           ),
@@ -425,7 +345,10 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
 
   void _applyFormatting(String type) {
     final selection = widget.messageController.selection;
-    if (!selection.isValid || selection.start == selection.end) return;
+    if (!selection.isValid || selection.start == selection.end) {
+      _closeFormattingPanel();
+      return;
+    }
 
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
@@ -445,6 +368,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
         tagEnd = '</s>';
         break;
       default:
+        _closeFormattingPanel();
         return;
     }
 
@@ -460,16 +384,15 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       extentOffset: selection.end,
     );
 
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-    widget.focusNode.requestFocus();
+    _closeFormattingPanel();
   }
 
   void _applyLinkFormatting(BuildContext context) async {
     final selection = widget.messageController.selection;
-    if (!selection.isValid || selection.start == selection.end) return;
+    if (!selection.isValid || selection.start == selection.end) {
+      _closeFormattingPanel();
+      return;
+    }
 
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
@@ -598,11 +521,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       );
     }
 
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-    widget.focusNode.requestFocus();
+    _closeFormattingPanel();
   }
 
   void _selectAll() {
@@ -610,11 +529,7 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       baseOffset: 0,
       extentOffset: widget.messageController.text.length,
     );
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-    widget.focusNode.requestFocus();
+    _closeFormattingPanel();
   }
 
   void _paste() async {
@@ -637,11 +552,45 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
         offset: selection.start + clipboardData.text!.length,
       );
     }
-    setState(() {
-      _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-    widget.focusNode.requestFocus();
+    _closeFormattingPanel();
+  }
+
+  void _copy() async {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) {
+      _closeFormattingPanel();
+      return;
+    }
+
+    final text = widget.messageController.text;
+    final selectedText = text.substring(selection.start, selection.end);
+
+    await Clipboard.setData(ClipboardData(text: selectedText));
+
+    _closeFormattingPanel();
+  }
+
+  void _cut() async {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) {
+      _closeFormattingPanel();
+      return;
+    }
+
+    final text = widget.messageController.text;
+    final selectedText = text.substring(selection.start, selection.end);
+
+    await Clipboard.setData(ClipboardData(text: selectedText));
+
+    final newText = text.replaceRange(selection.start, selection.end, '');
+    _htmlContent = _htmlContent.replaceRange(selection.start, selection.end, '');
+
+    widget.messageController.text = newText;
+    widget.messageController.selection = TextSelection.collapsed(
+      offset: selection.start,
+    );
+
+    _closeFormattingPanel();
   }
 
   @override
@@ -822,6 +771,12 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                                   paste: false,
                                   selectAll: false,
                                 ),
+                                contextMenuBuilder: (context, editableTextState) {
+                                  return AdaptiveTextSelectionToolbar(
+                                    anchors: editableTextState.contextMenuAnchors,
+                                    children: [],
+                                  );
+                                },
                                 decoration: InputDecoration(
                                   hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
                                   hintStyle: TextStyle(
@@ -978,19 +933,19 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
       builder: (BuildContext bottomSheetContext) => TemplatesPanel(
         onTemplateSelected: (String selectedText) {
           print('InputField: Selected template text: $selectedText');
-          
+
           Navigator.of(bottomSheetContext).pop();
-          
+
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.messageController.text = selectedText;
             _htmlContent = selectedText;
             _displayText = selectedText;
-            
+
             print('InputField: Message controller text: ${widget.messageController.text}');
             print('InputField: Template successfully applied');
-            
+
             widget.focusNode.requestFocus();
-            
+
             if (mounted) {
               setState(() {});
             }

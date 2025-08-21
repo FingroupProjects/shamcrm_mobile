@@ -1,5 +1,26 @@
+import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+
+class Integration {
+  final int? id;
+  final String? name;
+  final String? username;
+
+  Integration({
+    this.id,
+    this.name,
+    this.username,
+  });
+
+  factory Integration.fromJson(Map<String, dynamic> json) {
+    return Integration(
+      id: json['id'] as int?,
+      name: json['name'] as String?,
+      username: json['username'] as String?,
+    );
+  }
+}
 
 class Chats {
   final int id;
@@ -8,7 +29,7 @@ class Chats {
   final String? taskFrom;
   final String? taskTo;
   final String? description;
-  final String channel;
+  final String channel; // Это поле будет содержать channel.name
   final String lastMessage;
   final String? messageType;
   final String createDate;
@@ -19,8 +40,10 @@ class Chats {
   final Group? group;
   final Task? task;
   final ChatUser? user;
-  final String? customName; 
+  final String? customName;
   final String? customImage;
+  final Channel? channelObj; // Новое поле для полного объекта Channel
+  final Integration? integration; // Новое поле для объекта Integration
 
   Chats({
     required this.id,
@@ -39,14 +62,16 @@ class Chats {
     required this.chatUsers,
     this.group,
     this.task,
-    this.user, 
-    this.customName, 
-    this.customImage, 
+    this.user,
+    this.customName,
+    this.customImage,
+    this.channelObj,
+    this.integration,
   });
 
   factory Chats.fromJson(
     Map<String, dynamic> json, {
-    String? supportChatName, 
+    String? supportChatName,
     String? supportChatImage,
   }) {
     List<ChatUser> users = [];
@@ -65,21 +90,23 @@ class Chats {
     if (json['task'] != null) {
       task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
+
     ChatUser? user;
     if (json['user'] != null) {
       user = ChatUser.fromJson({'participant': json['user']});
     }
+
     String? customName;
     String? customImage;
     if (json['type'] == 'support') {
-      customName = json['type'] ; 
+      customName = json['type'];
       customImage = supportChatImage ?? 'assets/icons/Profile/chat_support.png';
     }
 
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
-          ? json['user']['name']
+          ? json['user']['name'] ?? 'Без имени'
           : json['task'] != null
               ? json['task']['name'] ?? ''
               : json['lead'] != null
@@ -92,27 +119,26 @@ class Chats {
       createDate: json['lastMessage'] != null
           ? json['lastMessage']['created_at'] ?? ''
           : '',
-      unreadCount: json['unread_count'],
+      unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description:
-          json['task'] != null ? json['task']['description'] ?? '' : '',
+      description: json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(json['lastMessage'])
           : '',
-      messageType:
-          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
-      canSendMessage: json["can_send_message"] ?? false,
+      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
+      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
     );
   }
 
   String? get displayName {
-    // Используем кастомное название для support, если оно задано
     if (type == 'support' && customName != null) {
       return customName;
     } else if (group != null && group!.name.isNotEmpty) {
@@ -150,7 +176,6 @@ class Chats {
 
   ChatItem toChatItem() {
     String avatar;
-    // Используем кастомную аватарку для support, если она задана
     if (type == 'support' && customImage != null) {
       avatar = customImage!;
     } else if (group != null) {

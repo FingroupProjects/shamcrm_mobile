@@ -1127,83 +1127,113 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildTabBarView() {
-    print('🏗️ DealScreen: Rendering _buildTabBarView, _tabTitles: ${_tabTitles.length}');
-    return BlocListener<DealBloc, DealState>(
-      listener: (context, state) async {
-        print('📡 DealScreen: BlocListener state: ${state.runtimeType}');
-        if (state is DealLoaded) {
-          print('📋 DealLoaded: statuses count: ${state.dealStatuses.length}');
-          await DealCache.cacheDealStatuses(state.dealStatuses
+ Widget _buildTabBarView() {
+  print('🏗️ DealScreen: Rendering _buildTabBarView, _tabTitles: ${_tabTitles.length}');
+  return BlocListener<DealBloc, DealState>(
+    listener: (context, state) async {
+      print('📡 DealScreen: BlocListener state: ${state.runtimeType}');
+      if (state is DealLoaded) {
+        print('📋 DealLoaded: statuses count: ${state.dealStatuses.length}');
+        await DealCache.cacheDealStatuses(state.dealStatuses
+            .map((status) => {
+                  'id': status.id,
+                  'title': status.title,
+                  'deals_count': status.dealsCount,
+                })
+            .toList());
+        setState(() {
+          _tabTitles = state.dealStatuses
+              .where((status) => _canReadDealStatus)
               .map((status) => {
                     'id': status.id,
                     'title': status.title,
                     'deals_count': status.dealsCount,
                   })
-              .toList());
-          setState(() {
-            _tabTitles = state.dealStatuses
-                .where((status) => _canReadDealStatus)
-                .map((status) => {
-                      'id': status.id,
-                      'title': status.title,
-                      'deals_count': status.dealsCount,
-                    })
-                .toList();
-            print('DealScreen: Updated _tabTitles with deals_count: $_tabTitles');
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-            if (_tabTitles.isNotEmpty) {
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                  });
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  if (_scrollController.hasClients) {
-                    _scrollToActiveTab();
-                  }
-                  _dealBloc.add(FetchDeals(
-                    currentStatusId,
-                    salesFunnelId: _selectedFunnel?.id,
-                  ));
+              .toList();
+          print('DealScreen: Updated _tabTitles with deals_count: $_tabTitles');
+          _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+          if (_tabTitles.isNotEmpty) {
+            _tabController = TabController(length: _tabTitles.length, vsync: this);
+            _tabController.addListener(() {
+              if (!_tabController.indexIsChanging) {
+                print('DealScreen: TabController listener triggered, new index: ${_tabController.index}');
+                setState(() {
+                  _currentTabIndex = _tabController.index;
+                });
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                if (_scrollController.hasClients) {
+                  _scrollToActiveTab();
                 }
-              });
-              int initialIndex = state.dealStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-              } else {
-                _tabController.index = _currentTabIndex;
+                _dealBloc.add(FetchDeals(
+                  currentStatusId,
+                  salesFunnelId: _selectedFunnel?.id,
+                  query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                  managerIds: _selectedManagers.isNotEmpty
+                      ? _selectedManagers.map((manager) => manager.id).toList()
+                      : null,
+                  leadIds: _selectedLeads.isNotEmpty
+                      ? _selectedLeads.map((lead) => lead.id).toList()
+                      : null,
+                  statusIds: _selectedStatuses,
+                  fromDate: _fromDate,
+                  toDate: _toDate,
+                  daysWithoutActivity: _daysWithoutActivity,
+                  hasTasks: _hasTasks,
+                  directoryValues: _selectedDirectoryValues,
+                ));
+                print('DealScreen: FetchDeals dispatched for statusId: $currentStatusId');
               }
-              if (_scrollController.hasClients) {
-                _scrollToActiveTab();
-              }
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                _tabController.animateTo(_tabTitles.length - 1);
-              }
-              if (navigateAfterDelete) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                  }
+            });
+            int initialIndex = state.dealStatuses
+                .indexWhere((status) => status.id == widget.initialStatusId);
+            if (initialIndex != -1) {
+              _tabController.index = initialIndex;
+              _currentTabIndex = initialIndex;
+              print('DealScreen: Set initial tab index to: $initialIndex');
+            } else {
+              _tabController.index = _currentTabIndex;
+            }
+            if (_scrollController.hasClients) {
+              _scrollToActiveTab();
+            }
+            if (navigateToEnd) {
+              navigateToEnd = false;
+              _tabController.animateTo(_tabTitles.length - 1);
+              print('DealScreen: Navigated to last tab');
+            }
+            if (navigateAfterDelete) {
+              navigateAfterDelete = false;
+              if (_deletedIndex != null) {
+                if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                  _tabController.animateTo(1);
+                  print('DealScreen: Navigated to tab 1 after delete');
+                } else if (_deletedIndex == _tabTitles.length) {
+                  _tabController.animateTo(_tabTitles.length - 1);
+                  print('DealScreen: Navigated to last tab after delete');
+                } else {
+                  _tabController.animateTo(_deletedIndex! - 1);
+                  print('DealScreen: Navigated to tab ${_deletedIndex! - 1} after delete');
                 }
               }
             }
-          });
-        } else if (state is DealError) {
-          print('❌ DealError: ${state.message}');
+          }
+        });
+      } else if (state is DealError) {
+        print('❌ DealError: ${state.message}');
+        if (state.message.contains(
+          AppLocalizations.of(context)!.translate('unauthorized_access'),
+        )) {
+          await _apiService.logout();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+          );
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                state.message,
+                AppLocalizations.of(context)!.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -1214,53 +1244,63 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               backgroundColor: Colors.red,
             ),
           );
-        } else if (state is DealWarning) {
-          print('⚠️ DealWarning: ${state.message}');
         }
-      },
-      child: BlocBuilder<DealBloc, DealState>(
-        builder: (context, state) {
-          print('🏗️ DealScreen: BlocBuilder state: ${state.runtimeType}');
-          if (state is DealLoading) {
-            print('⏳ DealLoading');
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
+      } else if (state is DealWarning) {
+        print('⚠️ DealWarning: ${state.message}');
+      }
+    },
+    child: _tabTitles.isEmpty
+        ? Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('no_statuses_available'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff99A4BA),
               ),
-            );
-          }
-          if (_tabTitles.isEmpty) {
-            print('⚠️ TabTitles empty, not rendering TabBarView');
-            return const Center(child: Text('Нет статусов для отображения'));
-          }
-          return TabBarView(
+            ),
+          )
+        : TabBarView(
             controller: _tabController,
-            children: List.generate(_tabTitles.length, (index) {
-              final statusId = _tabTitles[index]['id'];
-              final title = _tabTitles[index]['title'];
-              print('📑 Creating DealColumn for statusId: $statusId, title: $title');
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: _tabTitles.map((status) {
+              print('📑 DealScreen: Building TabBarView child for status: ${status['title']}');
               return DealColumn(
                 isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
-                statusId: statusId,
-                title: title,
+                statusId: status['id'],
+                title: status['title'],
                 onStatusId: (newStatusId) {
-                  print('DealScreen: Status ID changed: $newStatusId');
-                  final index = _tabTitles
-                      .indexWhere((status) => status['id'] == newStatusId);
-                  _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+                  print('DealScreen: onStatusId called with id: $newStatusId');
+                  final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
                   if (index != -1) {
                     _tabController.animateTo(index);
+                    print('DealScreen: Animated to tab index: $index for statusId: $newStatusId');
+                    _dealBloc.add(FetchDeals(
+                      newStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                      managerIds: _selectedManagers.isNotEmpty
+                          ? _selectedManagers.map((manager) => manager.id).toList()
+                          : null,
+                      leadIds: _selectedLeads.isNotEmpty
+                          ? _selectedLeads.map((lead) => lead.id).toList()
+                          : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      daysWithoutActivity: _daysWithoutActivity,
+                      hasTasks: _hasTasks,
+                      directoryValues: _selectedDirectoryValues,
+                    ));
+                    print('DealScreen: FetchDeals dispatched for statusId: $newStatusId');
                   }
                 },
               );
-            }),
-          );
-        },
-      ),
-    );
-  }
-
+            }).toList(),
+          ),
+  );
+}
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {

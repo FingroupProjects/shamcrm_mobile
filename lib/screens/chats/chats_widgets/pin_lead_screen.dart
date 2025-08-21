@@ -56,7 +56,6 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
-            // Иконка канала в начале
             Image.asset(
               _getChannelIcon(channelType),
               width: 28,
@@ -99,15 +98,6 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                 ],
               ),
             ),
-            // const SizedBox(width: 10),
-            // GestureDetector(
-            //   onTap: () {}, // onUnpin функция убрана из интерфейса, но можно будет добавить по необходимости
-            //   child: Icon(
-            //     Icons.close,
-            //     size: 20,
-            //     color: Colors.grey,
-            //   ),
-            // ),
           ],
         ),
       ),

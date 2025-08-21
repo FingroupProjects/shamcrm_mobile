@@ -56,10 +56,11 @@ class CustomAppBar extends StatefulWidget {
   final bool showGps; // Новый параметр
   final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
 
-final bool showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
+  final bool
+      showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
 
-final bool showFilterIconChat;
-final bool showFilterIconTaskChat;
+  final bool showFilterIconChat;
+  final bool showFilterIconTaskChat;
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
@@ -146,7 +147,6 @@ final bool showFilterIconTaskChat;
   final String? initialDepartment;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesTask; // Добавляем начальные значения справочников
-      
 
   final Function(Map<String, dynamic>)? onChatLeadFiltersApplied; // Для лидов
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
@@ -156,10 +156,11 @@ final bool showFilterIconTaskChat;
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
   final VoidCallback? onDashboardPressed; // Обработчик для Dashboard
-  
+
   final Widget? titleWidget; // Новый параметр для кастомного заголовка
   final VoidCallback? onFiltersReset; // Добавляем этот параметр
 
+  final VoidCallback? onChatTaskFiltersReset; // Новый параметр для сброса
 
   CustomAppBar({
     super.key,
@@ -198,11 +199,12 @@ final bool showFilterIconTaskChat;
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
     this.initialDirectoryValuesTask, // Добавляем в конструктор
-    this.showFilterIconOnSelectCallCenter = false, // Добавлено: по умолчанию false
+    this.showFilterIconOnSelectCallCenter =
+        false, // Добавлено: по умолчанию false
 
-this.showDashboardIcon = false,
+    this.showDashboardIcon = false,
     this.onDashboardPressed,
-
+    this.onChatTaskFiltersReset,
 
 // ДОБАВЛЯЕМ новые параметры
     this.onChatLeadFiltersApplied,
@@ -210,8 +212,6 @@ this.showDashboardIcon = false,
     this.onChatTaskFiltersApplied, // Новый параметр
     this.hasActiveChatFilters = false,
     this.initialChatFilters,
-
-
     this.initialManagersDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
@@ -279,9 +279,8 @@ this.showDashboardIcon = false,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
     this.titleWidget, // Добавляем в конструктор
     this.onFiltersReset,
-        this.showGps = true, // Добавляем по умолчанию true
-        this.currentSalesFunnelId,
-
+    this.showGps = true, // Добавляем по умолчанию true
+    this.currentSalesFunnelId,
   });
 
   @override
@@ -310,12 +309,11 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCallCenter = false;
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
-    bool _canReadGps = false; // Новая переменная для GPS
+  bool _canReadGps = false; // Новая переменная для GPS
 
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
-    bool _areFiltersActive = false; // Добавляем эту переменную
-
+  bool _areFiltersActive = false; // Добавляем эту переменную
 
   @override
   void initState() {
@@ -352,32 +350,35 @@ class _CustomAppBarState extends State<CustomAppBar>
       (_) => _checkOverdueTasks(),
     );
 
-      // Модифицируем таймер
-  _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
-    if (_areFiltersActive) {
-      setState(() {
-        _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
-      });
-    } else {
-      setState(() {
-        _iconColor = Colors.black; // Возвращаем черный цвет когда фильтры неактивны
-      });
-    }
-  });
-}
-void _setFiltersActive(bool active) {
-  setState(() {
-    _areFiltersActive = active;
-    if (!active) {
-      _iconColor = Colors.black; // Сразу устанавливаем черный цвет при сбросе
-    }
-  });
-}
+    // Модифицируем таймер
+    _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+      if (_areFiltersActive) {
+        setState(() {
+          _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
+        });
+      } else {
+        setState(() {
+          _iconColor =
+              Colors.black; // Возвращаем черный цвет когда фильтры неактивны
+        });
+      }
+    });
+  }
+
+  void _setFiltersActive(bool active) {
+    setState(() {
+      _areFiltersActive = active;
+      if (!active) {
+        _iconColor = Colors.black; // Сразу устанавливаем черный цвет при сбросе
+      }
+    });
+  }
 
 // Метод для проверки активности фильтров (можно вызывать извне)
-void resetFilterIconState() {
-  _setFiltersActive(false);
-}
+  void resetFilterIconState() {
+    _setFiltersActive(false);
+  }
+
   void _setupFirebaseMessaging() async {
     final prefs = await SharedPreferences.getInstance();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -523,15 +524,16 @@ void resetFilterIconState() {
     final canReadNotice = await _apiService.hasPermission('notice.read');
     // final canReadCalendar = await _apiService.hasPermission('notice.read');
     final canReadCalendar = await _apiService.hasPermission('calendar');
-    final canReadCallCenter = await _apiService.hasPermission('call-center'); // Исправлено
-    final canReadGps = await _apiService.hasPermission('call-center'); // Проверка прав для GPS
+    final canReadCallCenter =
+        await _apiService.hasPermission('call-center'); // Исправлено
+    final canReadGps =
+        await _apiService.hasPermission('call-center'); // Проверка прав для GPS
     setState(() {
       _canReadNotice = canReadNotice;
       _canReadCalendar = canReadCalendar;
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
-            _canReadGps = canReadGps;
-
+      _canReadGps = canReadGps;
     });
   }
 
@@ -725,378 +727,415 @@ void resetFilterIconState() {
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  return Container(
-    width: double.infinity,
-    height: kToolbarHeight,
-    color: Colors.white,
-    padding: EdgeInsets.zero,
-    child: Row(
-      children: [
-        // Аватар пользователя
-        Container(
-          width: 40,
-          height: 40,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: _buildAvatarImage(_userImage),
-            onPressed: widget.onClickProfileAvatar,
-          ),
-        ),
-        SizedBox(width: 8),
-        
-        // Заголовок
-        if (!_isSearching)
-          Expanded(
-            child: widget.titleWidget ??
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-          ),
-        if (_isSearching)
-          Expanded(
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: _isSearching ? 200.0 : 0.0,
-              child: TextField(
-                controller: _searchController,
-                focusNode: focusNode,
-                onChanged: widget.onChangedSearchInput,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                ),
-                style: TextStyle(fontSize: 16),
-                autofocus: true,
-              ),
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        width: double.infinity,
+        height: kToolbarHeight,
+        color: Colors.white,
+        padding: EdgeInsets.zero,
+        child: Row(children: [
+          // Аватар пользователя
+          Container(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: _buildAvatarImage(_userImage),
+              onPressed: widget.onClickProfileAvatar,
             ),
           ),
+          SizedBox(width: 8),
 
-        // Иконка фильтра (первая в порядке)
-        if (widget.showFilterIconOnSelectCallCenter)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('filter'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/AppBar/filter.png',
-                  width: 24,
-                  height: 24,
-                  color: _iconColor, // Анимация цвета
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isFiltering = !_isFiltering;
-                    _setFiltersActive(_isFiltering); // Обновляем состояние фильтров
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ManagerFilterScreen(), // Новый экран фильтрации
+          // Заголовок
+          if (!_isSearching)
+            Expanded(
+              child: widget.titleWidget ??
+                  Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
-                  );
-                },
+                  ),
+            ),
+          if (_isSearching)
+            Expanded(
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: _isSearching ? 200.0 : 0.0,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  onChanged: widget.onChangedSearchInput,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('search_appbar'),
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(fontSize: 16),
+                  autofocus: true,
+                ),
               ),
             ),
-          ),
 
-        // Иконка поиска
-        if (widget.showSearchIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('search'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
+          // Иконка фильтра (первая в порядке)
+          if (widget.showFilterIconOnSelectCallCenter)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('filter'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  icon: Image.asset(
+                    'assets/icons/AppBar/filter.png',
+                    width: 24,
+                    height: 24,
+                    color: _iconColor, // Анимация цвета
                   ),
-                ],
+                  onPressed: () {
+                    setState(() {
+                      _isFiltering = !_isFiltering;
+                      _setFiltersActive(
+                          _isFiltering); // Обновляем состояние фильтров
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ManagerFilterScreen(), // Новый экран фильтрации
+                      ),
+                    );
+                  },
+                ),
               ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
+            ),
+
+          // Иконка поиска
+          if (widget.showSearchIcon)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('search'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  key: widget.SearchIconKey,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  icon: _isSearching
+                      ? Icon(Icons.close)
+                      : Image.asset(
+                          'assets/icons/AppBar/search.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus();
+                      }
+                    });
+                    widget.clearButtonClick(_isSearching);
+                    if (_isSearching) {
+                      Future.delayed(Duration(milliseconds: 100), () {
+                        FocusScope.of(context).requestFocus(focusNode);
+                      });
+                    }
+                  },
+                ),
               ),
-              child: IconButton(
-                key: widget.SearchIconKey,
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: _isSearching
-                    ? Icon(Icons.close)
-                    : Image.asset(
-                        'assets/icons/AppBar/search.png',
+            ),
+
+          // Иконка уведомлений
+          if (widget.showNotification)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message:
+                    AppLocalizations.of(context)!.translate('notification'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  key: widget.NotificationIconKey,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  icon: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/icons/AppBar/notification.png',
                         width: 24,
                         height: 24,
                       ),
-                onPressed: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchController.clear();
-                      FocusScope.of(context).unfocus();
-                    }
-                  });
-                  widget.clearButtonClick(_isSearching);
-                  if (_isSearching) {
-                    Future.delayed(Duration(milliseconds: 100), () {
-                      FocusScope.of(context).requestFocus(focusNode);
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
-
-        // Иконка уведомлений
-        if (widget.showNotification)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('notification'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                key: widget.NotificationIconKey,
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Stack(
-                  children: [
-                    Image.asset(
-                      'assets/icons/AppBar/notification.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    if (_hasNewNotification)
-                      Positioned(
-                        right: 0,
-                        child: FadeTransition(
-                          opacity: _blinkAnimation,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
+                      if (_hasNewNotification)
+                        Positioned(
+                          right: 0,
+                          child: FadeTransition(
+                            opacity: _blinkAnimation,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
                         ),
+                    ],
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _hasNewNotification = false;
+                    });
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.setBool('hasNewNotification', false);
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NotificationsScreen(),
                       ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          // Иконка фильтра (первая в порядке)
+          if (widget.showFilterIconChat)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('filter'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
-                onPressed: () {
-                  setState(() {
-                    _hasNewNotification = false;
-                  });
-                  SharedPreferences.getInstance().then((prefs) {
-                    prefs.setBool('hasNewNotification', false);
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-  // Иконка фильтра (первая в порядке)
-       if (widget.showFilterIconChat)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('filter'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/AppBar/filter.png',
-                  width: 24,
-                  height: 24,
-                  // ОБНОВЛЯЕМ: Цвет иконки зависит от активности фильтров
-                  color: widget.hasActiveChatFilters 
-                    ? Colors.blue 
-                    : _iconColor,
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isFiltering = !_isFiltering;
-                    if (widget.hasActiveChatFilters) {
-                      _setFiltersActive(true);
-                    }
-                  });
-                  
-                  // ОТКРЫВАЕМ ChatLeadFilterScreen с передачей данных
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatLeadFilterScreen(
-                        // Передаем начальные значения из активных фильтров
-                        initialManagers: widget.initialChatFilters?['managers'],
-                        initialRegions: widget.initialChatFilters?['regions'],
-                        initialSources: widget.initialChatFilters?['sources'],
-                        initialStatuses: widget.initialChatFilters?['statuses'],
-                        initialFromDate: widget.initialChatFilters?['fromDate'],
-                        initialToDate: widget.initialChatFilters?['toDate'],
-                        initialHasSuccessDeals: widget.initialChatFilters?['hasSuccessDeals'],
-                        initialHasInProgressDeals: widget.initialChatFilters?['hasInProgressDeals'],
-                        initialHasFailureDeals: widget.initialChatFilters?['hasFailureDeals'],
-                        initialHasNotices: widget.initialChatFilters?['hasNotices'],
-                        initialHasContact: widget.initialChatFilters?['hasContact'],
-                        initialHasChat: widget.initialChatFilters?['hasChat'],
-                        initialHasNoReplies: widget.initialChatFilters?['hasNoReplies'],
-                        initialHasUnreadMessages: widget.initialChatFilters?['hasUnreadMessages'],
-                        initialHasDeal: widget.initialChatFilters?['hasDeal'],
-                        initialDaysWithoutActivity: widget.initialChatFilters?['daysWithoutActivity'],
-                        initialDirectoryValues: widget.initialChatFilters?['directory_values'],
-                        
-                        // Передаем колбеки
-                        
-                        onManagersSelected: widget.onChatLeadFiltersApplied,
-                        onResetFilters: widget.onChatLeadFiltersReset,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+                child: IconButton(
+                  icon: Image.asset(
+                    'assets/icons/AppBar/filter.png',
+                    width: 24,
+                    height: 24,
+                    // ОБНОВЛЯЕМ: Цвет иконки зависит от активности фильтров
+                    color:
+                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isFiltering = !_isFiltering;
+                      if (widget.hasActiveChatFilters) {
+                        _setFiltersActive(true);
+                      }
+                    });
 
-           if (widget.showFilterIconTaskChat)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('filter'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/AppBar/filter.png',
-                  width: 24,
-                  height: 24,
-                  color: _iconColor, // Анимация цвета
+                    // ОТКРЫВАЕМ ChatLeadFilterScreen с передачей данных
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatLeadFilterScreen(
+                          // Передаем начальные значения из активных фильтров
+                          initialManagers:
+                              widget.initialChatFilters?['managers'],
+                          initialRegions: widget.initialChatFilters?['regions'],
+                          initialSources: widget.initialChatFilters?['sources'],
+                          initialStatuses:
+                              widget.initialChatFilters?['statuses'],
+                          initialFromDate:
+                              widget.initialChatFilters?['fromDate'],
+                          initialToDate: widget.initialChatFilters?['toDate'],
+                          initialHasSuccessDeals:
+                              widget.initialChatFilters?['hasSuccessDeals'],
+                          initialHasInProgressDeals:
+                              widget.initialChatFilters?['hasInProgressDeals'],
+                          initialHasFailureDeals:
+                              widget.initialChatFilters?['hasFailureDeals'],
+                          initialHasNotices:
+                              widget.initialChatFilters?['hasNotices'],
+                          initialHasContact:
+                              widget.initialChatFilters?['hasContact'],
+                          initialHasChat: widget.initialChatFilters?['hasChat'],
+                          initialHasNoReplies:
+                              widget.initialChatFilters?['hasNoReplies'],
+                          initialHasUnreadMessages:
+                              widget.initialChatFilters?['hasUnreadMessages'],
+                          initialHasDeal: widget.initialChatFilters?['hasDeal'],
+                          initialDaysWithoutActivity:
+                              widget.initialChatFilters?['daysWithoutActivity'],
+                          initialDirectoryValues:
+                              widget.initialChatFilters?['directory_values'],
+
+                          // Передаем колбеки
+
+                          onManagersSelected: widget.onChatLeadFiltersApplied,
+                          onResetFilters: widget.onChatLeadFiltersReset,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isFiltering = !_isFiltering;
-                    _setFiltersActive(_isFiltering); // Обновляем состояние фильтров
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatTaskFilterScreen(), // Новый экран фильтрации
+              ),
+            ),
+
+   if (widget.showFilterIconTaskChat)
+  Transform.translate(
+    offset: const Offset(10, 0),
+    child: Tooltip(
+      message: AppLocalizations.of(context)!.translate('task_filters'),
+      preferBelow: false,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      textStyle: TextStyle(
+        fontSize: 12,
+        color: Colors.black,
+      ),
+      child: IconButton(
+        icon: Image.asset(
+          'assets/icons/AppBar/filter.png',
+          width: 24,
+          height: 24,
+          color: widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+        ),
+        onPressed: () {
+          setState(() {
+            _isTaskFiltering = !_isTaskFiltering;
+            _setFiltersActive(_isTaskFiltering && widget.hasActiveChatFilters);
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatTaskFilterScreen(
+                initialUsers: widget.initialChatFilters?['executor_ids']?.cast<int>() ?? [],
+                initialAuthors: widget.initialChatFilters?['author_ids']?.cast<int>().map((id) => id.toString()).toList() ?? [],
+                initialProjects: widget.initialChatFilters?['project_ids']?.cast<int>().map((id) => id.toString()).toList() ?? [],
+                initialStatuses: widget.initialChatFilters?['task_status_ids']?.cast<int>().firstOrNull,
+                initialFromDate: widget.initialChatFilters?['task_created_from'] != null
+                    ? DateTime.parse(widget.initialChatFilters!['task_created_from'])
+                    : null,
+                initialToDate: widget.initialChatFilters?['task_created_to'] != null
+                    ? DateTime.parse(widget.initialChatFilters!['task_created_to'])
+                    : null,
+                initialDeadlineFromDate: widget.initialChatFilters?['deadline_from'] != null
+                    ? DateTime.parse(widget.initialChatFilters!['deadline_from'])
+                    : null,
+                initialDeadlineToDate: widget.initialChatFilters?['deadline_to'] != null
+                    ? DateTime.parse(widget.initialChatFilters!['deadline_to'])
+                    : null,
+                initialDepartment: widget.initialChatFilters?['department_id']?.toString(),
+                initialTaskNumber: widget.initialChatFilters?['task_number'],
+                initialUnreadOnly: widget.initialChatFilters?['unread_only'] ?? false,
+                onUsersSelected: widget.onChatTaskFiltersApplied,
+                onResetFilters: widget.onChatTaskFiltersReset,
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+  ),
+  
+          // Дополнительные иконки (например, календарь, задачи, меню и т.д.)
+          if (widget.showDashboardIcon)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('dashboard'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-        // Дополнительные иконки (например, календарь, задачи, меню и т.д.)
-        if (widget.showDashboardIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('dashboard'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/MyNavBar/dashboard_OFF.png',
-                  width: 24,
-                  height: 24,
+                  ],
                 ),
-                onPressed: widget.onDashboardPressed,
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  icon: Image.asset(
+                    'assets/icons/MyNavBar/dashboard_OFF.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  onPressed: widget.onDashboardPressed,
+                ),
               ),
             ),
-          ),
           if (widget.showFilterIconEvent)
             Tooltip(
               message: AppLocalizations.of(context)!.translate('search'),
@@ -1251,7 +1290,6 @@ Widget build(BuildContext context) {
               ),
             ),
 
-            
           if (widget.showCalendarDashboard && _canReadCalendar)
             Transform.translate(
               offset: const Offset(6, 0),
@@ -1365,14 +1403,14 @@ Widget build(BuildContext context) {
                             ),
                           );
                           break;
-                             case 'gps':
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GpsScreenForAdmin(),
-                      ),
-                    );
-                    break;
+                        case 'gps':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GpsScreenForAdmin(),
+                            ),
+                          );
+                          break;
                       }
                     },
                     itemBuilder: (BuildContext context) =>
@@ -1495,38 +1533,40 @@ Widget build(BuildContext context) {
                               ),
                             ),
                           // В методе build внутри PopupMenuButton, замените пункт 'call_center' на:
-if (widget.showCallCenter && _canReadCallCenter)
-  PopupMenuItem<String>(
-    value: 'call_center',
-    child: Row(
-      children: [
-        Image.asset(
-          'assets/icons/AppBar/call_center.png',
-          width: 24,
-          height: 24,
-          color: _iconColor, // Добавляем изменение цвета иконки
-        ),
-        SizedBox(width: 8),
-        Text(AppLocalizations.of(context)!.translate('call_center')),
-      ],
-    ),
-  ),
-  // if (widget.showGps && _canReadGps) // Новый пункт для GPS
-  //             PopupMenuItem<String>(
-  //               value: 'gps',
-  //               child: Row(
-  //                 children: [
-  //                   Image.asset(
-  //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
-  //                     width: 24,
-  //                     height: 24,
-  //                     color: _iconColor,
-  //                   ),
-  //                   SizedBox(width: 8),
-  //                   Text(AppLocalizations.of(context)!.translate('gps')),
-  //                 ],
-  //               ),
-  //             ),
+                          if (widget.showCallCenter && _canReadCallCenter)
+                            PopupMenuItem<String>(
+                              value: 'call_center',
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/AppBar/call_center.png',
+                                    width: 24,
+                                    height: 24,
+                                    color:
+                                        _iconColor, // Добавляем изменение цвета иконки
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(AppLocalizations.of(context)!
+                                      .translate('call_center')),
+                                ],
+                              ),
+                            ),
+                          // if (widget.showGps && _canReadGps) // Новый пункт для GPS
+                          //             PopupMenuItem<String>(
+                          //               value: 'gps',
+                          //               child: Row(
+                          //                 children: [
+                          //                   Image.asset(
+                          //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
+                          //                     width: 24,
+                          //                     height: 24,
+                          //                     color: _iconColor,
+                          //                   ),
+                          //                   SizedBox(width: 8),
+                          //                   Text(AppLocalizations.of(context)!.translate('gps')),
+                          //                 ],
+                          //               ),
+                          //             ),
                         ]))
         ]));
   }

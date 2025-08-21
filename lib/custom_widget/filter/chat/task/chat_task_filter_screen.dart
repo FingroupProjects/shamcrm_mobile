@@ -41,6 +41,12 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final String? initialDepartment;
   final List<Map<String, dynamic>>? initialDirectoryValues;
 
+  final List<String>? initialProjects;
+
+  final String? initialTaskNumber; // task_number
+  final bool? initialUnreadOnly; // unread_only
+
+
   ChatTaskFilterScreen({
     Key? key,
     this.onUsersSelected,
@@ -61,6 +67,11 @@ class ChatTaskFilterScreen extends StatefulWidget {
     this.initialAuthors,
     this.initialDepartment,
     this.initialDirectoryValues,
+
+    this.initialProjects,
+
+    this.initialTaskNumber,
+    this.initialUnreadOnly,
   }) : super(key: key);
 
   @override
@@ -300,62 +311,49 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
             ),
           ),
           SizedBox(width: 10),
-          TextButton(
-            onPressed: () async {
-              await TaskCache.clearAllTasks();
-              await _saveFilterState();
+         TextButton(
+  onPressed: () async {
+    await TaskCache.clearAllTasks();
+    await _saveFilterState();
 
-              final filters = <String, dynamic>{};
+    final filters = <String, dynamic>{};
 
-              if (_selectedDepartment != null) {
-                filters['department_id'] = int.tryParse(_selectedDepartment!);
-              }
+    if (_selectedDepartment != null) {
+      filters['department_id'] = int.tryParse(_selectedDepartment!);
+    }
+    if (_fromDate != null) {
+      filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
+    }
+    if (_toDate != null) {
+      filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
+    }
+    if (_deadlinefromDate != null) {
+      filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
+    }
+    if (_deadlinetoDate != null) {
+      filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
+    }
+    if (_selectedUsers.isNotEmpty) {
+      filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
+    }
+    if (_selectedAuthors.isNotEmpty) {
+      filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
+    }
+    if (_selectedProjects.isNotEmpty) {
+      filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
+    }
+    if (_selectedStatuses != null) {
+      filters['task_status_ids'] = [_selectedStatuses!];
+    }
+    if (_unreadOnly == true) {
+      filters['unread_only'] = true;
+    }
 
-              if (_fromDate != null) {
-                filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
-              }
-              if (_toDate != null) {
-                filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
-              }
+    print('APPLYING TASK FILTERS: $filters');
+    widget.onUsersSelected?.call(filters); // Вызываем всегда, даже если filters пустой
 
-              if (_deadlinefromDate != null) {
-                filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
-              }
-              if (_deadlinetoDate != null) {
-                filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
-              }
-
-              if (_selectedUsers.isNotEmpty) {
-                filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
-              }
-
-              if (_selectedAuthors.isNotEmpty) {
-                filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
-              }
-
-              if (_selectedProjects.isNotEmpty) {
-                filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
-              }
-
-              if (_selectedStatuses != null) {
-                filters['task_status_ids'] = [_selectedStatuses!];
-              }
-
-              if (_unreadOnly == true) {
-                filters['unread_only'] = true;
-              }
-
-              final bool hasFilters = filters.isNotEmpty;
-
-              if (hasFilters) {
-                print('APPLYING TASK FILTERS: $filters');
-                widget.onUsersSelected?.call(filters);
-              } else {
-                print('NO TASK FILTERS APPLIED');
-              }
-
-              Navigator.pop(context);
-            },
+    Navigator.pop(context);
+  },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
