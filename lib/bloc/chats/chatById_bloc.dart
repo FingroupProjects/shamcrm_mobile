@@ -1,3 +1,6 @@
+
+
+// chatById_bloc.dart
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -22,7 +25,8 @@ class ChatByIdBloc extends Bloc<ChatByIdEvent, ChatByIdState> {
 
     if (await _checkInternetConnection()) {
       try {
-        final chat = await apiService.getChatById(event.chatId);
+        // Используем новый метод с интеграцией
+        final chat = await apiService.getChatByIdWithIntegration(event.chatId);
         emit(ChatByIdLoaded(chat));
       } catch (e) {
         emit(ChatByIdError(localizations.translate('cannot_data_load_chat')));

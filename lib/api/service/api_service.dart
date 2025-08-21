@@ -34,7 +34,7 @@ import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
-import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/models/lead_navigate_to_chat.dart' hide Integration;
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/mini_app_settiings.dart';
@@ -73,14 +73,14 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/chats_model.dart' hide Integration;
 import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
-import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/leadById_model.dart' hide Integration;
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
@@ -88,7 +88,7 @@ import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/taskbyId_model.dart' hide ChatById;
 import 'package:crm_task_manager/models/template_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -5704,9 +5704,68 @@ Future<TaskProfile> getTaskProfile(int chatId) async {
     //print('Трассировка стека: ${StackTrace.current}');
     throw Exception('Ошибка загрузки задачи!');
   }
+}// Упрощённый метод для получения интеграции лида (теперь не нужен отдельный класс IntegrationForLead)
+
+
+// Новый метод для получения чата по ID с интеграцией
+Future<ChatById> getChatByIdWithIntegration(int chatId) async {
+  final token = await getToken();
+  String path = '/v2/chat/$chatId';
+  path = await _appendQueryParams(path);
+  
+  if (kDebugMode) {
+    print('ApiService: getChatByIdWithIntegration - Generated path: $path');
+  }
+
+  final fullUrl = '$baseUrl$path';
+  if (kDebugMode) {
+    print('ApiService: getChatByIdWithIntegration - Requesting URL: $fullUrl');
+  }
+
+  try {
+    final response = await http.get(
+      Uri.parse(fullUrl),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'FlutterApp/1.0',
+        'Cache-Control': 'no-cache',
+      },
+    );
+
+    if (kDebugMode) {
+      print('ApiService: getChatByIdWithIntegration - Response status: ${response.statusCode}');
+      print('ApiService: getChatByIdWithIntegration - Response body: ${response.body}');
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final chatById = ChatById.fromJson(data['result']);
+        if (kDebugMode) {
+          print('ApiService: getChatByIdWithIntegration - Successfully parsed: $chatById');
+        }
+        return chatById;
+      } else {
+        if (kDebugMode) {
+          print('ApiService: getChatByIdWithIntegration - No result found in response');
+        }
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      if (kDebugMode) {
+        print('ApiService: getChatByIdWithIntegration - Error ${response.statusCode}: ${response.body}');
+      }
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: getChatByIdWithIntegration - Exception caught: $e');
+    }
+    rethrow;
+  }
 }
-
-
 
 
   Future<String> readMessages(int chatId, int messageId) async {

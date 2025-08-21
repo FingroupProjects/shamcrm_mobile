@@ -199,22 +199,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _hasMarkedMessagesAsRead = true;
     }
   }
+// Обновлённый метод для получения интеграции в ChatSmsScreen
 Future<void> _fetchIntegration() async {
   final prefs = await SharedPreferences.getInstance();
   try {
-    final integration = await widget.apiService.getIntegrationForLead(widget.chatId);
-    debugPrint('Integration fetched: username=${integration.username}, channelName=${integration.channel?.name}');
+    // Используем новый упрощённый метод
+    final chatData = await widget.apiService.getChatByIdWithIntegration(widget.chatId);
+    
+    debugPrint('ChatData fetched: integration.username=${chatData.integration?.username}, channel.name=${chatData.channel?.name}');
+    
     setState(() {
-      integrationUsername = integration.username ?? AppLocalizations.of(context)!.translate('unknown_channel');
-      channelName = integration.channel?.name ?? 'unknown';
+      integrationUsername = chatData.integration?.username ?? AppLocalizations.of(context)!.translate('unknown_channel');
+      channelName = chatData.channel?.name ?? 'unknown';
+      
+      // Сохраняем в SharedPreferences для быстрого доступа
       prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
       prefs.setString('channel_name_${widget.chatId}', channelName!);
     });
   } catch (e) {
-    debugPrint('Ошибка загрузки интеграции: $e');
+    debugPrint('Ошибка загрузки данных чата: $e');
+    
+    // Пытаемся загрузить из кеша
     setState(() {
-      integrationUsername = AppLocalizations.of(context)!.translate('unknown_channel');
-      channelName = 'unknown';
+      integrationUsername = prefs.getString('integration_username_${widget.chatId}') ?? 
+          AppLocalizations.of(context)!.translate('unknown_channel');
+      channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
     });
   }
 }
