@@ -8,12 +8,11 @@ class DealCache {
 
   // Save deal statuses to cache, including deals_count
   static Future<void> cacheDealStatuses(List<Map<String, dynamic>> dealStatuses) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedStatuses = json.encode(dealStatuses);
-    await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
-    print('DealCache: Cached deal statuses: $dealStatuses');
-  }
-
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String encodedStatuses = json.encode(dealStatuses);
+  await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
+  print('DealCache: Cached deal statuses: $dealStatuses');
+}
   static Future<void> clearDealsForStatus(int? statusId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String key = 'cachedDeals_$statusId';
@@ -23,20 +22,36 @@ class DealCache {
   }
 
   // Get deal statuses from cache
-  static Future<List<Map<String, dynamic>>> getDealStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
-
-    if (cachedStatuses != null) {
-      final List<dynamic> decodedData = json.decode(cachedStatuses);
-      final statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
-      print('DealCache: Retrieved deal statuses from cache: $statuses');
-      return statuses;
-    }
-    print('DealCache: No cached deal statuses found');
-    return [];
+ static Future<List<Map<String, dynamic>>> getDealStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
+  if (cachedStatuses != null) {
+    final List<dynamic> decodedData = json.decode(cachedStatuses);
+    final statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+    print('DealCache: Retrieved deal statuses from cache: $statuses');
+    return statuses;
   }
+  print('DealCache: No cached deal statuses found');
+  return [];
+}
+// В DealCache
+static Future<void> updateDealsCountForStatus(int statusId, int dealsCount) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
+  List<Map<String, dynamic>> statuses = [];
 
+  if (cachedStatuses != null) {
+    final List<dynamic> decodedData = json.decode(cachedStatuses);
+    statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+    final index = statuses.indexWhere((status) => status['id'] == statusId);
+    if (index != -1) {
+      statuses[index]['deals_count'] = dealsCount;
+      final String encodedStatuses = json.encode(statuses);
+      await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
+      print('DealCache: Updated deals_count for statusId: $statusId to $dealsCount');
+    }
+  }
+}
   // Save deals for a specific status to cache
   static Future<void> cacheDealsForStatus(int? statusId, List<Deal> deals) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();

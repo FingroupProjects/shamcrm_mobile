@@ -23,354 +23,246 @@ class ManagerMultiSelectWidget extends StatefulWidget {
 class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   List<ManagerData> managersList = [];
   List<ManagerData> selectedManagersData = [];
-  bool isInitialized = false;
+  bool allSelected = false; // Added: Flag for "Select All" functionality
   final ManagerData systemManager = ManagerData(
     id: 0,
     name: "Система",
     lastname: "",
   );
 
+  final TextStyle managerTextStyle = const TextStyle( // Added: Unified text style like AuthorMultiSelectWidget
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
+
   @override
   void initState() {
     super.initState();
-    _loadManagers();
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv()); // Simplified: Removed redundant _loadManagers check
   }
 
-  void _loadManagers() {
-    final bloc = context.read<GetAllManagerBloc>();
-    if (bloc.state is! GetAllManagerSuccess) {
-      bloc.add(GetAllManagerEv());
-    }
-  }
-
-  void _initializeSelectedManagers(List<ManagerData> allManagers) {
-    if (isInitialized) return;
-
-    if (widget.selectedManagers != null && widget.selectedManagers!.isNotEmpty) {
-      selectedManagersData = allManagers
-          .where((manager) =>
-              widget.selectedManagers!.contains(manager.id.toString()))
-          .toList();
-    } else {
-      selectedManagersData = [];
-    }
-
-    isInitialized = true;
-    // Remove setState() from here - it will be handled by the build method
+  // Added: Function to toggle select all managers
+  void _toggleSelectAll() {
+    setState(() {
+      allSelected = !allSelected;
+      if (allSelected) {
+        selectedManagersData = List.from(managersList); // Select all
+      } else {
+        selectedManagersData = []; // Deselect all
+      }
+      widget.onSelectManagers(selectedManagersData);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
-          builder: (context, state) {
-            if (state is GetAllManagerLoading) {
-              return _buildLoadingWidget(context);
-            }
+    return FormField<List<ManagerData>>( // Changed: Wrapped in FormField for validation
+      validator: (value) {
+        if (selectedManagersData.isEmpty) {
+          return AppLocalizations.of(context)!.translate('field_required_project');
+        }
+        return null;
+      },
+      builder: (FormFieldState<List<ManagerData>> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('managers'),
+              style: managerTextStyle.copyWith( // Changed: Use managerTextStyle with lighter weight
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8), // Changed: Increased spacing to match AuthorMultiSelectWidget
+            Container(
+              decoration: BoxDecoration( // Added: Border styling with error handling
+                color: const Color(0xFFF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1,
+                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                ),
+              ),
+              child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
+                builder: (context, state) {
+                  if (state is GetAllManagerSuccess) {
+                    managersList = [
+                      systemManager,
+                      ...state.dataManager.result ?? [],
+                    ];
+                    if (widget.selectedManagers != null && managersList.isNotEmpty) {
+                      selectedManagersData = managersList
+                          .where((manager) => widget.selectedManagers!
+                              .contains(manager.id.toString()))
+                          .toList();
+                      allSelected = selectedManagersData.length == managersList.length; // Added: Update allSelected state
+                    }
+                  }
 
-            if (state is GetAllManagerError) {
-              return _buildErrorWidget(context, state.message);
-            }
-
-            if (state is GetAllManagerSuccess) {
-              managersList = [
-                systemManager,
-                ...state.dataManager.result ?? [],
-              ];
-
-              _initializeSelectedManagers(managersList);
-
-              // Фильтруем selectedManagersData, чтобы гарантировать наличие в managersList
-              selectedManagersData = selectedManagersData
-                  .where((manager) => managersList.contains(manager))
-                  .toList();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('managers'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  CustomDropdown<ManagerData>.multiSelectSearch(
+                  return CustomDropdown<ManagerData>.multiSelectSearch(
                     items: managersList,
                     initialItems: selectedManagersData,
-                    searchHintText:
-                        AppLocalizations.of(context)!.translate('search'),
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: Color(0xffF4F7FD),
+                    decoration: CustomDropdownDecoration( // Changed: Unified decoration to match AuthorMultiSelectWidget
+                      closedFillColor: const Color(0xffF4F7FD),
                       expandedFillColor: Colors.white,
                       closedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
+                        color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
+                        color: const Color(0xFFE5E7EB),
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    listItemBuilder:
-                        (context, item, isSelected, onItemSelect) {
-                      return ListTile(
-                        minTileHeight: 1,
-                        minVerticalPadding: 2,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        title: Row(
-                          mainAxisSize: MainAxisSize.min,
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      // Added: "Select All" option as first item
+                      if (managersList.indexOf(item) == 0) {
+                        return Column(
                           children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Color(0xff1E2E52), width: 1),
-                                color: isSelected
-                                    ? Color(0xff1E2E52)
-                                    : Colors.transparent,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                              child: isSelected
-                                  ? const Icon(Icons.check,
-                                      color: Colors.white, size: 16)
-                                  : null,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                item.id == 0
-                                    ? item.name
-                                    : '${item.name} ${item.lastname}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                              child: GestureDetector(
+                                onTap: _toggleSelectAll,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: const Color(0xff1E2E52),
+                                            width: 1),
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: allSelected
+                                            ? const Color(0xff1E2E52)
+                                            : Colors.transparent,
+                                      ),
+                                      child: allSelected
+                                          ? const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 14,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        style: managerTextStyle,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            Divider(
+                                height: 20,
+                                color: const Color(0xFFE5E7EB)), // Added: Divider for "Select All"
+                            _buildListItem(item, isSelected, onItemSelect),
                           ],
-                        ),
-                        onTap: () {
-                          onItemSelect();
-                          FocusScope.of(context).unfocus();
-                        },
-                      );
+                        );
+                      }
+                      return _buildListItem(item, isSelected, onItemSelect); // Changed: Use custom _buildListItem
                     },
                     headerListBuilder: (context, hint, enabled) {
-                      int selectedManagersCount = selectedManagersData.length;
+                      String selectedManagersNames = selectedManagersData.isEmpty
+                          ? AppLocalizations.of(context)!.translate('select_manager')
+                          : selectedManagersData
+                              .map((e) => e.id == 0 ? e.name : '${e.name} ${e.lastname}')
+                              .join(', ');
                       return Text(
-                        selectedManagersCount == 0
-                            ? AppLocalizations.of(context)!
-                                .translate('selected_manager')
-                            : '${AppLocalizations.of(context)!.translate('selected_manager')} $selectedManagersCount',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
+                        selectedManagersNames,
+                        style: managerTextStyle, // Changed: Use managerTextStyle
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!.translate('select_manager'),
-                      style: const TextStyle(
+                      style: managerTextStyle.copyWith(
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     onListChanged: (values) {
-                      // print('Selected managers: $values');
+                      widget.onSelectManagers(values);
                       setState(() {
                         selectedManagersData = values;
+                        allSelected = values.length == managersList.length; // Added: Update allSelected
                       });
-                      widget.onSelectManagers(selectedManagersData);
+                      field.didChange(values); // Added: Update FormField state
                     },
-                  ),
-                ],
-              );
-            }
-
-            return _buildFallbackWidget(context);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingWidget(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('managers'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Color(0xffF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color(0xffF4F7FD)),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                ),
+                  );
+                },
               ),
-            //   const SizedBox(width: 8),
-            //   Text(
-            //     'Загрузка...',
-            //     style: const TextStyle(
-            //       fontSize: 14,
-            //       fontWeight: FontWeight.w500,
-            //       fontFamily: 'Gilroy',
-            //       color: Color(0xff1E2E52),
-            //     ),
-            //     maxLines: 1,
-            //     overflow: TextOverflow.ellipsis,
-            //   ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorWidget(BuildContext context, String message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('managers'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Color(0xffF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
+            ),
+            if (field.hasError) // Added: Error text display
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
-                  'Ошибка загрузки: $message',
+                  field.errorText!,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
                     color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh,
-                    color: Color(0xff1E2E52), size: 16),
-                onPressed: _loadManagers,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-              ),
-            ],
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildFallbackWidget(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('managers'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Color(0xffF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color(0xffF4F7FD)),
-          ),
-          child: Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('select_manager'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff99A4BA),
+  // Added: Custom list item builder to match AuthorMultiSelectWidget
+  Widget _buildListItem(ManagerData item, bool isSelected, Function() onItemSelect) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: GestureDetector(
+        onTap: onItemSelect,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color(0xff1E2E52),
+                  width: 1,
                 ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.id == 0 ? item.name : '${item.name} ${item.lastname}',
+                style: managerTextStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh,
-                    color: Color(0xff1E2E52), size: 16),
-                onPressed: _loadManagers,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

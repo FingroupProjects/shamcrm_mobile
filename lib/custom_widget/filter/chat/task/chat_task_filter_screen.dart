@@ -26,7 +26,7 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
-  final List<UserData>? initialUsers;
+   final List? initialUsers;
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
@@ -37,17 +37,14 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
-  final List<String>? initialAuthors;
+   final List? initialAuthors; // Изменено на List<dynamic>
   final String? initialDepartment;
-  final List<Map<String, dynamic>>? initialDirectoryValues;
+  final List? initialDirectoryValues;
+  final List? initialProjects; // Изменено на List<dynamic>
+  final String? initialTaskNumber;
+  final bool? initialUnreadOnly;
 
-  final List<String>? initialProjects;
-
-  final String? initialTaskNumber; // task_number
-  final bool? initialUnreadOnly; // unread_only
-
-
-  ChatTaskFilterScreen({
+  const ChatTaskFilterScreen({
     Key? key,
     this.onUsersSelected,
     this.onStatusSelected,
@@ -67,9 +64,7 @@ class ChatTaskFilterScreen extends StatefulWidget {
     this.initialAuthors,
     this.initialDepartment,
     this.initialDirectoryValues,
-
     this.initialProjects,
-
     this.initialTaskNumber,
     this.initialUnreadOnly,
   }) : super(key: key);
@@ -100,22 +95,107 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedUsers = widget.initialUsers ?? [];
-    _selectedStatuses = widget.initialStatuses;
-    _fromDate = widget.initialFromDate;
-    _toDate = widget.initialToDate;
-    _selectedAuthors = widget.initialAuthors ?? [];
-    _isOverdue = widget.initialIsOverdue ?? false;
-    _hasFile = widget.initialHasFile ?? false;
-    _hasDeal = widget.initialHasDeal ?? false;
-    _isUrgent = widget.initialIsUrgent ?? false;
-    _deadlinefromDate = widget.initialDeadlineFromDate;
-    _deadlinetoDate = widget.initialDeadlineToDate;
-    _selectedDepartment = widget.initialDepartment;
-    context.read<GetAllClientBloc>().add(GetAllClientEv());
-    _loadDepartmentStatus();
-    _loadFilterState();
-    _fetchDirectoryLinks();
+    // Асинхронная инициализация
+    _initializeFilters().then((_) {
+      _selectedStatuses = widget.initialStatuses;
+      _fromDate = widget.initialFromDate;
+      _toDate = widget.initialToDate;
+      _isOverdue = widget.initialIsOverdue ?? false;
+      _hasFile = widget.initialHasFile ?? false;
+      _hasDeal = widget.initialHasDeal ?? false;
+      _isUrgent = widget.initialIsUrgent ?? false;
+      _deadlinefromDate = widget.initialDeadlineFromDate;
+      _deadlinetoDate = widget.initialDeadlineToDate;
+      _selectedDepartment = widget.initialDepartment;
+      _unreadOnly = widget.initialUnreadOnly;
+      context.read<GetAllClientBloc>().add(GetAllClientEv());
+      _loadDepartmentStatus();
+      _loadFilterState();
+      _fetchDirectoryLinks();
+    });
+  }
+
+  Future<void> _initializeFilters() async {
+    // Инициализация пользователей
+    if (widget.initialUsers != null) {
+      if (widget.initialUsers is List<UserData>) {
+        setState(() {
+          _selectedUsers = widget.initialUsers as List<UserData>;
+        });
+      } else if (widget.initialUsers is List<int>) {
+        final userDataList = await _convertIdsToUsers(widget.initialUsers as List<int>);
+        setState(() {
+          _selectedUsers = userDataList;
+        });
+      } else {
+        setState(() {
+          _selectedUsers = [];
+        });
+        debugPrint('Warning: initialUsers is not List<UserData> or List<int>, received: ${widget.initialUsers.runtimeType}');
+      }
+    } else {
+      setState(() {
+        _selectedUsers = [];
+      });
+    }
+
+    // Инициализация авторов
+    if (widget.initialAuthors != null) {
+      if (widget.initialAuthors is List<String>) {
+        setState(() {
+          _selectedAuthors = widget.initialAuthors as List<String>;
+        });
+      } else if (widget.initialAuthors is List<int>) {
+        setState(() {
+          _selectedAuthors = (widget.initialAuthors as List<int>).map((id) => id.toString()).toList();
+        });
+      } else {
+        setState(() {
+          _selectedAuthors = [];
+        });
+        debugPrint('Warning: initialAuthors is not List<String> or List<int>, received: ${widget.initialAuthors.runtimeType}');
+      }
+    } else {
+      setState(() {
+        _selectedAuthors = [];
+      });
+    }
+
+    // Инициализация проектов
+    if (widget.initialProjects != null) {
+      if (widget.initialProjects is List<String>) {
+        setState(() {
+          _selectedProjects = widget.initialProjects as List<String>;
+        });
+      } else if (widget.initialProjects is List<int>) {
+        setState(() {
+          _selectedProjects = (widget.initialProjects as List<int>).map((id) => id.toString()).toList();
+        });
+      } else {
+        setState(() {
+          _selectedProjects = [];
+        });
+        debugPrint('Warning: initialProjects is not List<String> or List<int>, received: ${widget.initialProjects.runtimeType}');
+      }
+    } else {
+      setState(() {
+        _selectedProjects = [];
+      });
+    }
+  }
+
+  Future<List<UserData>> _convertIdsToUsers(List<int> userIds) async {
+    try {
+      final apiService = context.read<ApiService>();
+      final response = await apiService.getAllUser();
+      if (response.result != null) {
+        return response.result!.where((user) => userIds.contains(user.id)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error converting user IDs to UserData: $e');
+      return [];
+    }
   }
 
   Future<void> _loadDepartmentStatus() async {
@@ -236,7 +316,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
     return SwitchListTile(
       title: Text(
         title,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 16,
           color: Colors.black54,
           fontFamily: 'Gilroy',
@@ -254,12 +334,12 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: const Color(0xffF4F7FD),
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: TextStyle(
+          style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
@@ -290,19 +370,20 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = null;
                 }
+                _unreadOnly = false;
               });
             },
             style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
@@ -310,61 +391,61 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
               ),
             ),
           ),
-          SizedBox(width: 10),
-         TextButton(
-  onPressed: () async {
-    await TaskCache.clearAllTasks();
-    await _saveFilterState();
+          const SizedBox(width: 10),
+          TextButton(
+            onPressed: () async {
+              await TaskCache.clearAllTasks();
+              await _saveFilterState();
 
-    final filters = <String, dynamic>{};
+              final filters = <String, dynamic>{};
 
-    if (_selectedDepartment != null) {
-      filters['department_id'] = int.tryParse(_selectedDepartment!);
-    }
-    if (_fromDate != null) {
-      filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
-    }
-    if (_toDate != null) {
-      filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
-    }
-    if (_deadlinefromDate != null) {
-      filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
-    }
-    if (_deadlinetoDate != null) {
-      filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
-    }
-    if (_selectedUsers.isNotEmpty) {
-      filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
-    }
-    if (_selectedAuthors.isNotEmpty) {
-      filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
-    }
-    if (_selectedProjects.isNotEmpty) {
-      filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
-    }
-    if (_selectedStatuses != null) {
-      filters['task_status_ids'] = [_selectedStatuses!];
-    }
-    if (_unreadOnly == true) {
-      filters['unread_only'] = true;
-    }
+              if (_selectedDepartment != null) {
+                filters['department_id'] = int.tryParse(_selectedDepartment!);
+              }
+              if (_fromDate != null) {
+                filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
+              }
+              if (_toDate != null) {
+                filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
+              }
+              if (_deadlinefromDate != null) {
+                filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
+              }
+              if (_deadlinetoDate != null) {
+                filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
+              }
+              if (_selectedUsers.isNotEmpty) {
+                filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
+              }
+              if (_selectedAuthors.isNotEmpty) {
+                filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
+              }
+              if (_selectedProjects.isNotEmpty) {
+                filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
+              }
+              if (_selectedStatuses != null) {
+                filters['task_status_ids'] = [_selectedStatuses!];
+              }
+              if (_unreadOnly == true) {
+                filters['unread_only'] = true;
+              }
 
-    print('APPLYING TASK FILTERS: $filters');
-    widget.onUsersSelected?.call(filters); // Вызываем всегда, даже если filters пустой
+              print('APPLYING TASK FILTERS: $filters');
+              widget.onUsersSelected?.call(filters);
 
-    Navigator.pop(context);
-  },
+              Navigator.pop(context);
+            },
             style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
@@ -372,7 +453,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
         ],
       ),
       body: Padding(
@@ -398,9 +479,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                             : AppLocalizations.of(context)!.translate('select_date_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                        style: const TextStyle(color: Colors.black54, fontSize: 14),
                       ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
+                      const Icon(Icons.calendar_today, color: Colors.black54),
                     ],
                   ),
                 ),
@@ -426,9 +507,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         _deadlinefromDate != null && _deadlinetoDate != null
                             ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
                             : AppLocalizations.of(context)!.translate('select_deadline_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                        style: const TextStyle(color: Colors.black54, fontSize: 14),
                       ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
+                      const Icon(Icons.calendar_today, color: Colors.black54),
                     ],
                   ),
                 ),

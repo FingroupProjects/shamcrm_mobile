@@ -277,30 +277,37 @@ Widget build(BuildContext context) {
                   _startTutorialLogic();
                 });
               }
-              return ListView.builder(
-                controller: _scrollController,
-                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
-                itemCount: leads.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: LeadCard(
-                      key: index == 0 ? keyLeadCard : null,
-                      dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
-                      lead: leads[index],
-                      title: widget.title,
-                      statusId: widget.statusId,
-                      onStatusUpdated: () {
-                        print('LeadColumn: Lead status updated, fetching leads for statusId: ${widget.statusId}');
-                        _leadBloc.add(FetchLeads(widget.statusId));
-                      },
-                      onStatusId: (StatusLeadId) {
-                        print('LeadColumn: onStatusId called with id: $StatusLeadId');
-                        widget.onStatusId(StatusLeadId);
+              return Column(
+                children: [
+                  SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: leads.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: LeadCard(
+                            key: index == 0 ? keyLeadCard : null,
+                            dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
+                            lead: leads[index],
+                            title: widget.title,
+                            statusId: widget.statusId,
+                            onStatusUpdated: () {
+                              print('LeadColumn: Lead status updated, fetching leads for statusId: ${widget.statusId}');
+                              _leadBloc.add(FetchLeads(widget.statusId));
+                            },
+                            onStatusId: (StatusLeadId) {
+                              print('LeadColumn: onStatusId called with id: $StatusLeadId');
+                              widget.onStatusId(StatusLeadId);
+                            },
+                          ),
+                        );
                       },
                     ),
-                  );
-                },
+                  ),
+                ],
               );
             } else {
               if (!_isInitialized && !_isTutorialShown && !widget.isLeadScreenTutorialCompleted) {
@@ -310,7 +317,7 @@ Widget build(BuildContext context) {
                 });
               }
               return ListView(
-                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.4),
                   Center(
@@ -353,9 +360,15 @@ Widget build(BuildContext context) {
                 ),
               );
             });
-            return const SizedBox();
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [SizedBox()],
+            );
           }
-          return const SizedBox();
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [SizedBox()],
+          );
         },
       ),
       floatingActionButton: _hasPermissionToAddLead

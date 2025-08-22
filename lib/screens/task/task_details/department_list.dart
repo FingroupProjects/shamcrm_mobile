@@ -11,7 +11,7 @@ class DepartmentWidget extends StatefulWidget {
   final String? selectedDepartment;
   final ValueChanged<String?> onChanged;
 
-  DepartmentWidget({required this.selectedDepartment, required this.onChanged});
+  DepartmentWidget({super.key, required this.selectedDepartment, required this.onChanged});
 
   @override
   _DepartmentWidgetState createState() => _DepartmentWidgetState();
@@ -19,6 +19,14 @@ class DepartmentWidget extends StatefulWidget {
 
 class _DepartmentWidgetState extends State<DepartmentWidget> {
   Department? selectedDepartmentData;
+  List<Department> departmentList = [];
+
+  final TextStyle departmentTextStyle = const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
 
   @override
   void initState() {
@@ -26,165 +34,155 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
     context.read<DepartmentBloc>().add(FetchDepartment());
   }
 
-  // Метод для вычисления высоты overlay в зависимости от количества элементов
-  double _calculateOverlayHeight(List<Department> departments) {
-    const double itemHeight = 80.0; // Примерная высота одного элемента (можно подстроить)
-    const int maxItemsWithoutScroll = 5; // Максимум элементов без скролла
-    const double maxHeight = 400.0; // Максимальная высота с прокруткой (5 элементов)
-
-    if (departments.length <= maxItemsWithoutScroll) {
-      // Если элементов меньше или равно 5, высота подстраивается под количество
-      return departments.length * itemHeight;
-    } else {
-      // Если больше 5, фиксированная высота с прокруткой
-      return maxHeight;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocListener<DepartmentBloc, DepartmentState>(
-      listener: (context, state) {
-        if (state is DepartmentError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
+    return FormField<String>(
+      initialValue: widget.selectedDepartment,
+      validator: (value) {
+        if (selectedDepartmentData == null) {
+          return AppLocalizations.of(context)!.translate('field_required_project');
         }
+        return null;
       },
-      child: BlocBuilder<DepartmentBloc, DepartmentState>(
-        builder: (context, state) {
-          List<Department> departmentList = state is DepartmentLoaded ? state.departments : [];
-
-          if (widget.selectedDepartment != null && departmentList.isNotEmpty) {
-            try {
-              selectedDepartmentData = departmentList.firstWhere(
-                (department) => department.id.toString() == widget.selectedDepartment,
-              );
-            } catch (e) {
-              selectedDepartmentData = null;
-            }
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('department'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+      builder: (FormFieldState<String> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('department'),
+              style: departmentTextStyle.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1,
+                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
                 ),
               ),
-              const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<Department>.search(
-                  closeDropDownOnClearFilterSearch: true,
-                  items: departmentList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
-                  overlayHeight: _calculateOverlayHeight(departmentList), // Динамическая высота
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
+              child: BlocBuilder<DepartmentBloc, DepartmentState>(
+                builder: (context, state) {
+                  if (state is DepartmentLoaded) {
+                    departmentList = state.departments;
+                    if (widget.selectedDepartment != null && departmentList.isNotEmpty) {
+                      try {
+                        selectedDepartmentData = departmentList.firstWhere(
+                          (department) => department.id.toString() == widget.selectedDepartment,
+                        );
+                      } catch (e) {
+                        selectedDepartmentData = null;
+                      }
+                    }
+                  }
+
+                  return CustomDropdown<Department>.search(
+                    closeDropDownOnClearFilterSearch: true,
+                    items: departmentList,
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    overlayHeight: 400,
+                    enabled: true,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: const Color(0xffF4F7FD),
+                      expandedFillColor: Colors.white,
+                      closedBorder: Border.all(
+                        color: Colors.transparent,
+                        width: 1,
+                      ),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorder: Border.all(
+                        color: const Color(0xFFE5E7EB),
+                        width: 1,
+                      ),
+                      expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return SizedBox(
-                      height: 48.0, // Фиксированная высота элемента (должна совпадать с itemHeight)
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          item.name,
-                          style: TextStyle(
-                            color: Color(0xff1E2E52),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: GestureDetector(
+                          onTap: onItemSelect,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: const Color(0xff1E2E52),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                                ),
+                                child: isSelected
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 14,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  style: departmentTextStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    if (state is DepartmentLoading) {
-                      return Text(
-                        AppLocalizations.of(context)!.translate('select_department'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
                       );
-                    }
-                    return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_department'),
-                      style: TextStyle(
+                    },
+                    headerBuilder: (context, selectedItem, enabled) {
+                      return Text(
+                        selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_department'),
+                        style: departmentTextStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                    hintBuilder: (context, hint, enabled) => Text(
+                      AppLocalizations.of(context)!.translate('select_department'),
+                      style: departmentTextStyle.copyWith(
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
                       ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_department'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
                     ),
-                  ),
-                  excludeSelected: false,
-                  initialItem: (state is DepartmentLoaded && departmentList.contains(selectedDepartmentData))
-                      ? selectedDepartmentData
-                      : null,
-                  onChanged: (value) {
-                    if (value != null) {
-                      widget.onChanged(value.id.toString());
+                    excludeSelected: false,
+                    initialItem: selectedDepartmentData,
+                    onChanged: (value) {
+                      widget.onChanged(value?.id.toString());
                       setState(() {
                         selectedDepartmentData = value;
                       });
+                      field.didChange(value?.id.toString());
                       FocusScope.of(context).unfocus();
-                    }
-                  },
+                    },
+                  );
+                },
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                child: Text(
+                  field.errorText!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
-            ],
-          );
-        },
-      ),
+          ],
+        );
+      },
     );
   }
 }

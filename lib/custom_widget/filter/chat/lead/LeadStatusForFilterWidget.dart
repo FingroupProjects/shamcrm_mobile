@@ -13,8 +13,8 @@ class LeadStatusForFilterMultiSelectWidget extends StatefulWidget {
 
   LeadStatusForFilterMultiSelectWidget({
     super.key,
-    required this.selectedLeadStatuses,
     required this.onSelectStatuses,
+    this.selectedLeadStatuses,
   });
 
   @override
@@ -24,174 +24,235 @@ class LeadStatusForFilterMultiSelectWidget extends StatefulWidget {
 class _LeadStatusForFilterMultiSelectWidgetState extends State<LeadStatusForFilterMultiSelectWidget> {
   List<LeadStatusForFilter> statusList = [];
   List<LeadStatusForFilter> selectedStatusesData = [];
+  bool allSelected = false; // Добавлено: Флаг для "Выделить всех"
+
+  final TextStyle statusTextStyle = const TextStyle( // Добавлено: Унифицированный стиль текста
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
 
   @override
   void initState() {
     super.initState();
-    context.read<LeadStatusForFilterBloc>().add(FetchLeadStatusForFilter());
+    context.read<LeadStatusForFilterBloc>().add(FetchLeadStatusForFilter()); // Без изменений: Инициализация загрузки статусов
+  }
+
+  // Добавлено: Функция для выделения/снятия выделения всех статусов
+  void _toggleSelectAll() {
+    setState(() {
+      allSelected = !allSelected;
+      if (allSelected) {
+        selectedStatusesData = List.from(statusList); // Выбираем все
+      } else {
+        selectedStatusesData = []; // Снимаем выделение
+      }
+      widget.onSelectStatuses(selectedStatusesData);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        BlocListener<LeadStatusForFilterBloc, LeadStatusForFilterState>(
-          listener: (context, state) {
-            if (state is LeadStatusForFilterError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
+    return FormField<List<LeadStatusForFilter>>( // Изменено: Обёрнуто в FormField для валидации
+      validator: (value) {
+        if (selectedStatusesData.isEmpty) {
+          return AppLocalizations.of(context)!.translate('field_required_project');
+        }
+        return null;
+      },
+      builder: (FormFieldState<List<LeadStatusForFilter>> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('status'),
+              style: statusTextStyle.copyWith( // Изменено: Используем statusTextStyle с меньшим весом
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8), // Изменено: Увеличен отступ до 8
+            Container(
+              decoration: BoxDecoration( // Добавлено: Стилизация бордера с учетом ошибок
+                color: const Color(0xFFF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1,
+                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
                 ),
-              );
-            }
-          },
-          child: BlocBuilder<LeadStatusForFilterBloc, LeadStatusForFilterState>(
-            builder: (context, state) {
-              if (state is LeadStatusForFilterError) {
-                return Text(state.message);
-              }
-              if (state is LeadStatusForFilterLoaded) {
-                statusList = state.leadStatusForFilter;
-                if (widget.selectedLeadStatuses != null && statusList.isNotEmpty) {
-                  selectedStatusesData = statusList
-                      .where((status) => widget.selectedLeadStatuses!.contains(status.id.toString()))
-                      .toList();
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('status'),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+              ),
+              child: BlocBuilder<LeadStatusForFilterBloc, LeadStatusForFilterState>(
+                builder: (context, state) {
+                  if (state is LeadStatusForFilterLoaded) {
+                    statusList = state.leadStatusForFilter;
+                    if (widget.selectedLeadStatuses != null && statusList.isNotEmpty) {
+                      selectedStatusesData = statusList
+                          .where((status) => widget.selectedLeadStatuses!.contains(status.id.toString()))
+                          .toList();
+                      allSelected = selectedStatusesData.length == statusList.length; // Добавлено: Обновление allSelected
+                    }
+                  }
+
+                  return CustomDropdown<LeadStatusForFilter>.multiSelectSearch(
+                    items: statusList,
+                    initialItems: selectedStatusesData,
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    overlayHeight: 400,
+                    decoration: CustomDropdownDecoration( // Изменено: Унифицированы стили декорации
+                      closedFillColor: const Color(0xffF4F7FD),
+                      expandedFillColor: Colors.white,
+                      closedBorder: Border.all(
+                        color: Colors.transparent,
+                        width: 1,
                       ),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorder: Border.all(
+                        color: const Color(0xFFE5E7EB),
+                        width: 1,
+                      ),
+                      expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      child: CustomDropdown<LeadStatusForFilter>.multiSelectSearch(
-                        items: statusList,
-                        initialItems: selectedStatusesData,
-                        searchHintText: AppLocalizations.of(context)!.translate('search'),
-                        overlayHeight: 400,
-                        decoration: CustomDropdownDecoration(
-                          closedFillColor: Color(0xffF4F7FD),
-                          expandedFillColor: Colors.white,
-                          closedBorder: Border.all(
-                            color: Color(0xffF4F7FD),
-                            width: 1,
-                          ),
-                          closedBorderRadius: BorderRadius.circular(12),
-                          expandedBorder: Border.all(
-                            color: Color(0xffF4F7FD),
-                            width: 1,
-                          ),
-                          expandedBorderRadius: BorderRadius.circular(12),
-                        ),
-                        listItemBuilder: (context, item, isSelected, onItemSelect) {
-                          return ListTile(
-                            minTileHeight: 1,
-                            minVerticalPadding: 2,
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                            title: Padding(
-                              padding: EdgeInsets.zero,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Color(0xff1E2E52), width: 1),
-                                      color: isSelected
-                                          ? Color(0xff1E2E52)
-                                          : Colors.transparent,
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      // Добавлено: Опция "Выделить всех" как первый элемент
+                      if (statusList.indexOf(item) == 0) {
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: GestureDetector(
+                                onTap: _toggleSelectAll,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: const Color(0xff1E2E52),
+                                            width: 1),
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: allSelected
+                                            ? const Color(0xff1E2E52)
+                                            : Colors.transparent,
+                                      ),
+                                      child: allSelected
+                                          ? const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 14,
+                                            )
+                                          : null,
                                     ),
-                                    child: isSelected
-                                        ? Icon(Icons.check,
-                                            color: Colors.white, size: 16)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    item.title,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        style: statusTextStyle,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                            onTap: () {
-                              onItemSelect();
-                              FocusScope.of(context).unfocus();
-                            },
-                          );
-                        },
-                        headerListBuilder: (context, selectedItems, enabled) {
-                          int selectedStatusesCount = selectedStatusesData.length;
-                          return Text(
-                            selectedStatusesCount == 0
-                                ? AppLocalizations.of(context)!
-                                    .translate('select_status')
-                                : '${AppLocalizations.of(context)!.translate('select_status')} $selectedStatusesCount',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          );
-                        },
-                        hintBuilder: (context, hint, enabled) => Text(
-                          AppLocalizations.of(context)!.translate('select_status'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                        onListChanged: (values) {
-                          widget.onSelectStatuses(values);
-                          setState(() {
-                            selectedStatusesData = values;
-                          });
-                        },
+                            Divider(
+                                height: 20,
+                                color: const Color(0xFFE5E7EB)), // Добавлено: Разделитель для "Выделить всех"
+                            _buildListItem(item, isSelected, onItemSelect),
+                          ],
+                        );
+                      }
+                      return _buildListItem(item, isSelected, onItemSelect); // Изменено: Используем кастомный _buildListItem
+                    },
+                    headerListBuilder: (context, hint, enabled) {
+                      String selectedStatusesNames = selectedStatusesData.isEmpty
+                          ? AppLocalizations.of(context)!.translate('select_status')
+                          : selectedStatusesData.map((e) => e.title).join(', ');
+                      return Text(
+                        selectedStatusesNames,
+                        style: statusTextStyle, // Изменено: Используем statusTextStyle, показываем имена статусов
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                    hintBuilder: (context, hint, enabled) => Text(
+                      AppLocalizations.of(context)!.translate('select_status'),
+                      style: statusTextStyle.copyWith(
+                        fontSize: 14,
                       ),
                     ),
-                  ],
-                );
-              }
-              return SizedBox();
-            },
-          ),
+                    onListChanged: (values) {
+                      widget.onSelectStatuses(values);
+                      setState(() {
+                        selectedStatusesData = values;
+                        allSelected = values.length == statusList.length; // Добавлено: Обновление allSelected
+                      });
+                      field.didChange(values); // Добавлено: Обновление состояния FormField
+                    },
+                  );
+                },
+              ),
+            ),
+            if (field.hasError) // Добавлено: Отображение текста ошибки
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                child: Text(
+                  field.errorText!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Добавлено: Кастомный построитель элементов списка для соответствия AuthorMultiSelectWidget
+  Widget _buildListItem(LeadStatusForFilter item, bool isSelected, Function() onItemSelect) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: GestureDetector(
+        onTap: onItemSelect,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color(0xff1E2E52),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.title,
+                style: statusTextStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

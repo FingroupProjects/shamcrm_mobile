@@ -12,12 +12,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+// Обновите конструктор DealColumn:
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId;
   final int? managerId;
   final bool isDealScreenTutorialCompleted;
+  final int? salesFunnelId; // Добавляем этот параметр
 
   DealColumn({
     required this.statusId,
@@ -25,6 +27,7 @@ class DealColumn extends StatefulWidget {
     required this.onStatusId,
     this.managerId,
     required this.isDealScreenTutorialCompleted,
+    this.salesFunnelId, // Добавляем в конструктор
   });
 
   @override
@@ -50,6 +53,7 @@ class _DealColumnState extends State<DealColumn> {
   @override
   void initState() {
     super.initState();
+    //print('DealColumn: initState started for statusId: ${widget.statusId}');
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
@@ -84,6 +88,7 @@ class _DealColumnState extends State<DealColumn> {
 
   @override
   void dispose() {
+    //print('DealColumn: Disposing for statusId: ${widget.statusId}');
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _dealBloc.close();
@@ -92,24 +97,24 @@ class _DealColumnState extends State<DealColumn> {
 
   Future<void> _checkCreatePermission() async {
     if (_permissionChecked && _canCreateDeal) {
-      print('DealColumn: Permission already checked and available, skipping');
+      //print('DealColumn: Permission already checked and available, skipping');
       return;
     }
 
     try {
-      print('DealColumn: Checking deal.create permission...');
+      //print('DealColumn: Checking deal.create permission...');
       final canCreate = await _apiService.hasPermission('deal.create');
-      print('DealColumn: deal.create permission result: $canCreate');
+      //print('DealColumn: deal.create permission result: $canCreate');
       if (mounted) {
         setState(() {
           _canCreateDeal = canCreate;
           _permissionChecked = true;
         });
-        print('DealColumn: Updated _canCreateDeal: $_canCreateDeal');
-        print('DealColumn: Set _permissionChecked: $_permissionChecked');
+        //print('DealColumn: Updated _canCreateDeal: $_canCreateDeal');
+        //print('DealColumn: Set _permissionChecked: $_permissionChecked');
       }
     } catch (e) {
-      print('DealColumn: Error checking deal.create permission: $e');
+      //print('DealColumn: Error checking deal.create permission: $e');
       if (mounted) {
         setState(() {
           _canCreateDeal = false;
@@ -150,6 +155,7 @@ class _DealColumnState extends State<DealColumn> {
           context: context,
         ),
     ]);
+    //print('DealColumn: Initialized tutorial targets: ${targets.length}');
   }
 
   void _startTutorialLogic() async {
@@ -165,12 +171,12 @@ class _DealColumnState extends State<DealColumn> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('DealColumn: Tutorial already in progress, skipping');
+      //print('DealColumn: Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('DealColumn: No targets available for tutorial, reinitializing');
+      //print('DealColumn: No targets available for tutorial, reinitializing');
       _initTutorialTargets();
       if (targets.isEmpty) return;
     }
@@ -179,7 +185,7 @@ class _DealColumnState extends State<DealColumn> {
     bool isTutorialShown = prefs.getBool('isTutorialShownDealColumn') ?? false;
 
     if (isTutorialShown || _isTutorialShown) {
-      print('DealColumn: Tutorial conditions not met');
+      //print('DealColumn: Tutorial conditions not met');
       return;
     }
 
@@ -253,9 +259,9 @@ class _DealColumnState extends State<DealColumn> {
           await prefs.setBool('isTutorialShownDealColumn', true);
           try {
             await _apiService.markPageCompleted("deals", "index");
-            print('DealColumn: Sent markPageCompleted for deals/index after finishing');
+            //print('DealColumn: Sent markPageCompleted for deals/index after finishing');
           } catch (e) {
-            print('DealColumn: Error marking page completed on finish: $e');
+            //print('DealColumn: Error marking page completed on finish: $e');
           }
           setState(() {
             _isTutorialShown = true;
@@ -275,16 +281,10 @@ class _DealColumnState extends State<DealColumn> {
   Future<void> _completeTutorialAsync() async {
     try {
       await _apiService.markPageCompleted("deals", "index");
-      print('DealColumn: Sent markPageCompleted for deals/index after skipping');
+      //print('DealColumn: Sent markPageCompleted for deals/index after skipping');
     } catch (e) {
-      print('DealColumn: Error marking page completed: $e');
+      //print('DealColumn: Error marking page completed: $e');
     }
-  }
-
-  Future<void> _onRefresh() async {
-    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-    _dealBloc.add(FetchDeals(widget.statusId));
-    return Future.delayed(Duration(milliseconds: 1));
   }
 
   void _onScroll() {
@@ -298,16 +298,22 @@ class _DealColumnState extends State<DealColumn> {
     }
   }
 
- @override
+// В DealColumn добавьте этот метод:
+Future<void> _onRefresh() async {
+  // При обновлении заново загружаем сделки
+  context.read<DealBloc>().add(FetchDealStatuses(salesFunnelId: widget.salesFunnelId));
+  _dealBloc.add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
+  return Future.delayed(Duration(milliseconds: 500));
+}
+
+  @override
 Widget build(BuildContext context) {
-  print('🏗️ DealColumn: Rendering - statusId: ${widget.statusId}, _canCreateDeal: $_canCreateDeal, _permissionChecked: $_permissionChecked');
   return BlocProvider.value(
     value: _dealBloc,
     child: Scaffold(
       backgroundColor: Colors.white,
       body: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
-          print('🏗️ DealColumn: BlocBuilder - state: ${state.runtimeType}');
           if (state is DealLoading) {
             return const Center(
               child: PlayStoreImageLoading(
@@ -317,88 +323,62 @@ Widget build(BuildContext context) {
             );
           } else if (state is DealDataLoaded) {
             final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
-            print('📋 DealColumn: DealDataLoaded - deals count: ${deals.length} for statusId: ${widget.statusId}');
+            
             if (deals.isNotEmpty) {
-              if (!_isInitialized && !_isTutorialShown && !widget.isDealScreenTutorialCompleted) {
-                _isInitialized = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _startTutorialLogic();
-                });
-              }
-              return ListView.builder(
-                controller: _scrollController,
-                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
-                itemCount: deals.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: DealCard(
-                      key: index == 0 ? keyDealCard : null,
-                      dropdownKey: index == 0 ? keyDropdown : null,
-                      deal: deals[index],
-                      title: widget.title,
-                      statusId: widget.statusId,
-                      onStatusUpdated: () {
-                        print('DealColumn: Deal status updated, fetching deals for statusId: ${widget.statusId}');
-                        _dealBloc.add(FetchDeals(widget.statusId));
-                      },
-                      onStatusId: (StatusDealId) {
-                        print('DealColumn: onStatusId called with id: $StatusDealId');
-                        widget.onStatusId(StatusDealId);
-                      },
-                    ),
-                  );
-                },
+              return RefreshIndicator(
+                color: Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: deals.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: DealCard(
+                        key: index == 0 ? keyDealCard : null,
+                        dropdownKey: index == 0 ? keyDropdown : null,
+                        deal: deals[index],
+                        title: widget.title,
+                        statusId: widget.statusId,
+                        onStatusUpdated: () {
+                          _dealBloc.add(FetchDeals(widget.statusId));
+                        },
+                        onStatusId: (StatusDealId) {
+                          widget.onStatusId(StatusDealId);
+                        },
+                      ),
+                    );
+                  },
+                ),
               );
             } else {
-              if (!_isInitialized && !_isTutorialShown && !widget.isDealScreenTutorialCompleted) {
-                _isInitialized = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _startTutorialLogic();
-                });
-              }
-              return ListView(
-                physics: const ClampingScrollPhysics(), // Изменено для предотвращения конфликта
-                children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                        ),
-                      ],
+              return RefreshIndicator(
+                color: Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             }
           } else if (state is DealError) {
-            print('❌ DealColumn: DealError: ${state.message}');
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            });
+            // Обработка ошибок...
             return const SizedBox();
           }
           return const SizedBox();
@@ -408,7 +388,6 @@ Widget build(BuildContext context) {
           ? FloatingActionButton(
               key: keyFloatingActionButton,
               onPressed: () {
-                print('➕ DealColumn: FloatingActionButton pressed');
                 if (mounted) {
                   Navigator.push(
                     context,

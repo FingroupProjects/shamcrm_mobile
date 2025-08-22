@@ -199,42 +199,52 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Логика прокрутки табов
   }
 
-  Future<void> _onRefresh(int currentStatusId) async {
-    print('LeadScreen: _onRefresh called for statusId: $currentStatusId');
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    await LeadCache.clearLeadsForStatus(currentStatusId);
-    print('LeadScreen: _onRefresh - Cleared cache for statusId: $currentStatusId');
-    leadBloc.add(FetchLeads(
-      currentStatusId,
-      salesFunnelId: _selectedFunnel?.id,
-      ignoreCache: true,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      managerIds: _selectedManagers.isNotEmpty
-          ? _selectedManagers.map((manager) => manager.id).toList()
-          : null,
-      regionsIds: _selectedRegions.isNotEmpty
-          ? _selectedRegions.map((region) => region.id).toList()
-          : null,
-      sourcesIds: _selectedSources.isNotEmpty
-          ? _selectedSources.map((source) => source.id).toList()
-          : null,
-      statusIds: _selectedStatuses,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      hasSuccessDeals: _hasSuccessDeals,
-      hasInProgressDeals: _hasInProgressDeals,
-      hasFailureDeals: _hasFailureDeals,
-      hasNotices: _hasNotices,
-      hasContact: _hasContact,
-      hasChat: _hasChat,
-      hasNoReplies: _hasNoReplies,
-      hasUnreadMessages: _hasUnreadMessages,
-      hasDeal: _hasDeal,
-      daysWithoutActivity: _daysWithoutActivity,
-      directoryValues: _directoryValues,
-    ));
-    print('LeadScreen: _onRefresh - FetchLeads dispatched for statusId: $currentStatusId');
-  }
+Future<void> _onRefresh(int currentStatusId) async {
+  print('LeadScreen: _onRefresh called for statusId: $currentStatusId');
+  final leadBloc = BlocProvider.of<LeadBloc>(context);
+  // Очищаем кэш для текущего статуса и статусов
+  await LeadCache.clearLeadsForStatus(currentStatusId);
+  await LeadCache.clearCache(); // Очищаем кэш статусов
+  print('LeadScreen: _onRefresh - Cleared cache for statusId: $currentStatusId and lead statuses');
+  
+  // Сначала загружаем статусы, чтобы обновить табы
+  leadBloc.add(FetchLeadStatuses());
+  
+  // Даём время на обработку статусов
+  await Future.delayed(Duration(milliseconds: 100));
+  
+  // Загружаем лиды с учётом всех фильтров
+  leadBloc.add(FetchLeads(
+    currentStatusId,
+    salesFunnelId: _selectedFunnel?.id,
+    ignoreCache: true,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    managerIds: _selectedManagers.isNotEmpty
+        ? _selectedManagers.map((manager) => manager.id).toList()
+        : null,
+    regionsIds: _selectedRegions.isNotEmpty
+        ? _selectedRegions.map((region) => region.id).toList()
+        : null,
+    sourcesIds: _selectedSources.isNotEmpty
+        ? _selectedSources.map((source) => source.id).toList()
+        : null,
+    statusIds: _selectedStatuses,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    hasSuccessDeals: _hasSuccessDeals,
+    hasInProgressDeals: _hasInProgressDeals,
+    hasFailureDeals: _hasFailureDeals,
+    hasNotices: _hasNotices,
+    hasContact: _hasContact,
+    hasChat: _hasChat,
+    hasNoReplies: _hasNoReplies,
+    hasUnreadMessages: _hasUnreadMessages,
+    hasDeal: _hasDeal,
+    daysWithoutActivity: _daysWithoutActivity,
+    directoryValues: _directoryValues,
+  ));
+  print('LeadScreen: _onRefresh - FetchLeads dispatched for statusId: $currentStatusId');
+}
 
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
@@ -1330,7 +1340,7 @@ Widget _buildTabBarView() {
     listener: (context, state) async {
       print('LeadScreen: BlocListener received state: ${state.runtimeType}');
       if (state is LeadLoaded) {
-        print('LeadScreen: LeadLoaded state, caching lead statuses');
+        print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
         await LeadCache.cacheLeadStatuses(state.leadStatuses);
         if (mounted) {
           setState(() {
@@ -1398,8 +1408,10 @@ Widget _buildTabBarView() {
                 _tabController.index = initialIndex;
                 _currentTabIndex = initialIndex;
                 print('LeadScreen: Set initial tab index to: $initialIndex');
-              } else {
-                _tabController.index = _currentTabIndex;
+              } else if (_tabTitles.isNotEmpty) {
+                _tabController.index = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
+                _currentTabIndex = _tabController.index;
+                print('LeadScreen: Set tab index to: $_currentTabIndex');
               }
 
               if (tabScrollController.hasClients) {
@@ -1414,21 +1426,20 @@ Widget _buildTabBarView() {
               }
 
               // Переход после удаления статуса
-              if (navigateAfterDelete) {
+              if (navigateAfterDelete && _tabTitles.isNotEmpty) {
                 navigateAfterDelete = false;
                 if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                    print('LeadScreen: Navigated to tab 1 after delete');
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                    print('LeadScreen: Navigated to last tab after delete');
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                    print('LeadScreen: Navigated to tab ${_deletedIndex! - 1} after delete');
-                  }
+                  int newIndex = _deletedIndex! >= _tabTitles.length ? _tabTitles.length - 1 : _deletedIndex!;
+                  newIndex = newIndex < 0 ? 0 : newIndex;
+                  _tabController.animateTo(newIndex);
+                  _currentTabIndex = newIndex;
+                  print('LeadScreen: Navigated to tab $newIndex after delete');
                 }
               }
+            } else {
+              // Если табы пустые, очищаем контроллер
+              _tabController = TabController(length: 0, vsync: this);
+              print('LeadScreen: TabController reset to length 0');
             }
           });
         }
@@ -1466,11 +1477,9 @@ Widget _buildTabBarView() {
             onRefresh: () => _onRefresh(0),
             color: const Color(0xff1E2E52),
             backgroundColor: Colors.white,
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Text(''),
-              ),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Center(child: Text('')),
             ),
           )
         : TabBarView(
@@ -1478,48 +1487,53 @@ Widget _buildTabBarView() {
             physics: const AlwaysScrollableScrollPhysics(),
             children: _tabTitles.map((status) {
               print('LeadScreen: Building TabBarView child for status: ${status['title']}');
-              return LeadColumn(
-                isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-                statusId: status['id'],
-                title: status['title'],
-                onStatusId: (newStatusId) {
-                  print('LeadScreen: onStatusId called with id: $newStatusId');
-                  final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                  if (index != -1) {
-                    _tabController.animateTo(index);
-                    print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
-                    context.read<LeadBloc>().add(FetchLeads(
-                      newStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: false,
-                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                      managerIds: _selectedManagers.isNotEmpty
-                          ? _selectedManagers.map((manager) => manager.id).toList()
-                          : null,
-                      regionsIds: _selectedRegions.isNotEmpty
-                          ? _selectedRegions.map((region) => region.id).toList()
-                          : null,
-                      sourcesIds: _selectedSources.isNotEmpty
-                          ? _selectedSources.map((source) => source.id).toList()
-                          : null,
-                      statusIds: _selectedStatuses,
-                      fromDate: _fromDate,
-                      toDate: _toDate,
-                      hasSuccessDeals: _hasSuccessDeals,
-                      hasInProgressDeals: _hasInProgressDeals,
-                      hasFailureDeals: _hasFailureDeals,
-                      hasNotices: _hasNotices,
-                      hasContact: _hasContact,
-                      hasChat: _hasChat,
-                      hasNoReplies: _hasNoReplies,
-                      hasUnreadMessages: _hasUnreadMessages,
-                      hasDeal: _hasDeal,
-                      daysWithoutActivity: _daysWithoutActivity,
-                      directoryValues: _directoryValues,
-                    ));
-                    print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId');
-                  }
-                },
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(status['id']),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: LeadColumn(
+                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+                  statusId: status['id'],
+                  title: status['title'],
+                  onStatusId: (newStatusId) {
+                    print('LeadScreen: onStatusId called with id: $newStatusId');
+                    final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index);
+                      print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
+                      context.read<LeadBloc>().add(FetchLeads(
+                        newStatusId,
+                        salesFunnelId: _selectedFunnel?.id,
+                        ignoreCache: false,
+                        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                        managerIds: _selectedManagers.isNotEmpty
+                            ? _selectedManagers.map((manager) => manager.id).toList()
+                            : null,
+                        regionsIds: _selectedRegions.isNotEmpty
+                            ? _selectedRegions.map((region) => region.id).toList()
+                            : null,
+                        sourcesIds: _selectedSources.isNotEmpty
+                            ? _selectedSources.map((source) => source.id).toList()
+                            : null,
+                        statusIds: _selectedStatuses,
+                        fromDate: _fromDate,
+                        toDate: _toDate,
+                        hasSuccessDeals: _hasSuccessDeals,
+                        hasInProgressDeals: _hasInProgressDeals,
+                        hasFailureDeals: _hasFailureDeals,
+                        hasNotices: _hasNotices,
+                        hasContact: _hasContact,
+                        hasChat: _hasChat,
+                        hasNoReplies: _hasNoReplies,
+                        hasUnreadMessages: _hasUnreadMessages,
+                        hasDeal: _hasDeal,
+                        daysWithoutActivity: _daysWithoutActivity,
+                        directoryValues: _directoryValues,
+                      ));
+                      print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId');
+                    }
+                  },
+                ),
               );
             }).toList(),
           ),

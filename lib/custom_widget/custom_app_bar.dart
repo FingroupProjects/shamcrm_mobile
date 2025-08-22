@@ -322,7 +322,9 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
-
+// Устанавливаем начальное состояние фильтров на основе hasActiveChatFilters
+    _areFiltersActive = widget.hasActiveChatFilters;
+    _iconColor = _areFiltersActive ? Colors.blue : Colors.black;
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
     } else {
@@ -405,7 +407,21 @@ class _CustomAppBarState extends State<CustomAppBar>
       }
     });
   }
-
+List<Map<String, dynamic>>? _safeConvertToMapList(dynamic data) {
+  if (data == null) return null;
+  if (data is List<Map<String, dynamic>>) return data;
+  if (data is List) {
+    try {
+      return data.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return data
+          .where((item) => item is Map)
+          .map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    }
+  }
+  return null;
+}
   Future<void> _checkOverdueTasks() async {
     try {
       final apiService = ApiService();
@@ -422,6 +438,15 @@ class _CustomAppBarState extends State<CustomAppBar>
   }
 
   @override
+  void didUpdateWidget(CustomAppBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Синхронизируем _areFiltersActive с hasActiveChatFilters при обновлении виджета
+    if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters) {
+      _setFiltersActive(widget.hasActiveChatFilters);
+    }
+  }
+
+  @override
   void dispose() {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
@@ -430,6 +455,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     socketClient.disconnect();
 
     super.dispose();
+  }
+
+// Обновляем обработчик сброса фильтров
+  void _handleChatFiltersReset() {
+    print('CustomAppBar: Resetting chat filters');
+    _setFiltersActive(false);
+    widget.onChatLeadFiltersReset?.call();
+    widget.onChatTaskFiltersReset?.call();
   }
 
   Future<void> _playSound() async {
@@ -992,42 +1025,148 @@ class _CustomAppBarState extends State<CustomAppBar>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChatLeadFilterScreen(
-                          // Передаем начальные значения из активных фильтров
-                          initialManagers:
-                              widget.initialChatFilters?['managers'],
-                          initialRegions: widget.initialChatFilters?['regions'],
-                          initialSources: widget.initialChatFilters?['sources'],
-                          initialStatuses:
-                              widget.initialChatFilters?['statuses'],
+                       // В секции showFilterIconChat:
+builder: (context) => ChatLeadFilterScreen(
+  // Безопасное преобразование типов
+  initialManagers: _safeConvertToMapList(widget.initialChatFilters?['managers']),
+  initialRegions: _safeConvertToMapList(widget.initialChatFilters?['regions']),
+  initialSources: _safeConvertToMapList(widget.initialChatFilters?['sources']),
+  initialStatuses: widget.initialChatFilters?['statuses'],
+  initialFromDate: widget.initialChatFilters?['fromDate'],
+  initialToDate: widget.initialChatFilters?['toDate'],
+  initialHasSuccessDeals: widget.initialChatFilters?['hasSuccessDeals'],
+  initialHasInProgressDeals: widget.initialChatFilters?['hasInProgressDeals'],
+  initialHasFailureDeals: widget.initialChatFilters?['hasFailureDeals'],
+  initialHasNotices: widget.initialChatFilters?['hasNotices'],
+  initialHasContact: widget.initialChatFilters?['hasContact'],
+  initialHasChat: widget.initialChatFilters?['hasChat'],
+  initialHasNoReplies: widget.initialChatFilters?['hasNoReplies'],
+  initialHasUnreadMessages: widget.initialChatFilters?['hasUnreadMessages'],
+  initialHasDeal: widget.initialChatFilters?['hasDeal'],
+  initialDaysWithoutActivity: widget.initialChatFilters?['daysWithoutActivity'],
+  initialDirectoryValues: _safeConvertToMapList(widget.initialChatFilters?['directory_values']),
+  initialSalesFunnelId  : widget.currentSalesFunnelId ?? 
+                                widget.initialChatFilters?['current_sales_funnel_id'] ?? 
+                                widget.initialChatFilters?['sales_funnel_id'],
+  onManagersSelected: widget.onChatLeadFiltersApplied,
+  onResetFilters: widget.onChatLeadFiltersReset,
+),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+          if (widget.showFilterIconTaskChat)
+            Transform.translate(
+              offset: const Offset(10, 0),
+              child: Tooltip(
+                message:
+                    AppLocalizations.of(context)!.translate('task_filters'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  icon: Image.asset(
+                    'assets/icons/AppBar/filter.png',
+                    width: 24,
+                    height: 24,
+                    color:
+                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isTaskFiltering = !_isTaskFiltering;
+                      _setFiltersActive(
+                          _isTaskFiltering && widget.hasActiveChatFilters);
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatTaskFilterScreen(
+                          initialUsers: widget
+                                  .initialChatFilters?['executor_ids']
+                                  ?.cast<int>() ??
+                              [],
+// СТАЛО:
+                          initialAuthors: () {
+                            final authorIds =
+                                widget.initialChatFilters?['author_ids'];
+                            if (authorIds is List && authorIds.isNotEmpty) {
+                              return authorIds
+                                  .map((id) => id.toString())
+                                  .toList();
+                            }
+                            return [];
+                          }(),
+
+                          initialProjects: () {
+                            final projectIds =
+                                widget.initialChatFilters?['project_ids'];
+                            if (projectIds is List && projectIds.isNotEmpty) {
+                              return projectIds
+                                  .map((id) => id.toString())
+                                  .toList();
+                            }
+                            return [];
+                          }(),
+                          initialStatuses: (widget.initialChatFilters?[
+                                          'task_status_ids'] as List<dynamic>?)
+                                      ?.cast<int>()
+                                      .isNotEmpty ==
+                                  true
+                              ? (widget.initialChatFilters!['task_status_ids']
+                                      as List<dynamic>)
+                                  .cast<int>()
+                                  .first
+                              : null,
                           initialFromDate:
-                              widget.initialChatFilters?['fromDate'],
-                          initialToDate: widget.initialChatFilters?['toDate'],
-                          initialHasSuccessDeals:
-                              widget.initialChatFilters?['hasSuccessDeals'],
-                          initialHasInProgressDeals:
-                              widget.initialChatFilters?['hasInProgressDeals'],
-                          initialHasFailureDeals:
-                              widget.initialChatFilters?['hasFailureDeals'],
-                          initialHasNotices:
-                              widget.initialChatFilters?['hasNotices'],
-                          initialHasContact:
-                              widget.initialChatFilters?['hasContact'],
-                          initialHasChat: widget.initialChatFilters?['hasChat'],
-                          initialHasNoReplies:
-                              widget.initialChatFilters?['hasNoReplies'],
-                          initialHasUnreadMessages:
-                              widget.initialChatFilters?['hasUnreadMessages'],
-                          initialHasDeal: widget.initialChatFilters?['hasDeal'],
-                          initialDaysWithoutActivity:
-                              widget.initialChatFilters?['daysWithoutActivity'],
-                          initialDirectoryValues:
-                              widget.initialChatFilters?['directory_values'],
-
-                          // Передаем колбеки
-
-                          onManagersSelected: widget.onChatLeadFiltersApplied,
-                          onResetFilters: widget.onChatLeadFiltersReset,
+                              widget.initialChatFilters?['task_created_from'] !=
+                                      null
+                                  ? DateTime.parse(widget
+                                      .initialChatFilters!['task_created_from'])
+                                  : null,
+                          initialToDate: widget
+                                      .initialChatFilters?['task_created_to'] !=
+                                  null
+                              ? DateTime.parse(
+                                  widget.initialChatFilters!['task_created_to'])
+                              : null,
+                          initialDeadlineFromDate: widget
+                                      .initialChatFilters?['deadline_from'] !=
+                                  null
+                              ? DateTime.parse(
+                                  widget.initialChatFilters!['deadline_from'])
+                              : null,
+                          initialDeadlineToDate:
+                              widget.initialChatFilters?['deadline_to'] != null
+                                  ? DateTime.parse(
+                                      widget.initialChatFilters!['deadline_to'])
+                                  : null,
+                          initialDepartment: widget
+                              .initialChatFilters?['department_id']
+                              ?.toString(),
+                          initialTaskNumber:
+                              widget.initialChatFilters?['task_number'],
+                          initialUnreadOnly:
+                              widget.initialChatFilters?['unread_only'] ??
+                                  false,
+                          onUsersSelected: widget.onChatTaskFiltersApplied,
+                          onResetFilters: widget.onChatTaskFiltersReset,
                         ),
                       ),
                     );
@@ -1036,72 +1175,6 @@ class _CustomAppBarState extends State<CustomAppBar>
               ),
             ),
 
-   if (widget.showFilterIconTaskChat)
-  Transform.translate(
-    offset: const Offset(10, 0),
-    child: Tooltip(
-      message: AppLocalizations.of(context)!.translate('task_filters'),
-      preferBelow: false,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      textStyle: TextStyle(
-        fontSize: 12,
-        color: Colors.black,
-      ),
-      child: IconButton(
-        icon: Image.asset(
-          'assets/icons/AppBar/filter.png',
-          width: 24,
-          height: 24,
-          color: widget.hasActiveChatFilters ? Colors.blue : _iconColor,
-        ),
-        onPressed: () {
-          setState(() {
-            _isTaskFiltering = !_isTaskFiltering;
-            _setFiltersActive(_isTaskFiltering && widget.hasActiveChatFilters);
-          });
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatTaskFilterScreen(
-                initialUsers: widget.initialChatFilters?['executor_ids']?.cast<int>() ?? [],
-                initialAuthors: widget.initialChatFilters?['author_ids']?.cast<int>().map((id) => id.toString()).toList() ?? [],
-                initialProjects: widget.initialChatFilters?['project_ids']?.cast<int>().map((id) => id.toString()).toList() ?? [],
-                initialStatuses: widget.initialChatFilters?['task_status_ids']?.cast<int>().firstOrNull,
-                initialFromDate: widget.initialChatFilters?['task_created_from'] != null
-                    ? DateTime.parse(widget.initialChatFilters!['task_created_from'])
-                    : null,
-                initialToDate: widget.initialChatFilters?['task_created_to'] != null
-                    ? DateTime.parse(widget.initialChatFilters!['task_created_to'])
-                    : null,
-                initialDeadlineFromDate: widget.initialChatFilters?['deadline_from'] != null
-                    ? DateTime.parse(widget.initialChatFilters!['deadline_from'])
-                    : null,
-                initialDeadlineToDate: widget.initialChatFilters?['deadline_to'] != null
-                    ? DateTime.parse(widget.initialChatFilters!['deadline_to'])
-                    : null,
-                initialDepartment: widget.initialChatFilters?['department_id']?.toString(),
-                initialTaskNumber: widget.initialChatFilters?['task_number'],
-                initialUnreadOnly: widget.initialChatFilters?['unread_only'] ?? false,
-                onUsersSelected: widget.onChatTaskFiltersApplied,
-                onResetFilters: widget.onChatTaskFiltersReset,
-              ),
-            ),
-          );
-        },
-      ),
-    ),
-  ),
-  
           // Дополнительные иконки (например, календарь, задачи, меню и т.д.)
           if (widget.showDashboardIcon)
             Transform.translate(
@@ -1596,8 +1669,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDaysWithoutActivity:
               widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,
-          initialDirectoryValues:
-              widget.initialDirectoryValuesLead, // Передаем начальные значения
+         initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesLead),
         ),
       ),
     );
@@ -1622,8 +1694,8 @@ class _CustomAppBarState extends State<CustomAppBar>
           onResetFilters: widget.onDealResetFilters,
           initialDaysWithoutActivity:
               widget.initialManagerDealDaysWithoutActivity,
-          initialDirectoryValues: widget
-              .initialDirectoryValuesDeal, // Передаем начальные значения справочников
+initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesDeal),
+
         ),
       ),
     );
@@ -1651,8 +1723,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDepartment: widget.initialDepartment,
           initialDeadlineFromDate: widget.initialDeadlineFromDate,
           initialDeadlineToDate: widget.initialDeadlineToDate,
-          initialDirectoryValues: widget
-              .initialDirectoryValuesTask, // Передаем начальные значения справочников
+         initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesTask),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart'; // Новый import для firstOrNull
+
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
@@ -113,6 +115,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       _isPermissionsChecked = true;
     });
   }
+
+  
   // НОВЫЙ МЕТОД: Обработка фильтров от ChatLeadFilterScreen
 void _handleFiltersApplied(Map<String, dynamic> filters) {
   print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
@@ -122,21 +126,20 @@ void _handleFiltersApplied(Map<String, dynamic> filters) {
     print('ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
   });
 
-  // Сохраняем фильтры
-  SharedPreferences.getInstance().then((prefs) {
-    prefs.setString('active_chat_filters', json.encode(filters));
-    print('ChatsScreen: Saved active filters: $filters');
-  });
+ SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('active_chat_filters');
+      print('ChatsScreen: Removed active filters from SharedPreferences');
+    });
 
-  final chatsBloc = _chatsBlocs[endPointInTab]!;
-  chatsBloc.add(ClearChats());
-  _pagingControllers[endPointInTab]!.itemList = null;
-  _pagingControllers[endPointInTab]!.refresh();
-  chatsBloc.add(FetchChats(
-    endPoint: endPointInTab,
-    salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-    filters: filters,
-  ));
+    final chatsBloc = _chatsBlocs[endPointInTab]!;
+    chatsBloc.add(ClearChats());
+    _pagingControllers[endPointInTab]!.itemList = null;
+    _pagingControllers[endPointInTab]!.refresh();
+    chatsBloc.add(FetchChats(
+      endPoint: endPointInTab,
+      salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+    ));
+
 }
   // НОВЫЙ МЕТОД: Проверка активности фильтров
   bool _checkIfFiltersActive(Map<String, dynamic> filters) {
@@ -335,124 +338,122 @@ void initState() {
     }
   }
   // ОБНОВЛЕННЫЙ МЕТОД: Переключение воронок с сохранением фильтров
-  Widget _buildTitleWidget(BuildContext context) {
-    print('ChatsScreen: Entering _buildTitleWidget');
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        print('ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        String title = AppLocalizations.of(context)!.translate('appbar_chats');
-        SalesFunnel? selectedFunnel;
+  // ДОБАВИТЬ в ChatsScreen, в метод _buildTitleWidget:
+
+Widget _buildTitleWidget(BuildContext context) {
+  print('ChatsScreen: Entering _buildTitleWidget');
+  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+    builder: (context, state) {
+      print('ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
+      print('ChatsScreen: _buildTitleWidget - endPointInTab: $endPointInTab');
+      print('ChatsScreen: _buildTitleWidget - _selectedFunnel: $_selectedFunnel');
+      
+      String title = AppLocalizations.of(context)!.translate('appbar_chats');
+      SalesFunnel? selectedFunnel;
+      
+      if (state is SalesFunnelLoading) {
+        print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
+        title = AppLocalizations.of(context)!.translate('appbar_chats');
+      } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
+        print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded');
+        print('ChatsScreen: _buildTitleWidget - Available funnels: ${state.funnels.map((f) => '${f.id}: ${f.name}').toList()}');
+        print('ChatsScreen: _buildTitleWidget - Selected funnel from state: ${state.selectedFunnel}');
         
-        if (state is SalesFunnelLoading) {
-          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('appbar_chats');
-        } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
-          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          _selectedFunnel = selectedFunnel;
-          print('ChatsScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_chats');
-          print('ChatsScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel;
+        
+        if (selectedFunnel != null) {
+          title = selectedFunnel.name;
+          print('ChatsScreen: _buildTitleWidget - Using funnel: ${selectedFunnel.id} - ${selectedFunnel.name}');
+        } else {
+          print('ChatsScreen: _buildTitleWidget - No funnel selected, using default title');
         }
-        
-        print('ChatsScreen: _buildTitleWidget - Rendering title: $title');
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+      } else if (state is SalesFunnelError) {
+        print('ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
+        title = 'Ошибка загрузки';
+      }
+      
+      print('ChatsScreen: _buildTitleWidget - Final title: $title');
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (state is SalesFunnelLoaded && state.funnels.length > 1 && endPointInTab == 'lead')
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: PopupMenuButton<SalesFunnel>(
+                icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                color: Colors.white,
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.2),
+                offset: Offset(0, 40),
+                onSelected: (SalesFunnel funnel) async {
+                  print('ChatsScreen: PopupMenuButton - Selected funnel: ${funnel.id} - ${funnel.name}');
+                  try {
+                    await apiService.saveSelectedChatSalesFunnel(funnel.id.toString());
+                    print('ChatsScreen: PopupMenuButton - Saved funnel to preferences');
+                    
+                    setState(() {
+                      _selectedFunnel = funnel;
+                      _isSearching = false;
+                      searchController.clear();
+                      searchQuery = '';
+                    });
+                    
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                    _chatsBlocs[endPointInTab]!.add(ClearChats());
+                    _pagingControllers[endPointInTab]!.itemList = null;
+                    _pagingControllers[endPointInTab]!.refresh();
+                    
+                    print('ChatsScreen: PopupMenuButton - Fetching chats with new funnel and active filters: $_activeFilters');
+                    _chatsBlocs[endPointInTab]!.add(FetchChats(
+                      endPoint: endPointInTab,
+                      salesFunnelId: funnel.id,
+                      filters: _activeFilters,
+                    ));
+                  } catch (e) {
+                    print('ChatsScreen: PopupMenuButton - Error: $e');
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return state.funnels
+                      .map((funnel) => PopupMenuItem<SalesFunnel>(
+                            value: funnel,
+                            child: Text(
+                              funnel.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList();
+                },
               ),
             ),
-            if (state is SalesFunnelLoaded && state.funnels.length > 1 && endPointInTab == 'lead')
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    print('ChatsScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      await apiService.saveSelectedChatSalesFunnel(funnel.id.toString());
-                      print('ChatsScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      setState(() {
-                        _selectedFunnel = funnel;
-                        _isSearching = false;
-                        searchController.clear();
-                        searchQuery = '';
-                        print('ChatsScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                      });
-                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                      _chatsBlocs[endPointInTab]!.add(ClearChats());
-                      _pagingControllers[endPointInTab]!.itemList = null;
-                      _pagingControllers[endPointInTab]!.refresh();
-                      
-                      // ВАЖНО: Передаем фильтры при переключении воронки
-                      _chatsBlocs[endPointInTab]!.add(FetchChats(
-                        endPoint: endPointInTab,
-                        salesFunnelId: funnel.id,
-                        filters: _activeFilters, // Сохраняем активные фильтры
-                      ));
-                    } catch (e) {
-                      print('ChatsScreen: Error switching funnel: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    print('ChatsScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList();
-                  },
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
+        ],
+      );
+    },
+  );
+}
 // НОВЫЙ МЕТОД: Получение текста активных фильтров для отображения
  String _getActiveFiltersText() {
   if (_activeFilters == null || !_hasActiveFilters) {
@@ -691,7 +692,7 @@ final myPresenceChannel = socketClient.presenceChannel(
   authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate
       .forPresenceChannel(
     authorizationEndpoint: Uri.parse(
-        'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        'https://$enteredDomain-back.$enteredMainDomain/api/broadcasting/auth'),
     headers: {
       'Authorization': 'Bearer $token',
       'X-Tenant': '$enteredDomain-back'
@@ -819,10 +820,12 @@ await socketClient.connect();
               // ДОБАВЛЯЕМ: Обработчики для фильтров
               onChatLeadFiltersApplied: _handleFiltersApplied, // Новый параметр
               onChatLeadFiltersReset: _resetFilters, // Новый параметр
+              onChatTaskFiltersApplied: _handleFiltersApplied,
+              onChatTaskFiltersReset: _resetFilters, // Передаем обработчик сброса
               hasActiveChatFilters: _hasActiveFilters, // Новый параметр
               initialChatFilters: _activeFilters, // Новый параметр
               currentSalesFunnelId: _selectedFunnel?.id, // ИЗМЕНЕНО: Добавили передачу
-              onChatTaskFiltersApplied: _handleFiltersApplied, // Передаём для задач
+
               onChangedSearchInput: (String value) {
                 setState(() {
                   _isSearching = value.isNotEmpty;

@@ -176,13 +176,14 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
     _hasDeal = widget.initialHasDeal;
     _hasUnreadMessages = widget.initialHasUnreadMessages;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
-    selectedSalesFunnel = widget.initialSalesFunnelId
-        ?.toString(); // ИЗМЕНЕНО: Устанавливаем initial (текущую)
+ selectedSalesFunnel = widget.initialSalesFunnelId?.toString();
     _unreadOnly = widget.initialHasUnreadMessages ??
         false; // Исправлено: используем false по умолчанию
     context.read<GetAllRegionBloc>().add(GetAllRegionEv()); // Добавлено
     context.read<GetAllSourceBloc>().add(GetAllSourceEv()); // Добавлено
     _fetchDirectoryLinks();
+        _loadCurrentSalesFunnel();
+
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -215,7 +216,20 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
       );
     }
   }
-
+// ДОБАВЛЯЕМ: Метод для загрузки текущей воронки
+Future<void> _loadCurrentSalesFunnel() async {
+  try {
+    final savedFunnelId = await ApiService().getSelectedChatSalesFunnel();
+    if (savedFunnelId != null && mounted) {
+      setState(() {
+        selectedSalesFunnel = savedFunnelId;
+      });
+      print('ChatLeadFilterScreen: Loaded saved funnel ID: $savedFunnelId');
+    }
+  } catch (e) {
+    print('ChatLeadFilterScreen: Error loading saved funnel: $e');
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,6 +273,29 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                   _selectedDirectoryFields[link.id] = null;
                 }
               });
+              // Вызываем onManagersSelected с пустыми фильтрами
+              widget.onManagersSelected?.call({
+                'managers': [],
+                'regions': [],
+                'sources': [],
+                'statuses': null,
+                'fromDate': null,
+                'toDate': null,
+                'hasSuccessDeals': false,
+                'hasInProgressDeals': false,
+                'hasFailureDeals': false,
+                'hasNotices': false,
+                'hasContact': false,
+                'hasChat': false,
+                'hasNoReplies': false,
+                'hasUnreadMessages': false,
+                'hasDeal': false,
+                'unreadOnly': false,
+                'daysWithoutActivity': null,
+                'directory_values': [],
+              });
+              Navigator.pop(context);
+
             },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -552,12 +589,12 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                             _hasContact ?? false,
                             (value) => setState(() => _hasContact = value),
                           ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!
-                                .translate('with_chat'),
-                            _hasChat ?? false,
-                            (value) => setState(() => _hasChat = value),
-                          ),
+                          // _buildSwitchTile(
+                          //   AppLocalizations.of(context)!
+                          //       .translate('with_chat'),
+                          //   _hasChat ?? false,
+                          //   (value) => setState(() => _hasChat = value),
+                          // ),
                           _buildSwitchTile(
                             AppLocalizations.of(context)!
                                 .translate('without_replies'),
