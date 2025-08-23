@@ -14,6 +14,10 @@
     String endPoint = '';
     PaginationDTO<Chats>? chatsPagination;
     int _lastFetchedPage = 0; // Храним последнюю загруженную страницу
+    Map<String, dynamic>? _currentFilters; // Храним текущие фильтры
+  int? _currentSalesFunnelId; // Храним текущую воронку
+  String? _currentQuery; // Храним текущий поисковый запрос
+  bool _isFetching = false; // Флаг для предотвращения параллельных запросов
 
     ChatsBloc(this.apiService) : super(ChatsInitial()) {
       on<FetchChats>(_fetchChatsEvent);
@@ -45,36 +49,50 @@
         return false;
       }
     }
-
-    // Загрузка чатов
-Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
-  print('ChatsBloc._fetchChatsEvent: Received event - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}, filters: ${event.filters}');
-  endPoint = event.endPoint;
-  _lastFetchedPage = 0;
-  emit(ChatsLoading());
-
-  if (await _checkInternetConnection()) {
-    try {
-      final pagination = await apiService.getAllChats(
-        event.endPoint,
-        1,
-        event.query,
-        event.salesFunnelId,
-        event.filters,
-      );
-      print('ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
-      print('ChatsBloc._fetchChatsEvent: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
-      emit(ChatsLoaded(pagination));
-    } catch (e) {
-      print('ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
-      emit(ChatsError(e.toString()));
-    }
-  } else {
-    print('ChatsBloc._fetchChatsEvent: No internet connection');
-    emit(ChatsError('No internet connection'));
+// Сохраняем параметры последнего запроса
+  void _updateFetchParameters(FetchChats event) {
+    endPoint = event.endPoint;
+    _currentFilters = event.filters;
+    _currentSalesFunnelId = event.salesFunnelId;
+    _currentQuery = event.query;
   }
-}
 
+  Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
+    if (_isFetching) {
+      print('ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
+      return;
+    }
+    _isFetching = true;
+    print('ChatsBloc._fetchChatsEvent: Starting fetch - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}, filters: ${event.filters}');
+    
+    _updateFetchParameters(event);
+    _lastFetchedPage = 0;
+    emit(ChatsLoading());
+
+    if (await _checkInternetConnection()) {
+      try {
+        final pagination = await apiService.getAllChats(
+          event.endPoint,
+          1,
+          event.query,
+          event.salesFunnelId,
+          event.filters,
+        );
+        print('ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
+        print('ChatsBloc._fetchChatsEvent: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
+        chatsPagination = pagination;
+        _lastFetchedPage = 1;
+        emit(ChatsLoaded(pagination));
+      } catch (e) {
+        print('ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
+        emit(ChatsError(e.toString()));
+      }
+    } else {
+      print('ChatsBloc._fetchChatsEvent: No internet connection');
+      emit(ChatsError('No internet connection'));
+    }
+    _isFetching = false;
+  }
     // Перезагрузка чатов
     Future<void> _refetchChatsEvent(RefreshChats event, Emitter<ChatsState> emit) async {
       _lastFetchedPage = 0; // Сбрасываем последнюю страницу
@@ -142,31 +160,44 @@ Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async 
     }
 
     // Обновление чатов через сокеты
-    Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
-      _lastFetchedPage = 0; // Сбрасываем последнюю страницу
-      if (await _checkInternetConnection()) {
-        try {
-          chatsPagination = await apiService.getAllChats(endPoint);
-          // Сортируем чаты
-          final sortedChats = _sortChats(chatsPagination!.data, endPoint);
-          chatsPagination = PaginationDTO(
-            data: sortedChats,
-            count: chatsPagination!.count,
-            total: chatsPagination!.total,
-            perPage: chatsPagination!.perPage,
-            currentPage: chatsPagination!.currentPage,
-            totalPage: chatsPagination!.totalPage,
-          );
-          _lastFetchedPage = 1;
-          emit(ChatsInitial());
-          emit(ChatsLoaded(chatsPagination!));
-        } catch (e) {
-          emit(ChatsError(e.toString()));
-        }
-      } else {
-        emit(ChatsError('Нет подключения к интернету'));
-      }
+   Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
+    if (_isFetching) {
+      print('ChatsBloc._updateChatsFromSocketFetch: Skipping socket update, fetch in progress');
+      return;
     }
+    _isFetching = true;
+    print('ChatsBloc._updateChatsFromSocketFetch: Updating chats via socket for endpoint $endPoint, filters: $_currentFilters, salesFunnelId: $_currentSalesFunnelId');
+    
+    if (await _checkInternetConnection()) {
+      try {
+        chatsPagination = await apiService.getAllChats(
+          endPoint,
+          1,
+          _currentQuery,
+          _currentSalesFunnelId,
+          _currentFilters, // Используем сохранённые фильтры
+        );
+        final sortedChats = _sortChats(chatsPagination!.data, endPoint);
+        chatsPagination = PaginationDTO(
+          data: sortedChats,
+          count: chatsPagination!.count,
+          total: chatsPagination!.total,
+          perPage: chatsPagination!.perPage,
+          currentPage: chatsPagination!.currentPage,
+          totalPage: chatsPagination!.totalPage,
+        );
+        _lastFetchedPage = 1;
+        emit(ChatsInitial());
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (e) {
+        print('ChatsBloc._updateChatsFromSocketFetch: Error: $e');
+        emit(ChatsError(e.toString()));
+      }
+    } else {
+      emit(ChatsError('Нет подключения к интернету'));
+    }
+    _isFetching = false;
+  }
 
     // Удаление чата
     Future<void> _deleteChat(DeleteChat event, Emitter<ChatsState> emit) async {

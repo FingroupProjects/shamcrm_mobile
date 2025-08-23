@@ -5,3 +5,9 @@ class CheckDomain extends DomainEvent {
 
   CheckDomain(this.domain);
 }
+
+class CheckCode extends DomainEvent {
+  final String code;
+
+  CheckCode(this.code);
+}

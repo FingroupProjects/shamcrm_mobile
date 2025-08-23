@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -202,16 +203,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 Future<void> _onRefresh(int currentStatusId) async {
   print('LeadScreen: _onRefresh called for statusId: $currentStatusId');
   final leadBloc = BlocProvider.of<LeadBloc>(context);
-  // Очищаем кэш для текущего статуса и статусов
+  
+  // Очищаем только кэш лидов для текущего статуса, но не статусы
   await LeadCache.clearLeadsForStatus(currentStatusId);
-  await LeadCache.clearCache(); // Очищаем кэш статусов
-  print('LeadScreen: _onRefresh - Cleared cache for statusId: $currentStatusId and lead statuses');
+  print('LeadScreen: _onRefresh - Cleared leads cache for statusId: $currentStatusId');
   
-  // Сначала загружаем статусы, чтобы обновить табы
-  leadBloc.add(FetchLeadStatuses());
-  
-  // Даём время на обработку статусов
-  await Future.delayed(Duration(milliseconds: 100));
+  // Загружаем статусы только если они отсутствуют в кэше
+  final cachedStatuses = await LeadCache.getLeadStatuses();
+  if (cachedStatuses.isEmpty) {
+    leadBloc.add(FetchLeadStatuses());
+    await Future.delayed(Duration(milliseconds: 100));
+  }
   
   // Загружаем лиды с учётом всех фильтров
   leadBloc.add(FetchLeads(
@@ -1208,81 +1210,96 @@ Future<void> _onRefresh(int currentStatusId) async {
     });
   }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
 
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        int leadCount = 0;
+  return BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      int leadCount = 0;
 
-        if (state is LeadLoaded) {
-          final statusId = _tabTitles[index]['id'];
-          final leadStatus = state.leadStatuses.firstWhere(
-            (status) => status.id == statusId,
-            orElse: () => LeadStatus(
-              id: 0,
-              title: '',
-              leadsCount: 0,
-              isSuccess: false,
-              position: 1,
-              isFailure: false,
-            ),
-          );
-          leadCount = leadStatus.leadsCount;
-        } else if (state is LeadDataLoaded) {
-          leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-        }
-
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-            print('LeadScreen: Tab button tapped, index: $index');
-          },
-          onLongPress: () {
-            _showStatusOptions(context, index);
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      leadCount.toString(),
-                      style: TextStyle(
-                        color: isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      // Используем данные из LeadLoaded для счетчиков, как в TaskScreen
+      if (state is LeadLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final leadStatus = state.leadStatuses.firstWhere(
+          (status) => status.id == statusId,
+          orElse: () => LeadStatus(
+            id: 0,
+            title: '',
+            leadsCount: 0,
+            isSuccess: false,
+            position: 1,
+            isFailure: false,
           ),
         );
-      },
-    );
-  }
+        leadCount = leadStatus.leadsCount;
+      } else if (state is LeadDataLoaded) {
+        // Используем leadCounts из LeadDataLoaded, если доступно
+        leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
+      } else {
+        // Попробуем взять leadsCount из кэша, если состояние не LeadLoaded или LeadDataLoaded
+        LeadCache.getLeadStatuses().then((statuses) {
+          final status = statuses.firstWhere(
+            (s) => s['id'] == _tabTitles[index]['id'],
+            orElse: () => {'leads_count': 0},
+          );
+          if (mounted) {
+            setState(() {
+              leadCount = status['leads_count'] ?? 0;
+            });
+          }
+        });
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+          print('LeadScreen: Tab button tapped, index: $index');
+        },
+        onLongPress: () {
+          _showStatusOptions(context, index);
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
   void _deleteLeadStatus(int index) {
     _showDeleteDialog(index);

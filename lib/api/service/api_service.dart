@@ -181,6 +181,35 @@ Future<void>
     }
     return response;
   }
+// Новый метод в ApiService
+// Добавить в конец класса ApiService
+Future<Map<String, String>> checkCode(String code) async {
+  final response = await http.post(
+    Uri.parse('https://shamcrm.com/api/get-user-by-code'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: json.encode({'code': code}),
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final domain = data['domain'] as String;
+    final login = data['login'] as String;
+
+    // Сохраняем домен и логин
+    final parts = domain.split('-back.');
+    if (parts.length == 2) {
+      await saveDomain(parts[0], parts[1]);
+      await saveQrData(parts[1], parts[0], login, '', '', '');
+    }
+
+    return {'domain': domain, 'login': login};
+  } else {
+    throw Exception('Не удалось проверить код!');
+  }
+}
 
   // Метод для перенаправления на окно входа
   void _redirectToLogin() {
@@ -2381,20 +2410,36 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
 
 // Метод для создания Статуса Сделки
 Future<Map<String, dynamic>> createDealStatus(
-    String title, String color, int? day) async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  String title,
+  String color,
+  int? day,
+  String? notificationMessage,
+  bool showOnMainPage,
+  bool isSuccess,
+  bool isFailure,
+) async {
   final path = await _appendQueryParams('/deal/statuses');
   if (kDebugMode) {
     //print('ApiService: createDealStatus - Generated path: $path');
   }
 
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel();
+
   final response = await _postRequest(
-      path,
-      {
-        'title': title,
-        'day': day,
-        'color': color,
-      });
+    path,
+    {
+      'title': title,
+      'day': day,
+      'color': color,
+      'notification_message': notificationMessage,
+      'show_on_main_page': showOnMainPage ? 1 : 0,
+      'is_success': isSuccess ? 1 : 0,
+      'is_failure': isFailure ? 1 : 0,
+      'organization_id': organizationId?.toString() ?? '',
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
+    },
+  );
 
   if (response.statusCode == 200 || response.statusCode == 201) {
     return {'success': true, 'message': 'Статус сделки успешно создан'};
@@ -2763,13 +2808,22 @@ Future<Map<String, dynamic>> getCustomFieldsdeal() async {
 }
 
 // Метод для изменения статуса Сделки в ApiService
-Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
-    String title, int day, bool isSuccess, bool isFailure) async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+Future<Map<String, dynamic>> updateDealStatusEdit(
+  int dealStatusId,
+  String title,
+  int day,
+  bool isSuccess,
+  bool isFailure,
+  String notificationMessage,
+  bool showOnMainPage,
+) async {
   final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
   if (kDebugMode) {
     //print('ApiService: updateDealStatusEdit - Generated path: $path');
   }
+
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel(); // Добавляем вручную
 
   final payload = {
     "title": title,
@@ -2777,7 +2831,10 @@ Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
     "color": "#000",
     "is_success": isSuccess ? 1 : 0,
     "is_failure": isFailure ? 1 : 0,
-    "organization_id": await getSelectedOrganization(),
+    "notification_message": notificationMessage,
+    "show_on_main_page": showOnMainPage ? 1 : 0,
+    "organization_id": organizationId?.toString() ?? '', // Уже есть
+    if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(), // Добавляем в body, если не null
   };
 
   final response = await _patchRequest(
@@ -2791,7 +2848,6 @@ Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
     throw Exception('Failed to update dealStatus!');
   }
 }
-
 Future<DealStatus> getDealStatus(int dealStatusId) async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
@@ -4672,7 +4728,7 @@ Future<PaginationDTO<Chats>> getAllChats(
         //print('ApiService.getAllChats: Added has_no_replies=1');
       }
       if (filters['hasUnreadMessages'] == true) {
-        path += '&has_unread_messages=1';
+        path += '&unread_only=1';
         //print('ApiService.getAllChats: Added has_unread_messages=1');
       }
       if (filters['hasDeal'] == true) {

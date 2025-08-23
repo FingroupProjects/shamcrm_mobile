@@ -43,6 +43,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
     on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
     on<FetchLeadStatus>(_fetchLeadStatus);
+      on<UpdateLeadStatusLocally>(_updateLeadStatusLocally);
+  on<RefreshLeadCounts>(_refreshLeadCounts);
+  on<MoveLeadBetweenStatuses>(_moveLeadBetweenStatuses);
   }
 
   Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
@@ -449,4 +452,108 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
       emit(LeadError(event.localizations.translate('error_update_status')));
     }
   }
+  Future<void> _updateLeadStatusLocally(UpdateLeadStatusLocally event, Emitter<LeadState> emit) async {
+  if (state is! LeadDataLoaded) return;
+  
+  final currentState = state as LeadDataLoaded;
+  
+  try {
+    if (event.refreshCurrentStatus) {
+      print('LeadBloc: _updateLeadStatusLocally - Refreshing status ${event.statusId}');
+      
+      // Получаем новые лиды только для этого статуса
+      final newLeads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 50,
+      );
+      
+      // Обновляем только лиды этого статуса
+      final List<Lead> updatedLeads = List.from(currentState.leads);
+      updatedLeads.removeWhere((lead) => lead.statusId == event.statusId);
+      updatedLeads.addAll(newLeads);
+      
+      // Обновляем счетчики
+      final Map<int, int> newLeadCounts = Map.from(currentState.leadCounts);
+      newLeadCounts[event.statusId] = newLeads.length;
+      
+      // Кэшируем обновленные данные
+      await LeadCache.cacheLeadsForStatus(event.statusId, newLeads);
+      await LeadCache.updateLeadCount(event.statusId, newLeads.length);
+      
+      emit(LeadDataLoaded(
+        updatedLeads,
+        currentPage: currentState.currentPage,
+        leadCounts: newLeadCounts,
+      ));
+      
+      print('LeadBloc: _updateLeadStatusLocally - Status ${event.statusId} updated with ${newLeads.length} leads');
+    }
+  } catch (e) {
+    print('LeadBloc: _updateLeadStatusLocally - Error: $e');
+    // Не показываем ошибку пользователю, просто логируем
+  }
+}
+
+Future<void> _refreshLeadCounts(RefreshLeadCounts event, Emitter<LeadState> emit) async {
+  if (state is! LeadDataLoaded) return;
+  
+  final currentState = state as LeadDataLoaded;
+  
+  try {
+    print('LeadBloc: _refreshLeadCounts - Updating all lead counts');
+    
+    // Получаем статусы с актуальными счетчиками
+    final statuses = await apiService.getLeadStatuses();
+    final Map<int, int> newLeadCounts = {};
+    
+    for (var status in statuses) {
+      newLeadCounts[status.id] = status.leadsCount;
+    }
+    
+    emit(LeadDataLoaded(
+      currentState.leads,
+      currentPage: currentState.currentPage,
+      leadCounts: newLeadCounts,
+    ));
+    
+    print('LeadBloc: _refreshLeadCounts - Lead counts updated: $newLeadCounts');
+  } catch (e) {
+    print('LeadBloc: _refreshLeadCounts - Error: $e');
+  }
+}
+
+Future<void> _moveLeadBetweenStatuses(MoveLeadBetweenStatuses event, Emitter<LeadState> emit) async {
+  if (state is! LeadDataLoaded) return;
+  
+  final currentState = state as LeadDataLoaded;
+  final List<Lead> updatedLeads = List.from(currentState.leads);
+  final Map<int, int> newLeadCounts = Map.from(currentState.leadCounts);
+  
+  // Находим и обновляем лид
+  final leadIndex = updatedLeads.indexWhere((lead) => lead.id == event.leadId);
+  if (leadIndex != -1) {
+    final updatedLead = Lead.fromJson(event.updatedLeadData, event.toStatusId);
+    updatedLeads[leadIndex] = updatedLead;
+    
+    // Обновляем счетчики только если статус действительно изменился
+    if (event.fromStatusId != event.toStatusId) {
+      newLeadCounts[event.fromStatusId] = (newLeadCounts[event.fromStatusId] ?? 1) - 1;
+      newLeadCounts[event.toStatusId] = (newLeadCounts[event.toStatusId] ?? 0) + 1;
+      
+      print('LeadBloc: _moveLeadBetweenStatuses - Lead ${event.leadId} moved from ${event.fromStatusId} to ${event.toStatusId}');
+      print('LeadBloc: _moveLeadBetweenStatuses - New counts: ${event.fromStatusId}: ${newLeadCounts[event.fromStatusId]}, ${event.toStatusId}: ${newLeadCounts[event.toStatusId]}');
+    }
+    
+    emit(LeadDataLoaded(
+      updatedLeads,
+      currentPage: currentState.currentPage,
+      leadCounts: newLeadCounts,
+    ));
+    
+    // Обновляем кэш
+    await LeadCache.updateLeadCount(event.fromStatusId, newLeadCounts[event.fromStatusId] ?? 0);
+    await LeadCache.updateLeadCount(event.toStatusId, newLeadCounts[event.toStatusId] ?? 0);
+  }
+}
 }

@@ -118,15 +118,16 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   
   // НОВЫЙ МЕТОД: Обработка фильтров от ChatLeadFilterScreen
-void _handleFiltersApplied(Map<String, dynamic> filters) {
-  print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
-  setState(() {
-    _activeFilters = filters;
-    _hasActiveFilters = _checkIfFiltersActive(filters);
-    print('ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
-  });
+ void _handleFiltersApplied(Map<String, dynamic> filters) {
+    print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
+    setState(() {
+      _activeFilters = filters;
+      _hasActiveFilters = _checkIfFiltersActive(filters);
+      print('ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
+    });
 
- SharedPreferences.getInstance().then((prefs) {
+    // Очищаем сохранённые фильтры в SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
       prefs.remove('active_chat_filters');
       print('ChatsScreen: Removed active filters from SharedPreferences');
     });
@@ -135,12 +136,18 @@ void _handleFiltersApplied(Map<String, dynamic> filters) {
     chatsBloc.add(ClearChats());
     _pagingControllers[endPointInTab]!.itemList = null;
     _pagingControllers[endPointInTab]!.refresh();
-    chatsBloc.add(FetchChats(
-      endPoint: endPointInTab,
-      salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-    ));
 
-}
+    // Дебансируем вызов FetchChats
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      print('ChatsScreen._handleFiltersApplied: Dispatching FetchChats with filters: $filters, salesFunnelId: ${_selectedFunnel?.id}');
+      chatsBloc.add(FetchChats(
+        endPoint: endPointInTab,
+        salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+        filters: filters,
+      ));
+    });
+  }
   // НОВЫЙ МЕТОД: Проверка активности фильтров
   bool _checkIfFiltersActive(Map<String, dynamic> filters) {
   if (endPointInTab == 'lead') {
@@ -179,108 +186,125 @@ void _handleFiltersApplied(Map<String, dynamic> filters) {
 
   // НОВЫЙ МЕТОД: Сброс фильтров
 void _resetFilters() {
-  print('ChatsScreen._resetFilters: Resetting filters');
-  setState(() {
-    _activeFilters = null;
-    _hasActiveFilters = false;
-  });
+    print('ChatsScreen._resetFilters: Resetting filters');
+    setState(() {
+      _activeFilters = null;
+      _hasActiveFilters = false;
+    });
 
-  final chatsBloc = _chatsBlocs[endPointInTab]!;
-  chatsBloc.add(ClearChats());
-  _pagingControllers[endPointInTab]!.itemList = null;
-  _pagingControllers[endPointInTab]!.refresh();
-  chatsBloc.add(FetchChats(
-    endPoint: endPointInTab,
-    salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-  ));
-}
+    // Очищаем сохранённые фильтры в SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('active_chat_filters');
+      print('ChatsScreen: Removed active filters from SharedPreferences');
+    });
+
+    final chatsBloc = _chatsBlocs[endPointInTab]!;
+    chatsBloc.add(ClearChats());
+    _pagingControllers[endPointInTab]!.itemList = null;
+    _pagingControllers[endPointInTab]!.refresh();
+
+    // Дебансируем вызов FetchChats
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      print('ChatsScreen._resetFilters: Dispatching FetchChats with no filters, salesFunnelId: ${_selectedFunnel?.id}');
+      chatsBloc.add(FetchChats(
+        endPoint: endPointInTab,
+        salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+        filters: null,
+      ));
+    });
+  }
 
 @override
-void initState() {
-  super.initState();
-  print('ChatsScreen: initState started');
-  _checkPermissions().then((_) {
-    if (_isPermissionsChecked) {
-      setState(() {
-        _tabTitles = _getTabTitles(context);
-        _tabController = TabController(
-          length: _tabTitles.length,
-          vsync: this,
-          initialIndex: selectTabIndex,
-        );
-        _isTabControllerInitialized = true;
-      });
-      setUpServices();
-      
-      print('ChatsScreen: Fetching sales funnels');
-      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-
-      // Загружаем сохранённую воронку
-      apiService.getSelectedChatSalesFunnel().then((funnelId) {
-        print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
-        if (funnelId != null && mounted) {
-          final funnel = SalesFunnel(
-            id: int.parse(funnelId),
-            name: '',
-            organizationId: 1,
-            isActive: true,
-            createdAt: '',
-            updatedAt: '',
+  void initState() {
+    super.initState();
+    print('ChatsScreen: initState started');
+    _checkPermissions().then((_) {
+      if (_isPermissionsChecked) {
+        setState(() {
+          _tabTitles = _getTabTitles(context);
+          _tabController = TabController(
+            length: _tabTitles.length,
+            vsync: this,
+            initialIndex: selectTabIndex,
           );
-          context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-          setState(() {
-            _selectedFunnel = funnel;
-          });
-          if (endPointInTab == 'lead') {
-            print('ChatsScreen: Dispatching FetchChats with saved funnelId: $funnelId, filters: $_activeFilters');
-            _chatsBlocs[endPointInTab]!.add(FetchChats(
-              endPoint: endPointInTab,
-              salesFunnelId: int.parse(funnelId),
-              filters: _activeFilters,
-            ));
-          }
-        } else {
-          print('ChatsScreen: No saved funnel ID found or widget not mounted');
-        }
-      });
+          _isTabControllerInitialized = true;
+        });
+        setUpServices();
 
-      // Слушаем изменения состояния SalesFunnelBloc
-      context.read<SalesFunnelBloc>().stream.listen((state) {
-        if (state is SalesFunnelLoaded && mounted) {
-          print('ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
-          setState(() {
-            _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          });
-          if (endPointInTab == 'lead' && _selectedFunnel != null) {
-            print('ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
-            _chatsBlocs[endPointInTab]!.add(ClearChats());
-            _pagingControllers[endPointInTab]!.itemList = null;
-            _pagingControllers[endPointInTab]!.refresh();
-            _chatsBlocs[endPointInTab]!.add(FetchChats(
-              endPoint: endPointInTab,
-              salesFunnelId: _selectedFunnel!.id,
-              filters: _activeFilters,
-            ));
-          }
-        }
-      });
-    }
-    _fetchTutorialProgress();
-  });
+        print('ChatsScreen: Fetching sales funnels');
+        context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
 
-  _pagingControllers.forEach((endPoint, controller) {
-    controller.addPageRequestListener((pageKey) {
-      print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
-      if (pageKey == 0) {
-        controller.refresh();
+        // Загружаем сохранённую воронку
+        apiService.getSelectedChatSalesFunnel().then((funnelId) {
+          print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
+          if (funnelId != null && mounted) {
+            final funnel = SalesFunnel(
+              id: int.parse(funnelId),
+              name: '',
+              organizationId: 1,
+              isActive: true,
+              createdAt: '',
+              updatedAt: '',
+            );
+            context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+            setState(() {
+              _selectedFunnel = funnel;
+            });
+            if (endPointInTab == 'lead') {
+              print('ChatsScreen: Dispatching FetchChats with saved funnelId: $funnelId, filters: $_activeFilters');
+              _chatsBlocs[endPointInTab]!.add(FetchChats(
+                endPoint: endPointInTab,
+                salesFunnelId: int.parse(funnelId),
+                filters: _activeFilters,
+              ));
+            }
+          } else {
+            print('ChatsScreen: No saved funnel ID found or widget not mounted');
+          }
+        });
+
+        // Слушаем изменения состояния SalesFunnelBloc
+        context.read<SalesFunnelBloc>().stream.listen((state) {
+          if (state is SalesFunnelLoaded && mounted) {
+            print('ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
+            setState(() {
+              _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+            });
+            if (endPointInTab == 'lead' && _selectedFunnel != null) {
+              print('ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
+              _chatsBlocs[endPointInTab]!.add(ClearChats());
+              _pagingControllers[endPointInTab]!.itemList = null;
+              _pagingControllers[endPointInTab]!.refresh();
+              _chatsBlocs[endPointInTab]!.add(FetchChats(
+                endPoint: endPointInTab,
+                salesFunnelId: _selectedFunnel!.id,
+                filters: _activeFilters, // Всегда передаём текущие фильтры
+              ));
+            }
+          }
+        });
       }
-      if (endPointInTab == endPoint) {
-        _chatsBlocs[endPoint]!.add(GetNextPageChats());
-      }
+      _fetchTutorialProgress();
     });
-  });
-  print('ChatsScreen: initState completed');
-}
+
+    _pagingControllers.forEach((endPoint, controller) {
+      controller.addPageRequestListener((pageKey) {
+        print('ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+        if (pageKey == 0) {
+          controller.refresh();
+        }
+        if (endPointInTab == endPoint) {
+          _chatsBlocs[endPoint]!.add(GetNextPageChats());
+        }
+      });
+    });
+    print('ChatsScreen: initState completed');
+  }
+
+ 
+
+  
   List<String> _getTabTitles(BuildContext context) {
     return [
       AppLocalizations.of(context)!.translate('tab_leads'),

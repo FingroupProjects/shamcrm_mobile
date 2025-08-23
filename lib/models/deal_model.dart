@@ -117,6 +117,8 @@ class DealStatus {
   final int? day;
   final bool isSuccess;
   final bool isFailure;
+  final String? notificationMessage; // Новое поле
+  final bool showOnMainPage; // Новое поле
 
   DealStatus({
     required this.id,
@@ -128,22 +130,25 @@ class DealStatus {
     this.day,
     required this.isSuccess,
     required this.isFailure,
+    this.notificationMessage, // Добавляем в конструктор
+    required this.showOnMainPage, // Добавляем в конструктор
   });
 
-factory DealStatus.fromJson(Map<String, dynamic> json) {
-
-  return DealStatus(
-    id: json['id'] as int? ?? 0,
-    title: json['title'] as String? ?? 'Без имени',
-    color: json['color'] as String? ?? '#000',
-    createdAt: json['created_at'] as String?,
-    updatedAt: json['updated_at'] as String?,
-    day: json['day'] as int?,
-    dealsCount: json['deals_count'] as int? ?? 0,
-    isSuccess: json['is_success'] as bool? ?? false,
-    isFailure: json['is_failure'] as bool? ?? false,
-  );
-}
+  factory DealStatus.fromJson(Map<String, dynamic> json) {
+    return DealStatus(
+      id: json['id'] as int? ?? 0,
+      title: json['title'] as String? ?? 'Без имени',
+      color: json['color'] as String? ?? '#000',
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      day: json['day'] as int?,
+      dealsCount: json['deals_count'] as int? ?? 0,
+      isSuccess: json['is_success'] == 1, // Преобразуем int в bool
+      isFailure: json['is_failure'] == 1, // Преобразуем int в bool
+      notificationMessage: json['notification_message'] as String?, // Парсим новое поле
+      showOnMainPage: json['show_on_main_page'] == 1, // Преобразуем int в bool
+    );
+  }
 
 
   Map<String, dynamic> toJson() {
@@ -157,6 +162,8 @@ factory DealStatus.fromJson(Map<String, dynamic> json) {
       'day': day,
       'is_success': isSuccess,
       'is_failure': isFailure,
+      'notification_message': notificationMessage, // Новое поле
+      'show_on_main_page': showOnMainPage, // Новое поле
     };
   }
 }

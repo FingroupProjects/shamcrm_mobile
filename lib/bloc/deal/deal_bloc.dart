@@ -21,6 +21,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   int? _currentDaysWithoutActivity;
   List<Map<String, dynamic>>? _currentDirectoryValues;
 
+
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
     on<FetchDeals>(_fetchDeals);
@@ -207,8 +208,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-  Future<void> _createDealStatus(
-      CreateDealStatus event, Emitter<DealState> emit) async {
+ Future<void> _createDealStatus(CreateDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
@@ -218,7 +218,14 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
     try {
       final result = await apiService.createDealStatus(
-          event.title, event.color, event.day);
+        event.title,
+        event.color,
+        event.day,
+        event.notificationMessage,
+        event.showOnMainPage,
+        event.isSuccess,
+        event.isFailure,
+      );
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
@@ -227,8 +234,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(
-          DealError(event.localizations.translate('error_delete_status_deal')));
+      emit(DealError(event.localizations.translate('error_delete_status_deal')));
     }
   }
 
@@ -359,6 +365,8 @@ Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.notificationMessage,
+        event.showOnMainPage,
       );
 
       if (response['result'] == 'Success') {

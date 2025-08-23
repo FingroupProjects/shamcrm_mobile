@@ -17,6 +17,7 @@ class CustomTextField extends StatefulWidget {
   final String? errorText;
   final bool hasError;
   final Color backgroundColor; 
+   final bool? enabled;
 
   CustomTextField({
     required this.controller,
@@ -32,6 +33,7 @@ class CustomTextField extends StatefulWidget {
     this.validator,
     this.onChanged,
     this.errorText,
+    this.enabled,
     this.hasError = false,
     this.backgroundColor = const Color(0xffF4F7FD), 
   });
@@ -64,6 +66,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
+           enabled: widget.enabled,
           readOnly: widget.readOnly,
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,

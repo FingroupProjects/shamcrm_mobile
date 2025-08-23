@@ -1155,7 +1155,11 @@
 "executors": "Executors",
 "authors": "Authors",
 "and_more": "and more",
-"no_statuses_available": ""
+"no_statuses_available": "",
+"unsuccessful": "Unsuccessful",
+"notification_message_label": "Enter the text the client will receive when their order moves to this status",
+"deal_number": "Deal number",
+"show_on_main_page": "Show on lead card"
 
 
 

@@ -1,3 +1,5 @@
+
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -281,30 +283,49 @@ Widget build(BuildContext context) {
                 children: [
                   SizedBox(height: 8),
                   Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: leads.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: LeadCard(
-                            key: index == 0 ? keyLeadCard : null,
-                            dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
-                            lead: leads[index],
-                            title: widget.title,
-                            statusId: widget.statusId,
-                            onStatusUpdated: () {
-                              print('LeadColumn: Lead status updated, fetching leads for statusId: ${widget.statusId}');
-                              _leadBloc.add(FetchLeads(widget.statusId));
-                            },
-                            onStatusId: (StatusLeadId) {
-                              print('LeadColumn: onStatusId called with id: $StatusLeadId');
-                              widget.onStatusId(StatusLeadId);
-                            },
-                          ),
-                        );
-                      },
+                    child: RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      color: const Color(0xff1E2E52),
+                      backgroundColor: Colors.white,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: leads.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: LeadCard(
+                              key: index == 0 ? keyLeadCard : null,
+                              dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
+                              lead: leads[index],
+                              title: widget.title,
+                              statusId: widget.statusId,
+                              onStatusUpdated: () async {
+                                print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
+                                // Локально обновляем кэш
+                                final newStatusId = leads[index].statusId; // Предполагаем, что LeadCard обновляет statusId
+                                if (newStatusId != widget.statusId) {
+                                  // Удаляем лид из текущего статуса в кэше
+                                  await LeadCache.moveLeadToStatus(
+                                    leads[index],
+                                    widget.statusId,
+                                    newStatusId,
+                                  );
+                                  print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
+                                  // Обновляем счетчики в кэше
+                                  await LeadCache.updateLeadCount(widget.statusId, leads.length - 1);
+                                  await LeadCache.updateLeadCount(newStatusId, (await LeadCache.getLeadsForStatus(newStatusId)).length);
+                                }
+                                // НЕ вызываем FetchLeads
+                              },
+                              onStatusId: (StatusLeadId) {
+                                print('LeadColumn: onStatusId called with id: $StatusLeadId');
+                                widget.onStatusId(StatusLeadId);
+                              },
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],
@@ -316,22 +337,27 @@ Widget build(BuildContext context) {
                   _startTutorialLogic();
                 });
               }
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('no_lead_in_status'),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                        ),
-                      ],
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('no_lead_in_status'),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             }
           } else if (state is LeadError) {
@@ -360,14 +386,24 @@ Widget build(BuildContext context) {
                 ),
               );
             });
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [SizedBox()],
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: const Color(0xff1E2E52),
+              backgroundColor: Colors.white,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [SizedBox()],
+              ),
             );
           }
-          return ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: const [SizedBox()],
+          return RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: const Color(0xff1E2E52),
+            backgroundColor: Colors.white,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [SizedBox()],
+            ),
           );
         },
       ),

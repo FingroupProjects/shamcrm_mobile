@@ -64,7 +64,39 @@ class FetchMoreLeads extends LeadEvent {
 
   FetchMoreLeads(this.statusId, this.currentPage);
 }
+// ДОБАВЬТЕ ЭТИ СОБЫТИЯ В lead_event.dart:
 
+class UpdateLeadStatusLocally extends LeadEvent {
+  final int statusId;
+  final bool refreshCurrentStatus;
+  
+  UpdateLeadStatusLocally(this.statusId, {this.refreshCurrentStatus = false});
+  
+  @override
+  List<Object?> get props => [statusId, refreshCurrentStatus];
+}
+
+class RefreshLeadCounts extends LeadEvent {
+  @override
+  List<Object?> get props => [];
+}
+
+class MoveLeadBetweenStatuses extends LeadEvent {
+  final int leadId;
+  final int fromStatusId;
+  final int toStatusId;
+  final Map<String, dynamic> updatedLeadData;
+  
+  MoveLeadBetweenStatuses({
+    required this.leadId,
+    required this.fromStatusId, 
+    required this.toStatusId,
+    required this.updatedLeadData,
+  });
+  
+  @override
+  List<Object?> get props => [leadId, fromStatusId, toStatusId, updatedLeadData];
+}
 class UpdateLeadCounts extends LeadEvent {
   final int statusId;
   final int count;

@@ -13,12 +13,13 @@ class Lead {
   final LeadStatus? leadStatus;
   final Organization? organization;
   final String? phone;
-  final int? inProgressDealsCount;
-  final int? successefullyDealsCount;
-  final int? failedDealsCount;
+  final int? inProgressDealsCount; // Оставляем для обратной совместимости
+  final int? successefullyDealsCount; // Оставляем для обратной совместимости
+  final int? failedDealsCount; // Оставляем для обратной совместимости
   final int? lastUpdate;
   final String? messageStatus;
-  final List<Map<String, dynamic>>? chats; // Добавляем поле chats
+  final List<Map<String, dynamic>>? chats;
+  final List<MainPageDeal>? mainPageDeals; // Новое поле
 
   Lead({
     required this.id,
@@ -37,9 +38,10 @@ class Lead {
     this.lastUpdate,
     this.messageStatus,
     this.chats,
+    this.mainPageDeals,
   });
 
- factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
+  factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
       id: json['id'] ?? 0,
       name: json['name']?.toString() ?? 'Без имени',
@@ -74,6 +76,11 @@ class Lead {
               .map((chat) => chat as Map<String, dynamic>)
               .toList()
           : null,
+      mainPageDeals: json['main_page_deals'] != null
+          ? (json['main_page_deals'] as List<dynamic>)
+              .map((deal) => MainPageDeal.fromJson(deal))
+              .toList()
+          : null,
     );
   }
 
@@ -95,6 +102,40 @@ class Lead {
       'last_update': lastUpdate,
       'messageStatus': messageStatus,
       'chats': chats,
+      'main_page_deals': mainPageDeals?.map((deal) => deal.toJson()).toList(),
+    };
+  }
+}
+
+// Новая модель для main_page_deals
+class MainPageDeal {
+  final int statusId;
+  final String statusTitle;
+  final String statusColor;
+  final int count;
+
+  MainPageDeal({
+    required this.statusId,
+    required this.statusTitle,
+    required this.statusColor,
+    required this.count,
+  });
+
+  factory MainPageDeal.fromJson(Map<String, dynamic> json) {
+    return MainPageDeal(
+      statusId: json['status_id'] ?? 0,
+      statusTitle: json['status_title'] ?? '',
+      statusColor: json['status_color'] ?? '#000000',
+      count: json['count'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status_id': statusId,
+      'status_title': statusTitle,
+      'status_color': statusColor,
+      'count': count,
     };
   }
 }

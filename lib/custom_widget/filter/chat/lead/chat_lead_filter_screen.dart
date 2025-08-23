@@ -614,12 +614,12 @@ Future<void> _loadCurrentSalesFunnel() async {
                             _hasDeal ?? false,
                             (value) => setState(() => _hasDeal = value),
                           ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!
-                                .translate('unread_only'),
-                            _unreadOnly ?? false,
-                            (value) => setState(() => _unreadOnly = value),
-                          ),
+                          // _buildSwitchTile(
+                          //   AppLocalizations.of(context)!
+                          //       .translate('unread_only'),
+                          //   _unreadOnly ?? false,
+                          //   (value) => setState(() => _unreadOnly = value),
+                          // ),
                         ],
                       ),
                     ),

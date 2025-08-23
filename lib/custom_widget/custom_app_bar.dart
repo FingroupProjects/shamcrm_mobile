@@ -407,21 +407,24 @@ class _CustomAppBarState extends State<CustomAppBar>
       }
     });
   }
-List<Map<String, dynamic>>? _safeConvertToMapList(dynamic data) {
-  if (data == null) return null;
-  if (data is List<Map<String, dynamic>>) return data;
-  if (data is List) {
-    try {
-      return data.cast<Map<String, dynamic>>();
-    } catch (e) {
-      return data
-          .where((item) => item is Map)
-          .map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item as Map))
-          .toList();
+
+  List<Map<String, dynamic>>? _safeConvertToMapList(dynamic data) {
+    if (data == null) return null;
+    if (data is List<Map<String, dynamic>>) return data;
+    if (data is List) {
+      try {
+        return data.cast<Map<String, dynamic>>();
+      } catch (e) {
+        return data
+            .where((item) => item is Map)
+            .map<Map<String, dynamic>>(
+                (item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
     }
+    return null;
   }
-  return null;
-}
+
   Future<void> _checkOverdueTasks() async {
     try {
       final apiService = ApiService();
@@ -1024,33 +1027,48 @@ List<Map<String, dynamic>>? _safeConvertToMapList(dynamic data) {
                     // ОТКРЫВАЕМ ChatLeadFilterScreen с передачей данных
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                       // В секции showFilterIconChat:
-builder: (context) => ChatLeadFilterScreen(
-  // Безопасное преобразование типов
-  initialManagers: _safeConvertToMapList(widget.initialChatFilters?['managers']),
-  initialRegions: _safeConvertToMapList(widget.initialChatFilters?['regions']),
-  initialSources: _safeConvertToMapList(widget.initialChatFilters?['sources']),
-  initialStatuses: widget.initialChatFilters?['statuses'],
-  initialFromDate: widget.initialChatFilters?['fromDate'],
-  initialToDate: widget.initialChatFilters?['toDate'],
-  initialHasSuccessDeals: widget.initialChatFilters?['hasSuccessDeals'],
-  initialHasInProgressDeals: widget.initialChatFilters?['hasInProgressDeals'],
-  initialHasFailureDeals: widget.initialChatFilters?['hasFailureDeals'],
-  initialHasNotices: widget.initialChatFilters?['hasNotices'],
-  initialHasContact: widget.initialChatFilters?['hasContact'],
-  initialHasChat: widget.initialChatFilters?['hasChat'],
-  initialHasNoReplies: widget.initialChatFilters?['hasNoReplies'],
-  initialHasUnreadMessages: widget.initialChatFilters?['hasUnreadMessages'],
-  initialHasDeal: widget.initialChatFilters?['hasDeal'],
-  initialDaysWithoutActivity: widget.initialChatFilters?['daysWithoutActivity'],
-  initialDirectoryValues: _safeConvertToMapList(widget.initialChatFilters?['directory_values']),
-  initialSalesFunnelId  : widget.currentSalesFunnelId ?? 
-                                widget.initialChatFilters?['current_sales_funnel_id'] ?? 
-                                widget.initialChatFilters?['sales_funnel_id'],
-  onManagersSelected: widget.onChatLeadFiltersApplied,
-  onResetFilters: widget.onChatLeadFiltersReset,
-),
+                      MaterialPageRoute( 
+                        // В секции showFilterIconChat:
+                        builder: (context) => ChatLeadFilterScreen(
+                          // Безопасное преобразование типов
+                          initialManagers: _safeConvertToMapList(
+                              widget.initialChatFilters?['managers']),
+                          initialRegions: _safeConvertToMapList(
+                              widget.initialChatFilters?['regions']),
+                          initialSources: _safeConvertToMapList(
+                              widget.initialChatFilters?['sources']),
+                          initialStatuses:
+                              widget.initialChatFilters?['statuses'],
+                          initialFromDate:
+                              widget.initialChatFilters?['fromDate'],
+                          initialToDate: widget.initialChatFilters?['toDate'],
+                          initialHasSuccessDeals:
+                              widget.initialChatFilters?['hasSuccessDeals'],
+                          initialHasInProgressDeals:
+                              widget.initialChatFilters?['hasInProgressDeals'],
+                          initialHasFailureDeals:
+                              widget.initialChatFilters?['hasFailureDeals'],
+                          initialHasNotices:
+                              widget.initialChatFilters?['hasNotices'],
+                          initialHasContact:
+                              widget.initialChatFilters?['hasContact'],
+                          initialHasChat: widget.initialChatFilters?['hasChat'],
+                          initialHasNoReplies:
+                              widget.initialChatFilters?['hasNoReplies'],
+                          initialHasUnreadMessages:
+                              widget.initialChatFilters?['hasUnreadMessages'],
+                          initialHasDeal: widget.initialChatFilters?['hasDeal'],
+                          initialDaysWithoutActivity:
+                              widget.initialChatFilters?['daysWithoutActivity'],
+                          initialDirectoryValues: _safeConvertToMapList(
+                              widget.initialChatFilters?['directory_values']),
+                          initialSalesFunnelId: widget.currentSalesFunnelId ??
+                              widget.initialChatFilters?[
+                                  'current_sales_funnel_id'] ??
+                              widget.initialChatFilters?['sales_funnel_id'],
+                          onManagersSelected: widget.onChatLeadFiltersApplied,
+                          onResetFilters: widget.onChatLeadFiltersReset,
+                        ),
                       ),
                     );
                   },
@@ -1669,7 +1687,8 @@ builder: (context) => ChatLeadFilterScreen(
           initialDaysWithoutActivity:
               widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,
-         initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesLead),
+          initialDirectoryValues:
+              _safeConvertToMapList(widget.initialDirectoryValuesLead),
         ),
       ),
     );
@@ -1694,8 +1713,8 @@ builder: (context) => ChatLeadFilterScreen(
           onResetFilters: widget.onDealResetFilters,
           initialDaysWithoutActivity:
               widget.initialManagerDealDaysWithoutActivity,
-initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesDeal),
-
+          initialDirectoryValues:
+              _safeConvertToMapList(widget.initialDirectoryValuesDeal),
         ),
       ),
     );
@@ -1723,7 +1742,8 @@ initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesDeal)
           initialDepartment: widget.initialDepartment,
           initialDeadlineFromDate: widget.initialDeadlineFromDate,
           initialDeadlineToDate: widget.initialDeadlineToDate,
-         initialDirectoryValues: _safeConvertToMapList(widget.initialDirectoryValuesTask),
+          initialDirectoryValues:
+              _safeConvertToMapList(widget.initialDirectoryValuesTask),
         ),
       ),
     );

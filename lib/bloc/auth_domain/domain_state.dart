@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/domain_check.dart'; // Импортируй модель DomainCheck
+import '../../models/domain_check.dart';
 
 abstract class DomainState extends Equatable {
   const DomainState();
@@ -19,6 +19,16 @@ class DomainLoaded extends DomainState {
 
   @override
   List<Object> get props => [domainCheck];
+}
+
+class CodeChecked extends DomainState {
+  final String domain;
+  final String login;
+
+  CodeChecked(this.domain, this.login);
+
+  @override
+  List<Object> get props => [domain, login];
 }
 
 class DomainError extends DomainState {

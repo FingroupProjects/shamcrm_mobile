@@ -53,15 +53,24 @@ class CreateDealStatus extends DealEvent {
   final String title;
   final int? day;
   final String color;
-   final AppLocalizations localizations; 
+  final String? notificationMessage;
+  final bool showOnMainPage;
+  final bool isSuccess;
+  final bool isFailure;
+  final AppLocalizations localizations;
 
   CreateDealStatus({
     required this.title,
     this.day,
     required this.color,
-    required this.localizations
+    this.notificationMessage,
+    required this.showOnMainPage,
+    required this.isSuccess,
+    required this.isFailure,
+    required this.localizations,
   });
 }
+
 
 class CreateDeal extends DealEvent {
   final String name;
@@ -151,12 +160,15 @@ class DeleteDealStatuses extends DealEvent {
     );
 }
 // Event для изменения статуса лида
+// Event для изменения статуса лида
 class UpdateDealStatusEdit extends DealEvent {
   final int dealStatusId;
   final String title;
   final int day;
   final bool isSuccess;
   final bool isFailure;
+  final String notificationMessage;
+  final bool showOnMainPage;
   final AppLocalizations localizations;
 
   UpdateDealStatusEdit(
@@ -165,6 +177,8 @@ class UpdateDealStatusEdit extends DealEvent {
     this.day,
     this.isSuccess,
     this.isFailure,
+    this.notificationMessage,
+    this.showOnMainPage,
     this.localizations,
   );
 }

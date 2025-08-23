@@ -19,7 +19,6 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
   DomainBloc(this.apiService) : super(DomainInitial()) {
     on<CheckDomain>((event, emit) async {
       emit(DomainLoading());
-      // Проверка подключения к интернету
       if (!await _checkInternetConnection()) {
         emit(DomainError('Нет подключения к интернету'));
         return;
@@ -29,6 +28,20 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         emit(DomainLoaded(domainCheck));
       } catch (e) {
         emit(DomainError('Не правильный поддомен'));
+      }
+    });
+
+    on<CheckCode>((event, emit) async {
+      emit(DomainLoading());
+      if (!await _checkInternetConnection()) {
+        emit(DomainError('Нет подключения к интернету'));
+        return;
+      }
+      try {
+        final result = await apiService.checkCode(event.code);
+        emit(CodeChecked(result['domain']!, result['login']!));
+      } catch (e) {
+        emit(DomainError('Не удалось проверить код'));
       }
     });
   }
