@@ -301,23 +301,22 @@ Widget build(BuildContext context) {
                               title: widget.title,
                               statusId: widget.statusId,
                               onStatusUpdated: () async {
-                                print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
-                                // Локально обновляем кэш
-                                final newStatusId = leads[index].statusId; // Предполагаем, что LeadCard обновляет statusId
-                                if (newStatusId != widget.statusId) {
-                                  // Удаляем лид из текущего статуса в кэше
-                                  await LeadCache.moveLeadToStatus(
-                                    leads[index],
-                                    widget.statusId,
-                                    newStatusId,
-                                  );
-                                  print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
-                                  // Обновляем счетчики в кэше
-                                  await LeadCache.updateLeadCount(widget.statusId, leads.length - 1);
-                                  await LeadCache.updateLeadCount(newStatusId, (await LeadCache.getLeadsForStatus(newStatusId)).length);
-                                }
-                                // НЕ вызываем FetchLeads
-                              },
+  print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
+  // Assuming LeadCard updates lead.statusId
+  final newStatusId = leads[index].statusId;
+  if (newStatusId != widget.statusId) {
+    await LeadCache.moveLeadToStatus(
+      leads[index],
+      widget.statusId,
+      newStatusId,
+    );
+    print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
+    // Update counters in cache
+    await LeadCache.updateLeadCount(widget.statusId, leads.length - 1);
+    await LeadCache.updateLeadCount(newStatusId, (await LeadCache.getLeadsForStatus(newStatusId)).length);
+  }
+  // No FetchLeads call
+},
                               onStatusId: (StatusLeadId) {
                                 print('LeadColumn: onStatusId called with id: $StatusLeadId');
                                 widget.onStatusId(StatusLeadId);

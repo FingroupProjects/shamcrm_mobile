@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/domain_check.dart';
+import '../../models/domain_check.dart'; 
 
 abstract class DomainState extends Equatable {
   const DomainState();
@@ -12,6 +12,17 @@ class DomainInitial extends DomainState {}
 
 class DomainLoading extends DomainState {}
 
+// Новое состояние для успешной верификации email
+class EmailVerified extends DomainState {
+  final String login;
+
+  EmailVerified(this.login);
+
+  @override
+  List<Object> get props => [login];
+}
+
+// Старые состояния для обратной совместимости
 class DomainLoaded extends DomainState {
   final DomainCheck domainCheck;
 
@@ -19,16 +30,6 @@ class DomainLoaded extends DomainState {
 
   @override
   List<Object> get props => [domainCheck];
-}
-
-class CodeChecked extends DomainState {
-  final String domain;
-  final String login;
-
-  CodeChecked(this.domain, this.login);
-
-  @override
-  List<Object> get props => [domain, login];
 }
 
 class DomainError extends DomainState {

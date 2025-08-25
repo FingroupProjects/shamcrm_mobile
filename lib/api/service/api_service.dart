@@ -124,17 +124,34 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
-Future<void>
-      _initializeIfDomainExists() async {
-    bool isDomainSet = await isDomainChecked();
-    if (isDomainSet) {
-      await initialize();
-    }
+Future<void> _initializeIfDomainExists() async {
+  // Проверяем новую логику
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    await initialize();
+    return;
   }
+  
+  // Проверяем старую логику
+  bool isDomainSet = await isDomainChecked();
+  if (isDomainSet) {
+    await initialize();
+  }
+}
+
 
   Future<void> initialize() async {
-    baseUrl = await getDynamicBaseUrl();
+  // Проверяем, есть ли данные от email-flow
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    baseUrl = 'https://$verifiedDomain/api';
+    baseUrlSocket = 'https://$verifiedDomain/broadcasting/auth';
+    return;
   }
+  
+  // Если нет, используем старую логику
+  baseUrl = await getDynamicBaseUrl();
+}
 
   // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain, String mainDomain) async {
@@ -147,30 +164,44 @@ Future<void>
     await prefs.setString('mainDomain', mainDomain);
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    Map<String, String?> domains = await getEnteredDomain();
-    String? mainDomain =
-        domains['enteredMainDomain']; // Извлекаем значение по ключу
-    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
-
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.$mainDomain/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+ Future<String> getDynamicBaseUrl() async {
+  // Сначала пробуем новую логику с email
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    return 'https://$verifiedDomain/api';
   }
+  
+  // Если нет, используем старую логику для обратной совместимости
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain'];
+  String? domain = domains['enteredDomain'];
+
+  if (domain != null && domain.isNotEmpty) {
+    return 'https://$domain-back.$mainDomain/api';
+  } else {
+    throw Exception('Домен не установлен');
+  }
+}
+
 
   Future<String> getSocketBaseUrl() async {
-    Map<String, String?> domains = await getEnteredDomain();
-    String? mainDomain =
-        domains['enteredMainDomain']; // Извлекаем значение по ключу
-    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.$mainDomain/broadcasting/auth';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+  // Сначала пробуем новую логику с email
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    return 'https://$verifiedDomain/broadcasting/auth';
   }
+  
+  // Если нет, используем старую логику для обратной совместимости
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain'];
+  String? domain = domains['enteredDomain'];
+  
+  if (domain != null && domain.isNotEmpty) {
+    return 'https://$domain-back.$mainDomain/broadcasting/auth';
+  } else {
+    throw Exception('Домен не установлен');
+  }
+}
 
   // Общая обработка ответа от сервера 401
   Future<http.Response> _handleResponse(http.Response response) async {
@@ -181,35 +212,6 @@ Future<void>
     }
     return response;
   }
-// Новый метод в ApiService
-// Добавить в конец класса ApiService
-Future<Map<String, String>> checkCode(String code) async {
-  final response = await http.post(
-    Uri.parse('https://shamcrm.com/api/get-user-by-code'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: json.encode({'code': code}),
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    final domain = data['domain'] as String;
-    final login = data['login'] as String;
-
-    // Сохраняем домен и логин
-    final parts = domain.split('-back.');
-    if (parts.length == 2) {
-      await saveDomain(parts[0], parts[1]);
-      await saveQrData(parts[1], parts[0], login, '', '', '');
-    }
-
-    return {'domain': domain, 'login': login};
-  } else {
-    throw Exception('Не удалось проверить код!');
-  }
-}
 
   // Метод для перенаправления на окно входа
   void _redirectToLogin() {
@@ -247,38 +249,94 @@ Future<Map<String, String>> checkCode(String code) async {
 
   // Метод для логаута — очистка токена
   Future<void> logout() async {
-    // Сохраняем текущие значения domainChecked и enteredDomain
-    // bool? domainChecked = prefs.getBool('domainChecked');
-    // String? enteredDomain = prefs.getString('enteredDomain');
-    // String? enteredMainDomain = prefs.getString('enteredMainDomain');
+  // Удаляем токен, права доступа и организацию
+  await _removeToken();
+  await _removePermissions();
+  await _removeOrganizationId();
+  
+  // Очищаем новые данные email-flow
+  await clearEmailVerificationData();
+}
+// Метод для получения информации о пользователе по email
+// Добавить эти методы в класс ApiService
 
-    // Удаляем токен, права доступа и организацию
-    await _removeToken();
-    await _removePermissions();
-    await _removeOrganizationId();
+// Метод для получения информации о пользователе по email
+Future<Map<String, String>> getUserByEmail(String email) async {
+  // Используем фиксированный домен shamcrm.com
+  const String fixedDomainUrl = 'https://shamcrm.com/api';
+  
+  //print('Отправляем запрос на: $fixedDomainUrl/get-user-by-email');
+  //print('Email: $email');
+  
+  final response = await http.post(
+    Uri.parse('$fixedDomainUrl/get-user-by-email'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    },
+    body: json.encode({'email': email}),
+  );
 
-    // Очищаем все данные, кроме domainChecked и enteredDomain
-    // bool isCleared = await prefs.clear();
+  //print('Ответ сервера: ${response.statusCode}');
+  //print('Тело ответа: ${response.body}');
 
-    // // Восстанавливаем значения domainChecked и enteredDomain
-    // if (domainChecked != null) {
-    //   await prefs.setBool('domainChecked', domainChecked);
-    // }
-    // if (enteredDomain != null) {
-    //   await prefs.setString('enteredDomain', enteredDomain);
-    // }
-    // if (enteredMainDomain != null) {
-    //   await prefs.setString('enteredMainDomain', enteredMainDomain);
-    // }
-
-    // // Проверяем успешность очистки
-    // if (isCleared) {
-    //   ////print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
-    // } else {
-    //   ////print('Ошибка при очистке данных.');
-    // }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return {
+      'domain': data['domain'],
+      'login': data['login'],
+    };
+  } else {
+    throw Exception('Пользователь с таким email не найден');
   }
+}
 
+// Метод для сохранения данных после верификации email
+Future<void> saveEmailVerificationData(String domain, String login) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  // Сохраняем домен (то, что раньше было subdomain + domain)
+  // Например, domain приходит как "dilshodjonavezov2-back.shamcrm.com"
+  await prefs.setString('verifiedDomain', domain);
+  await prefs.setString('verifiedLogin', login);
+  
+  // Обновляем baseUrl для дальнейших запросов
+  baseUrl = 'https://$domain/api';
+  
+  ////print('Сохранены данные: домен=$domain, логин=$login');
+}
+
+// Метод для получения сохраненного логина
+Future<String?> getVerifiedLogin() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('verifiedLogin');
+}
+
+// Метод для получения сохраненного домена
+Future<String?> getVerifiedDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('verifiedDomain');
+}
+
+// Обновленный метод initialize для работы с новой логикой
+Future<void> initializeWithEmailFlow() async {
+  final domain = await getVerifiedDomain();
+  if (domain != null && domain.isNotEmpty) {
+    baseUrl = 'https://$domain/api';
+    baseUrlSocket = 'https://$domain/broadcasting/auth';
+    ////print('API инициализировано с доменом: $baseUrl');
+  } else {
+    throw Exception('Верифицированный домен не найден');
+  }
+}
+
+// Обновленный метод для сброса данных при логауте
+Future<void> clearEmailVerificationData() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('verifiedDomain');
+  await prefs.remove('verifiedLogin');
+}
   Future<void> _removePermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 

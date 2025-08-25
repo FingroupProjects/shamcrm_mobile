@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/login_model.dart';
+import 'package:crm_task_manager/models/user.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class LoginState extends Equatable {
@@ -13,30 +13,19 @@ class LoginInitial extends LoginState {}
 class LoginLoading extends LoginState {}
 
 class LoginLoaded extends LoginState {
-  final LoginResponse user;
+  final String token;
+  final User user;
 
-  const LoginLoaded(this.user);
-
-  @override
-  List<Object> get props => [user];
-}
-
-class CodeChecking extends LoginState {}
-
-class CodeChecked extends LoginState {
-  final String domain;
-  final String login;
-
-  const CodeChecked(this.domain, this.login);
+  const LoginLoaded(this.token, this.user);
 
   @override
-  List<Object> get props => [domain, login];
+  List<Object> get props => [token, user];
 }
 
 class LoginError extends LoginState {
   final String message;
 
-  const LoginError(this.message);
+  LoginError(this.message);
 
   @override
   List<Object> get props => [message];

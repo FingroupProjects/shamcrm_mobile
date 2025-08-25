@@ -1,33 +1,26 @@
-import 'dart:io';
+import 'dart:io'; // Добавляем для проверки платформы
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/widgets/forgot_password.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class LoginScreen extends StatefulWidget {
-  LoginScreen({Key? key}) : super(key: key);
-
-  @override
-  _LoginScreenState createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController codeController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  bool _isCodeChecked = false;
-  String? _login;
-
+class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final TextEditingController loginController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    final apiService = context.read<ApiService>();
     final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -35,28 +28,33 @@ class _LoginScreenState extends State<LoginScreen> {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
-              userID.value = state.user.user.id.toString();
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setString('token', state.user.token); // Сохраняем токен
-              // await prefs.setString('userName', state.user.user.name);
-              await prefs.setString('userID', state.user.user.id.toString());
-              // await prefs.setString('userLogin', state.user.user.login);
+              //print('Received userId: ${state.user.id}');
+              userID.value = state.user.id.toString();
 
-              if (state.user.user.role != null && state.user.user.role!.isNotEmpty) {
-                await prefs.setString('userRoleName', state.user.user.role![0].name);
-                String allRoles = state.user.user.role!.map((role) => role.name).join(', ');
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.setString('userName', state.user.name.toString());
+              await prefs.setString('userID', state.user.id.toString());
+              await prefs.setString('userLogin', state.user.login.toString());
+
+              // Сохраняем первую роль как раньше для обратной совместимости
+              if (state.user.role != null && state.user.role!.isNotEmpty) {
+                await prefs.setString('userRoleName', state.user.role![0].name);
+                // Сохраняем все роли в новое поле, соединяя их через запятую
+                String allRoles =
+                    state.user.role!.map((role) => role.name).join(', ');
                 await prefs.setString('userAllRoles', allRoles);
               } else {
                 await prefs.setString('userRoleName', 'No role assigned');
                 await prefs.setString('userAllRoles', 'No role assigned');
               }
 
+              // Получение и отправка FCM-токена с проверкой APNS
               try {
                 String? fcmToken;
                 if (Platform.isIOS) {
                   String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
                   if (apnsToken == null) {
-                    // print('APNS token is not available yet. Skipping FCM token retrieval.');
+                    //print('APNS token is not available yet. Skipping FCM token retrieval.');
                   } else {
                     fcmToken = await FirebaseMessaging.instance.getToken();
                   }
@@ -64,21 +62,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   fcmToken = await FirebaseMessaging.instance.getToken();
                 }
                 if (fcmToken != null) {
-                  await context.read<ApiService>().sendDeviceToken(fcmToken);
+                  await apiService.sendDeviceToken(fcmToken);
+                } else {
+                  //print('Failed to get FCM token');
                 }
               } catch (e) {
-                // print('Error getting FCM token: $e');
+                //print('Error getting FCM token: $e');
               }
 
-              final savedOrganization = await context.read<ApiService>().getSelectedOrganization();
+              final savedOrganization =
+                  await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
-                final organizations = await context.read<ApiService>().getOrganization();
+                final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
                   final firstOrganization = organizations.first;
-                  await context.read<ApiService>().saveSelectedOrganization(firstOrganization.id.toString());
+                  await apiService.saveSelectedOrganization(
+                      firstOrganization.id.toString());
                 }
               }
 
+              // Показываем анимацию 2 секунды перед переходом
               await Future.delayed(Duration(seconds: 2));
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
@@ -86,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      state.message,
+                      '${state.message}',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -106,15 +109,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               });
-            } else if (state is CodeChecked) {
-              setState(() {
-                _isCodeChecked = true;
-                _login = state.login;
-              });
             }
           },
           child: BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
+              final localizations = AppLocalizations.of(context);
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -139,71 +139,50 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   SizedBox(height: 16),
                   CustomTextField(
-                    controller: codeController,
-                    hintText: localizations.translate('login_id_hint'),
-                    label: localizations.translate('login_id_label'),
-                    enabled: !_isCodeChecked,
+                    controller: loginController,
+                    hintText: localizations.translate('login_username_hint'),
+                    label: localizations.translate('login_username_label'),
                   ),
-                  if (_isCodeChecked) ...[
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: passwordController,
-                      hintText: localizations.translate('login_password_hint'),
-                      label: localizations.translate('login_password_label'),
-                      isPassword: true,
-                    ),
-                  ],
                   SizedBox(height: 16),
-                  if (state is LoginLoading || state is CodeChecking)
+                  CustomTextField(
+                    controller: passwordController,
+                    hintText: localizations.translate('login_password_hint'),
+                    label: localizations.translate('login_password_label'),
+                    isPassword: true,
+                  ),
+                  SizedBox(height: 16),
+                  // Показываем анимацию загрузки для состояний LoginLoading и LoginLoaded
+                  if (state is LoginLoading || state is LoginLoaded)
                     Center(
                       child: CircularProgressIndicator(
                         color: Color(0xff1E2E52),
                       ),
                     )
+                  // Показываем кнопку только если состояние Initial или Error
                   else
                     CustomButton(
-                      buttonText: _isCodeChecked
-                          ? localizations.translate('login_button')
-                          : localizations.translate('check_code_button'),
+                      buttonText: localizations.translate('login_button'),
                       buttonColor: Color(0xff4F40EC),
                       textColor: Colors.white,
                       onPressed: () {
-                        if (!_isCodeChecked) {
-                          final code = codeController.text.trim();
-                          if (code.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(localizations.translate('enter_code_error')),
-                              ),
-                            );
-                            return;
-                          }
-                          context.read<LoginBloc>().add(CheckCode(code));
-                        } else {
-                          final password = passwordController.text.trim();
-                          if (password.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(localizations.translate('enter_password_error')),
-                              ),
-                            );
-                            return;
-                          }
-                          context.read<LoginBloc>().add(CheckLogin(_login!, password));
+                        final login = loginController.text.trim();
+                        final password = passwordController.text.trim();
+                        if (login.isEmpty || password.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(localizations
+                                  .translate('login_empty_fields_error')),
+                            ),
+                          );
+                          return;
                         }
+                        BlocProvider.of<LoginBloc>(context)
+                            .add(CheckLogin(login, password));
                       },
                     ),
                   SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      localizations.translate('forgot_password'),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xff4F40EC),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                  ForgotPassword(
+                    onPressed: () {},
                   ),
                 ],
               );
@@ -219,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
 
     if (!isPinSetupComplete) {
-      await prefs.setBool('isPinSetupComplete', true);
+      prefs.setBool('isPinSetupComplete', true);
       Navigator.pushReplacementNamed(context, '/pin_setup');
     } else {
       Navigator.pushReplacementNamed(context, '/pin_screen');

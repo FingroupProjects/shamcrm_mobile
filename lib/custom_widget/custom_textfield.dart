@@ -17,7 +17,9 @@ class CustomTextField extends StatefulWidget {
   final String? errorText;
   final bool hasError;
   final Color backgroundColor; 
-   final bool? enabled;
+  final bool? enabled;
+  final bool showEditButton; // Новое свойство для показа кнопки редактирования
+  final VoidCallback? onEditPressed; // Колбэк для кнопки редактирования
 
   CustomTextField({
     required this.controller,
@@ -35,7 +37,9 @@ class CustomTextField extends StatefulWidget {
     this.errorText,
     this.enabled,
     this.hasError = false,
-    this.backgroundColor = const Color(0xffF4F7FD), 
+    this.backgroundColor = const Color(0xffF4F7FD),
+    this.showEditButton = false, // По умолчанию скрыта
+    this.onEditPressed,
   });
 
   @override
@@ -66,8 +70,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
-           enabled: widget.enabled,
-          readOnly: widget.readOnly,
+          enabled: widget.showEditButton ? true : widget.enabled, // Всегда включено если есть кнопка редактирования
+          readOnly: widget.showEditButton ? true : widget.readOnly, // Только для чтения если есть кнопка редактирования
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
           maxLines: widget.maxLines,
@@ -87,23 +91,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             fillColor: widget.backgroundColor, 
             contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
-            suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Image.asset(
-                      _isPasswordVisible
-                          ? 'assets/icons/Profile/eye.png'
-                          : 'assets/icons/Profile/eye_close.png',
-                      width: 24,
-                      height: 24,
-                      color: const Color(0xff99A4BA),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
-                  )
-                : widget.suffixIcon,
+            suffixIcon: _buildSuffixIcon(),
             errorText: widget.errorText,
             errorStyle: const TextStyle(
               fontSize: 14,
@@ -114,6 +102,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: hasError ? Colors.red : Colors.transparent,
+              ),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey.shade300,
               ),
             ),
             errorBorder: OutlineInputBorder(
@@ -134,5 +128,38 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ),
       ],
     );
+  }
+
+  Widget? _buildSuffixIcon() {
+    // Приоритет: кнопка редактирования > кнопка пароля > обычная suffixIcon
+    if (widget.showEditButton && widget.onEditPressed != null) {
+      return IconButton(
+        icon: Icon(
+          Icons.edit,
+          color: Color(0xff4F40EC),
+          size: 20,
+        ),
+        onPressed: widget.onEditPressed,
+        tooltip: 'Редактировать',
+      );
+    } else if (widget.isPassword) {
+      return IconButton(
+        icon: Image.asset(
+          _isPasswordVisible
+              ? 'assets/icons/Profile/eye.png'
+              : 'assets/icons/Profile/eye_close.png',
+          width: 24,
+          height: 24,
+          color: const Color(0xff99A4BA),
+        ),
+        onPressed: () {
+          setState(() {
+            _isPasswordVisible = !_isPasswordVisible;
+          });
+        },
+      );
+    } else {
+      return widget.suffixIcon;
+    }
   }
 }
