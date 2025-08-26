@@ -465,15 +465,13 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       emit(OrderError('Ошибка обновления статуса: $e'));
     }
   }
-   Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
-  // //print('OrderBloc: Начало _changeOrderStatus для orderId=${event.orderId}, statusId=${event.statusId}');
+ Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
   try {
     final success = await apiService.changeOrderStatus(
       orderId: event.orderId,
       statusId: event.statusId,
       organizationId: event.organizationId,
     );
-    //print('OrderBloc: Результат смены статуса заказа: $success');
     if (success) {
       if (state is OrderLoaded) {
         final currentState = state as OrderLoaded;
@@ -487,39 +485,58 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
             .where((order) => order.id != event.orderId)
             .toList();
 
-        // Получаем обновлённые данные заказа с сервера
+        // Получаем обновлённый заказ с сервера
         final updatedOrder = await apiService.getOrderDetails(event.orderId);
 
         // Добавляем обновлённый заказ в список
         updatedOrders.add(updatedOrder);
 
-        //print('OrderBloc: Обновленные заказы: ${updatedOrders.map((o) => o.toJson()).toList()}');
         emit(OrderLoaded(
-          currentState.statuses,
+          currentState.statuses, // Сохраняем текущие статусы без обновления
           orders: updatedOrders,
           pagination: currentState.pagination,
           orderDetails: currentState.orderDetails,
         ));
-        //print('OrderBloc: Выдано состояние OrderLoaded после смены статуса');
 
-        // Запускаем событие для обновления вкладки с новым статусом
+        // Обновляем заказы для текущего статуса
         add(FetchOrders(
-          statusId: event.statusId,
+          statusId: currentState.statuses.firstWhere(
+              (status) => status.id == updatedOrder.orderStatus.id).id,
           page: 1,
           perPage: 20,
           forceRefresh: true,
+          query: _currentQuery,
+          managerIds: _currentManagerIds,
+          leadIds: _currentLeadIds,
+          fromDate: _currentFromDate,
+          toDate: _currentToDate,
+          status: _currentStatus,
+          paymentMethod: _currentPaymentMethod,
         ));
+
+        // Если статус изменился, обновляем заказы для старого статуса
+        if (updatedOrder.orderStatus.id != event.statusId) {
+          add(FetchOrders(
+            statusId: event.statusId,
+            page: 1,
+            perPage: 20,
+            forceRefresh: true,
+            query: _currentQuery,
+            managerIds: _currentManagerIds,
+            leadIds: _currentLeadIds,
+            fromDate: _currentFromDate,
+            toDate: _currentToDate,
+            status: _currentStatus,
+            paymentMethod: _currentPaymentMethod,
+          ));
+        }
       } else {
-        // Если текущее состояние не OrderLoaded, просто эмитируем успех
         emit(OrderSuccess(statusId: event.statusId));
-        //print('OrderBloc: Выдано состояние OrderSuccess');
       }
     } else {
-      //print('OrderBloc: Ошибка сервера при смене статуса заказа');
       emit(OrderError('Не удалось сменить статус заказа: сервер вернул ошибку'));
     }
   } catch (e) {
-    //print('OrderBloc: Ошибка при смене статуса заказа: $e');
     emit(OrderError('Ошибка смены статуса заказа: $e'));
   }
 }

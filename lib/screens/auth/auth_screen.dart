@@ -314,7 +314,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     );
                                   }
                                   return CustomButton(
-                                    buttonText: localizations.translate('login'),
+                                    buttonText: localizations.translate('Войти'),
                                     buttonColor: const Color(0xff4F40EC),
                                     textColor: Colors.white,
                                     onPressed: () {

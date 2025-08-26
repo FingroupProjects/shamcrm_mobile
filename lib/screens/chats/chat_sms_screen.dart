@@ -85,6 +85,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String? integrationUsername; // Новое поле для хранения username
   String? channelName; // Новое поле для хранения channel.name
   bool _hasMarkedMessagesAsRead = false;
+  bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
   
 
   void _onSearchChanged(String query) {
@@ -107,26 +108,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _checkPermissions();
-    context.read<MessagingCubit>().getMessages(widget.chatId);
-
-    context.read<ListenSenderFileCubit>().updateValue(false);
-    context.read<ListenSenderVoiceCubit>().updateValue(false);
-    context.read<ListenSenderTextCubit>().updateValue(false);
-
-    setUpServices();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-      _fetchBaseUrl();
-      if (widget.endPointInTab == 'lead') {
-        _fetchIntegration();
-      }
-      // Удален вызов _markMessagesAsRead, теперь он вызывается через BlocListener
-    });
-  }
+@override
+void initState() {
+  super.initState();
+  _checkPermissions();
+  context.read<ListenSenderFileCubit>().updateValue(false);
+  context.read<ListenSenderVoiceCubit>().updateValue(false);
+  context.read<ListenSenderTextCubit>().updateValue(false);
+  setUpServices();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _fetchBaseUrl(); // Ждём получения baseUrl
+    context.read<MessagingCubit>().getMessages(widget.chatId); // Вызываем после получения baseUrl
+    _scrollToBottom();
+    if (widget.endPointInTab == 'lead') {
+      await _fetchIntegration();
+    }
+  });
+}
 
   Future<void> _markMessagesAsRead() async {
     // Проверяем, не был ли метод уже вызван

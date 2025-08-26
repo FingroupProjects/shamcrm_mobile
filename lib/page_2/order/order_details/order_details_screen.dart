@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.da
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -28,6 +29,7 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.order,
     required this.categoryName,
     this.organizationId,
+    super.key,
   });
 
   @override
@@ -38,12 +40,109 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
   bool _canEditOrder = false;
+  int? currencyId; // Поле для хранения currency_id
 
   @override
   void initState() {
     super.initState();
-    _checkPermissions(); // Проверяем права доступа при инициализации
+    _checkPermissions();
+    _loadCurrencyId(); // Загружаем currencyId
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null || price <= 0) {
+      return '0 UZS'; // По умолчанию 0 UZS
+    }
+    String symbol = 'UZS'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = 'UZS';
+        if (kDebugMode) {
+          print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
   }
 
   Future<void> _checkPermissions() async {
@@ -60,11 +159,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
       );
       return;
-/*************  ✨ Windsurf Command ⭐  *************/
-  /// Fetches the order details from the server when the widget is initialized.
-  ///
-  /// This is done by adding a [FetchOrderDetails] event to the [OrderBloc].
-/*******  d02d3477-8d1b-40d3-ba4e-dd54d2d90d27  *******/    }
+    }
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
@@ -138,9 +233,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('price'),
-        'value': order.sum != null && order.sum! > 0
-            ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-            : AppLocalizations.of(context)!.translate('0')
+        'value': _formatPrice(order.sum)
       },
       {
         'label': AppLocalizations.of(context)!.translate('payment_method_title'),
@@ -283,7 +376,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-        if (_canEditOrder) // Условное отображение кнопки редактирования
+        if (_canEditOrder)
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

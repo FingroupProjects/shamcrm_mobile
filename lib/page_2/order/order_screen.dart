@@ -114,17 +114,47 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     }
   }
 
-  void _onStatusUpdated(int newStatusId) {
-    final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
-    if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
-      setState(() {
-        _currentTabIndex = newTabIndex;
-      });
-      _tabController.animateTo(newTabIndex);
-      _scrollToActiveTab();
-      _orderBloc.add(FetchOrders(statusId: newStatusId));
+void _onStatusUpdated(int newStatusId) {
+  final newTabIndex = _statuses.indexWhere((status) => status.id == newStatusId);
+  if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+    setState(() {
+      _currentTabIndex = newTabIndex;
+    });
+    _tabController.animateTo(newTabIndex);
+    _scrollToActiveTab();
+  }
+  // Обновляем заказы для текущего и нового статуса
+  if (_statuses.isNotEmpty) {
+    _orderBloc.add(FetchOrders(
+      statusId: _statuses[_currentTabIndex].id,
+      page: 1,
+      perPage: 20,
+      forceRefresh: true,
+      query: _isSearching ? _searchController.text : null,
+      managerIds: _currentFilters['managers'],
+      leadIds: _currentFilters['leads'],
+      fromDate: _currentFilters['fromDate'],
+      toDate: _currentFilters['toDate'],
+      status: _currentFilters['status'],
+      paymentMethod: _currentFilters['paymentMethod'],
+    ));
+    if (newTabIndex != _currentTabIndex) {
+      _orderBloc.add(FetchOrders(
+        statusId: newStatusId,
+        page: 1,
+        perPage: 20,
+        forceRefresh: true,
+        query: _isSearching ? _searchController.text : null,
+        managerIds: _currentFilters['managers'],
+        leadIds: _currentFilters['leads'],
+        fromDate: _currentFilters['fromDate'],
+        toDate: _currentFilters['toDate'],
+        status: _currentFilters['status'],
+        paymentMethod: _currentFilters['paymentMethod'],
+      ));
     }
   }
+}
 
   void _resetScreenState() {
     setState(() {
@@ -578,69 +608,96 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildCustomTabBar(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _scrollController,
-      child: Row(
-        children: [
-          ...List.generate(_statuses.length, (index) {
-            bool isActive = _tabController.index == index;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: GestureDetector(
-                key: _tabKeys[index],
-                onTap: () {
-                  _tabController.animateTo(index);
-                },
-                onLongPress: () {
-                  _showStatusOptions(context, index);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.white : Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: Text(
-                    _statuses[index].name,
-                    style: TaskStyles.tabTextStyle.copyWith(
-                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-                    ),
+ Widget _buildCustomTabBar(BuildContext context) {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    controller: _scrollController,
+    child: Row(
+      children: [
+        ...List.generate(_statuses.length, (index) {
+          bool isActive = _tabController.index == index;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: GestureDetector(
+              key: _tabKeys[index],
+              onTap: () {
+                _tabController.animateTo(index);
+              },
+              onLongPress: () {
+                _showStatusOptions(context, index);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.white : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isActive ? Colors.black : const Color(0xff99A4BA),
                   ),
                 ),
-              ),
-            );
-          }),
-          if (_canCreateOrderStatus)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: GestureDetector(
-                onTap: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (context) => CreateOrderStatusDialog(orderBloc: _orderBloc),
-                  );
-                },
-                child: const Text(
-                  '+',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _statuses[index].name,
+                      style: TaskStyles.tabTextStyle.copyWith(
+                        color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Transform.translate(
+                      offset: const Offset(12, 0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _statuses[index].ordersCount.toString(),
+                          style: TextStyle(
+                            color: isActive ? Colors.black : const Color(0xff99A4BA),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
+          );
+        }),
+        if (_canCreateOrderStatus)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: GestureDetector(
+              onTap: () async {
+                await showDialog(
+                  context: context,
+                  builder: (context) => CreateOrderStatusDialog(orderBloc: _orderBloc),
+                );
+              },
+              child: const Text(
+                '+',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
   Widget _buildFilteredView() {
     return BlocBuilder<OrderBloc, OrderState>(
       builder: (context, state) {
@@ -689,3 +746,63 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
     );
   }
 }
+
+/*
+теперь с сервера приходить order_count
+вот так{
+	"result": [
+		{
+			"id": 2,
+			"name": "dsfasdf",
+			"created_at": "2025-08-06T11:06:27.000000Z",
+			"updated_at": "2025-08-20T06:41:27.000000Z",
+			"is_success": 0,
+			"is_failed": 0,
+			"canceled": 0,
+			"notification_message": null,
+			"color": "#000",
+			"position": 1,
+			"orders_count": 1
+		},
+		{
+			"id": 1,
+			"name": "Тестовый статус",
+			"created_at": "2025-07-31T04:54:04.000000Z",
+			"updated_at": "2025-08-20T06:41:27.000000Z",
+			"is_success": 0,
+			"is_failed": 0,
+			"canceled": 0,
+			"notification_message": "Тестовый описание",
+			"color": "#000",
+			"position": 2,
+			"orders_count": 2
+		}
+	],
+	"errors": null
+}
+
+в запросе /order-status?organization_id=1 
+ее нужно вывести рядом с названием статуса
+вот так  Статус (кол-во)  Например: Новый (3)
+в модели OrderStatus добавить поле final int ordersCount;
+в конструктор и в fromJson добавить
+    required this.ordersCount,
+    ordersCount: json['orders_count'] ?? 0, // Убедимся, что orders_count читается
+в виджете _buildCustomTabBar
+изменить Text(
+                    _statuses[index].name,   
+                    style: TaskStyles.tabTextStyle.copyWith(
+                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                    ),
+                  ),
+                  Text(
+                    '(${_statuses[index].ordersCount})',
+                    style: TaskStyles.tabTextStyle.copyWith(
+                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                    ),
+                  ),
+
+кстати еще момент при смене статуса заказа тогда страница вообще обнолуяется и заного получает статусы и заказы
+можно сделать так что бы при смене статуса заказа не обнулялась страница а просто перезагружались заказы в текущем статусе и в новом статусе
+все больше нечего не нужно и кстати нужно сделать так чтобы при смене статуса заказа order_count в статусах не изменился а стоял как есть все реализуй 
+*/

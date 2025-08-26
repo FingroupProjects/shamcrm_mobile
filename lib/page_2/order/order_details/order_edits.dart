@@ -24,8 +24,11 @@ import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderEditScreen extends StatefulWidget {
   final Order order;
@@ -49,69 +52,163 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedDialCode;
   String? baseUrl;
   List<Branch> branches = [];
+  int? currencyId; // Поле для хранения currency_id
 
   @override
-void initState() {
-  super.initState();
-  _phoneController = TextEditingController();
-  _commentController = TextEditingController(text: widget.order.commentToCourier);
-  _items = widget.order.goods.map((good) {
-    final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
-        ? good.variantGood!.files[0].path
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController();
+    _commentController = TextEditingController(text: widget.order.commentToCourier);
+    _items = widget.order.goods.map((good) {
+      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
+          ? good.variantGood!.files[0].path
+          : null;
+      return {
+        'id': good.goodId,
+        'name': good.goodName,
+        'price': good.price,
+        'quantity': good.quantity,
+        'imagePath': imagePath,
+      };
+    }).toList();
+    selectedLead = widget.order.lead.id.toString();
+    selectedManager = widget.order.manager?.id.toString();
+    _selectedDeliveryAddress = widget.order.deliveryAddress != null
+        ? DeliveryAddress(
+            id: widget.order.deliveryAddressId ?? 0,
+            address: widget.order.deliveryAddress ?? '',
+            leadId: widget.order.lead.id,
+            isActive: 0,
+            createdAt: '',
+            updatedAt: '',
+          )
         : null;
-    return {
-      'id': good.goodId,
-      'name': good.goodName,
-      'price': good.price,
-      'quantity': good.quantity,
-      'imagePath': imagePath,
-    };
-  }).toList();
-  selectedLead = widget.order.lead.id.toString();
-  selectedManager = widget.order.manager?.id.toString();
-  _selectedDeliveryAddress = widget.order.deliveryAddress != null
-      ? DeliveryAddress(
-          id: widget.order.deliveryAddressId ?? 0,
-          address: widget.order.deliveryAddress ?? '',
-          leadId: widget.order.lead.id,
-          isActive: 0,
-          createdAt: '',
-          updatedAt: '',
-        )
-      : null;
 
-  if (widget.order.branchId != null && widget.order.branchName != null) {
-    _selectedBranch = Branch(
-      id: widget.order.branchId!,
-      name: widget.order.branchName!,
-      address: '', isActive: 0,
-    );
-  }
+    if (widget.order.branchId != null && widget.order.branchName != null) {
+      _selectedBranch = Branch(
+        id: widget.order.branchId!,
+        name: widget.order.branchName!,
+        address: '',
+        isActive: 0,
+      );
+    }
 
-  String phoneText = widget.order.phone;
-  // Проверяем, является ли номер телефона валидным (только цифры и минимум 2 символа)
-  if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
-    for (var country in countries) {
-      if (phoneText.startsWith(country.dialCode)) {
-        selectedDialCode = country.dialCode;
-        _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
-        break;
+    String phoneText = widget.order.phone;
+    if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
+      for (var country in countries) {
+        if (phoneText.startsWith(country.dialCode)) {
+          selectedDialCode = country.dialCode;
+          _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
+          break;
+        }
       }
     }
-  }
-  // Если номер некорректный, устанавливаем значение по умолчанию
-  if (selectedDialCode == null) {
-    selectedDialCode = '+992';
-    _phoneController.text = phoneText;
+    if (selectedDialCode == null) {
+      selectedDialCode = '+992';
+      _phoneController.text = phoneText;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeBaseUrl();
+      _loadCurrencyId(); // Загружаем currencyId
+      context.read<BranchBloc>().add(FetchBranches());
+      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    });
   }
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initializeBaseUrl();
-    context.read<BranchBloc>().add(FetchBranches());
-    context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-  });
-}
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('OrderEditScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderEditScreen: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('OrderEditScreen: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderEditScreen: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null) price = 0;
+    String symbol = '₽'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('OrderEditScreen: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+        if (kDebugMode) {
+          print('OrderEditScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('OrderEditScreen: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
+  }
 
   @override
   void didChangeDependencies() {
@@ -164,9 +261,6 @@ void initState() {
             ? '$selectedDialCode${_phoneController.text}'
             : _phoneController.text,
       ),
-      // manager: selectedManager != null
-      //     ? ManagerData(id: int.parse(selectedManager!), name: widget.order.manager?.name ?? '')
-      //     : widget.order.manager,
       goods: _items.map((item) {
         final goodItem = GoodItem(
           id: item['id'],
@@ -228,7 +322,6 @@ void initState() {
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
         BlocProvider(create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
-        // BlocProvider(create: (context) => GetAllManagerBloc(context.read<ApiService>())), // Добавляем GetAllManagerBloc
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -238,7 +331,7 @@ void initState() {
             if (state is OrderSuccess) {
               showCustomSnackBar(
                 context: context,
-                message: AppLocalizations.of(context)!.translate('order_updated_successfully'), // Изменено на 'success'
+                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
                 isSuccess: true,
               );
               Navigator.pop(context, true);
@@ -460,7 +553,7 @@ void initState() {
                   ),
                 ),
                 Text(
-                  '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
+                  _formatPrice(total),
                   style: const TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
@@ -564,7 +657,7 @@ void initState() {
                         ),
                       ),
                       Text(
-                        '${item['price'].toStringAsFixed(3)}',
+                        _formatPrice(item['price']),
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -588,7 +681,7 @@ void initState() {
                         ),
                       ),
                       Text(
-                        '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                        _formatPrice(item['price'] * (item['quantity'] ?? 1)),
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',

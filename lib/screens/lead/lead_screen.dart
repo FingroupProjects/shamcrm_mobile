@@ -851,6 +851,8 @@ Future<void> _onRefresh(int currentStatusId) async {
         floatingActionButton: _tabTitles.isNotEmpty
             ? FloatingActionButton(
                 key: keyFloatingActionButton,
+
+
                 onPressed: () {
                   print('LeadScreen: FloatingActionButton pressed');
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -1210,94 +1212,104 @@ Future<void> _onRefresh(int currentStatusId) async {
     });
   }
 
+// Обновленный метод _buildTabButton в LeadScreen
 Widget _buildTabButton(int index) {
   bool isActive = _tabController.index == index;
 
-  return BlocBuilder<LeadBloc, LeadState>(
-    builder: (context, state) {
-      int leadCount = 0;
+  return FutureBuilder<int>(
+    future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
+    builder: (context, snapshot) {
+      // Сначала пробуем получить count из постоянного кэша
+      int leadCount = snapshot.data ?? 0;
+      
+      // Если в постоянном кэше нет данных, пробуем другие источники
+      if (leadCount == 0) {
+        return BlocBuilder<LeadBloc, LeadState>(
+          builder: (context, state) {
+            // Используем данные из состояния только если нет постоянного счетчика
+            if (state is LeadLoaded) {
+              final statusId = _tabTitles[index]['id'];
+              final leadStatus = state.leadStatuses.firstWhere(
+                (status) => status.id == statusId,
+                orElse: () => LeadStatus(
+                  id: 0,
+                  title: '',
+                  leadsCount: 0,
+                  isSuccess: false,
+                  position: 1,
+                  isFailure: false,
+                ),
+              );
+              leadCount = leadStatus.leadsCount;
+              
+              // Сразу сохраняем в постоянный кэш
+              LeadCache.setPersistentLeadCount(statusId, leadCount);
+            } else if (state is LeadDataLoaded && state.leadCounts.containsKey(_tabTitles[index]['id'])) {
+              leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
+              
+              // Сразу сохраняем в постоянный кэш
+              LeadCache.setPersistentLeadCount(_tabTitles[index]['id'], leadCount);
+            }
 
-      // Используем данные из LeadLoaded для счетчиков, как в TaskScreen
-      if (state is LeadLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        final leadStatus = state.leadStatuses.firstWhere(
-          (status) => status.id == statusId,
-          orElse: () => LeadStatus(
-            id: 0,
-            title: '',
-            leadsCount: 0,
-            isSuccess: false,
-            position: 1,
-            isFailure: false,
-          ),
+            return _buildTabButtonUI(index, isActive, leadCount);
+          },
         );
-        leadCount = leadStatus.leadsCount;
-      } else if (state is LeadDataLoaded) {
-        // Используем leadCounts из LeadDataLoaded, если доступно
-        leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-      } else {
-        // Попробуем взять leadsCount из кэша, если состояние не LeadLoaded или LeadDataLoaded
-        LeadCache.getLeadStatuses().then((statuses) {
-          final status = statuses.firstWhere(
-            (s) => s['id'] == _tabTitles[index]['id'],
-            orElse: () => {'leads_count': 0},
-          );
-          if (mounted) {
-            setState(() {
-              leadCount = status['leads_count'] ?? 0;
-            });
-          }
-        });
       }
-
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-          print('LeadScreen: Tab button tapped, index: $index');
-        },
-        onLongPress: () {
-          _showStatusOptions(context, index);
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    leadCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      
+      // Если есть постоянный счетчик, используем его напрямую
+      return _buildTabButtonUI(index, isActive, leadCount);
     },
+  );
+}
+
+// Вспомогательный метод для построения UI кнопки табы
+Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
+  return GestureDetector(
+    key: _tabKeys[index],
+    onTap: () {
+      _tabController.animateTo(index);
+      print('LeadScreen: Tab button tapped, index: $index');
+    },
+    onLongPress: () {
+      _showStatusOptions(context, index);
+    },
+    child: Container(
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _tabTitles[index]['title'],
+            style: TaskStyles.tabTextStyle.copyWith(
+              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(12, 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                leadCount.toString(),
+                style: TextStyle(
+                  color: isActive ? Colors.black : const Color(0xff99A4BA),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 

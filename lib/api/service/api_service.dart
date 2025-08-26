@@ -258,9 +258,6 @@ Future<void> _initializeIfDomainExists() async {
   await clearEmailVerificationData();
 }
 // Метод для получения информации о пользователе по email
-// Добавить эти методы в класс ApiService
-
-// Метод для получения информации о пользователе по email
 Future<Map<String, String>> getUserByEmail(String email) async {
   // Используем фиксированный домен shamcrm.com
   const String fixedDomainUrl = 'https://shamcrm.com/api';
@@ -322,12 +319,9 @@ Future<String?> getVerifiedDomain() async {
 // Обновленный метод initialize для работы с новой логикой
 Future<void> initializeWithEmailFlow() async {
   final domain = await getVerifiedDomain();
-  if (domain != null && domain.isNotEmpty) {
+  if (domain != null) {
     baseUrl = 'https://$domain/api';
     baseUrlSocket = 'https://$domain/broadcasting/auth';
-    ////print('API инициализировано с доменом: $baseUrl');
-  } else {
-    throw Exception('Верифицированный домен не найден');
   }
 }
 
@@ -337,6 +331,8 @@ Future<void> clearEmailVerificationData() async {
   await prefs.remove('verifiedDomain');
   await prefs.remove('verifiedLogin');
 }
+
+
   Future<void> _removePermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -627,26 +623,42 @@ Future<Map<String, String?>> getEnteredDomain() async {
 
 // Метод для проверки логина и пароля
 Future<LoginResponse> login(LoginModel loginModel) async {
-  // Эндпоинт /login входит в _excludedEndpoints, поэтому не используем _appendQueryParams
   final organizationId = await getSelectedOrganization();
-  ////print("------------------------ $organizationId");
   final response = await _postRequest(
-      '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      loginModel.toJson());
+    '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    loginModel.toJson(),
+  );
 
-  // Выводим ответ от сервера в консоль
-  ////print("Response from server: ${response.body}");
+  print('Login response: ${response.body}');
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
     final loginResponse = LoginResponse.fromJson(data);
 
     await _saveToken(loginResponse.token);
-    // await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
+    await savePermissions(loginResponse.permissions);
+    if (loginResponse.organizationId != null) {
+      print('Saving organization_id: ${loginResponse.organizationId}');
+      await saveSelectedOrganization(loginResponse.organizationId!);
+    } else {
+      print('Warning: organization_id is null in login response, falling back to /organization');
+      // Запрашиваем список организаций, если organization_id не получен
+      final organizationsResponse = await _getRequest('/organization');
+      if (organizationsResponse.statusCode == 200) {
+        final organizations = json.decode(organizationsResponse.body);
+        if (organizations is List && organizations.isNotEmpty) {
+          final firstOrganizationId = organizations[0]['id']?.toString();
+          if (firstOrganizationId != null) {
+            print('Saving first organization_id: $firstOrganizationId');
+            await saveSelectedOrganization(firstOrganizationId);
+          }
+        }
+      }
+    }
 
     return loginResponse;
   } else {
-    throw Exception('Неправильный Логин или Пароль!');
+    throw Exception('Неправильный Логин или Пароль! Status: ${response.statusCode}');
   }
 }
 
@@ -5956,16 +5968,19 @@ Future<List<Organization>> getOrganization() async {
 
 // Сохранение выбранной организации
 Future<void> saveSelectedOrganization(String organizationId) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selectedOrganization', organizationId);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_organization', organizationId);
+  print('Saved organization_id to SharedPreferences: $organizationId');
 }
 
 // Получение выбранной организации
 Future<String?> getSelectedOrganization() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('selectedOrganization');
+  final prefs = await SharedPreferences.getInstance();
+  final organizationId = prefs.getString('selected_organization');
+  print('Retrieved organization_id from SharedPreferences: $organizationId');
+  // Временное решение: возвращаем "1", если organizationId == null
+  return organizationId ?? '1';
 }
-
 // Метод для удаления токена (используется при логауте)
 Future<void> _removeOrganizationId() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -6149,48 +6164,28 @@ Future<String> _appendQueryParams(String path) async {
   final organizationId = await getSelectedOrganization();
   final salesFunnelId = await getSelectedSalesFunnel();
 
-  if (kDebugMode) {
-    //print('ApiService: _appendQueryParams called for path: $path');
-    //print('ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
-    if (salesFunnelId == null) {
-      //print('ApiService: Warning - sales_funnel_id is null in SharedPreferences');
-    }
-  }
+  print('ApiService: _appendQueryParams called for path: $path');
+  print('ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
 
-  // Разделяем путь на основную часть и query-часть
   final uri = Uri.parse(path);
   final basePath = uri.path;
   final existingQueryParams = uri.queryParametersAll;
-
-  if (kDebugMode) {
-    //print('ApiService: basePath: $basePath, existingQueryParams: $existingQueryParams');
-  }
 
   final Map<String, List<String>> newQueryParams = {};
   existingQueryParams.forEach((key, values) {
     newQueryParams[key] = values.map((value) => value.toString()).toList();
   });
 
+  // Добавляем organization_id, если он не null и отсутствует в параметрах
   if (organizationId != null && !newQueryParams.containsKey('organization_id')) {
-    newQueryParams['organization_id'] = [organizationId.toString()];
-    if (kDebugMode) {
-      //print('ApiService: Added organization_id=$organizationId');
-    }
+    newQueryParams['organization_id'] = [organizationId];
+    print('ApiService: Added organization_id=$organizationId');
   }
 
   bool isExcluded = _excludedEndpoints.any((endpoint) => basePath.startsWith(endpoint));
-  if (kDebugMode) {
-    //print('ApiService: isExcluded: $isExcluded for path: $basePath');
-  }
   if (!isExcluded && salesFunnelId != null && !newQueryParams.containsKey('sales_funnel_id')) {
-    newQueryParams['sales_funnel_id'] = [salesFunnelId.toString()];
-    if (kDebugMode) {
-      //print('ApiService: Added sales_funnel_id=$salesFunnelId');
-    }
-  } else if (!isExcluded && salesFunnelId == null) {
-    if (kDebugMode) {
-      //print('ApiService: Skipped adding sales_funnel_id because it is null');
-    }
+    newQueryParams['sales_funnel_id'] = [salesFunnelId];
+    print('ApiService: Added sales_funnel_id=$salesFunnelId');
   }
 
   final queryString = newQueryParams.entries
@@ -6200,10 +6195,8 @@ Future<String> _appendQueryParams(String path) async {
       .join('&');
 
   final finalPath = queryString.isEmpty ? basePath : '$basePath?$queryString';
-  if (kDebugMode) {
-    //print('ApiService: Generated queryString: $queryString');
-    //print('ApiService: Final path: $finalPath');
-  }
+  print('ApiService: Generated queryString: $queryString');
+  print('ApiService: Final path: $finalPath');
   return finalPath;
 }
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//

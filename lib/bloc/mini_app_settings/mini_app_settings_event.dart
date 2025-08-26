@@ -1,5 +1,5 @@
-part of 'mini_app_settings_bloc.dart';
+// part of 'mini_app_settings_bloc.dart';
 
-abstract class MiniAppSettingsEvent {}
+// abstract class MiniAppSettingsEvent {}
 
-class FetchMiniAppSettingsEvent extends MiniAppSettingsEvent {}
+// class FetchMiniAppSettingsEvent extends MiniAppSettingsEvent {}

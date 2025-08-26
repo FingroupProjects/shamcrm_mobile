@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -5,6 +6,7 @@ import 'package:crm_task_manager/page_2/order/order_details/order_details_screen
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_status_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -49,7 +51,7 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
         content: Text(
           'Наличными',
           style: const TextStyle(
-            fontSize: 11, // Уменьшил с 12 до 11
+            fontSize: 11,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             color: Color.fromARGB(255, 242, 242, 242),
@@ -65,11 +67,11 @@ PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) 
         content: Transform.translate(
           offset: const Offset(0.0, 0),
           child: Transform.scale(
-            scaleY: 1.1, // Немного уменьшил масштаб
+            scaleY: 1.1,
             scaleX: 1.1,
             child: Image.asset(
               'assets/icons/alif.png',
-              width: 55, // Уменьшил размер
+              width: 55,
               height: 26,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => Text(
@@ -173,11 +175,63 @@ class _OrderCardState extends State<OrderCard> {
     _loadCurrencyId();
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД загрузки currencyId с дополнительной отладкой
   Future<void> _loadCurrencyId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currencyId = prefs.getInt('currency_id') ?? 0;
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+      
+      if (kDebugMode) {
+        print('OrderCard: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+      
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+      
+      // Если значение не найдено или равно 0, попробовать загрузить из API
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderCard: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 0;
+      });
+    }
+  }
+
+  // НОВЫЙ МЕТОД для загрузки currency_id из API если его нет в кэше
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+      
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+        
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+        
+        if (kDebugMode) {
+          print('OrderCard: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderCard: Ошибка загрузки currency_id из API: $e');
+      }
+      // Устанавливаем значение по умолчанию
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
   }
 
   Color _getStatusTextColor(int statusId) {
@@ -196,9 +250,15 @@ class _OrderCardState extends State<OrderCard> {
     return DateFormat('dd.MM.yyyy').format(date);
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД _formatSum с дополнительной отладкой
   String _formatSum(double? sum) {
     if (sum == null) sum = 0;
     String symbol = '₽';
+    
+    if (kDebugMode) {
+      print('OrderCard: _formatSum вызван с currency_id: $currencyId');
+    }
+    
     switch (currencyId) {
       case 1:
         symbol = '\$';
@@ -213,8 +273,16 @@ class _OrderCardState extends State<OrderCard> {
         symbol = 'TJS';
         break;
       default:
-        symbol = '₽';
+        symbol = '\$';
+        if (kDebugMode) {
+          print('OrderCard: Используется валюта по умолчанию (₽) для currency_id: $currencyId');
+        }
     }
+    
+    if (kDebugMode) {
+      print('OrderCard: Выбранный символ валюты: $symbol для суммы: $sum');
+    }
+    
     return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
@@ -250,8 +318,8 @@ class _OrderCardState extends State<OrderCard> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16), // Увеличил вертикальные отступы
-        padding: const EdgeInsets.all(20), // Увеличил внутренние отступы с 16 до 20
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 244, 247, 254),
           borderRadius: BorderRadius.circular(12),
@@ -276,7 +344,7 @@ class _OrderCardState extends State<OrderCard> {
                     'Заказ №${widget.order.orderNumber}',
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 18, // Уменьшил с 20 до 18
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
                     ),
@@ -296,7 +364,7 @@ class _OrderCardState extends State<OrderCard> {
                           'Создан: ${_formatDate(widget.order.createdAt)}',
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
-                            fontSize: 13, // Еще больше уменьшил для экономии места
+                            fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: Color(0xff99A4BA),
                           ),
@@ -304,9 +372,9 @@ class _OrderCardState extends State<OrderCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 4), // Уменьшил отступ
+                      const SizedBox(width: 4),
                       SizedBox(
-                        width: 32, // Ограничил ширину иконки
+                        width: 32,
                         height: 18,
                         child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
                       ),
@@ -315,7 +383,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            SizedBox(height: hasLongContent ? 18 : 14), // Адаптивный отступ
+            SizedBox(height: hasLongContent ? 18 : 14),
             
             // Статус и сумма
             Row(
@@ -352,7 +420,7 @@ class _OrderCardState extends State<OrderCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Увеличил отступы
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -360,7 +428,7 @@ class _OrderCardState extends State<OrderCard> {
                             child: Text(
                               dropdownValue,
                               style: const TextStyle(
-                                fontSize: 15, // Уменьшил с 16 до 15
+                                fontSize: 15,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
@@ -371,7 +439,7 @@ class _OrderCardState extends State<OrderCard> {
                           const SizedBox(width: 6),
                           Image.asset(
                             'assets/icons/tabBar/dropdown.png',
-                            width: 18, // Немного уменьшил иконку
+                            width: 18,
                             height: 18,
                           ),
                         ],
@@ -386,7 +454,7 @@ class _OrderCardState extends State<OrderCard> {
                     _formatSum(widget.order.sum),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 22, // Уменьшил с 24 до 22
+                      fontSize: 22,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
                     ),
@@ -397,7 +465,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            SizedBox(height: hasLongContent ? 20 : 16), // Адаптивный отступ
+            SizedBox(height: hasLongContent ? 20 : 16),
             
             // Способ оплаты и менеджер
             Row(
@@ -411,17 +479,17 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                     child: IntrinsicWidth(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Увеличил отступы
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
-                          borderRadius: BorderRadius.circular(6), // Немного увеличил радиус
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16), // Отступ между элементами
+                const SizedBox(width: 16),
                 Flexible(
                   flex: 1,
                   child: Container(
@@ -430,7 +498,7 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                     child: IntrinsicWidth(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Увеличил отступы
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE9EDF5),
                           borderRadius: BorderRadius.circular(6),
@@ -438,7 +506,7 @@ class _OrderCardState extends State<OrderCard> {
                         child: Text(
                           widget.order.manager?.name ?? 'Система',
                           style: const TextStyle(
-                            fontSize: 11, // Уменьшил с 12 до 11
+                            fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
                             color: Color(0xff99A4BA),
@@ -453,7 +521,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            SizedBox(height: hasLongContent ? 20 : 16), // Адаптивный отступ
+            SizedBox(height: hasLongContent ? 20 : 16),
             
             // Клиент и номер телефона
             Row(
@@ -465,15 +533,15 @@ class _OrderCardState extends State<OrderCard> {
                       const Icon(
                         Icons.person,
                         color: Color(0xff99A4BA),
-                        size: 22, // Немного уменьшил иконку
+                        size: 22,
                       ),
-                      const SizedBox(width: 6), // Увеличил отступ
+                      const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           widget.order.lead.name,
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
-                            fontSize: 16, // Уменьшил с 18 до 16
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: Color(0xff1E2E52),
                           ),
@@ -492,7 +560,7 @@ class _OrderCardState extends State<OrderCard> {
                         : AppLocalizations.of(context)!.translate('no_phone'),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 15, // Уменьшил с 16 до 15
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
                     ),
@@ -503,7 +571,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 4), // Небольшой отступ снизу для завершения
+            const SizedBox(height: 4),
           ],
         ),
       ),

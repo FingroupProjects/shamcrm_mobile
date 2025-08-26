@@ -58,28 +58,26 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .animate(_animationController);
   }
 
- Future<void> _fetchMiniAppSettings() async {
+Future<void> _fetchMiniAppSettings() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final organizationId = await _apiService.getSelectedOrganization();
+    print('Fetching MiniAppSettings for organizationId: $organizationId');
     
     final settingsList = await _apiService.getMiniAppSettings(organizationId);
     
     if (settingsList.isNotEmpty) {
       final settings = settingsList.first;
+      print('Saving currency_id: ${settings.currencyId}');
       await prefs.setInt('currency_id', settings.currencyId);
-      
-      if (kDebugMode) {
-        //print('MiniAppSettings: currency_id сохранён: ${settings.currencyId}');
-      }
+    } else {
+      print('No settings found for organizationId: $organizationId');
     }
   } catch (e) {
-    //print('Error fetching mini-app settings: $e');
+    print('Error fetching mini-app settings: $e');
     final prefs = await SharedPreferences.getInstance();
     final savedCurrencyId = prefs.getInt('currency_id');
-    if (savedCurrencyId != null) {
-      //print('MiniAppSettings: currency_id загружен из кэша: $savedCurrencyId');
-    }
+    print('Using cached currency_id: $savedCurrencyId');
   }
 }
 

@@ -2,12 +2,14 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_state.dart';
-
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order order;
@@ -27,11 +29,13 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   int _currentPage = 1;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  int? currencyId; // Поле для хранения currency_id
 
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
+    _loadCurrencyId(); // Загружаем currencyId при инициализации
     context.read<VariantBloc>().add(FetchVariants(page: _currentPage));
     _resetVariantSelection();
     _scrollController.addListener(_onScroll);
@@ -50,6 +54,99 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         baseUrl = 'https://shamcrm.com/storage/';
       });
     }
+  }
+
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('ProductSelectionSheetAdd: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null) price = 0;
+    String symbol = '₽'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('ProductSelectionSheetAdd: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+        if (kDebugMode) {
+          print('ProductSelectionSheetAdd: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('ProductSelectionSheetAdd: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
   }
 
   void _resetVariantSelection() {
@@ -370,6 +467,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               color: Color(0xff1E2E52)),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _formatPrice(variant.price),
+          style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff4759FF)),
         ),
         if (variant.isSelected) ...[
           const SizedBox(height: 8),

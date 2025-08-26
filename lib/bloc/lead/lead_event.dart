@@ -64,39 +64,7 @@ class FetchMoreLeads extends LeadEvent {
 
   FetchMoreLeads(this.statusId, this.currentPage);
 }
-// ДОБАВЬТЕ ЭТИ СОБЫТИЯ В lead_event.dart:
 
-class UpdateLeadStatusLocally extends LeadEvent {
-  final int statusId;
-  final bool refreshCurrentStatus;
-  
-  UpdateLeadStatusLocally(this.statusId, {this.refreshCurrentStatus = false});
-  
-  @override
-  List<Object?> get props => [statusId, refreshCurrentStatus];
-}
-
-class RefreshLeadCounts extends LeadEvent {
-  @override
-  List<Object?> get props => [];
-}
-
-class MoveLeadBetweenStatuses extends LeadEvent {
-  final int leadId;
-  final int fromStatusId;
-  final int toStatusId;
-  final Map<String, dynamic> updatedLeadData;
-  
-  MoveLeadBetweenStatuses({
-    required this.leadId,
-    required this.fromStatusId, 
-    required this.toStatusId,
-    required this.updatedLeadData,
-  });
-  
-  @override
-  List<Object?> get props => [leadId, fromStatusId, toStatusId, updatedLeadData];
-}
 class UpdateLeadCounts extends LeadEvent {
   final int statusId;
   final int count;
@@ -162,6 +130,15 @@ class CreateLead extends LeadEvent {
     this.isSystemManager = false,
     required this.localizations,
   });
+}
+
+// Новое событие для обновления статуса лида
+class UpdateLeadStatus extends LeadEvent {
+  final int leadId;
+  final int oldStatusId;
+  final int newStatusId;
+
+  UpdateLeadStatus(this.leadId, this.oldStatusId, this.newStatusId);
 }
 class UpdateLead extends LeadEvent {
   final int leadId;
@@ -253,3 +230,9 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.localizations,
   );
 }
+class UpdateLeadStatusCount extends LeadEvent {
+  final int oldStatusId;
+  final int newStatusId;
+  UpdateLeadStatusCount(this.oldStatusId, this.newStatusId);
+}
+class RestoreCountsFromCache extends LeadEvent {}

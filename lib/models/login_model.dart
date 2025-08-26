@@ -18,11 +18,13 @@ class LoginResponse {
   final String token;
   final User user;
   final List<String> permissions;
+  final String? organizationId; // Новое поле для organization_id
 
   LoginResponse({
     required this.token,
     required this.user,
     required this.permissions,
+    this.organizationId, // Может быть null, если сервер не возвращает
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class LoginResponse {
       token: json['token'],
       user: User.fromMap(json['user']),
       permissions: List<String>.from(json['permissions']),
+      organizationId: json['organization_id']?.toString(), // Извлекаем organization_id
     );
   }
 
@@ -38,6 +41,7 @@ class LoginResponse {
       'token': token,
       'user': user.toMap(),
       'permissions': permissions,
+      'organization_id': organizationId,
     };
   }
 }

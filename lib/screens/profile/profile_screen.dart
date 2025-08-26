@@ -265,19 +265,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _loadSelectedOrganization() async {
-    final savedOrganization = await ApiService().getSelectedOrganization();
-    if (savedOrganization != null) {
-      setState(() {
-        _selectedOrganization = savedOrganization;
-      });
-    } else {
-      final firstOrganization = await _getFirstOrganization();
-      if (firstOrganization != null) {
-        _onOrganizationChanged(firstOrganization);
-      }
+ Future<void> _loadSelectedOrganization() async {
+  final savedOrganization = await ApiService().getSelectedOrganization();
+  setState(() {
+    _selectedOrganization = savedOrganization;
+  });
+  if (_selectedOrganization == null) {
+    final firstOrganization = await _getFirstOrganization();
+    if (firstOrganization != null) {
+      await _onOrganizationChanged(firstOrganization);
     }
   }
+}
 
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
