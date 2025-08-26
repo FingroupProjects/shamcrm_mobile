@@ -16,7 +16,8 @@ class DealById {
   final List<DealCustomFieldsById> dealCustomFields;
   final DealStatusById? dealStatus;
   final List<DirectoryValue>? directoryValues;
-  final List<DealFiles>? files; // Добавляем поле для файлов
+  final List<DealFiles>? files;
+  final int? dealNumber; // Новое поле
 
   DealById({
     required this.id,
@@ -34,6 +35,7 @@ class DealById {
     this.dealStatus,
     this.directoryValues,
     this.files,
+    this.dealNumber, // Инициализация нового поля
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
@@ -52,11 +54,11 @@ class DealById {
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)?.map((field) => DealCustomFieldsById.fromJson(field)).toList() ?? [],
       dealStatus: json['deal_status'] != null ? DealStatusById.fromJson(json['deal_status']) : null,
       directoryValues: (json['directory_values'] as List<dynamic>?)?.map((dirValue) => DirectoryValue.fromJson(dirValue)).toList(),
-      files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [], // Парсим файлы
+      files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [],
+      dealNumber: json['deal_number'] is int ? json['deal_number'] : null, // Парсинг deal_number
     );
   }
 }
-
 class DealFiles {
   final int id;
   final String name;

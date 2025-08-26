@@ -18,9 +18,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     final double? sum;
     final String? paymentMethod; // Add this field
     final String? paymentStatus; // Новое поле
-        final DateTime? createdAt;
-
-
+    final DateTime? createdAt;
 
     Order({
       required this.id,

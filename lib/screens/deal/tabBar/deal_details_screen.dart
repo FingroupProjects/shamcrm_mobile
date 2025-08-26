@@ -443,78 +443,93 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(
-          context, AppLocalizations.of(context)!.translate('view_deal')),
-      backgroundColor: Colors.white,
-      body: BlocListener<DealByIdBloc, DealByIdState>(
-        listener: (context, state) {
-          if (state is DealByIdError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
+@override
+Widget build(BuildContext context) {
+  return BlocListener<DealByIdBloc, DealByIdState>(
+    listener: (context, state) {
+      if (state is DealByIdError) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate(state.message),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
-              );
-            });
-          }
-        },
-        child: BlocBuilder<DealByIdBloc, DealByIdState>(
-          builder: (context, state) {
-            if (state is DealByIdLoading) {
-              return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-            } else if (state is DealByIdLoaded) {
-              DealById deal = state.deal;
-              _updateDetails(deal);
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 8),
-                    ActionHistoryWidget(
-                        dealId: int.parse(widget.dealId), key: keyDealHistory),
-                    const SizedBox(height: 16),
-                    if (_canReadTasks)
-                      Container(
-                          key: keyDealTasks,
-                          child: TasksWidget(dealId: int.parse(widget.dealId))),
-                  ],
-                ),
-              );
-            } else if (state is DealByIdError) {
-              return Center(
-                  child: Text(
-                      AppLocalizations.of(context)!.translate('error_text')));
-            }
-            return Center(child: Text(''));
-          },
-        ),
-      ),
-    );
-  }
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        });
+      }
+    },
+    child: BlocBuilder<DealByIdBloc, DealByIdState>(
+      builder: (context, state) {
+        if (state is DealByIdLoading) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+          );
+        } else if (state is DealByIdLoaded) {
+          DealById deal = state.deal;
+          _updateDetails(deal);
+          return Scaffold(
+            appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_deal'), deal),
+            backgroundColor: Colors.white,
+            body: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: ListView(
+                children: [
+                  _buildDetailsList(),
+                  const SizedBox(height: 8),
+                  ActionHistoryWidget(
+                      dealId: int.parse(widget.dealId), key: keyDealHistory),
+                  const SizedBox(height: 16),
+                  if (_canReadTasks)
+                    Container(
+                        key: keyDealTasks,
+                        child: TasksWidget(dealId: int.parse(widget.dealId))),
+                ],
+              ),
+            ),
+          );
+        } else if (state is DealByIdError) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+                child: Text(
+                    AppLocalizations.of(context)!.translate('error_text'))),
+          );
+        }
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(child: Text('')),
+        );
+      },
+    ),
+  );
+}
+ AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {
+    // Формируем заголовок в зависимости от наличия номера сделки
+    String appBarTitle;
+    if (deal?.dealNumber != null) {
+      appBarTitle = '${AppLocalizations.of(context)!.translate('view_deal')} №${deal!.dealNumber}';
+    } else {
+      appBarTitle = AppLocalizations.of(context)!.translate('view_deal');
+    }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -540,7 +555,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          title,
+          appBarTitle,
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -598,8 +613,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       description: currentDeal!.description ?? '',
                       dealCustomFields: currentDeal!.dealCustomFields,
                       directoryValues: currentDeal!.directoryValues,
-                        files:
-                                currentDeal!.files, // Ensure files are passed
+                      files: currentDeal!.files,
                     ),
                   ),
                 );

@@ -237,6 +237,9 @@ void _resetFilters() {
 
         // Загружаем сохранённую воронку
         apiService.getSelectedChatSalesFunnel().then((funnelId) {
+          if (kDebugMode) {
+        print('ChatsScreen: ApiService initialized with baseUrl: ${apiService.baseUrl}');
+      }
           print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
           if (funnelId != null && mounted) {
             final funnel = SalesFunnel(
@@ -1242,3 +1245,14 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     );
   }
 }
+
+
+/*
+Короче раньше все было идеално сейчас вообще соккет не работает то есть как раньше когда я был в чате собеседника и оннаписал смс сразу приходил и показывался а сейчас когда напишет нечего мне не приходть и чтобы прочитать нужно выйти из страницы и заного захожть сервер все идеально отправляет, знаешь я не понимаю в соккетах так как раньше написал соккет бывший сотрудник по этому сейчас сначала скажи мне а потом реши и что нужно тебе скинуть не знаю кстати если случайно я сделал соккет 
+с сервера вот это приходиить App\Events\MessageRead Broadcast	0	
+App\Events\ChatUpdated Broadcast	0	
+App\Events\MessageSent Broadcast но не знаю почему то у меня не работает 
+
+короче посмотри тщательно и скажи что нужно скинуть я скину
+
+*/

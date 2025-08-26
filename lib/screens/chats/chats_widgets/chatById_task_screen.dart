@@ -3,7 +3,10 @@ import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +15,162 @@ class TaskByIdScreen extends StatelessWidget {
   final int chatId;
 
   TaskByIdScreen({required this.chatId});
+
+  void _showUsersDialog(BuildContext context, List<String> users) {
+    List<String> userNamesList = users.map((user) => user.trim()).toList();
+
+    String dialogTitle = userNamesList.length == 1
+        ? AppLocalizations.of(context)!.translate('assignee')
+        : AppLocalizations.of(context)!.translate('assignees');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  dialogTitle,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 400,
+                child: ListView.builder(
+                  itemExtent: 40,
+                  itemCount: userNamesList.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                      title: Text(
+                        '${index + 1}. ${userNamesList[index]}',
+                        style: TextStyle(
+                          color: Color(0xff1E2E52),
+                          fontSize: 16,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildInfoRow(
+    BuildContext context,
+    dynamic task,
+    String title,
+    String value,
+    IconData? icon,
+    String? customIconPath,
+  ) {
+    Widget content;
+
+    final clickableStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      fontFamily: 'Gilroy',
+      color: Color(0xff1E2E52),
+      decoration: TextDecoration.underline,
+    );
+
+    final normalStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      fontFamily: 'Gilroy',
+      color: Color(0xff1E2E52),
+    );
+
+    if (title == AppLocalizations.of(context)!.translate('task_name_profile')) {
+      content = GestureDetector(
+        onTap: () {
+          if (task.id != null && task.name.isNotEmpty) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => TaskDetailsScreen(
+                  taskId: task.id.toString(),
+                  taskName: task.name,
+                  taskStatus: task.taskStatus?.taskStatus?.name ?? '',
+                  statusId: task.taskStatus?.id ?? 0,
+                  taskCustomFields: [],
+                ),
+              ),
+            );
+          } else {
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!.translate('task_data_missing'),
+              isSuccess: false,
+            );
+          }
+        },
+        child: Text(value, style: clickableStyle),
+      );
+    } else {
+      content = Text(value, style: normalStyle);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        customIconPath != null
+            ? Image.asset(customIconPath, width: 32, height: 32)
+            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff6E7C97),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              content,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildDivider() {
+    return const Divider(
+      color: Color(0xffE1E6F0),
+      thickness: 1,
+      height: 24,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +250,8 @@ class TaskByIdScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('task_name_profile'),
                               task.name,
@@ -98,6 +259,8 @@ class TaskByIdScreen extends StatelessWidget {
                               null),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('number_task'),
                               task.taskNumber.toString(),
@@ -105,6 +268,8 @@ class TaskByIdScreen extends StatelessWidget {
                               null),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('priority_level'),
                               priorityLevelText,
@@ -112,13 +277,17 @@ class TaskByIdScreen extends StatelessWidget {
                               null),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('status_lead_profile'),
-                              task.taskStatus.taskStatus!.name ?? "no_comment",
+                              task.taskStatus.taskStatus?.name ?? "no_comment",
                               Icons.assignment,
                               null),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!.translate('author'),
                               task.authorName,
                               Icons.person,
@@ -129,6 +298,8 @@ class TaskByIdScreen extends StatelessWidget {
                               _showUsersDialog(context, userNamesList);
                             },
                             child: buildInfoRow(
+                              context,
+                              task,
                               userNamesList.length == 1
                                   ? AppLocalizations.of(context)!
                                       .translate('assignee')
@@ -144,6 +315,8 @@ class TaskByIdScreen extends StatelessWidget {
                           ),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('from_list'),
                               formattedFromDate,
@@ -151,6 +324,8 @@ class TaskByIdScreen extends StatelessWidget {
                               null),
                           buildDivider(),
                           buildInfoRow(
+                              context,
+                              task,
                               AppLocalizations.of(context)!
                                   .translate('to_list'),
                               formattedToDate,
@@ -171,122 +346,6 @@ class TaskByIdScreen extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
-
-  void _showUsersDialog(BuildContext context, List<String> users) {
-    List<String> userNamesList = users.map((user) => user.trim()).toList();
-
-    // Проверка количества исполнителей
-    String dialogTitle = userNamesList.length == 1
-        ? AppLocalizations.of(context)!.translate('assignee')
-        : AppLocalizations.of(context)!.translate('assignees');
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  dialogTitle, // Используем динамическое название
-                  style: TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 400,
-                child: ListView.builder(
-                  itemExtent: 40,
-                  itemCount: userNamesList.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                      title: Text(
-                        '${index + 1}. ${userNamesList[index]}',
-                        style: TextStyle(
-                          color: Color(0xff1E2E52),
-                          fontSize: 16,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!
-                      .translate('close'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildInfoRow(
-      String title, String value, IconData? icon, String? customIconPath) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        customIconPath != null
-            ? Image.asset(customIconPath, width: 32, height: 32)
-            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-                   maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildDivider() {
-    return const Divider(
-      color: Color(0xffE1E6F0),
-      thickness: 1,
-      height: 24,
     );
   }
 }

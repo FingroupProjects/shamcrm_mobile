@@ -1066,215 +1066,150 @@ Widget inputWidget() {
     return '${directory.path}/$fileName';
   }
 
-  void setUpServices() async {
-    debugPrint('--------------------------- start socket:::::::');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint(exception);
-      },
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
-
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
-
-    socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String UUID = prefs.getString('userID') ?? '';
-
-        Message msg;
-        if (mm.message?.type == 'voice' ||
-            mm.message?.type == 'file' ||
-            mm.message?.type == 'image' ||
-            mm.message?.type == 'document') {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            filePath: mm.message?.filePath.toString() ?? '',
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            duration: Duration(
-                seconds: (mm.message?.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        } else {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        }
-
-        setState(() {
-          context.read<MessagingCubit>().updateMessageFromSocket(msg);
-        });
-
-        if (!msg.isMyMessage) {
-          await _audioPlayer.setAsset('assets/audio/get.mp3');
-          await _audioPlayer.play();
-        }
-
-        _scrollToBottom();
-      });
-      myPresenceChannel.bind('chat.messageEdited').listen((event) async {
-        try {
-          MessageSocketData mm = messageSocketDataFromJson(event.data);
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          String UUID = prefs.getString('userID') ?? '';
-          //print('userID : $UUID');
-
-          Message msg;
-          if (mm.message?.type == 'voice' ||
-              mm.message?.type == 'file' ||
-              mm.message?.type == 'image' ||
-              mm.message?.type == 'document') {
-            ForwardedMessage? forwardedMessage;
-            if (mm.message?.forwardedMessage != null) {
-              forwardedMessage =
-                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-            }
-
-            msg = Message(
-              id: mm.message?.id ?? 0,
-              filePath: mm.message?.filePath.toString() ?? '',
-              text: mm.message?.text ?? mm.message?.type ?? '',
-              type: mm.message?.type ?? '',
-              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                  mm.message?.sender?.type == 'user'),
-              createMessateTime: mm.message?.createdAt?.toString() ?? '',
-              duration: Duration(
-                  seconds: (mm.message?.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20),
-              senderName: mm.message?.sender?.name ?? 'Unknown sender',
-              forwardedMessage: forwardedMessage,
-              isChanged: mm.message?.isChanged ?? false,
-              isRead: true,
-            );
-          } else {
-            ForwardedMessage? forwardedMessage;
-            if (mm.message?.forwardedMessage != null) {
-              forwardedMessage =
-                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-            }
-            msg = Message(
-              id: mm.message?.id ?? 0,
-              text: mm.message?.text ?? mm.message?.type ?? '',
-              type: mm.message?.type ?? '',
-              createMessateTime: mm.message?.createdAt?.toString() ?? '',
-              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                  mm.message?.sender?.type == 'user'),
-              senderName: mm.message?.sender?.name ?? 'Unknown sender',
-              forwardedMessage: forwardedMessage,
-              isChanged: mm.message?.isChanged ?? false,
-              isRead: true,
-            );
-          }
-
-          setState(() {
-            context.read<MessagingCubit>().updateMessageFromSocket(msg);
-          });
-        } catch (e) {
-          //print('Error processing messageEdited event: $e');
-        }
-      });
-
-      myPresenceChannel.bind('chat.pinned').listen((event) async {
-        try {
-          final data = jsonDecode(event.data);
-          final type = data['type'];
-          final messageData = data['message'];
-          final message = Message.fromJson(messageData);
-          final messageId = message.id;
-
-          if (type == 'pinned') {
-            context.read<MessagingCubit>().pinMessageFromSocket(message);
-          } else if (type == 'unpinned') {
-            context.read<MessagingCubit>().unpinMessageFromSocket(messageId);
-          }
-        } catch (e) {
-          //print("Error handling pinned event: $e");
-        }
-      });
-
-      myPresenceChannel.bind('chat.read').listen((event) async {
-        final readData = jsonDecode(event.data);
-        if (readData['messages'] is List) {
-          context
-              .read<MessagingCubit>()
-              .updateMessageReadStatusFromSocket(readData);
-          setState(() {});
-        } else {
-          //print(
-              // 'Error: Expected "messages" to be a List but found ${readData['messages']}');
-        }
-      });
-    });
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      if (kDebugMode) {
-        //print(e);
-      }
-    }
+ void setUpServices() async {
+  debugPrint('Setting up socket for chatId: ${widget.chatId}');
+  final prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
+  if (token == null || token.isEmpty) {
+    debugPrint('Error: Token is null or empty');
+    return;
   }
+
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  String? enteredDomain = enteredDomainMap['enteredDomain'];
+  debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
+
+  if (enteredMainDomain == null || enteredDomain == null) {
+    debugPrint('Error: Invalid domain parameters');
+    return;
+  }
+
+  final customOptions = PusherChannelsOptions.custom(
+    uriResolver: (metadata) =>
+        Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+    metadata: PusherChannelsOptionsMetadata.byDefault(),
+  );
+
+  socketClient = PusherChannelsClient.websocket(
+    options: customOptions,
+    connectionErrorHandler: (exception, trace, refresh) {
+      debugPrint('Socket connection error: $exception');
+    },
+    minimumReconnectDelayDuration: const Duration(seconds: 1),
+  );
+
+  final myPresenceChannel = socketClient.presenceChannel(
+    'presence-chat.${widget.chatId}',
+    authorizationDelegate:
+        EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Tenant': '$enteredDomain-back',
+      },
+      onAuthFailed: (exception, trace) {
+        debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception');
+      },
+    ),
+  );
+
+  socketClient.onConnectionEstablished.listen((_) {
+    debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
+    myPresenceChannel.subscribeIfNotUnsubscribed();
+    debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
+  });
+
+  // socketClient.onConnectionError.listen((error) {
+  //   debugPrint('Socket connection error: $error');
+  // });
+
+  // socketClient.onConnectionStateChange.listen((state) {
+  //   debugPrint('Socket state changed: $state');
+  // });
+
+  myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
+    debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
+  });
+
+  // myPresenceChannel.bindAll().listen((event) {
+  //   debugPrint('Received event: ${event.name}, data: ${event.data}');
+  // });
+
+  chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+    debugPrint('Received chat.message event: ${event.data}');
+    try {
+      MessageSocketData mm = messageSocketDataFromJson(event.data);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String UUID = prefs.getString('userID') ?? '';
+
+      Message msg;
+      if (mm.message?.type == 'voice' ||
+          mm.message?.type == 'file' ||
+          mm.message?.type == 'image' ||
+          mm.message?.type == 'document') {
+        ForwardedMessage? forwardedMessage;
+        if (mm.message?.forwardedMessage != null) {
+          forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+        }
+
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          filePath: mm.message?.filePath.toString() ?? '',
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+              mm.message?.sender?.type == 'user'),
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          duration: Duration(
+              seconds: (mm.message?.voiceDuration != null)
+                  ? double.parse(mm.message!.voiceDuration.toString()).round()
+                  : 20),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+          forwardedMessage: forwardedMessage,
+        );
+      } else {
+        ForwardedMessage? forwardedMessage;
+        if (mm.message?.forwardedMessage != null) {
+          forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+        }
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+              mm.message?.sender?.type == 'user'),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+          forwardedMessage: forwardedMessage,
+        );
+      }
+
+      setState(() {
+        context.read<MessagingCubit>().updateMessageFromSocket(msg);
+        debugPrint('Message added to MessagingCubit: $msg');
+      });
+
+      if (!msg.isMyMessage) {
+        await _audioPlayer.setAsset('assets/audio/get.mp3');
+        await _audioPlayer.play();
+        debugPrint('Played notification sound for incoming message');
+      }
+
+      _scrollToBottom();
+      debugPrint('Scrolled to bottom after receiving message');
+    } catch (e) {
+      debugPrint('Error processing chat.message event: $e');
+    }
+  });
+
+  try {
+    await socketClient.connect();
+    debugPrint('Socket connection initiated');
+  } catch (e) {
+    debugPrint('Error connecting to socket: $e');
+  }
+}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {

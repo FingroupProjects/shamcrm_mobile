@@ -313,9 +313,12 @@ Future<String?> getVerifiedLogin() async {
 // Метод для получения сохраненного домена
 Future<String?> getVerifiedDomain() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('verifiedDomain');
+  final verifiedDomain = prefs.getString('verifiedDomain');
+  if (kDebugMode) {
+    print('ApiService: getVerifiedDomain - verifiedDomain: $verifiedDomain');
+  }
+  return verifiedDomain;
 }
-
 // Обновленный метод initialize для работы с новой логикой
 Future<void> initializeWithEmailFlow() async {
   final domain = await getVerifiedDomain();
@@ -500,26 +503,16 @@ Future<void> sendDeviceToken(String deviceToken) async {
 Future<void> saveQrData(String mainDomain, String domain, String login,
     String token, String userId, String organizationId) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  // Сохраняем данные из QR-кода
-  await prefs.setString('domain', domain ?? '');
-  ////print(prefs.getString('domain'));
-  await prefs.setString('mainDomain', mainDomain ?? '');
-  ////print(prefs.getString('mainDomain'));
-  await prefs.setString('userLogin', login ?? '');
-  ////print(prefs.getString('userLogin'));
+  await prefs.setString('domain', domain);
+  await prefs.setString('mainDomain', mainDomain);
+  await prefs.setString('userLogin', login);
   await prefs.setString('token', token);
-  ////print(prefs.getString('token'));
-  await prefs.setString('userID', userId ?? '');
-  ////print(prefs.getString('userID'));
-  await prefs.setString('selectedOrganization', organizationId ?? '');
-  ////print(prefs.getString('selectedOrganization'));
-
-  // После сохранения обновляем информацию
-  await saveDomainChecked(true);
-  await saveDomain(mainDomain, domain);
+  await prefs.setString('userID', userId);
+  await prefs.setString('selectedOrganization', organizationId);
+  if (kDebugMode) {
+    print('ApiService: saveQrData - domain: $domain, mainDomain: $mainDomain, organizationId: $organizationId');
+  }
 }
-
 // Метод для получения данных из QR-кода
 Future<Map<String, String?>> getQrData() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -611,7 +604,9 @@ Future<Map<String, String?>> getEnteredDomain() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? mainDomain = prefs.getString('enteredMainDomain');
   String? domain = prefs.getString('enteredDomain');
-
+  if (kDebugMode) {
+    print('ApiService: getEnteredDomain - mainDomain: $mainDomain, domain: $domain');
+  }
   return {
     'enteredMainDomain': mainDomain,
     'enteredDomain': domain,
@@ -4753,7 +4748,7 @@ Future<PaginationDTO<Chats>> getAllChats(
       if (filters['statuses'] != null && (filters['statuses'] as List).isNotEmpty) {
         List<String> statusIds = (filters['statuses'] as List).cast<String>();
         for (String statusId in statusIds) {
-          path += '&statuses[]=$statusId';
+          path += '&leadStatus[]=$statusId';
         }
         //print('ApiService.getAllChats: Added statuses: $statusIds');
       }
@@ -4966,7 +4961,7 @@ Future<ChatsGetId> getChatById(int chatId) async {
 Future<String> sendMessages(List<int> messageIds) async {
   final token = await getToken();
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/v2/chat/read');
+  final path = await _appendQueryParams('/chat/read');
   if (kDebugMode) {
     //print('ApiService: sendMessages - Generated path: $path');
   }
@@ -5510,32 +5505,64 @@ Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
 
 // create new client
 Future<Map<String, dynamic>> createNewClient(String userID) async {
-  final token = await getToken();
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/chat/createChat/$userID');
-  if (kDebugMode) {
-    //print('ApiService: createNewClient - Generated path: $path');
-  }
+  try {
+    // Инициализируем baseUrl, если он ещё не установлен
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      await initialize();
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        throw Exception('baseUrl is not defined after initialization. Please ensure domain is set.');
+      }
+    }
 
-  final response = await http.post(
-    Uri.parse('$baseUrl$path'),
-    headers: {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    },
-  );
+    final token = await getToken();
+    final path = await _appendQueryParams('/chat/createChat/$userID');
+    
+    // Проверка organization_id
+    final organizationId = await getSelectedOrganization();
+    if (organizationId == null) {
+      if (kDebugMode) {
+        print('ApiService: createNewClient - Using fallback organization_id=1');
+      }
+    }
 
-  if (kDebugMode) {
-    // ////print('Статус ответа!');
-    // ////print('data!');
-  }
+    if (kDebugMode) {
+      print('ApiService: createNewClient - Base URL: $baseUrl');
+      print('ApiService: createNewClient - Generated path: $path');
+      print('ApiService: createNewClient - Token: $token');
+      print('ApiService: createNewClient - Organization ID: $organizationId');
+    }
 
-  if (response.statusCode == 200) {
-    var jsonResponse = jsonDecode(response.body);
-    var chatId = jsonResponse['result']['id']; // Извлекаем chatId
-    return {'chatId': chatId}; // Возвращаем chatId
-  } else {
-    throw Exception('Failed to create chat');
+    final response = await http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'user_id': userID,
+        'organization_id': organizationId, // Используем organizationId напрямую, так как есть fallback в getSelectedOrganization
+      }),
+    );
+
+    if (kDebugMode) {
+      print('ApiService: createNewClient - Status code: ${response.statusCode}');
+      print('ApiService: createNewClient - Response body: ${response.body}');
+    }
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      var chatId = jsonResponse['result']['id'];
+      return {'chatId': chatId};
+    } else {
+      throw Exception('Failed to create chat: ${response.statusCode} - ${response.body}');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: createNewClient - Error: $e');
+    }
+    throw Exception('Failed to create chat: $e');
   }
 }
 
@@ -6166,6 +6193,7 @@ Future<String> _appendQueryParams(String path) async {
 
   print('ApiService: _appendQueryParams called for path: $path');
   print('ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
+  print('ApiService: Excluded endpoints: $_excludedEndpoints');
 
   final uri = Uri.parse(path);
   final basePath = uri.path;
@@ -6176,7 +6204,6 @@ Future<String> _appendQueryParams(String path) async {
     newQueryParams[key] = values.map((value) => value.toString()).toList();
   });
 
-  // Добавляем organization_id, если он не null и отсутствует в параметрах
   if (organizationId != null && !newQueryParams.containsKey('organization_id')) {
     newQueryParams['organization_id'] = [organizationId];
     print('ApiService: Added organization_id=$organizationId');

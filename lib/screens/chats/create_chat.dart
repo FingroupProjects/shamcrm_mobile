@@ -258,57 +258,50 @@ class _AddClientDialogState extends State<AddClientDialog> {
     );
   }
 
-  Widget _buildCreateButton(BuildContext context) {
-    return CustomButton(
-      buttonText: isGroupChat ? AppLocalizations.of(context)!.translate('create') : AppLocalizations.of(context)!.translate('create'),
-      onPressed: () {
-        bool hasError = false;
-        setState(() {
-          // Validate for Group Chat
-          if (isGroupChat) {
-            if (groupNameController.text.isEmpty) {
-              groupNameError =  AppLocalizations.of(context)!.translate('enter_chat_group');
-              hasError = true;
-            } else {
-              groupNameError = null;
-            }
-
-            if (selectedUsers.isEmpty) {
-              selectedUsersError =  AppLocalizations.of(context)!.translate('select_at_least_one_user');
-              hasError = true;
-            } else {
-              selectedUsersError = null;
-            }
-
-            if (!hasError) {
-                final localizations = AppLocalizations.of(context)!;
-
-              context.read<GroupChatBloc>().add(
-                    CreateGroupChat(
-                      name: groupNameController.text,
-                      userId: selectedUsers.map((user) => user.id!).toList(),
-                      localizations: localizations,
-                    ),
-                  );
-            }
+ Widget _buildCreateButton(BuildContext context) {
+  return CustomButton(
+    buttonText: isGroupChat ? AppLocalizations.of(context)!.translate('create') : AppLocalizations.of(context)!.translate('create'),
+    onPressed: () {
+      bool hasError = false;
+      setState(() {
+        if (isGroupChat) {
+          if (groupNameController.text.isEmpty) {
+            groupNameError = AppLocalizations.of(context)!.translate('enter_chat_group');
+            hasError = true;
           } else {
-            if (selectedUserData == null) {
-              selectedUsersError = AppLocalizations.of(context)!.translate('please_select_user');
-              hasError = true;
-            } else {
-              selectedUsersError = null;
-            }
-
-            if (!hasError) {
-              context.read<CreateClientBloc>().add(
-                    CreateClientEv(userId: selectedUserData!.id.toString()),
-                  );
-            }
+            groupNameError = null;
           }
-        });
-      },
-      buttonColor: AppColors.primaryBlue,
-      textColor: Colors.white,
-    );
-  }
+          if (selectedUsers.isEmpty) {
+            selectedUsersError = AppLocalizations.of(context)!.translate('select_at_least_one_user');
+            hasError = true;
+          } else {
+            selectedUsersError = null;
+          }
+          if (!hasError) {
+            final localizations = AppLocalizations.of(context)!;
+            context.read<GroupChatBloc>().add(
+                  CreateGroupChat(
+                    name: groupNameController.text,
+                    userId: selectedUsers.map((user) => user.id!).toList(),
+                    localizations: localizations,
+                  ),
+                );
+          }
+        } else {
+          if (selectedUserData == null) {
+            selectedUsersError = AppLocalizations.of(context)!.translate('please_select_user');
+            hasError = true;
+          } else {
+            selectedUsersError = null;
+            context.read<CreateClientBloc>().add(
+                  CreateClientEv(userId: selectedUserData!.id.toString()),
+                );
+          }
+        }
+      });
+    },
+    buttonColor: AppColors.primaryBlue,
+    textColor: Colors.white,
+  );
+}
 }
