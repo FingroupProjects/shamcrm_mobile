@@ -36,209 +36,49 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     isInitialized = false;
   }
 
-  void _onDetect(BarcodeCapture barcodeCapture) async {
-    if (!isInitialized && barcodeCapture.barcodes.isNotEmpty) {
-      isInitialized = true;
-      final String? scanData = barcodeCapture.barcodes.first.rawValue;
+void _onDetect(BarcodeCapture barcodeCapture) async {
+  if (!isInitialized && barcodeCapture.barcodes.isNotEmpty) {
+    isInitialized = true;
+    final String? scanData = barcodeCapture.barcodes.first.rawValue;
 
-      if (scanData != null) {
-        //print('Сканированный QR-код: $scanData');
-
-        try {
-          String base64String = scanData;
-          Uint8List bytes = base64Decode(base64String);
-
-          String decodedString = utf8.decode(bytes);
-          //print('Декодированная строка: $decodedString');
-
-          String cleanedResult = decodedString.replaceAll('-back?', '?');
-          List<String> qrParts = cleanedResult.split('?');
-
-          String token = qrParts[0];
-          String domain = qrParts[2];
-          String mainDomain = qrParts[1];
-          String userId = qrParts[3];
-          String login = qrParts[4];
-          String organizationId = qrParts[5];
-
-          //print('Token: $token');
-          //print('Domain: $domain');
-          //print('MainDomain: $mainDomain');
-          //print('User ID: $userId');
-          //print('Login: $login');
-          //print('Organization ID: $organizationId');
-
-          await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
-          await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
-
-          await controller.stop();
-
-          final apiService = context.read<ApiService>();
-
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
-          String? fcmToken = await FirebaseMessaging.instance.getToken();
-          if (fcmToken != null) {
-            await apiService.sendDeviceToken(fcmToken);
-          }
-        } catch (e, stackTrace) {
-          //print('Ошибка при декодировании Base64: $e');
-          //print('Стек вызовов: $stackTrace');
-          //print('Исходные данные сканирования: $scanData');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Неверный формат QR-кода!',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'QR-код не найден!',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null) {
-      final file = File(result.files.single.path!);
-      //print('Файл выбран: ${file.path}');
-
+    if (scanData != null) {
       try {
-        final BarcodeCapture? barcodeCapture = await controller.analyzeImage(file.path);
+        String base64String = scanData;
+        Uint8List bytes = base64Decode(base64String);
 
-        if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
-          final String? qrCode = barcodeCapture.barcodes.first.rawValue;
-          //print('QR-код из изображения: $qrCode');
+        String decodedString = utf8.decode(bytes);
 
-          if (qrCode != null) {
-            try {
-              String base64String = qrCode;
-              Uint8List bytes = base64Decode(base64String);
+        String cleanedResult = decodedString.replaceAll('-back?', '?');
+        List<String> qrParts = cleanedResult.split('?');
 
-              String decodedString = utf8.decode(bytes);
-              //print('Декодированная строка: $decodedString');
+        String token = qrParts[0];
+        String domain = qrParts[2];
+        String mainDomain = qrParts[1];
+        String userId = qrParts[3];
+        String login = qrParts[4];
+        String organizationId = qrParts[5];
 
-              String cleanedResult = decodedString.replaceAll('-back?', '?');
-              List<String> qrParts = cleanedResult.split('?');
+        // ВАЖНО: Сначала инициализируем домен
+        await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+        
+        // Затем сохраняем данные QR (это также инициализирует baseUrl заново)
+        await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
-              String token = qrParts[0];
-              String domain = qrParts[2];
-              String mainDomain = qrParts[1];
-              String userId = qrParts[3];
-              String login = qrParts[4];
-              String organizationId = qrParts[5];
+        await controller.stop();
 
-              //print('Token: $token');
-              //print('Domain: $domain');
-              //print('MainDomain: $mainDomain');
-              //print('User ID: $userId');
-              //print('Login: $login');
-              //print('Organization ID: $organizationId');
+        final apiService = context.read<ApiService>();
 
-              await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
-              await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
-
-              final apiService = context.read<ApiService>();
-
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
-              String? fcmToken = await FirebaseMessaging.instance.getToken();
-              if (fcmToken != null) {
-                await apiService.sendDeviceToken(fcmToken);
-              }
-            } catch (e) {
-              //print('Ошибка при декодировании Base64: $e');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Неверный формат QR-кода!',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          }
-        } else {
-          //print('QR-код не найден');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'QR-код не найден в изображении!',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+        
+        String? fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          await apiService.sendDeviceToken(fcmToken);
         }
-      } catch (e) {
-        //print('Ошибка при обработке файла: $e');
+      } catch (e, stackTrace) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Ошибка при обработке файла!',
+              'Неверный формат QR-кода!',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -260,6 +100,102 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       }
     }
   }
+}
+
+Future<void> _pickFile() async {
+  final result = await FilePicker.platform.pickFiles(type: FileType.image);
+  if (result != null) {
+    final file = File(result.files.single.path!);
+
+    try {
+      final BarcodeCapture? barcodeCapture = await controller.analyzeImage(file.path);
+
+      if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
+        final String? qrCode = barcodeCapture.barcodes.first.rawValue;
+
+        if (qrCode != null) {
+          try {
+            String base64String = qrCode;
+            Uint8List bytes = base64Decode(base64String);
+
+            String decodedString = utf8.decode(bytes);
+
+            String cleanedResult = decodedString.replaceAll('-back?', '?');
+            List<String> qrParts = cleanedResult.split('?');
+
+            String token = qrParts[0];
+            String domain = qrParts[2];
+            String mainDomain = qrParts[1];
+            String userId = qrParts[3];
+            String login = qrParts[4];
+            String organizationId = qrParts[5];
+
+            // ВАЖНО: Сначала инициализируем домен
+            await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+            
+            // Затем сохраняем данные QR (это также инициализирует baseUrl заново)
+            await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
+
+            final apiService = context.read<ApiService>();
+
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+            
+            String? fcmToken = await FirebaseMessaging.instance.getToken();
+            if (fcmToken != null) {
+              await apiService.sendDeviceToken(fcmToken);
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Неверный формат QR-кода!',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ошибка при обработке файла!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {

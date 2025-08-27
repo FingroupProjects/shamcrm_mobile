@@ -124,10 +124,21 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
+// Также нужно обновить метод _initializeIfDomainExists
 Future<void> _initializeIfDomainExists() async {
-  // Проверяем новую логику
+  // Проверяем новую логику (email)
   String? verifiedDomain = await getVerifiedDomain();
   if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    await initialize();
+    return;
+  }
+  
+  // Проверяем данные QR-кода
+  Map<String, String?> qrData = await getQrData();
+  String? qrDomain = qrData['domain'];
+  String? qrMainDomain = qrData['mainDomain'];
+  
+  if (qrDomain != null && qrDomain.isNotEmpty && qrMainDomain != null && qrMainDomain.isNotEmpty) {
     await initialize();
     return;
   }
@@ -140,48 +151,68 @@ Future<void> _initializeIfDomainExists() async {
 }
 
 
-  Future<void> initialize() async {
-  // Проверяем, есть ли данные от email-flow
-  String? verifiedDomain = await getVerifiedDomain();
-  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-    baseUrl = 'https://$verifiedDomain/api';
-    baseUrlSocket = 'https://$verifiedDomain/broadcasting/auth';
-    return;
-  }
-  
-  // Если нет, используем старую логику
-  baseUrl = await getDynamicBaseUrl();
-}
 
+Future<void> initialize() async {
+  try {
+    baseUrl = await getDynamicBaseUrl();
+    if (baseUrl == null) {
+      // Fallback: пробуем domain/mainDomain
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? domain = prefs.getString('enteredDomain') ?? prefs.getString('domain');
+      String? mainDomain = prefs.getString('enteredMainDomain') ?? prefs.getString('mainDomain');
+      if (domain != null && mainDomain != null) {
+        baseUrl = 'https://$domain-back.$mainDomain/api';
+        if (kDebugMode) {
+          print('ApiService: initialize - Fallback baseUrl: $baseUrl');
+        }
+      } else {
+        if (kDebugMode) {
+          print('ApiService: initialize - Warning: baseUrl is null');
+        }
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: initialize - Error: $e');
+    }
+  }
+}
   // Инициализация API с доменом из QR-кода
-  Future<void> initializeWithDomain(String domain, String mainDomain) async {
+ Future<void> initializeWithDomain(String domain, String mainDomain) async {
     baseUrl = 'https://$domain-back.$mainDomain/api';
     baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
-    ////print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+    print('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('domain', domain);
     await prefs.setString('mainDomain', mainDomain);
   }
 
- Future<String> getDynamicBaseUrl() async {
-  // Сначала пробуем новую логику с email
-  String? verifiedDomain = await getVerifiedDomain();
-  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-    return 'https://$verifiedDomain/api';
-  }
-  
-  // Если нет, используем старую логику для обратной совместимости
-  Map<String, String?> domains = await getEnteredDomain();
-  String? mainDomain = domains['enteredMainDomain'];
-  String? domain = domains['enteredDomain'];
 
-  if (domain != null && domain.isNotEmpty) {
-    return 'https://$domain-back.$mainDomain/api';
-  } else {
-    throw Exception('Домен не установлен');
+  Future<String> getDynamicBaseUrl() async {
+    // Сначала пробуем новую логику с email
+    String? verifiedDomain = await getVerifiedDomain();
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      return 'https://$verifiedDomain/api';
+    }
+    
+    // Проверяем QR данные
+    String? qrDomain = await _getQrDomain();
+    if (qrDomain != null) {
+      return 'https://$qrDomain/api';
+    }
+    
+    // Если нет, используем старую логику для обратной совместимости
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain = domains['enteredMainDomain'];
+    String? domain = domains['enteredDomain'];
+
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/api';
+    } else {
+      throw Exception('Домен не установлен');
+    }
   }
-}
 
 
   Future<String> getSocketBaseUrl() async {
@@ -248,7 +279,8 @@ Future<void> _initializeIfDomainExists() async {
   }
 
   // Метод для логаута — очистка токена
-  Future<void> logout() async {
+ // Обновленный метод логаута
+Future<void> logout() async {
   // Удаляем токен, права доступа и организацию
   await _removeToken();
   await _removePermissions();
@@ -351,7 +383,14 @@ Future<void> clearEmailVerificationData() async {
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
-  Future<http.Response> _getRequest(String path) async {
+ Future<http.Response> _getRequest(String path) async {
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Base URL is not initialized');
+      }
+    }
+    
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
     final response = await http.get(
@@ -366,12 +405,19 @@ Future<void> clearEmailVerificationData() async {
     return _handleResponse(response);
   }
 
-  Future<http.Response> _postRequest(
-      String path, Map<String, dynamic> body) async {
+ Future<http.Response> _postRequest(String path, Map<String, dynamic> body) async {
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        print('Error: baseUrl is null');
+        throw Exception('Base URL is not initialized');
+      }
+    }
+    
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    //print('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
-    //print('ApiService: Request body: ${json.encode(body)}');
+    print('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
+    print('ApiService: Request body: ${json.encode(body)}');
 
     final response = await http.post(
       Uri.parse('$baseUrl$updatedPath'),
@@ -384,11 +430,10 @@ Future<void> clearEmailVerificationData() async {
       body: json.encode(body),
     );
 
-    //print('ApiService: _postRequest response status: ${response.statusCode}');
-    //print('ApiService: _postRequest response body: ${response.body}');
+    print('ApiService: _postRequest response status: ${response.statusCode}');
+    print('ApiService: _postRequest response body: ${response.body}');
     return _handleResponse(response);
   }
-
   /// Новый метод для обработки MultipartRequest
   Future<http.Response> _multipartPostRequest(
       String path, http.MultipartRequest request) async {
@@ -498,21 +543,53 @@ Future<void> sendDeviceToken(String deviceToken) async {
 
 
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
-
-// Метод для сохранения данных из QR-кода
-Future<void> saveQrData(String mainDomain, String domain, String login,
-    String token, String userId, String organizationId) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('domain', domain);
-  await prefs.setString('mainDomain', mainDomain);
-  await prefs.setString('userLogin', login);
-  await prefs.setString('token', token);
-  await prefs.setString('userID', userId);
-  await prefs.setString('selectedOrganization', organizationId);
-  if (kDebugMode) {
-    print('ApiService: saveQrData - domain: $domain, mainDomain: $mainDomain, organizationId: $organizationId');
+  // Новый метод для получения домена из QR данных
+  Future<String?> _getQrDomain() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? domain = prefs.getString('domain');
+    String? mainDomain = prefs.getString('mainDomain');
+    
+    if (domain != null && domain.isNotEmpty && mainDomain != null && mainDomain.isNotEmpty) {
+      return '$domain-back.$mainDomain';
+    }
+    return null;
   }
-}
+
+  // Новый метод для инициализации из QR данных
+  Future<void> initializeFromQrData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? domain = prefs.getString('domain');
+    String? mainDomain = prefs.getString('mainDomain');
+    
+    if (domain != null && domain.isNotEmpty && mainDomain != null && mainDomain.isNotEmpty) {
+      baseUrl = 'https://$domain-back.$mainDomain/api';
+      baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
+      print('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
+      print('Saved domain: $domain, mainDomain: $mainDomain');
+    } else {
+      throw Exception('QR данные не найдены в SharedPreferences');
+    }
+  }
+// Метод для сохранения данных из QR-кода
+  Future<void> saveQrData(String domain, String mainDomain, String login,
+      String token, String userId, String organizationId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('domain', domain);
+    await prefs.setString('mainDomain', mainDomain);
+    await prefs.setString('userLogin', login);
+    await prefs.setString('token', token);
+    await prefs.setString('userID', userId);
+    await prefs.setString('selectedOrganization', organizationId);
+    
+    // Сразу инициализируем baseUrl после сохранения данных
+    await initializeFromQrData();
+    
+    if (kDebugMode) {
+      print('ApiService: saveQrData - domain: $domain, mainDomain: $mainDomain, organizationId: $organizationId');
+      print('ApiService: saveQrData - baseUrl after init: $baseUrl');
+    }
+  }
+
 // Метод для получения данных из QR-кода
 Future<Map<String, String?>> getQrData() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -6002,11 +6079,12 @@ Future<void> saveSelectedOrganization(String organizationId) async {
 
 // Получение выбранной организации
 Future<String?> getSelectedOrganization() async {
-  final prefs = await SharedPreferences.getInstance();
-  final organizationId = prefs.getString('selected_organization');
-  print('Retrieved organization_id from SharedPreferences: $organizationId');
-  // Временное решение: возвращаем "1", если organizationId == null
-  return organizationId ?? '1';
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = prefs.getString('selectedOrganization');
+  if (kDebugMode) {
+    print('Retrieved organization_id from SharedPreferences: $organizationId');
+  }
+  return organizationId;
 }
 // Метод для удаления токена (используется при логауте)
 Future<void> _removeOrganizationId() async {

@@ -383,7 +383,7 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Future<void> _checkPinSetupStatus(BuildContext context) async {
+Future<void> _checkPinSetupStatus(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
 
@@ -393,5 +393,5 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       Navigator.pushReplacementNamed(context, '/pin_screen');
     }
-  }
+}
 }
