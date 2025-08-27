@@ -284,26 +284,23 @@ class _AuthScreenState extends State<AuthScreen> {
                                 );
                               }
                               return BlocConsumer<LoginBloc, LoginState>(
-                                listener: (context, loginState) async {
-                                  if (loginState is LoginLoaded) {
-                                    SharedPreferences prefs =
-                                        await SharedPreferences.getInstance();
-                                    await prefs.setString(
-                                        'userName', loginState.user.name.toString());
-                                    await prefs.setString(
-                                        'userID', loginState.user.id.toString());
-                                    await prefs.setString(
-                                        'userLogin', loginState.user.login.toString());
-                                    await Future.delayed(
-                                        const Duration(seconds: 2));
-                                    await _checkPinSetupStatus(context);
-                                  } else if (loginState is LoginError) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(loginState.message)),
-                                    );
-                                  }
-                                },
-                                builder: (context, loginState) {
+  listener: (context, loginState) async {
+    if (loginState is LoginLoaded) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userName', loginState.user.name.toString());
+      await prefs.setString('userID', loginState.user.id.toString());
+      await prefs.setString('userLogin', loginState.user.login.toString());
+      final organizationId = await context.read<ApiService>().getSelectedOrganization();
+      print('AuthScreen: Login successful, organization_id: $organizationId');
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkPinSetupStatus(context);
+    } else if (loginState is LoginError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loginState.message)),
+      );
+    }
+  },
+  builder: (context, loginState) {
                                   if (loginState is LoginLoading ||
                                       loginState is LoginLoaded) {
                                     return const Center(

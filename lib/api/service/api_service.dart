@@ -291,11 +291,7 @@ Future<void> logout() async {
 }
 // Метод для получения информации о пользователе по email
 Future<Map<String, String>> getUserByEmail(String email) async {
-  // Используем фиксированный домен shamcrm.com
   const String fixedDomainUrl = 'https://shamcrm.com/api';
-  
-  //print('Отправляем запрос на: $fixedDomainUrl/get-user-by-email');
-  //print('Email: $email');
   
   final response = await http.post(
     Uri.parse('$fixedDomainUrl/get-user-by-email'),
@@ -307,35 +303,50 @@ Future<Map<String, String>> getUserByEmail(String email) async {
     body: json.encode({'email': email}),
   );
 
-  //print('Ответ сервера: ${response.statusCode}');
-  //print('Тело ответа: ${response.body}');
-
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
+    if (kDebugMode) {
+      print('ApiService: getUserByEmail - Response: $data');
+    }
+    final organizationId = data['organization_id']?.toString() ?? 
+                          data['user']?['organization_id']?.toString() ?? 
+                          '1'; // Дефолт id = 1
     return {
-      'domain': data['domain'],
-      'login': data['login'],
+      'domain': data['domain']?.toString() ?? '',
+      'login': data['login']?.toString() ?? '',
+      'organization_id': organizationId,
     };
   } else {
+    if (kDebugMode) {
+      print('ApiService: getUserByEmail - Error: Status ${response.statusCode}, Body: ${response.body}');
+    }
     throw Exception('Пользователь с таким email не найден');
   }
 }
 
 // Метод для сохранения данных после верификации email
-Future<void> saveEmailVerificationData(String domain, String login) async {
+Future<void> saveEmailVerificationData(String domain, String login, {String? organizationId}) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   
-  // Сохраняем домен (то, что раньше было subdomain + domain)
-  // Например, domain приходит как "dilshodjonavezov2-back.shamcrm.com"
   await prefs.setString('verifiedDomain', domain);
   await prefs.setString('verifiedLogin', login);
   
-  // Обновляем baseUrl для дальнейших запросов
-  baseUrl = 'https://$domain/api';
+  if (organizationId != null && organizationId.isNotEmpty) {
+    await prefs.setString('selectedOrganization', organizationId);
+    if (kDebugMode) {
+      print('ApiService: saveEmailVerificationData - Saved organization_id: $organizationId');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: saveEmailVerificationData - Warning: organization_id is null or empty');
+    }
+  }
   
-  ////print('Сохранены данные: домен=$domain, логин=$login');
+  baseUrl = 'https://$domain/api';
+  if (kDebugMode) {
+    print('ApiService: saveEmailVerificationData - Saved domain: $domain, login: $login');
+  }
 }
-
 // Метод для получения сохраненного логина
 Future<String?> getVerifiedLogin() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -354,9 +365,16 @@ Future<String?> getVerifiedDomain() async {
 // Обновленный метод initialize для работы с новой логикой
 Future<void> initializeWithEmailFlow() async {
   final domain = await getVerifiedDomain();
-  if (domain != null) {
+  final organizationId = await getSelectedOrganization();
+  if (domain != null && domain.isNotEmpty) {
     baseUrl = 'https://$domain/api';
     baseUrlSocket = 'https://$domain/broadcasting/auth';
+    if (kDebugMode) {
+      print('ApiService: initializeWithEmailFlow - Initialized with domain: $domain, organization_id: $organizationId');
+    }
+  } else {
+    print('ApiService: initializeWithEmailFlow - Error: verifiedDomain is null');
+    throw Exception('Домен не установлен');
   }
 }
 
@@ -701,7 +719,9 @@ Future<LoginResponse> login(LoginModel loginModel) async {
     loginModel.toJson(),
   );
 
-  print('Login response: ${response.body}');
+  if (kDebugMode) {
+    print('ApiService: login - Response: ${response.body}');
+  }
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
@@ -709,27 +729,60 @@ Future<LoginResponse> login(LoginModel loginModel) async {
 
     await _saveToken(loginResponse.token);
     await savePermissions(loginResponse.permissions);
-    if (loginResponse.organizationId != null) {
-      print('Saving organization_id: ${loginResponse.organizationId}');
-      await saveSelectedOrganization(loginResponse.organizationId!);
+
+    // Проверяем organization_id из ответа
+    String? effectiveOrgId = loginResponse.organizationId;
+    if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+      await saveSelectedOrganization(effectiveOrgId);
+      if (kDebugMode) {
+        print('ApiService: login - Saved organization_id from response: $effectiveOrgId');
+      }
     } else {
-      print('Warning: organization_id is null in login response, falling back to /organization');
-      // Запрашиваем список организаций, если organization_id не получен
+      if (kDebugMode) {
+        print('ApiService: login - Warning: organization_id is null, trying /organization');
+      }
+      // Пробуем получить organization_id из /organization
       final organizationsResponse = await _getRequest('/organization');
       if (organizationsResponse.statusCode == 200) {
         final organizations = json.decode(organizationsResponse.body);
+        if (kDebugMode) {
+          print('ApiService: login - /organization response: $organizations');
+        }
         if (organizations is List && organizations.isNotEmpty) {
-          final firstOrganizationId = organizations[0]['id']?.toString();
-          if (firstOrganizationId != null) {
-            print('Saving first organization_id: $firstOrganizationId');
-            await saveSelectedOrganization(firstOrganizationId);
+          effectiveOrgId = organizations[0]['id']?.toString();
+          if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+            await saveSelectedOrganization(effectiveOrgId);
+            if (kDebugMode) {
+              print('ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
+            }
+          } else {
+            effectiveOrgId = '1'; // Дефолт id = 1
+            await saveSelectedOrganization(effectiveOrgId);
+            if (kDebugMode) {
+              print('ApiService: login - No valid organization_id, using default: $effectiveOrgId');
+            }
           }
+        } else {
+          effectiveOrgId = '1'; // Дефолт id = 1
+          await saveSelectedOrganization(effectiveOrgId);
+          if (kDebugMode) {
+            print('ApiService: login - Empty organizations list, using default: $effectiveOrgId');
+          }
+        }
+      } else {
+        effectiveOrgId = '1'; // Дефолт id = 1
+        await saveSelectedOrganization(effectiveOrgId);
+        if (kDebugMode) {
+          print('ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
         }
       }
     }
 
     return loginResponse;
   } else {
+    if (kDebugMode) {
+      print('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
+    }
     throw Exception('Неправильный Логин или Пароль! Status: ${response.statusCode}');
   }
 }
@@ -6072,17 +6125,18 @@ Future<List<Organization>> getOrganization() async {
 
 // Сохранение выбранной организации
 Future<void> saveSelectedOrganization(String organizationId) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selected_organization', organizationId);
-  print('Saved organization_id to SharedPreferences: $organizationId');
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selectedOrganization', organizationId);
+  if (kDebugMode) {
+    print('ApiService: saveSelectedOrganization - Saved organization_id: $organizationId');
+  }
 }
-
 // Получение выбранной организации
 Future<String?> getSelectedOrganization() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final organizationId = prefs.getString('selectedOrganization');
   if (kDebugMode) {
-    print('Retrieved organization_id from SharedPreferences: $organizationId');
+    print('ApiService: getSelectedOrganization - Retrieved organization_id: $organizationId');
   }
   return organizationId;
 }
