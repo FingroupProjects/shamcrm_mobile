@@ -43,17 +43,17 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   }
 
   Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   @override
   Widget build(BuildContext context) {

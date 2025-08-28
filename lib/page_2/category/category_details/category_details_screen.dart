@@ -63,33 +63,27 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 }
 
-  Future<void> _loadImage(String imageUrl) async {
-    if (imageUrl.isNotEmpty) {
-      final file = await urlToFile('$baseUrl/$imageUrl');
-      setState(() {
-        _cachedImageFile = file;
-        //print('CategoryDetailsScreen: Изображение загружено: $imageUrl');
-      });
-    }
+ Future<void> _loadImage(String imageUrl) async {
+  if (imageUrl.isNotEmpty) {
+    final fullUrl = await _apiService.getFileUrl(imageUrl);
+    final file = await urlToFile(fullUrl);
+    setState(() {
+      _cachedImageFile = file;
+    });
   }
-
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        //print('CategoryDetailsScreen: baseUrl установлен в $baseUrl');
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-        //print('CategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
-      });
-    }
+}
+Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
-
+}
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();

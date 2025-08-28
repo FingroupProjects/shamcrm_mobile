@@ -1159,7 +1159,12 @@
 "unsuccessful": "Unsuccessful",
 "notification_message_label": "Enter the text the client will receive when their order moves to this status",
 "deal_number": "Deal number",
-"show_on_main_page": "Show on lead card"
+"show_on_main_page": "Show on lead card",
+"goods_not_found": "Goods not found",
+"show_all": "Show all"
+
+
+
 
 
 

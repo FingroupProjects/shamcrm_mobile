@@ -57,7 +57,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
   Future<void> _fetchChatData() async {
     // Для support чата не нужно загружать данные
-    if (widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png') {
+    if (widget.chatItem.avatar == 'assets/icons/Profile/image.png') {
       setState(() {
         isLoading = false;
       });
@@ -105,7 +105,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   Widget build(BuildContext context) {
     // Проверяем, является ли чат типом support
     bool isSupportChat =
-        widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
+        widget.chatItem.avatar == 'assets/icons/Profile/image.png';
     // print(
     //     'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
 
@@ -162,7 +162,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/icons/Profile/chat_support.png',
+                'assets/icons/Profile/image.png',
                 width: 80,
                 height: 80,
               ),

@@ -52,6 +52,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedDialCode;
   String? baseUrl;
   List<Branch> branches = [];
+    final ApiService _apiService = ApiService();
+
   int? currencyId; // Поле для хранения currency_id
 
   @override
@@ -219,25 +221,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Future<void> _initializeBaseUrl() async {
-    final apiService = ApiService();
-    try {
-      final enteredDomainMap = await apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        });
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://shamcrm.com/storage/';
-        });
-      }
-    }
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
-
+}
   @override
   void dispose() {
     _phoneController.dispose();

@@ -100,7 +100,7 @@ class Chats {
     String? customImage;
     if (json['type'] == 'support') {
       customName = json['type'];
-      customImage = supportChatImage ?? 'assets/icons/Profile/chat_support.png';
+      customImage = supportChatImage ?? 'assets/icons/Profile/image.png';
     }
 
     return Chats(
@@ -172,6 +172,54 @@ class Chats {
       default:
         return 'Новое сообщение';
     }
+  }
+
+  Chats copyWith({
+    int? id,
+    String? name,
+    String? image,
+    String? taskFrom,
+    String? taskTo,
+    String? description,
+    String? channel,
+    String? lastMessage,
+    String? messageType,
+    String? createDate,
+    int? unreadCount,
+    bool? canSendMessage,
+    String? type,
+    List<ChatUser>? chatUsers,
+    Group? group,
+    Task? task,
+    ChatUser? user,
+    String? customName,
+    String? customImage,
+    Channel? channelObj,
+    Integration? integration,
+  }) {
+    return Chats(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      taskFrom: taskFrom ?? this.taskFrom,
+      taskTo: taskTo ?? this.taskTo,
+      description: description ?? this.description,
+      channel: channel ?? this.channel,
+      lastMessage: lastMessage ?? this.lastMessage,
+      messageType: messageType ?? this.messageType,
+      createDate: createDate ?? this.createDate,
+      unreadCount: unreadCount ?? this.unreadCount,
+      canSendMessage: canSendMessage ?? this.canSendMessage,
+      type: type ?? this.type,
+      chatUsers: chatUsers ?? this.chatUsers,
+      group: group ?? this.group,
+      task: task ?? this.task,
+      user: user ?? this.user,
+      customName: customName ?? this.customName,
+      customImage: customImage ?? this.customImage,
+      channelObj: channelObj ?? this.channelObj,
+      integration: integration ?? this.integration,
+    );
   }
 
   ChatItem toChatItem() {

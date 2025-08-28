@@ -31,23 +31,18 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     _initializeBaseUrl();
   }
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-    } catch (error) {
-      //print('Error initializing baseUrl: $error');
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
+ Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return _buildGoodsList(widget.goods);

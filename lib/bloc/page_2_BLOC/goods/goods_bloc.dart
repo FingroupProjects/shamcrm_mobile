@@ -27,6 +27,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     on<FilterGoods>(_filterGoods);
     on<FetchSubCategories>(_fetchSubCategories);
     on<ResetSubCategories>(_resetSubCategories); // Добавляем обработчик сброса
+    on<SearchGoodsByBarcode>(_searchGoodsByBarcode);
     if (kDebugMode) {
       //print('GoodsBloc: Инициализация блока');
     }
@@ -459,4 +460,40 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
       return false;
     }
   }
+  Future<void> _searchGoodsByBarcode(SearchGoodsByBarcode event, Emitter<GoodsState> emit) async {
+    emit(GoodsLoading());
+    if (kDebugMode) {
+      print('GoodsBloc: Поиск товаров по штрихкоду: ${event.barcode}');
+    }
+
+    if (await _checkInternetConnection()) {
+      try {
+        final goods = await apiService.getGoodsByBarcode(event.barcode);
+
+        if (goods.isEmpty) {
+          if (kDebugMode) {
+            print('GoodsBloc: Товары по штрихкоду не найдены');
+          }
+          emit(GoodsBarcodeSearchResult(goods: [], error: 'goods_not_found'));
+        } else {
+          if (kDebugMode) {
+            print('GoodsBloc: Найдено ${goods.length} товаров по штрихкоду');
+          }
+          emit(GoodsBarcodeSearchResult(goods: goods));
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('GoodsBloc: Ошибка поиска по штрихкоду: $e');
+        }
+        emit(GoodsBarcodeSearchResult(goods: [], error: 'Не удалось выполнить поиск: $e'));
+      }
+    } else {
+      if (kDebugMode) {
+        print('GoodsBloc: Нет подключения к интернету при поиске по штрихкоду');
+      }
+      emit(GoodsBarcodeSearchResult(goods: [], error: 'Нет подключения к интернету'));
+    }
+  }
+
+
 }

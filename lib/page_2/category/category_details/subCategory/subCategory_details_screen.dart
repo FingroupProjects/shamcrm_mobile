@@ -79,22 +79,18 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
     }
   }
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        //print('SubCategoryDetailsScreen: baseUrl установлен в $baseUrl');
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-        //print('SubCategoryDetailsScreen: Ошибка при инициализации baseUrl: $error');
-      });
-    }
+Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   @override
   void didChangeDependencies() {

@@ -92,15 +92,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 }
 
   Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-    } catch (error) {
-      baseUrl = 'https://shamcrm.com/storage/';
-    }
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);

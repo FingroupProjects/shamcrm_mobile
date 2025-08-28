@@ -93,3 +93,15 @@ class Pagination {
     );
   }
 }
+
+// В goods_state.dart
+class GoodsBarcodeSearchResult extends GoodsState {
+  final List<Goods> goods;
+  final String? error;
+
+  GoodsBarcodeSearchResult({required this.goods, this.error});
+
+  bool get isSingle => goods.length == 1;
+  bool get isMultiple => goods.length > 1;
+  bool get isEmpty => goods.isEmpty;
+}

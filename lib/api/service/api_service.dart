@@ -707,6 +707,44 @@ Future<Map<String, String?>> getEnteredDomain() async {
     'enteredDomain': domain,
   };
 }
+
+
+Future<String> getStaticBaseUrl() async {
+  // Сначала пробуем новую логику с email
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    return 'https://$verifiedDomain/storage';
+  }
+  
+  // Проверяем QR данные
+  Map<String, String?> qrData = await getQrData();
+  String? qrDomain = qrData['domain'];
+  String? qrMainDomain = qrData['mainDomain'];
+  
+  if (qrDomain != null && qrDomain.isNotEmpty && qrMainDomain != null && qrMainDomain.isNotEmpty) {
+    return 'https://$qrDomain-back.$qrMainDomain/storage';
+  }
+  
+  // Если нет, используем старую логику для обратной совместимости
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain'];
+  String? domain = domains['enteredDomain'];
+
+  if (domain != null && domain.isNotEmpty && mainDomain != null && mainDomain.isNotEmpty) {
+    return 'https://$domain-back.$mainDomain/storage';
+  } else {
+    // Fallback на дефолтный домен, если ничего не найдено
+    return 'https://shamcrm.com/storage';
+  }
+}
+
+// Метод для получения полного URL файла
+Future<String> getFileUrl(String filePath) async {
+  final baseUrl = await getStaticBaseUrl();
+  // Убираем лишние слеши, если они есть в начале filePath
+  final cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+  return '$baseUrl/$cleanPath';
+}
 //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
 //_________________________________ START___API__LOGIN____________________________________________//
@@ -8570,6 +8608,68 @@ Future<List<Label>> getLabels() async {
     }
   } else {
     throw Exception('Ошибка загрузки меток');
+  }
+}
+
+Future<List<Goods>> getGoodsByBarcode(String barcode) async {
+  String path = '/good/getByBarcode?barcode=$barcode';
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: Запрос товаров по штрихкоду: $path');
+  }
+
+  final response = await _getRequest(path);
+  if (kDebugMode) {
+    print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
+  }
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('errors') && data['errors'] != null) {
+      if (kDebugMode) {
+        print('ApiService: Ошибка сервера: ${data['errors']}');
+      }
+      throw Exception('Ошибка сервера: ${data['errors']}');
+    }
+    if (data.containsKey('result')) {
+      final result = data['result'];
+      if (result == null || result == 'Товар не найден') {
+        if (kDebugMode) {
+          print('ApiService: Товары по штрихкоду не найдены');
+        }
+        return [];
+      }
+      List<dynamic> goodsData;
+
+      if (result is List) {
+        goodsData = result;
+      } else if (result is Map<String, dynamic>) {
+        goodsData = [result];
+      } else {
+        if (kDebugMode) {
+          print('ApiService: Ошибка формата данных: result не является списком или объектом: $data');
+        }
+        throw Exception('Ошибка: Неверный формат данных');
+      }
+
+      final goods = goodsData
+          .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+          .toList();
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${goods.length} товаров по штрихкоду');
+      }
+      return goods;
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка формата данных: отсутствует поле result в $data');
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    if (kDebugMode) {
+      print('ApiService: Ошибка загрузки товаров по штрихкоду: ${response.statusCode}');
+    }
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
   }
 }
 

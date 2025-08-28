@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_card.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -50,13 +51,15 @@ class _GoodsScreenState extends State<GoodsScreen> {
   Future<void> _checkPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+      final bool integrationWith1C =
+          prefs.getBool('integration_with_1C') ?? false;
       final bool canCreate = await _apiService.hasPermission('product.create');
 
       setState(() {
         _canCreateProduct = canCreate && !integrationWith1C;
         if (kDebugMode) {
-          print('GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
+          print(
+              'GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
         }
       });
     } catch (e) {
@@ -76,7 +79,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
       final state = context.read<GoodsBloc>().state;
       if (state is GoodsDataLoaded) {
         if (kDebugMode) {
-          print('GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
+          print(
+              'GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
         }
         context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
       }
@@ -157,7 +161,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
               if (kDebugMode) {
-                print('GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
+                print(
+                    'GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
               }
             });
           },
@@ -180,7 +185,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
           currentFilters: _currentFilters,
-          initialLabels: _currentFilters['label_id'] != null // Изменено на label_id
+          initialLabels: _currentFilters['label_id'] != null
               ? List<String>.from(_currentFilters['label_id'])
               : null,
         ),
@@ -192,28 +197,50 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 if (state is GoodsSuccess) {
                   showCustomSnackBar(
                     context: context,
-                    message: AppLocalizations.of(context)!.translate(state.message),
+                    message:
+                        AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: true,
                   );
-                  if (kDebugMode) {
-                    print('GoodsScreen: Успех: ${state.message}');
-                  }
                 } else if (state is GoodsError) {
                   showCustomSnackBar(
                     context: context,
-                    message: AppLocalizations.of(context)!.translate(state.message),
+                    message:
+                        AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: false,
                   );
-                  if (kDebugMode) {
-                    print('GoodsScreen: Ошибка: ${state.message}');
+                } else if (state is GoodsBarcodeSearchResult) {
+                  if (state.isSingle) {
+                    if (kDebugMode) {
+                      print(
+                          'GoodsScreen: Найден один товар, переход к карточке с id: ${state.goods.first.id}');
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GoodsDetailsScreen(
+                          id: state.goods.first.id,
+                          isFromBarcodeSearch: true,
+                        ),
+                      ),
+                    ).then((_) {
+                      if (kDebugMode) {
+                        print(
+                            'GoodsScreen: Возврат из просмотра товара, загружаем обычный список');
+                      }
+                      context.read<GoodsBloc>().add(FetchGoods());
+                    });
+                  } else if (state.isMultiple) {
+                    if (kDebugMode) {
+                      print(
+                          'GoodsScreen: Найдено несколько товаров: ${state.goods.length}');
+                    }
+                    // Список отображается в builder
                   }
+                  // Случай state.isEmpty обрабатывается в builder
                 }
               },
               builder: (context, state) {
                 if (state is GoodsLoading) {
-                  if (kDebugMode) {
-                    print('GoodsScreen: Состояние загрузки');
-                  }
                   return const Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -221,9 +248,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     ),
                   );
                 } else if (state is GoodsDataLoaded) {
-                  if (kDebugMode) {
-                    print('GoodsScreen: Загружено товаров: ${state.goods.length}');
-                  }
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -231,9 +255,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         (context.read<GoodsBloc>().allGoodsFetched ? 0 : 1),
                     itemBuilder: (context, index) {
                       if (index == state.goods.length) {
-                        if (kDebugMode) {
-                          print('GoodsScreen: Отображение индикатора загрузки для следующей страницы');
-                        }
                         return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(8),
@@ -255,15 +276,68 @@ class _GoodsScreenState extends State<GoodsScreen> {
                           goodsStockQuantity: goods.quantity ?? 0,
                           goodsFiles: goods.files,
                           isActive: goods.isActive,
-                          label: goods.label, // Проверить, соответствует ли это новому формату
+                          label: goods.label,
                         ),
                       );
                     },
                   );
-                } else if (state is GoodsEmpty) {
-                  if (kDebugMode) {
-                    print('GoodsScreen: Список товаров пуст');
+                } else if (state is GoodsBarcodeSearchResult) {
+                  if (state.isMultiple) {
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: state.goods.length,
+                      itemBuilder: (context, index) {
+                        final Goods goods = state.goods[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: GoodsCard(
+                            goodsId: goods.id,
+                            goodsName: goods.name,
+                            goodsDescription: goods.description ?? "",
+                            goodsCategory: goods.category.name,
+                            goodsStockQuantity: goods.quantity ?? 0,
+                            goodsFiles: goods.files,
+                            isActive: goods.isActive,
+                            label: goods.label,
+                          ),
+                        );
+                      },
+                    );
+                  } else if (state.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.search_off,
+                              size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            localizations!.translate('goods_not_found'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.read<GoodsBloc>().add(FetchGoods());
+                            },
+                            child: Text(localizations!.translate('show_all')),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return const Center(
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
+                      ),
+                    );
                   }
+                } else if (state is GoodsEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -283,9 +357,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            if (kDebugMode) {
-                              print('GoodsScreen: Обновление списка товаров');
-                            }
                             context.read<GoodsBloc>().add(FetchGoods());
                           },
                           child: Text(localizations!.translate('update')),
@@ -294,9 +365,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     ),
                   );
                 } else if (state is GoodsError) {
-                  if (kDebugMode) {
-                    print('GoodsScreen: Ошибка загрузки товаров: ${state.message}');
-                  }
                   context.read<GoodsBloc>().add(FetchGoods());
                   return const Center(
                     child: PlayStoreImageLoading(
@@ -305,10 +373,13 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     ),
                   );
                 }
-                if (kDebugMode) {
-                  print('GoodsScreen: Неизвестное состояние');
-                }
-                return const Center(child: Text('Error'));
+
+                return const Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                );
               },
             ),
       floatingActionButton: _canCreateProduct
@@ -323,7 +394,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 );
                 if (result == true) {
                   if (kDebugMode) {
-                    print('GoodsScreen: Обновление списка товаров после добавления');
+                    print(
+                        'GoodsScreen: Обновление списка товаров после добавления');
                   }
                   context.read<GoodsBloc>().add(FetchGoods());
                 }

@@ -104,3 +104,12 @@ final int? labelId; // Добавляем поле для ID метки
   this.labelId, // Добавляем в конструктор
   });
 }
+
+class SearchGoodsByBarcode extends GoodsEvent {
+  final String barcode;
+
+  SearchGoodsByBarcode(this.barcode);
+
+  @override
+  List<Object> get props => [barcode];
+}

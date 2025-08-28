@@ -16,7 +16,7 @@ class GoodsCard extends StatefulWidget {
   final bool? isActive;
   final Label? label;
 
-  GoodsCard({
+  const GoodsCard({
     Key? key,
     required this.goodsId,
     required this.goodsName,
@@ -36,91 +36,82 @@ class _GoodsCardState extends State<GoodsCard> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        //print('GoodsCard: baseUrl set to $baseUrl');
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-        //print('GoodsCard: Error initializing baseUrl: $error');
-      });
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
   }
 
+  Future<void> _initializeBaseUrl() async {
+    try {
+      // Используем новый универсальный метод для получения base URL
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      // Fallback на дефолтный URL в случае ошибки
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
+  }
+
   void _navigateToGoodsDetails() {
-    //print('GoodsCard: Navigating to GoodsDetailsScreen for ID ${widget.goodsId}');
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoodsDetailsScreen(
-          id: widget.goodsId,
-        ),
+        builder: (context) => GoodsDetailsScreen(id: widget.goodsId),
       ),
     );
   }
 
   GoodsFile? _getMainImage() {
     if (widget.goodsFiles.isEmpty) {
-      //print('GoodsCard: No images available for goods ID ${widget.goodsId}');
       return null;
     }
-
-    final mainImage = widget.goodsFiles.firstWhere(
+    return widget.goodsFiles.firstWhere(
       (file) => file.isMain,
       orElse: () => widget.goodsFiles.first,
     );
-
-    //print('GoodsCard: Selected image for goods ID ${widget.goodsId}: ${mainImage.path} (isMain: ${mainImage.isMain})');
-    return mainImage;
   }
 
   Widget _buildImageWidget(GoodsFile file) {
+    // Строим полный URL для изображения
+    final imageUrl = baseUrl != null ? '$baseUrl/${file.path}' : null;
+    
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        '$baseUrl/${file.path}',
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          //print('GoodsCard: Image load error for ${file.path}: $error');
-          return Container(
-            width: 100,
-            height: 100,
-            color: Colors.white,
-            child: Icon(Icons.broken_image, size: 40, color: Color(0xff99A4BA)),
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: 100,
-            height: 100,
-            color: Colors.grey[200],
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
+      child: imageUrl != null 
+          ? Image.network(
+              imageUrl,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.white,
+                  child: const Icon(Icons.broken_image, size: 40, color: Color(0xff99A4BA)),
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[200],
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+            )
+          : Container(
+              width: 100,
+              height: 100,
+              color: Colors.grey[200],
+              child: const Center(child: CircularProgressIndicator()),
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -129,9 +120,7 @@ class _GoodsCardState extends State<GoodsCard> {
     const double labelHeight = 18;
     const double labelPadding = 6;
 
-    // Отображаем метку, если она существует, независимо от showOnMain
     if (widget.label != null) {
-      //print('GoodsCard: Displaying label, name=${widget.label!.name}, color=${widget.label!.color}, showOnMain=${widget.label!.showOnMain}');
       String colorString = widget.label!.color;
       Color labelColor;
       try {
@@ -143,7 +132,6 @@ class _GoodsCardState extends State<GoodsCard> {
         }
         labelColor = Color(int.parse(colorString, radix: 16));
       } catch (e) {
-        //print('GoodsCard: Invalid color format for label: ${widget.label!.color}, error: $e');
         labelColor = Colors.grey;
       }
 
@@ -178,35 +166,23 @@ class _GoodsCardState extends State<GoodsCard> {
           ),
         ),
       );
-    } else {
-      //print('GoodsCard: No label to display');
     }
 
     return labels;
   }
 
   Color _getStatusBackgroundColor(bool? isActive) {
-    if (isActive == true) {
-      return const Color(0xFFE8F5E9);
-    } else {
-      return const Color(0xFFFFEBEE);
-    }
+    return isActive == true ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
   }
 
   Color _getStatusTextColor(bool? isActive) {
-    if (isActive == true) {
-      return const Color(0xFF2E7D32);
-    } else {
-      return const Color(0xFFC62828);
-    }
+    return isActive == true ? const Color(0xFF2E7D32) : const Color(0xFFC62828);
   }
 
   Widget _buildStatusLabel() {
     final localizations = AppLocalizations.of(context)!;
     final isActive = widget.isActive ?? false;
-    final statusText = isActive
-        ? localizations.translate('active')
-        : localizations.translate('inactive');
+    final statusText = isActive ? localizations.translate('active') : localizations.translate('inactive');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -267,26 +243,20 @@ class _GoodsCardState extends State<GoodsCard> {
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: const Color(0xff1E2E52),
                                 ),
                                 children: const <TextSpan>[
-                                  TextSpan(
-                                    text: '\n\u200B',
-                                    style: TaskCardStyles.priorityStyle,
-                                  ),
+                                  TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
                                 ],
                               )
-                            : const TextSpan(
-                                text: '\n\u200B',
-                                style: TaskCardStyles.priorityStyle,
-                              ),
+                            : const TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${AppLocalizations.of(context)!.translate('subcategory_card')}: ${widget.goodsCategory}',
                         style: TaskCardStyles.priorityStyle.copyWith(
                           fontSize: 14,
-                          color: Color(0xff1E2E52),
+                          color: const Color(0xff1E2E52),
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,

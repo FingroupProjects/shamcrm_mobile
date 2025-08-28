@@ -880,7 +880,7 @@
   "goods_finished": "Статус",
   "deal_name": "Название",
   "select_deal_name": "Введите название",
-  "with_unread_messages": "Только непрачтенные",
+  "with_unread_messages": "Только непрочитанные",
   "without_replies": "Без ответа",
   "edit_order": "Редактирование заказа",
   "items_list": "Список товаров",
@@ -1166,7 +1166,10 @@
   "unsuccessful": "Не успешно",
   "notification_message_label": "Введите текст который получит клиент при переходе его заказа в этот статус",
   "deal_number": "Номер сделки",
-  "show_on_main_page": "Показать на карточке лида"
+  "show_on_main_page": "Показать на карточке лида",
+  "goods_not_found": "Товар не найден",
+"show_all": "Показать все"
+
  
 
 

@@ -580,7 +580,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
 
   @override
   Widget build(BuildContext context) {
-    bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
+    bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
 
     return BlocListener<MessagingCubit, MessagingState>(
       // Добавлен BlocListener для вызова _markMessagesAsRead только при первой загрузке
@@ -828,9 +828,11 @@ void _scrollToMessageIndex(DateTime selectedDate) {
     }
   }
 
+
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(
     builder: (context, state) {
+      debugPrint('messageListUi: Building with state: $state');
       if (state is MessagesErrorState) {
         return Center(child: Text("Ошибка!"));
       }
@@ -848,6 +850,7 @@ Widget messageListUi() {
                 : state is PinnedMessagesState
                     ? state.messages
                     : (state as EditingMessageState).messages;
+        debugPrint('messageListUi: Rendering ${messages.length} messages');
         final pinnedMessages = state is PinnedMessagesState
             ? state.pinnedMessages
             : state is ReplyingToMessageState
@@ -1066,7 +1069,7 @@ Widget inputWidget() {
     return '${directory.path}/$fileName';
   }
 
- void setUpServices() async {
+void setUpServices() async {
   debugPrint('Setting up socket for chatId: ${widget.chatId}');
   final prefs = await SharedPreferences.getInstance();
   String? token = prefs.getString('token');
@@ -1075,41 +1078,65 @@ Widget inputWidget() {
     return;
   }
 
+  // Проверяем домены для старой логики
   final enteredDomainMap = await ApiService().getEnteredDomain();
   String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
   String? enteredDomain = enteredDomainMap['enteredDomain'];
-  debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
 
+  // Проверяем домен для email-верификации
+  String? verifiedDomain = await ApiService().getVerifiedDomain();
+  debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+
+  // Если домены отсутствуют, используем verifiedDomain или резервные значения
   if (enteredMainDomain == null || enteredDomain == null) {
-    debugPrint('Error: Invalid domain parameters');
-    return;
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      // Для email-верификации используем verifiedDomain
+      enteredMainDomain = verifiedDomain.split('-back.').last;
+      enteredDomain = verifiedDomain.split('-back.').first;
+      debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+    } else {
+      // Резервные значения для отладки
+      enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
+      enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
+      debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
+      // Сохраняем резервные значения в SharedPreferences
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+      await prefs.setString('enteredDomain', enteredDomain);
+    }
   }
 
   final customOptions = PusherChannelsOptions.custom(
-    uriResolver: (metadata) =>
-        Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+    uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
     metadata: PusherChannelsOptionsMetadata.byDefault(),
   );
 
   socketClient = PusherChannelsClient.websocket(
     options: customOptions,
     connectionErrorHandler: (exception, trace, refresh) {
-      debugPrint('Socket connection error: $exception');
+      debugPrint('Socket connection error: $exception, StackTrace: $trace');
+      Future.delayed(Duration(seconds: 5), () async {
+        try {
+          await socketClient.connect();
+          debugPrint('Socket reconnect attempted');
+        } catch (e, stackTrace) {
+          debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+        }
+      });
+      refresh();
     },
     minimumReconnectDelayDuration: const Duration(seconds: 1),
   );
 
   final myPresenceChannel = socketClient.presenceChannel(
     'presence-chat.${widget.chatId}',
-    authorizationDelegate:
-        EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
       authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
       headers: {
         'Authorization': 'Bearer $token',
         'X-Tenant': '$enteredDomain-back',
       },
       onAuthFailed: (exception, trace) {
-        debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception');
+        debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
       },
     ),
   );
@@ -1120,94 +1147,109 @@ Widget inputWidget() {
     debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
   });
 
-  // socketClient.onConnectionError.listen((error) {
-  //   debugPrint('Socket connection error: $error');
-  // });
-
-  // socketClient.onConnectionStateChange.listen((state) {
-  //   debugPrint('Socket state changed: $state');
-  // });
-
   myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
     debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
   });
 
-  // myPresenceChannel.bindAll().listen((event) {
-  //   debugPrint('Received event: ${event.name}, data: ${event.data}');
-  // });
-
-  chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-    debugPrint('Received chat.message event: ${event.data}');
-    try {
-      MessageSocketData mm = messageSocketDataFromJson(event.data);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? '';
-
-      Message msg;
-      if (mm.message?.type == 'voice' ||
-          mm.message?.type == 'file' ||
-          mm.message?.type == 'image' ||
-          mm.message?.type == 'document') {
-        ForwardedMessage? forwardedMessage;
-        if (mm.message?.forwardedMessage != null) {
-          forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-        }
-
-        msg = Message(
-          id: mm.message?.id ?? 0,
-          filePath: mm.message?.filePath.toString() ?? '',
-          text: mm.message?.text ?? mm.message?.type ?? '',
-          type: mm.message?.type ?? '',
-          isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-              mm.message?.sender?.type == 'user'),
-          createMessateTime: mm.message?.createdAt?.toString() ?? '',
-          duration: Duration(
-              seconds: (mm.message?.voiceDuration != null)
-                  ? double.parse(mm.message!.voiceDuration.toString()).round()
-                  : 20),
-          senderName: mm.message?.sender?.name ?? 'Unknown sender',
-          forwardedMessage: forwardedMessage,
-        );
-      } else {
-        ForwardedMessage? forwardedMessage;
-        if (mm.message?.forwardedMessage != null) {
-          forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-        }
-        msg = Message(
-          id: mm.message?.id ?? 0,
-          text: mm.message?.text ?? mm.message?.type ?? '',
-          type: mm.message?.type ?? '',
-          createMessateTime: mm.message?.createdAt?.toString() ?? '',
-          isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-              mm.message?.sender?.type == 'user'),
-          senderName: mm.message?.sender?.name ?? 'Unknown sender',
-          forwardedMessage: forwardedMessage,
-        );
-      }
-
-      setState(() {
-        context.read<MessagingCubit>().updateMessageFromSocket(msg);
-        debugPrint('Message added to MessagingCubit: $msg');
-      });
-
-      if (!msg.isMyMessage) {
-        await _audioPlayer.setAsset('assets/audio/get.mp3');
-        await _audioPlayer.play();
-        debugPrint('Played notification sound for incoming message');
-      }
-
-      _scrollToBottom();
-      debugPrint('Scrolled to bottom after receiving message');
-    } catch (e) {
-      debugPrint('Error processing chat.message event: $e');
-    }
+  myPresenceChannel.bind('pusher:subscription_error').listen((event) {
+    debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
   });
+
+chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+  debugPrint('Received chat.message event: ${event.data}');
+  try {
+    if (event.data == null || event.data.isEmpty) {
+      debugPrint('Error: chat.message event data is null or empty');
+      return;
+    }
+
+    debugPrint('Raw event data type: ${event.data.runtimeType}');
+    debugPrint('Raw event data: ${event.data}');
+
+    MessageSocketData mm = messageSocketDataFromJson(event.data);
+    debugPrint('Parsed MessageSocketData: $mm');
+
+    if (mm.message == null) {
+      debugPrint('Error: MessageSocketData.message is null');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userID') ?? '';
+    debugPrint('User UUID: $UUID');
+
+    Message msg;
+    if (mm.message?.type == 'voice' ||
+        mm.message?.type == 'file' ||
+        mm.message?.type == 'image' ||
+        mm.message?.type == 'document') {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        filePath: mm.message?.filePath.toString() ?? '',
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        duration: Duration(
+            seconds: (mm.message?.voiceDuration != null)
+                ? double.parse(mm.message!.voiceDuration.toString()).round()
+                : 20),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
+    } else {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
+    }
+
+    debugPrint('Constructed Message: $msg');
+    context.read<MessagingCubit>().updateMessageFromSocket(msg);
+    debugPrint('Message dispatched to MessagingCubit: $msg');
+
+    if (!msg.isMyMessage) {
+      await _audioPlayer.setAsset('assets/audio/get.mp3');
+      await _audioPlayer.play();
+      debugPrint('Played notification sound for incoming message');
+    }
+
+    _scrollToBottom();
+    debugPrint('Scrolled to bottom after receiving message');
+
+    // Опциональная фоновая синхронизация с API без изменения состояния
+    try {
+      await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
+      debugPrint('Synced messages with API in background');
+    } catch (e, stackTrace) {
+      debugPrint('Error syncing messages with API: $e, StackTrace: $stackTrace');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('Error processing chat.message event: $e, StackTrace: $stackTrace');
+  }
+});
 
   try {
     await socketClient.connect();
     debugPrint('Socket connection initiated');
-  } catch (e) {
-    debugPrint('Error connecting to socket: $e');
+  } catch (e, stackTrace) {
+    debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
   }
 }
 
@@ -2024,3 +2066,6 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 }
+
+/*
+*/

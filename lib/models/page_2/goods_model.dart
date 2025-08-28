@@ -45,9 +45,9 @@ class Goods {
     this.label, // Добавляем в конструктор
   });
 
-  factory Goods.fromJson(Map<String, dynamic> json) {
+factory Goods.fromJson(Map<String, dynamic> json) {
   try {
-    // Если JSON содержит поле "good", используем его для извлечения данных
+    // Если JSON содержит поле "good", используем его для основных данных
     final Map<String, dynamic> data = json.containsKey('good') ? json['good'] : json;
 
     int? quantity;
@@ -69,11 +69,11 @@ class Goods {
     }
 
     double? discountPrice;
-    if (data['price'] != null) {
-      if (data['price'] is double) {
-        discountPrice = data['price'];
-      } else if (data['price'] is String) {
-        discountPrice = double.tryParse(data['price']);
+    if (json['price'] != null) { // Используем json['price'] вместо data['price']
+      if (json['price'] is double) {
+        discountPrice = json['price'];
+      } else if (json['price'] is String) {
+        discountPrice = double.tryParse(json['price']);
       }
     }
 
@@ -87,17 +87,15 @@ class Goods {
       }
     }
 
-    // Обработка is_active: поддержка int (0/1) и bool
     bool? isActive;
-    if (data['is_active'] != null) {
-      if (data['is_active'] is bool) {
-        isActive = data['is_active'] as bool?;
-      } else if (data['is_active'] is int) {
-        isActive = data['is_active'] == 1;
+    if (json['is_active'] != null) { // Используем json['is_active']
+      if (json['is_active'] is bool) {
+        isActive = json['is_active'] as bool?;
+      } else if (json['is_active'] is int) {
+        isActive = json['is_active'] == 1;
       }
     }
 
-    //print('GoodsModel: Парсинг JSON товара - id: ${data['id']}, название: ${data['name']}');
     return Goods(
       id: json['id'] as int? ?? data['id'] as int? ?? 0, // Используем id из корня или good
       name: data['name'] as String? ?? '',
@@ -111,27 +109,18 @@ class Goods {
       discountedPrice: discountedPrice,
       discountPercent: discountPercent,
       isActive: isActive,
-      files: (data['files'] as List<dynamic>?)?.map((f) {
-            //print('GoodsModel: Парсинг файла - ${f['path']}');
+      files: (json['files'] as List<dynamic>?)?.map((f) { // Используем json['files']
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
           [],
-      attributes: json['attribute_values'] != null
-          ? (json['attribute_values'] as List<dynamic>).map((attr) {
-              //print('GoodsModel: Парсинг атрибута - ${attr['value']}');
-              return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
-            }).toList()
-          : (data['attributes'] as List<dynamic>?)?.map((attr) {
-              //print('GoodsModel: Парсинг атрибута - ${attr['value']}');
-              return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
-            }).toList() ??
-              [],
-      variants: (data['variants'] as List<dynamic>?)?.map((v) {
-        //print('GoodsModel: Парсинг варианта - id: ${v['id']}');
+      attributes: (json['attribute_values'] as List<dynamic>?)?.map((attr) { // Используем json['attribute_values']
+            return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
+          }).toList() ??
+          [],
+      variants: (json['variants'] as List<dynamic>?)?.map((v) {
         return GoodsVariant.fromJson(v as Map<String, dynamic>);
       }).toList(),
       branches: (data['branches'] as List<dynamic>?)?.map((b) {
-        //print('GoodsModel: Парсинг филиала - id: ${b['id']}, название: ${b['name']}');
         return Branch.fromJson(b as Map<String, dynamic>);
       }).toList(),
       comments: data['comments'] as String?,
@@ -141,8 +130,8 @@ class Goods {
       label: data['label'] != null ? Label.fromJson(data['label']) : null,
     );
   } catch (e, stackTrace) {
-    //print('GoodsModel: Ошибка парсинга товара: $e');
-    //print(stackTrace);
+    print('GoodsModel: Ошибка парсинга товара: $e');
+    print(stackTrace);
     rethrow;
   }
 }
@@ -378,3 +367,4 @@ class VariantPrice {
     );
   }
 }
+

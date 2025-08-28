@@ -1180,7 +1180,10 @@
 "unsuccessful": "Muvaffaqiyatsiz",
 "notification_message_label": "Buyurtma ushbu holatga oʻtganda mijoz oladigan matnni kiriting",
 "deal_number": "Bitim raqami",
-"show_on_main_page": "Lid kartasida koʻrsatish"
+"show_on_main_page": "Lid kartasida koʻrsatish",
+"goods_not_found": "Mahsulotlar topilmadi",
+"show_all": "Hammasini ko‘rsatish"
+
 
 
 

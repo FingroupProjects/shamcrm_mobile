@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_event.dart';
@@ -16,12 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
   final bool showActions;
-  final bool isFromOrder; // Новый параметр
+  final bool isFromOrder;
+  final bool isFromBarcodeSearch;  // Новый параметр
 
   const GoodsDetailsScreen({
     required this.id,
     this.showActions = true,
-    this.isFromOrder = false, // По умолчанию false
+    this.isFromOrder = false,
+    this.isFromBarcodeSearch = false,  // По умолчанию false
     super.key,
   });
 
@@ -37,76 +38,62 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Timer? _timer;
   bool _isAutoScrollEnabled = true;
   final PageController _pageController = PageController();
-  bool _canUpdateProduct = false; // Новая переменная для права product.update
+  bool _canUpdateProduct = false;
 
- @override
+  @override
   void initState() {
     super.initState();
-    //print('GoodsDetailsScreen: Initializing for goods ID ${widget.id}, isFromOrder: ${widget.isFromOrder}');
+    // Загружаем данные о товаре по ID
     context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
     _checkPermissions();
   }
 
   Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      final enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-      //print('GoodsDetailsScreen: baseUrl set to $baseUrl');
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-      //print('GoodsDetailsScreen: Error initializing baseUrl: $error');
-    }
-  }
-
-  Future<void> _checkPermissions() async {
   try {
-    final prefs = await SharedPreferences.getInstance();
-    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
-    final bool canUpdate = await _apiService.hasPermission('product.update');
-
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
     setState(() {
-      _canUpdateProduct = canUpdate && !integrationWith1C;
-      //print('GoodsDetailsScreen: _canUpdateProduct установлен в $_canUpdateProduct (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
+      baseUrl = staticBaseUrl;
     });
-  } catch (e) {
+  } catch (error) {
     setState(() {
-      _canUpdateProduct = false;
-      //print('GoodsDetailsScreen: Ошибка при проверке прав: $e');
+      baseUrl = 'https://shamcrm.com/storage';
     });
   }
 }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+      final bool canUpdate = await _apiService.hasPermission('product.update');
+      setState(() {
+        _canUpdateProduct = canUpdate && !integrationWith1C;
+      });
+    } catch (e) {
+      setState(() {
+        _canUpdateProduct = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
-    //print('GoodsDetailsScreen: Disposed timer and page controller');
     super.dispose();
   }
 
   void _startAutoScroll(int itemCount) {
-    if (itemCount <= 1) {
-      //print('GoodsDetailsScreen: Auto-scroll not started, itemCount: $itemCount');
-      return;
-    }
-    
+    if (itemCount <= 1) return;
     _isAutoScrollEnabled = true;
     _timer?.cancel();
-    
+
     void scrollToNextPage() {
       if (!_isAutoScrollEnabled) {
         _timer?.cancel();
-        //print('GoodsDetailsScreen: Auto-scroll stopped due to manual interaction');
         return;
       }
-      
       setState(() {
         if (_currentPage >= itemCount - 1) {
           _currentPage = 0;
@@ -117,7 +104,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           );
           _isAutoScrollEnabled = false;
           _timer?.cancel();
-          //print('GoodsDetailsScreen: Auto-scroll completed one cycle, returned to page 0 and stopped');
           return;
         } else {
           _currentPage++;
@@ -126,19 +112,16 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-          //print('GoodsDetailsScreen: Auto-scroll to page $_currentPage');
           _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
         }
       });
     }
 
     _timer = Timer(const Duration(seconds: 2), scrollToNextPage);
-    //print('GoodsDetailsScreen: Auto-scroll started for $itemCount items');
   }
 
   Widget _buildImageSlider(List<GoodsFile> files) {
     if (baseUrl == null) {
-      //print('GoodsDetailsScreen: baseUrl is null, showing loading indicator');
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -147,19 +130,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     if (mainImageIndex != -1) {
       final mainImage = sortedFiles.removeAt(mainImageIndex);
       sortedFiles.insert(0, mainImage);
-      //print('GoodsDetailsScreen: Main image (ID: ${mainImage.id}) moved to index 0');
-    } else {
-      //print('GoodsDetailsScreen: No main image found, using original order');
-    }
-
-    final multipleMainImages = sortedFiles.where((file) => file.isMain).length > 1;
-    if (multipleMainImages) {
-      //print('GoodsDetailsScreen: Warning: Multiple images with isMain == true detected');
     }
 
     _startAutoScroll(sortedFiles.length);
 
-    //print('GoodsDetailsScreen: Building image slider with ${sortedFiles.length} files');
     return Column(
       children: [
         Container(
@@ -174,13 +148,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 _isAutoScrollEnabled = false;
                 _timer?.cancel();
               });
-              //print('GoodsDetailsScreen: Image page changed to $index (ID: ${sortedFiles[index].id}) manually');
             },
             itemBuilder: (context, index) {
               final imageUrl = '$baseUrl/${sortedFiles[index].path}';
-              //print('GoodsDetailsScreen: Loading image $imageUrl');
               if (sortedFiles[index].path.isEmpty) {
-                //print('GoodsDetailsScreen: Empty image path at index $index');
                 return _buildPlaceholder();
               }
               return ClipRRect(
@@ -189,10 +160,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    //print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
-                    return _buildPlaceholder();
-                  },
+                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
                 ),
               );
             },
@@ -218,7 +186,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
-    //print('GoodsDetailsScreen: Displaying image placeholder');
     return Container(
       color: Colors.grey[200],
       child: const Center(
@@ -228,7 +195,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    //print('GoodsDetailsScreen: Building AppBar with title $title');
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -236,19 +202,21 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       centerTitle: false,
       leadingWidth: 40,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
-          child: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png',
-                width: 24, height: 24),
-            onPressed: () {
-              //print('GoodsDetailsScreen: Back button pressed');
-              Navigator.pop(context);
-            },
-          ),
-        ),
-      ),
+  padding: const EdgeInsets.only(left: 0),
+  child: Transform.translate(
+    offset: const Offset(0, -2),
+    child: IconButton(
+      icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+      onPressed: () {
+        Navigator.pop(context);
+        // Если пришли из поиска по штрихкоду, дополнительно обновляем список
+        if (widget.isFromBarcodeSearch) {
+          // Это обработается в GoodsScreen через .then()
+        }
+      },
+    ),
+  ),
+),
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
@@ -261,108 +229,75 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ),
         ),
       ),
-     actions: widget.showActions && _canUpdateProduct
-    ? [
-        BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
-          builder: (context, state) {
-            //print('GoodsDetailsScreen: Building AppBar actions, state: $state');
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
-                  onPressed: state is GoodsByIdLoaded
-                      ? () async {
-                          //print('GoodsDetailsScreen: Edit button pressed');
-                          final sortedFiles = List<GoodsFile>.from(state.goods.files);
-                          final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
-                          if (mainImageIndex != -1) {
-                            final mainImage = sortedFiles.removeAt(mainImageIndex);
-                            sortedFiles.insert(0, mainImage);
-                          }
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GoodsEditScreen(
-                                goods: state.goods,
-                                sortedFiles: sortedFiles,
-                                initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
-                              ),
-                            ),
-                          );
-                          if (result == true) {
-                            //print('GoodsDetailsScreen: Goods edited, refreshing ID ${widget.id}');
-                            context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
-                          }
-                        }
-                      : null,
-                ),
-              ],
-            );
-          },
-        ),
-      ]
-    : null,
+      actions: widget.showActions && _canUpdateProduct
+          ? [
+              BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
+                builder: (context, state) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
+                        onPressed: state is GoodsByIdLoaded
+                            ? () async {
+                                final sortedFiles = List<GoodsFile>.from(state.goods.files);
+                                final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
+                                if (mainImageIndex != -1) {
+                                  final mainImage = sortedFiles.removeAt(mainImageIndex);
+                                  sortedFiles.insert(0, mainImage);
+                                }
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => GoodsEditScreen(
+                                      goods: state.goods,
+                                      sortedFiles: sortedFiles,
+                                      initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
+                                    ),
+                                  ),
+                                );
+                                if (result == true) {
+                                  context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+                                }
+                              }
+                            : null,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ]
+          : null,
     );
   }
 
   Widget _buildDetailsList(Goods goods) {
     List<String> labels = [];
-    if (goods.isPopular) {
-      labels.add(AppLocalizations.of(context)!.translate('hit'));
-    }
-    if (goods.isSale) {
-      labels.add(AppLocalizations.of(context)!.translate('promotion'));
-    }
-    if (goods.isNew) {
-      labels.add(AppLocalizations.of(context)!.translate('new'));
-    }
-    String labelsValue = labels.isNotEmpty
-        ? labels.join(', ')
-        : AppLocalizations.of(context)!.translate('');
+    if (goods.isPopular) labels.add(AppLocalizations.of(context)!.translate('hit'));
+    if (goods.isSale) labels.add(AppLocalizations.of(context)!.translate('promotion'));
+    if (goods.isNew) labels.add(AppLocalizations.of(context)!.translate('new'));
+    String labelsValue = labels.isNotEmpty ? labels.join(', ') : '';
+
     details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('goods_name_details'),
-        'value': goods.name ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('goods_description_details'),
-        'value': goods.description ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('category_details'),
-        'value': goods.category.name ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('label'),
-        'value': goods.label?.name ?? '',
-      },
+      {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': goods.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': goods.description ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': goods.category.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('label'), 'value': goods.label?.name ?? ''},
       {
         'label': AppLocalizations.of(context)!.translate('branch_details'),
         'value': goods.branches != null && goods.branches!.isNotEmpty
             ? goods.branches!.map((branch) => branch.name).join(', ')
-            : AppLocalizations.of(context)!.translate(''),
+            : '',
       },
       if (goods.discountPrice != null && goods.discountPrice != 0)
-        {
-          'label': AppLocalizations.of(context)!.translate('discount_price_details'),
-          'value': goods.discountPrice.toString(),
-        },
+        {'label': AppLocalizations.of(context)!.translate('discount_price_details'), 'value': goods.discountPrice.toString()},
       if (goods.discountPercent != null && goods.discountPercent != 0)
-        {
-          'label': AppLocalizations.of(context)!.translate('discount_percent'),
-          'value': '${goods.discountPercent}%',
-        },
+        {'label': AppLocalizations.of(context)!.translate('discount_percent'), 'value': '${goods.discountPercent}%'},
       ...goods.attributes
-          .where((attr) =>
-              attr.name.isNotEmpty &&
-              attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
-          .map((attr) => {
-                'label': attr.name,
-                'value': attr.value,
-              }),
+          .where((attr) => attr.name.isNotEmpty && attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
+          .map((attr) => {'label': attr.name, 'value': attr.value}),
       {
         'label': AppLocalizations.of(context)!.translate('goods_finished'),
         'value': goods.isActive ?? false
@@ -370,13 +305,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             : AppLocalizations.of(context)!.translate('inactive_swtich'),
       },
       if (goods.comments != null && goods.comments!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('client_comments'),
-          'value': goods.comments!,
-        },
+        {'label': AppLocalizations.of(context)!.translate('client_comments'), 'value': goods.comments!},
     ];
 
-    //print('GoodsDetailsScreen: Построение списка деталей с ${details.length} элементами');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,19 +335,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        goods.discountedPrice != null
-                            ? goods.discountPrice.toString()
-                            : goods.discountPrice.toString(),
+                        goods.discountedPrice != null ? goods.discountPrice.toString() : goods.discountPrice.toString(),
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: goods.discountedPrice != null
-                              ? Colors.grey
-                              : const Color(0xFF1E2E52),
-                          decoration: goods.discountedPrice != null
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                          color: goods.discountedPrice != null ? Colors.grey : const Color(0xFF1E2E52),
+                          decoration: goods.discountedPrice != null ? TextDecoration.lineThrough : TextDecoration.none,
                         ),
                       ),
                       if (goods.discountedPrice != null)
@@ -435,14 +360,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               ],
             ),
           ),
-        if (goods.variants != null && goods.variants!.isNotEmpty)
-          _buildVariantsSection(goods),
+        if (goods.variants != null && goods.variants!.isNotEmpty) _buildVariantsSection(goods),
       ],
     );
   }
 
   Widget _buildVariantsSection(Goods goods) {
-    //print('GoodsDetailsScreen: Building variants section with ${goods.variants!.length} variants');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,51 +394,33 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
     final price = variant.variantPrice?.price ?? 0.0;
-    //print('GoodsDetailsScreen: Building variant card for variant ID ${variant.id}');
-
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
-        final attrName = attrValue.categoryAttribute?.attribute?.name ??
-            AppLocalizations.of(context)!.translate('unknown_characteristic');
-        final value = attrValue.value.isNotEmpty
-            ? attrValue.value
-            : AppLocalizations.of(context)!.translate('');
-        uniqueAttributes.add({
-          'name': attrName,
-          'value': value,
-        });
-        //print('GoodsDetailsScreen: Attribute - name: $attrName, value: $value');
+        final attrName = attrValue.categoryAttribute?.attribute?.name ?? AppLocalizations.of(context)!.translate('unknown_characteristic');
+        final value = attrValue.value.isNotEmpty ? attrValue.value : '';
+        uniqueAttributes.add({'name': attrName, 'value': value});
       }
     } else {
-      //print('GoodsDetailsScreen: No attribute values for variant ${variant.id}');
       uniqueAttributes.add({
         'name': AppLocalizations.of(context)!.translate('no_name_chat'),
-        'value': AppLocalizations.of(context)!.translate(''),
+        'value': '',
       });
     }
 
     List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
-
     String? imageUrl;
     if (variant.files != null && variant.files!.isNotEmpty) {
       imageUrl = '$baseUrl/${variant.files!.first.path}';
-      //print('GoodsDetailsScreen: Using variant image: $imageUrl');
     } else if (goodsFiles.isNotEmpty) {
       imageUrl = '$baseUrl/${goodsFiles.first.path}';
-      //print('GoodsDetailsScreen: Falling back to goods image: $imageUrl');
-    } else {
-      //print('GoodsDetailsScreen: No images available for variant ${variant.id}');
     }
 
     return GestureDetector(
       onTap: () {
-        //print('GoodsDetailsScreen: Navigating to VariantDetailsScreen for variant ${variant.id}');
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => VariantDetailsScreen(variant: variant),
-          ),
+          MaterialPageRoute(builder: (context) => VariantDetailsScreen(variant: variant)),
         );
       },
       child: Card(
@@ -528,11 +433,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: _buildVariantImage(imageUrl),
-              ),
+              SizedBox(width: 120, height: 120, child: _buildVariantImage(imageUrl)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -609,12 +510,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   Widget _buildVariantImage(String? imageUrl) {
     if (imageUrl == null) {
-      //print('GoodsDetailsScreen: No image URL, showing placeholder');
       return Container(
         color: Colors.grey[200],
-        child: const Center(
-          child: Icon(Icons.image, size: 50, color: Colors.grey),
-        ),
+        child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
       );
     }
     return ClipRRect(
@@ -622,15 +520,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       child: Image.network(
         imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          //print('GoodsDetailsScreen: Image load error for $imageUrl: $error');
-          return Container(
-            color: Colors.grey[200],
-            child: const Center(
-              child: Icon(Icons.image, size: 50, color: Colors.grey),
-            ),
-          );
-        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.grey[200],
+          child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+        ),
       ),
     );
   }
@@ -644,12 +537,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     ];
 
     bool isExpandable = expandableFields.contains(label) ||
-        details.any((detail) =>
-            detail['label'] == label &&
-            detail['value'] == value &&
-            !expandableFields.contains(label));
+        details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
 
-    //print('GoodsDetailsScreen: Building detail item - label: $label, value: $value');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -658,10 +547,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         Expanded(
           child: isExpandable
               ? GestureDetector(
-                  onTap: () {
-                    //print('GoodsDetailsScreen: Detail item tapped - $label');
-                    _showFullTextDialog(label.replaceAll(':', ''), value);
-                  },
+                  onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
                   child: _buildValue(value, label, maxLines: 1),
                 )
               : _buildValue(value, label, maxLines: 1),
@@ -683,9 +569,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
-    if (label == AppLocalizations.of(context)!.translate('goods_description_details') &&
-        value == 'null') {
-      //print('GoodsDetailsScreen: Empty description for $label');
+    if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
       return const Text(
         '',
         style: TextStyle(
@@ -699,10 +583,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       );
     }
 
-    if (value.isEmpty) {
-      //print('GoodsDetailsScreen: Empty value for $label');
-      return Container();
-    }
+    if (value.isEmpty) return Container();
     return Text(
       value,
       style: TextStyle(
@@ -720,7 +601,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    //print('GoodsDetailsScreen: Showing full text dialog - title: $title');
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -761,10 +641,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               padding: const EdgeInsets.all(16),
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('close'),
-                onPressed: () {
-                  //print('GoodsDetailsScreen: Closing full text dialog');
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 buttonColor: const Color(0xff1E2E52),
                 textColor: Colors.white,
               ),
@@ -778,31 +655,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _updateDetails();
-  }
-
-  void _updateDetails() {
     details = [];
-    //print('GoodsDetailsScreen: Details reset');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(
-        context,
-        AppLocalizations.of(context)!.translate('view_goods'),
-      ),
+      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_goods')),
       backgroundColor: Colors.white,
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            //print('GoodsDetailsScreen: Error state - ${state.message}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
           } else if (state is GoodsByIdDeleted) {
-            //print('GoodsDetailsScreen: Goods deleted successfully');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppLocalizations.of(context)!.translate('product_deleted'))),
             );
@@ -811,49 +676,25 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         },
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
-            //print('GoodsDetailsScreen: Loading state');
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-            );
+            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
-            //print('GoodsDetailsScreen: Loaded goods ID ${goods.id}, name: ${goods.name}');
             details = [
-              {
-                'label': AppLocalizations.of(context)!.translate('goods_name_details'),
-                'value': goods.name ?? '',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('goods_description_details'),
-                'value': goods.description ?? '',
-              },
+              {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': goods.name ?? ''},
+              {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': goods.description ?? ''},
               if (goods.discountPrice != null && goods.discountPrice != 0)
-                {
-                  'label': AppLocalizations.of(context)!.translate('discount_price_details'),
-                  'value': goods.discountPrice.toString(),
-                },
-              {
-                'label': AppLocalizations.of(context)!.translate('stock_quantity_details'),
-                'value': goods.quantity?.toString() ?? '0',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('category_details'),
-                'value': goods.category.name ?? '',
-              },
+                {'label': AppLocalizations.of(context)!.translate('discount_price_details'), 'value': goods.discountPrice.toString()},
+              {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': goods.quantity?.toString() ?? '0'},
+              {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': goods.category.name ?? ''},
               {
                 'label': AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
-                    : AppLocalizations.of(context)!.translate(''),
+                    : '',
               },
               ...goods.attributes
-                  .where((attr) =>
-                      attr.name.isNotEmpty &&
-                      attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
-                  .map((attr) => {
-                        'label': attr.name,
-                        'value': attr.value,
-                      }),
+                  .where((attr) => attr.name.isNotEmpty && attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
+                  .map((attr) => {'label': attr.name, 'value': attr.value}),
               {
                 'label': AppLocalizations.of(context)!.translate('goods_finished'),
                 'value': goods.isActive ?? false
@@ -861,28 +702,24 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     : AppLocalizations.of(context)!.translate('inactive_swtich'),
               },
             ];
-            //print('GoodsDetailsScreen: Details populated with ${details.length} items');
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
                 children: [
-                  if (goods.files != null && goods.files.isNotEmpty)
-                    _buildImageSlider(goods.files),
+                  if (goods.files != null && goods.files.isNotEmpty) _buildImageSlider(goods.files),
                   _buildDetailsList(goods),
                 ],
               ),
             );
           } else if (state is GoodsByIdEmpty) {
-            //print('GoodsDetailsScreen: Empty state');
             return Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
           } else if (state is GoodsByIdError) {
             return Center(child: Text(state.message));
           }
-          //print('GoodsDetailsScreen: Default loading state');
           return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );
   }
-} 
+}

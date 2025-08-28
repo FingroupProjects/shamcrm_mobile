@@ -35,11 +35,8 @@ class FileUtils {
         downloadProgress[fileId] = 0;
       });
 
-      final enteredDomainMap = await apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      final fullUrl = Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+      // Используем новый универсальный метод для получения полного URL файла
+      final fullUrl = await apiService.getFileUrl(fileUrl);
 
       final appDir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${appDir.path}/cached_files');
@@ -51,7 +48,7 @@ class FileUtils {
       final filePath = '${cacheDir.path}/$fileName';
 
       final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath, onReceiveProgress: (received, total) {
+      await dio.download(fullUrl, filePath, onReceiveProgress: (received, total) {
         if (total != -1) {
           setState(() {
             downloadProgress[fileId] = received / total;

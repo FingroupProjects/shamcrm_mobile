@@ -40,7 +40,7 @@ class ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/chat_support.png';
+    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/image.png';
     bool isLeadsSection = endPointInTab == 'lead';
 
     return Padding(
