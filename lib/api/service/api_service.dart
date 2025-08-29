@@ -150,7 +150,31 @@ Future<void> _initializeIfDomainExists() async {
   }
 }
 
-
+Future<String> getWsHost() async {
+  // Аналогично getSocketBaseUrl, но без path
+  String? verifiedDomain = await getVerifiedDomain();
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    return verifiedDomain;  // e.g. 'example.com'
+  }
+  
+  // QR data
+  Map<String, String?> qrData = await getQrData();
+  String? qrDomain = qrData['domain'];
+  String? qrMainDomain = qrData['mainDomain'];
+  if (qrDomain != null && qrMainDomain != null) {
+    return '$qrDomain-back.$qrMainDomain';
+  }
+  
+  // Old entered
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain'];
+  String? domain = domains['enteredDomain'];
+  if (domain != null && mainDomain != null) {
+    return '$domain-back.$mainDomain';
+  }
+  
+  throw Exception('Домен для WebSocket не найден');
+}
 
 Future<void> initialize() async {
   try {
