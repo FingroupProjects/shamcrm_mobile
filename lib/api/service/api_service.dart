@@ -5115,11 +5115,11 @@ Future<PaginationDTO<Chats>> getAllChats(
 }
 Future<ChatsGetId> getChatById(int chatId) async {
   final token = await getToken();
-  String path = '/v2/chat/$chatId';
+  String path = '/chat/$chatId';
   path = await _appendQueryParams(path);
   
   if (kDebugMode) {
-    //print('ApiService.getChatById: Generated path: $path');
+    print('ApiService.getChatById: Generated path: $path');
   }
 
   final response = await http.get(
@@ -5134,8 +5134,8 @@ Future<ChatsGetId> getChatById(int chatId) async {
   );
 
   if (kDebugMode) {
-    //print('ApiService.getChatById: Response status: ${response.statusCode}');
-    //print('ApiService.getChatById: Response body: ${response.body}');
+    print('ApiService.getChatById: Response status: ${response.statusCode}');
+    print('ApiService.getChatById: Response body: ${response.body}');
   }
 
   if (response.statusCode == 200) {
