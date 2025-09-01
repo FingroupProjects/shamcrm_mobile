@@ -83,6 +83,8 @@
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Для загрузки изображения с QR-кодом.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>$(PROJECT_NAME) requires access to media library</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
