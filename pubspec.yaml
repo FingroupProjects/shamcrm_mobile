@@ -70,6 +70,11 @@ dependencies:
   audio_service: ^0.18.18
   audio_metadata_reader: ^1.4.2
   flutter_slidable: ^4.0.1
+  geolocator: ^14.0.2
+  sensors_plus: ^6.1.2
+  flutter_foreground_task: ^9.1.0
+  pedometer: ^4.1.1
+  flutter_map: ^6.2.0
 
 
 

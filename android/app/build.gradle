@@ -80,4 +80,5 @@ flutter {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation 'com.google.zxing:core:3.5.2'  // Явно добавить ZXing для qr_code_scanner
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
 }
