@@ -16,6 +16,7 @@ import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/gps/background_location_service.dart';
+import 'package:crm_task_manager/screens/gps/log_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -1499,10 +1500,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => MusicPage(),
+                              builder: (context) => GpsScreen(),
                             ),
                           );
                           break;
+                          //  case 'log':
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => LogScreen(),
+                          //   ),
+                          // );
+                          // break;
                       }
                     },
                     itemBuilder: (BuildContext context) =>
@@ -1643,25 +1652,39 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ],
                               ),
                             ),
-                          // if (widget.showGps && _canReadGps) // Новый пункт для GPS
-                          //             PopupMenuItem<String>(
-                          //               value: 'gps',
-                          //               child: Row(
-                          //                 children: [
-                          //                   Image.asset(
-                          //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
-                          //                     width: 24,
-                          //                     height: 24,
-                          //                     color: _iconColor,
-                          //                   ),
-                          //                   SizedBox(width: 8),
-                          //                   Text(AppLocalizations.of(context)!.translate('gps')),
-                          //                 ],
-                          //               ),
-                          //             ),
+                       if (widget.showGps && _canReadGps) // Новый пункт для GPS
+                          PopupMenuItem<String>(
+                            value: 'gps',
+                            child: Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/AppBar/call_center.png', // Добавь иконку в assets
+                                  width: 24,
+                                  height: 24,
+                                ),
+                                SizedBox(width: 8),
+                                Text(AppLocalizations.of(context)!.translate('gps')),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<String>(
+  value: 'logs',
+  child: Row(
+    children: [
+      Image.asset(
+        'assets/icons/AppBar/call_center.png', // Добавь иконку в assets
+        width: 24,
+        height: 24,
+      ),
+      SizedBox(width: 8),
+      Text(AppLocalizations.of(context)!.translate('logs')),
+    ],
+  ),
+),
                         ]))
-        ]));
-  }
+                        ]));
+
+                  }
 
   void navigateToLeadManagerFilterScreen(BuildContext context) {
     Navigator.push(

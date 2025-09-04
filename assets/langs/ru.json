@@ -1168,7 +1168,28 @@
   "deal_number": "Номер сделки",
   "show_on_main_page": "Показать на карточке лида",
   "goods_not_found": "Товар не найден",
-"show_all": "Показать все"
+"show_all": "Показать все",
+"gps_tracking": "GPS Трекинг",
+"tracking_status": "Статус трекинга",
+"status": "Статус",
+"active": "Активен",
+"inactive": "Отключен",
+"user_id": "ID пользователя",
+"latitude": "Широта",
+"longitude": "Долгота",
+"time": "Время",
+"response": "Ответ",
+"error": "Ошибка",
+"no_logs": "Логи отсутствуют",
+"clear_logs": "Очистить логи",
+"map": "Карта",
+"no_location": "Местоположение недоступно",
+"login": "Вход",
+"phone": "Телефон",
+"password": "Пароль",
+"login_error": "Ошибка входа",
+"not_found": "Не найдено"
+
 
  
 

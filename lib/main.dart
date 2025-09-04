@@ -1,6 +1,8 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:background_location_tracker/background_location_tracker.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/api/service/gps_tracker_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
@@ -124,7 +126,17 @@ void main() async {
   }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
-
+  await BackgroundLocationTrackerManager.initialize(
+  backgroundCallback,
+  config: BackgroundLocationTrackerConfig(
+    loggingEnabled: true,
+    androidConfig: AndroidConfig(
+      notificationIcon: 'ic_launcher', // Из ShamCRM assets
+      trackingInterval: Duration(seconds: 60), // Каждую минуту
+      distanceFilterMeters: null,
+    ),
+  ),
+);
   await AppTrackingTransparency.requestTrackingAuthorization();
 
   await Firebase.initializeApp(

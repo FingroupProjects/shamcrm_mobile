@@ -70,6 +70,10 @@ dependencies:
   audio_service: ^0.18.18
   audio_metadata_reader: ^1.4.2
   flutter_slidable: ^4.0.1
+  background_location_tracker: ^1.6.1  # Для фонового трекинга
+  flutter_map: ^8.2.1
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
 
 
 

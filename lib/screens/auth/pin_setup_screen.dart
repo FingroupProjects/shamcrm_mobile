@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:background_location_tracker/background_location_tracker.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
@@ -18,6 +19,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PinSetupScreen extends StatefulWidget {
@@ -177,59 +179,89 @@ Future<void> _fetchMiniAppSettings() async {
     });
   }
 
-  Future<void> _loadUserRoleId() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences
-
-.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-      if (userId.isEmpty) {
-        setState(() {
-          userRoleId = 0;
-        });
-        return;
-      }
-
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      setState(() {
-        userRoleId = userProfile.role!.first.id;
-      });
-
-      await prefs.setInt('userRoleId', userRoleId!);
-      await prefs.setString('userRoleName', userProfile.role![0].name);
-
-      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-
-      setState(() {
-        isPermissionsLoaded = true;
-      });
-    } catch (e) {
-      //print('Error loading user role: $e');
+Future<void> _loadUserRoleId() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
+    print('PinSetupScreen: Loaded userID: $userId');
+    if (userId.isEmpty || userId == '1') {
+      print('PinSetupScreen: Invalid userID ($userId), setting userRoleId to 0');
       setState(() {
         userRoleId = 0;
       });
+      return;
     }
-  }
 
-  Future<void> _validatePins() async {
-    if (_pin == _confirmPin) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_pin', _pin);
-      if (isPermissionsLoaded) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-          (Route<dynamic> route) => false,
-        );
-      }
-    } else {
-      _triggerErrorEffect();
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    print('PinSetupScreen: Fetched user profile: id=$userId, roleId=${userProfile.role!.first.id}');
+    setState(() {
+      userRoleId = userProfile.role!.first.id;
+    });
+
+    await prefs.setInt('userRoleId', userRoleId!);
+    await prefs.setString('userRoleName', userProfile.role![0].name);
+
+    // Запрос разрешений на геолокацию
+    final locationStatus = await Permission.location.status;
+    print('PinSetupScreen: Location permission status: $locationStatus');
+    
+    if (!locationStatus.isGranted) {
+      await Permission.location.request();
+      print('PinSetupScreen: Requested location permission');
     }
+
+    final locationAlwaysStatus = await Permission.locationAlways.status;
+    print('PinSetupScreen: Location always permission status: $locationAlwaysStatus');
+    print('GPS: Location permissions - location: $locationStatus, always: $locationAlwaysStatus');
+
+    if (!locationAlwaysStatus.isGranted) {
+      await Permission.locationAlways.request();
+      print('PinSetupScreen: Requested location always permission');
+    }
+
+    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+    BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+
+    setState(() {
+      isPermissionsLoaded = true;
+    });
+  } catch (e) {
+    print('PinSetupScreen: Error loading user role: $e');
+    setState(() {
+      userRoleId = 0;
+    });
   }
+}
+
+ Future<void> _validatePins() async {
+  if (_pin == _confirmPin) {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_pin', _pin);
+    print('PinSetupScreen: PIN set successfully');
+
+    // Инициализация трекинга
+    if (userRoleId != null && userRoleId != 0) {
+      try {
+        await BackgroundLocationTrackerManager.startTracking();
+        print('PinSetupScreen: GPS tracking started');
+      } catch (e) {
+        print('PinSetupScreen: Failed to start GPS tracking: $e');
+      }
+    }
+
+    if (isPermissionsLoaded) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  } else {
+    _triggerErrorEffect();
+  }
+}
 
   void _triggerErrorEffect() async {
     setState(() {

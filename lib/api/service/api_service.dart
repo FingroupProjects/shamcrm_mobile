@@ -9954,4 +9954,54 @@ Future<OperatorList> getOperators() async {
 }
 
 //________________________________  END_______API_SCREEN__CALLS____________________________________________//
+
+Future<Map<String, dynamic>> sendGpsData(Map<String, dynamic> data) async {
+  String path = '/gps/send';
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: sendGpsData - Generated path: $path');
+    print('ApiService: sendGpsData - Data: $data');
+  }
+  try {
+    final response = await _postRequest(path, data);
+    if (kDebugMode) {
+      print('ApiService: GPS data sent successfully: ${response.body}');
+    }
+    return json.decode(response.body);
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Failed to send GPS data to $path: $e');
+    }
+    return {'status': 'error', 'message': e.toString(), 'data': data};
+  }
+}
+
+Future<Map<String, dynamic>> sendGpsDataBatch(List<Map<String, dynamic>> dataList) async {
+  String path = '/gps/send_batch';
+  path = await _appendQueryParams(path);
+  if (kDebugMode) {
+    print('ApiService: sendGpsDataBatch - Generated path: $path');
+    print('ApiService: sendGpsDataBatch - DataList count: ${dataList.length}');
+  }
+  
+  // Создаем правильную структуру для batch запроса
+  final requestData = {
+    'batch_data': dataList,
+    'count': dataList.length,
+  };
+  
+  try {
+    final response = await _postRequest(path, requestData);
+    if (kDebugMode) {
+      print('ApiService: GPS batch data sent successfully: ${response.body}');
+    }
+    return json.decode(response.body);
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Failed to send GPS batch data to $path: $e');
+    }
+    rethrow;
+  }
+}
+
 }

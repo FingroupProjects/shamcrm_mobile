@@ -21,6 +21,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
@@ -96,6 +97,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     await _fetchMiniAppSettings();
     await _fetchTutorialProgress();
     await _fetchSettings();
+    await Permission.location.request();
+await Permission.locationAlways.request();
   }
 
   // Остальные методы без изменений

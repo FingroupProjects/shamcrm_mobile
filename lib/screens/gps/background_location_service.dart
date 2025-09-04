@@ -1,530 +1,460 @@
-import 'dart:io';
-import 'dart:typed_data';
+import 'dart:convert';
+import 'package:crm_task_manager/screens/gps/log_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:audio_metadata_reader/audio_metadata_reader.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:background_location_tracker/background_location_tracker.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class MusicPlayerService {
-  static AudioPlayer? _instance;
-  static bool _isInitialized = false;
-  
-  static AudioPlayer get player {
-    if (!_isInitialized) {
-      _instance = AudioPlayer();
-      _isInitialized = true;
-    }
-    return _instance!;
-  }
-  
-  static void dispose() {
-    _instance?.dispose();
-    _instance = null;
-    _isInitialized = false;
-  }
-}
-
-class MusicPage extends StatefulWidget {
-  const MusicPage({super.key});
+class GpsScreen extends StatefulWidget {
+  const GpsScreen({Key? key}) : super(key: key);
 
   @override
-  State<MusicPage> createState() => _MusicPageState();
+  _GpsScreenState createState() => _GpsScreenState();
 }
 
-class _MusicPageState extends State<MusicPage> with WidgetsBindingObserver {
-  List<Map<String, dynamic>> _songs = [];
-  int? _currentIndex;
-  bool _isPlaying = false;
-  bool _isLoading = true;
-
-  // Используем глобальный плеер
-  AudioPlayer get _player => MusicPlayerService.player;
+class _GpsScreenState extends State<GpsScreen> with SingleTickerProviderStateMixin {
+  bool isTracking = false;
+  String? userId;
+  List<Map<String, dynamic>> logs = [];
+  LatLng? currentLocation;
+  late AnimationController _animationController;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _setupPlayerListeners();
-    _loadSongs();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _loadUserId();
+    _getTrackingStatus();
+    _loadLogs();
+    _initLocationUpdates();
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('userID');
+      print('GpsScreen: Loaded userID: $userId');
+    });
+  }
+
+  Future<void> _getTrackingStatus() async {
+    try {
+      isTracking = await BackgroundLocationTrackerManager.isTracking();
+      setState(() {});
+      print('GpsScreen: Tracking status: $isTracking');
+    } catch (e) {
+      print('GpsScreen: Error getting tracking status: $e');
+    }
+  }
+
+  Future<void> _loadLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final logStrings = prefs.getStringList('gps_logs') ?? [];
+    setState(() {
+      logs = logStrings.map((str) {
+        try {
+          return Map<String, dynamic>.from(jsonDecode(str));
+        } catch (e) {
+          print('GpsScreen: Error decoding log: $e, log: $str');
+          return <String, dynamic>{};
+        }
+      }).where((log) => log.isNotEmpty).toList();
+      // Сортируем логи по времени (новые сначала)
+      logs.sort((a, b) {
+        try {
+          return DateTime.parse(b['timestamp']).compareTo(DateTime.parse(a['timestamp']));
+        } catch (e) {
+          return 0;
+        }
+      });
+      print('GpsScreen: Loaded ${logs.length} logs');
+    });
+  }
+
+  Future<void> _clearLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('gps_logs', []);
+    setState(() {
+      logs = [];
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Логи очищены'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    print('GpsScreen: Logs cleared');
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Проверяем разрешения
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Разрешение на местоположение отклонено');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Разрешение на местоположение отклонено навсегда');
+      }
+
+      // Проверяем службы местоположения
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Службы местоположения отключены');
+      }
+
+      // Получаем текущую позицию
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
+      );
+
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+      });
+
+      // Сохраняем в SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_location', jsonEncode({
+        'lat': position.latitude,
+        'lon': position.longitude,
+      }));
+
+      print('GpsScreen: Got current location: ${position.latitude}, ${position.longitude}');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Местоположение обновлено'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('GpsScreen: Error getting current location: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка получения местоположения: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      // Пытаемся загрузить последнее известное местоположение
+      await _loadLastKnownLocation();
+    } finally {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
+  Future<void> _loadLastKnownLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastLocation = prefs.getString('last_location');
+    if (lastLocation != null) {
+      try {
+        final locationData = jsonDecode(lastLocation);
+        setState(() {
+          currentLocation = LatLng(locationData['lat'], locationData['lon']);
+        });
+        print('GpsScreen: Loaded last known location: $currentLocation');
+      } catch (e) {
+        print('GpsScreen: Error loading last known location: $e');
+      }
+    }
+  }
+
+  Future<void> _initLocationUpdates() async {
+    // Сначала загружаем последнее известное местоположение
+    await _loadLastKnownLocation();
+
+    // Затем пытаемся получить текущее местоположение
+    if (currentLocation == null) {
+      await _getCurrentLocation();
+    }
+
+    // Подписываемся на обновления от background tracker
+    try {
+      BackgroundLocationTrackerManager.handleBackgroundUpdated(
+        (data) async {
+          setState(() {
+            currentLocation = LatLng(data.lat, data.lon);
+          });
+          
+          // Сохраняем обновленное местоположение
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('last_location', jsonEncode({
+            'lat': data.lat,
+            'lon': data.lon,
+          }));
+          
+          print('GpsScreen: Received location update: $currentLocation');
+        },
+      );
+    } catch (e) {
+      print('GpsScreen: Error setting up location updates: $e');
+    }
+  }
+
+  Future<void> _showMapScreen() async {
+    // Если нет текущего местоположения, пытаемся его получить
+    if (currentLocation == null && !_isLoadingLocation) {
+      await _getCurrentLocation();
+    }
+
+    // Открываем экран карты с текущим местоположением (может быть null)
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapScreen(currentLocation: currentLocation),
+      ),
+    );
+    
+    // После возврата обновляем местоположение
+    await _loadLastKnownLocation();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    // НЕ dispose плеер - он должен работать глобально
+    _animationController.dispose();
     super.dispose();
   }
 
-  void _setupPlayerListeners() {
-    // Слушаем изменения состояния плеера
-    _player.playerStateStream.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state.playing;
-        });
-      }
-    });
-
-    // Обработка окончания трека
-    _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed && _currentIndex != null) {
-        // Автоматически переходим к следующему треку
-        if (_currentIndex! < _songs.length - 1) {
-          _playSong(_currentIndex! + 1);
-        }
-      }
-    });
-  }
-
-  // Обработка изменений состояния приложения
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // Музыка продолжает играть независимо от состояния приложения
-    print('App lifecycle changed to: $state');
-  }
-
-  Future<void> _loadSongs() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Запрос разрешений для Android 13+
-    bool storageGranted = false;
-    
-    if (Platform.isAndroid) {
-      var status = await Permission.audio.request();
-      if (status.isGranted) {
-        storageGranted = true;
-      } else {
-        var legacyStatus = await Permission.storage.request();
-        if (legacyStatus.isGranted) {
-          storageGranted = true;
-        }
-      }
-    } else {
-      storageGranted = true;
-    }
-
-    if (!storageGranted) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    List<Map<String, dynamic>> tempSongs = [];
-
-    // Попробуем разные пути к музыкальным файлам
-    List<String> musicPaths = [
-      "/storage/emulated/0/Music",
-      "/storage/emulated/0/Download", 
-      "/storage/emulated/0/Downloads",
-      "/sdcard/Music",
-      "/sdcard/Download",
-      "/sdcard/Downloads",
-    ];
-
-    for (String path in musicPaths) {
-      final dir = Directory(path);
-      if (await dir.exists()) {
-        try {
-          final files = dir.listSync(recursive: true);
-          
-          for (var file in files) {
-            if (file is File && 
-                (file.path.toLowerCase().endsWith(".mp3") || 
-                 file.path.toLowerCase().endsWith(".m4a") ||
-                 file.path.toLowerCase().endsWith(".wav") ||
-                 file.path.toLowerCase().endsWith(".flac"))) {
-              
-              String title = file.uri.pathSegments.last;
-              String artist = "Unknown Artist";
-              
-              // Убираем расширение из названия
-              if (title.contains('.')) {
-                title = title.substring(0, title.lastIndexOf('.'));
-              }
-
-              tempSongs.add({
-                "file": file,
-                "title": title,
-                "artist": artist,
-                "art": null,
-              });
-            }
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-    }
-
-    setState(() {
-      _songs = tempSongs;
-      _isLoading = false;
-    });
-  }
-
-  // Функция для загрузки обложки по требованию
-  Future<Uint8List?> _loadAlbumArt(File file) async {
+  String _formatTimestamp(String timestamp) {
     try {
-      final metadata = await readMetadata(file, getImage: true);
-      return metadata.pictures.isNotEmpty ? metadata.pictures.first.bytes : null;
+      final dateTime = DateTime.parse(timestamp);
+      return '${dateTime.day.toString().padLeft(2, '0')}.${dateTime.month.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
-      return null;
+      return timestamp;
     }
   }
 
-  Future<void> _playSong(int index) async {
-    try {
-      final file = _songs[index]["file"] as File;
-      
-      // Загружаем обложку только при воспроизведении
-      if (_songs[index]["art"] == null) {
-        final albumArt = await _loadAlbumArt(file);
-        if (mounted) {
-          setState(() {
-            _songs[index]["art"] = albumArt;
-          });
-        }
-      }
-      
-      await _player.setFilePath(file.path);
-      await _player.play();
-      
-      if (mounted) {
-        setState(() {
-          _currentIndex = index;
-          _isPlaying = true;
-        });
-      }
-    } catch (e) {
-      print('Error playing song: $e');
-      // Показать ошибку пользователю
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ошибка воспроизведения: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'success':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'error':
+        return Colors.red;
+      case 'no_internet':
+        return Colors.blue;
+      default:
+        return Colors.grey;
     }
-  }
-
-  Future<void> _playPause() async {
-    try {
-      if (_isPlaying) {
-        await _player.pause();
-      } else {
-        await _player.play();
-      }
-      if (mounted) {
-        setState(() {
-          _isPlaying = !_isPlaying;
-        });
-      }
-    } catch (e) {
-      print('Error toggling playback: $e');
-    }
-  }
-
-  Future<void> _skipToPrevious() async {
-    if (_currentIndex != null && _currentIndex! > 0) {
-      await _playSong(_currentIndex! - 1);
-    }
-  }
-
-  Future<void> _skipToNext() async {
-    if (_currentIndex != null && _currentIndex! < _songs.length - 1) {
-      await _playSong(_currentIndex! + 1);
-    }
-  }
-
-  // Метод для полной остановки музыки
-  Future<void> _stopMusic() async {
-    try {
-      await _player.stop();
-      if (mounted) {
-        setState(() {
-          _isPlaying = false;
-          // НЕ сбрасываем _currentIndex, чтобы UI показывал последний трек
-        });
-      }
-    } catch (e) {
-      print('Error stopping music: $e');
-    }
-  }
-
-  Widget _buildPlayerUI(Map<String, dynamic> song) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Обложка
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              height: 200,
-              width: 200,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade800,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: song["art"] != null
-                  ? Image.memory(
-                      song["art"], 
-                      height: 200, 
-                      width: 200, 
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.music_note, size: 80, color: Colors.white);
-                      },
-                    )
-                  : const Icon(Icons.music_note, size: 80, color: Colors.white),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(song["title"],
-              style: const TextStyle(
-                fontFamily: "Gilroy",
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center),
-          Text(song["artist"] ?? "Unknown Artist",
-              style: const TextStyle(
-                fontFamily: "Gilroy",
-                fontSize: 14,
-                color: Colors.white70,
-              )),
-          const SizedBox(height: 20),
-
-          // Кнопки управления - используем Material для избежания hero анимаций
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(30),
-                  onTap: _currentIndex != null && _currentIndex! > 0 ? _skipToPrevious : null,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.skip_previous, 
-                      color: _currentIndex != null && _currentIndex! > 0 ? Colors.white : Colors.grey, 
-                      size: 36
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(40),
-                  onTap: _playPause,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                      color: Colors.white,
-                      size: 64,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(30),
-                  onTap: _currentIndex != null && _currentIndex! < _songs.length - 1 ? _skipToNext : null,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.skip_next, 
-                      color: _currentIndex != null && _currentIndex! < _songs.length - 1 ? Colors.white : Colors.grey, 
-                      size: 36
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // Кнопка полной остановки
-          const SizedBox(height: 15),
-          Material(
-            color: Colors.red.shade700,
-            borderRadius: BorderRadius.circular(25),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(25),
-              onTap: _stopMusic,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: const Text(
-                  "Остановить музыку",
-                  style: TextStyle(
-                    color: Colors.white, 
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      // Переопределяем поведение кнопки назад
-      onWillPop: () async {
-        Navigator.pop(context);
-        return false; // Не даем системе обработать нажатие назад
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xff111111),
-        appBar: AppBar(
-          backgroundColor: const Color(0xff111111),
-          title: const Text("Музыка", style: TextStyle(fontFamily: "Gilroy", color: Colors.white)),
-          iconTheme: const IconThemeData(color: Colors.white),
-          leading: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => Navigator.pop(context),
-              child: const Icon(Icons.arrow_back, color: Colors.white),
-            ),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.translate('gps_tracking'),
+          style: const TextStyle(fontFamily: 'Gilroy', fontSize: 20, color: Colors.white),
         ),
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white))
-            : _songs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+        backgroundColor: const Color(0xff1E2E52),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.map, color: Colors.white),
+            onPressed: _showMapScreen,
+            tooltip: 'Открыть карту',
+          ),
+          IconButton(
+            icon: const Icon(Icons.my_location, color: Colors.white),
+            onPressed: _getCurrentLocation,
+            tooltip: 'Обновить местоположение',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.white),
+            onPressed: _clearLogs,
+            tooltip: 'Очистить логи',
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Карточка статуса
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'Статус GPS трекинга',
+                      style: const TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Статус трекинга
+                    Row(
                       children: [
-                        const Icon(Icons.music_off, size: 64, color: Colors.white54),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "Музыкальные файлы не найдены", 
-                          style: TextStyle(color: Colors.white, fontSize: 18),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Проверьте папки Music, Downloads", 
-                          style: TextStyle(color: Colors.white54, fontSize: 14),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => _loadSongs(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: isTracking ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
                           ),
-                          child: const Text("Обновить"),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Трекинг: ${isTracking ? "Активен" : "Неактивен"}',
+                          style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    
+                    // UserID
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text(
+                          'UserID: ${userId ?? "Не найден"}',
+                          style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Отображение текущего местоположения
+                    if (_isLoadingLocation)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Получение местоположения...',
+                            style: const TextStyle(fontFamily: 'Gilroy', fontSize: 14, color: Colors.blue),
+                          ),
+                        ],
+                      )
+                    else if (currentLocation != null)
+                      Column(
+                        children: [
+                          Text(
+                            'Текущее местоположение:',
+                            style: const TextStyle(fontFamily: 'Gilroy', fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Широта: ${currentLocation!.latitude.toStringAsFixed(6)}',
+                            style: const TextStyle(fontFamily: 'Gilroy', fontSize: 14),
+                          ),
+                          Text(
+                            'Долгота: ${currentLocation!.longitude.toStringAsFixed(6)}',
+                            style: const TextStyle(fontFamily: 'Gilroy', fontSize: 14),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        'Местоположение недоступно',
+                        style: const TextStyle(fontFamily: 'Gilroy', fontSize: 14, color: Colors.red),
+                      ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (isTracking) {
+                          await BackgroundLocationTrackerManager.stopTracking();
+                        } else {
+                          await BackgroundLocationTrackerManager.startTracking();
+                        }
+                        _getTrackingStatus();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff1E2E52),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(
+                        isTracking ? AppLocalizations.of(context)!.translate('stop') : AppLocalizations.of(context)!.translate('start'),
+                        style: const TextStyle(fontFamily: 'Gilroy', color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: logs.isEmpty
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('no_logs'),
+                      style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16),
+                    ),
                   )
                 : ListView.builder(
-                    itemCount: _songs.length,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: logs.length,
                     itemBuilder: (context, index) {
-                      final song = _songs[index];
-                      final isCurrentSong = _currentIndex == index;
-                      
-                      return Material(
-                        color: isCurrentSong ? Colors.grey.shade900 : Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _playSong(index),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
-                              children: [
-                                // Обложка/иконка
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: Colors.grey.shade800,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: song["art"] != null
-                                        ? Image.memory(
-                                            song["art"], 
-                                            width: 50, 
-                                            height: 50, 
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return const Icon(Icons.music_note, color: Colors.white);
-                                            },
-                                          )
-                                        : const Icon(Icons.music_note, color: Colors.white),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Информация о треке
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        song["title"],
-                                        style: TextStyle(
-                                          color: isCurrentSong ? Colors.blue : Colors.white, 
-                                          fontFamily: "Gilroy",
-                                          fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
-                                          fontSize: 16,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                      final log = logs[index];
+                      return AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(0, _animationController.value * 10),
+                            child: Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${AppLocalizations.of(context)!.translate('time')}: ${log['timestamp']}',
+                                      style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.bold),
+                                    ),
+                                    Text('${AppLocalizations.of(context)!.translate('user_id')}: ${log['user_id']}'),
+                                    Text('${AppLocalizations.of(context)!.translate('latitude')}: ${log['latitude']}'),
+                                    Text('${AppLocalizations.of(context)!.translate('longitude')}: ${log['longitude']}'),
+                                    Text(
+                                      '${AppLocalizations.of(context)!.translate('status')}: ${log['status']}',
+                                      style: TextStyle(
+                                        color: log['status'] == 'success' ? Colors.green : Colors.red,
+                                        fontFamily: 'Gilroy',
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        song["artist"] ?? "Unknown Artist",
-                                        style: const TextStyle(
-                                          color: Colors.white70, 
-                                          fontFamily: "Gilroy",
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    if (log['response'] != null)
+                                      Text('${AppLocalizations.of(context)!.translate('response')}: ${log['response']}'),
+                                    if (log['error'] != null)
+                                      Text('${AppLocalizations.of(context)!.translate('error')}: ${log['error']}'),
+                                  ],
                                 ),
-                                // Индикатор воспроизведения
-                                if (isCurrentSong && _isPlaying)
-                                  const Icon(Icons.volume_up, color: Colors.blue, size: 24),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
-        bottomNavigationBar: _currentIndex != null
-            ? _buildPlayerUI(_songs[_currentIndex!])
-            : null,
+          ),
+        ],
       ),
     );
   }
