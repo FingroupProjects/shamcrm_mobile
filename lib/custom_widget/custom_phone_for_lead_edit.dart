@@ -58,20 +58,23 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   }
 
   void _validatePhoneNumber(String value) {
-    final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-    setState(() {
-      if (value.isEmpty) {
-        _errorText = AppLocalizations.of(context)!.translate('field_required');
-        _hasReachedMaxLength = false;
-      } else if (value.length == maxLength) {
-        _errorText = null;
-        _hasReachedMaxLength = true;
-      } else {
-        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
-        _hasReachedMaxLength = false;
-      }
-    });
-  }
+  final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+  setState(() {
+    if (value.isEmpty) {
+      _errorText = AppLocalizations.of(context)!.translate('field_required');
+      _hasReachedMaxLength = false;
+    } else if (!RegExp(r'^\d+$').hasMatch(value)) {
+      _errorText = AppLocalizations.of(context)!.translate('invalid_phone_format');
+      _hasReachedMaxLength = false;
+    } else if (value.length == maxLength) {
+      _errorText = null;
+      _hasReachedMaxLength = true;
+    } else {
+      _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
+      _hasReachedMaxLength = false;
+    }
+  });
+}
 
   TextInputFormatter _phoneNumberPasteFormatter() {
     return TextInputFormatter.withFunction((oldValue, newValue) {
