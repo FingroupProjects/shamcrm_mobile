@@ -1495,14 +1495,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
-                        case 'gps':
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MusicPage(),
-                            ),
-                          );
-                          break;
+                        // case 'gps':
+                        //   Navigator.push(
+                        //     context,
+                        //     MaterialPageRoute(
+                        //       builder: (context) => MusicPage(),
+                        //     ),
+                        //   );
+                        //   break;
                       }
                     },
                     itemBuilder: (BuildContext context) =>
