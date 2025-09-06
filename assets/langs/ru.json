@@ -1168,7 +1168,9 @@
   "deal_number": "Номер сделки",
   "show_on_main_page": "Показать на карточке лида",
   "goods_not_found": "Товар не найден",
-"show_all": "Показать все"
+"show_all": "Показать все",
+"appbar_warehouse": "Учет",
+"appbar_online_store": "Магазин"
 
  
 
