@@ -16,7 +16,7 @@ import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/gps/background_location_service.dart';
-import 'package:crm_task_manager/screens/gps/log_screen.dart';
+import 'package:crm_task_manager/screens/gps/map_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -1658,29 +1658,29 @@ class _CustomAppBarState extends State<CustomAppBar>
                             child: Row(
                               children: [
                                 Image.asset(
-                                  'assets/icons/AppBar/call_center.png', // Добавь иконку в assets
+                                  'assets/icons/AppBar/location.png', // Добавь иконку в assets
                                   width: 24,
                                   height: 24,
                                 ),
                                 SizedBox(width: 8),
-                                Text(AppLocalizations.of(context)!.translate('gps')),
+                                Text(AppLocalizations.of(context)!.translate('GPS')),
                               ],
                             ),
                           ),
-                          PopupMenuItem<String>(
-  value: 'logs',
-  child: Row(
-    children: [
-      Image.asset(
-        'assets/icons/AppBar/call_center.png', // Добавь иконку в assets
-        width: 24,
-        height: 24,
-      ),
-      SizedBox(width: 8),
-      Text(AppLocalizations.of(context)!.translate('logs')),
-    ],
-  ),
-),
+//                           PopupMenuItem<String>(
+//   value: 'logs',
+//   child: Row(
+//     children: [
+//       Image.asset(
+//         'assets/icons/AppBar/call_center.png', // Добавь иконку в assets
+//         width: 24,
+//         height: 24,
+//       ),
+//       SizedBox(width: 8),
+//       Text(AppLocalizations.of(context)!.translate('logs')),
+//     ],
+//   ),
+// ),
                         ]))
                         ]));
 

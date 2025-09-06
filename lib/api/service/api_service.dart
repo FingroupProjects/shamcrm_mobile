@@ -9955,6 +9955,8 @@ Future<OperatorList> getOperators() async {
 
 //________________________________  END_______API_SCREEN__CALLS____________________________________________//
 
+
+//________________________________  START_______API_SCREEN__GPS____________________________________________//
 Future<Map<String, dynamic>> sendGpsData(Map<String, dynamic> data) async {
   String path = '/gps/send';
   path = await _appendQueryParams(path);
@@ -9977,7 +9979,7 @@ Future<Map<String, dynamic>> sendGpsData(Map<String, dynamic> data) async {
 }
 
 Future<Map<String, dynamic>> sendGpsDataBatch(List<Map<String, dynamic>> dataList) async {
-  String path = '/gps/send_batch';
+  String path = '/gps/send';
   path = await _appendQueryParams(path);
   if (kDebugMode) {
     print('ApiService: sendGpsDataBatch - Generated path: $path');
@@ -9995,7 +9997,27 @@ Future<Map<String, dynamic>> sendGpsDataBatch(List<Map<String, dynamic>> dataLis
     if (kDebugMode) {
       print('ApiService: GPS batch data sent successfully: ${response.body}');
     }
-    return json.decode(response.body);
+    
+    // Изменяем парсинг ответа
+    dynamic decodedBody;
+    try {
+      decodedBody = json.decode(response.body);
+    } catch (e) {
+      // Если не JSON, предполагаем, что это просто число или строка
+      decodedBody = response.body;
+    }
+    
+    // Если decodedBody - это число (например, 1), возвращаем как Map
+    if (decodedBody is int || decodedBody is String) {
+      return {
+        'success': true,
+        'result': decodedBody,
+      };
+    } else if (decodedBody is Map<String, dynamic>) {
+      return decodedBody;
+    } else {
+      throw 'Unexpected response format: $decodedBody';
+    }
   } catch (e) {
     if (kDebugMode) {
       print('ApiService: Failed to send GPS batch data to $path: $e');
@@ -10004,4 +10026,5 @@ Future<Map<String, dynamic>> sendGpsDataBatch(List<Map<String, dynamic>> dataLis
   }
 }
 
+//________________________________  END_______API_SCREEN__GPS____________________________________________//
 }

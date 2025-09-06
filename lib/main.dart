@@ -99,6 +99,7 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'package:crm_task_manager/screens/gps/cache_gps.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -126,17 +127,21 @@ void main() async {
   }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
+ // Очищаем старый кэш при запуске приложения
+  await CacheManager().clearPendingGpsData();
+  print('Main: Cleared pending GPS data on app start');
+
   await BackgroundLocationTrackerManager.initialize(
-  backgroundCallback,
-  config: BackgroundLocationTrackerConfig(
-    loggingEnabled: true,
-    androidConfig: AndroidConfig(
-      notificationIcon: 'ic_launcher', // Из ShamCRM assets
-      trackingInterval: Duration(seconds: 60), // Каждую минуту
-      distanceFilterMeters: null,
+    backgroundCallback,
+    config: const BackgroundLocationTrackerConfig(
+      loggingEnabled: true,
+      androidConfig: AndroidConfig(
+        notificationIcon: 'ic_launcher',
+        trackingInterval: Duration(seconds: 10),
+        distanceFilterMeters: 5.0,
+      ),
     ),
-  ),
-);
+  );
   await AppTrackingTransparency.requestTrackingAuthorization();
 
   await Firebase.initializeApp(

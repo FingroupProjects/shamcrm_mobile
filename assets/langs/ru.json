@@ -1171,24 +1171,45 @@
 "show_all": "Показать все",
 "gps_tracking": "GPS Трекинг",
 "tracking_status": "Статус трекинга",
-"status": "Статус",
-"active": "Активен",
-"inactive": "Отключен",
+
 "user_id": "ID пользователя",
 "latitude": "Широта",
 "longitude": "Долгота",
 "time": "Время",
 "response": "Ответ",
-"error": "Ошибка",
 "no_logs": "Логи отсутствуют",
 "clear_logs": "Очистить логи",
 "map": "Карта",
 "no_location": "Местоположение недоступно",
-"login": "Вход",
-"phone": "Телефон",
+
 "password": "Пароль",
 "login_error": "Ошибка входа",
-"not_found": "Не найдено"
+
+"gps_status": "Статус GPS трекинга",
+"tracking": "Трекинг",
+"current_location": "Текущее местоположение",
+
+"location_unavailable": "Местоположение недоступно",
+"getting_location": "Получение местоположения...",
+"location_updated": "Местоположение обновлено",
+"location_error": "Ошибка получения местоположения",
+"location_permission_denied": "Разрешение на местоположение отклонено",
+"location_permission_denied_forever": "Разрешение на местоположение отклонено навсегда",
+"location_services_disabled": "Службы местоположения отключены",
+"logs_cleared": "Логи очищены",
+"open_map": "Открыть карту",
+"update_location": "Обновить местоположение",
+"start": "Начать",
+"stop": "Остановить",
+"tracking_active": "Трекинг активен",
+"tracking_inactive": "Трекинг не активен",
+  "loading_logs": "Загрузка логов...",
+  "error_loading_logs": "Ошибка загрузки логов",
+  "working_hours_active": "Рабочие часы (8:00–17:00): Трекинг автоматический",
+  "non_working_hours": "Нерабочие часы: Доступен ручной трекинг",
+  "tracking_started": "Трекинг запущен вручную",
+  "tracking_stopped": "Трекинг остановлен вручную"
+
 
 
  

@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:background_location_tracker/background_location_tracker.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/gps/cache_gps.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart'; // Для вычисления расстояния
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma('vm:entry-point')
@@ -19,250 +21,230 @@ class GpsRepo {
   static GpsRepo? _instance;
   final _gpsService = GpsService();
   DateTime? _lastUpdateTime;
-  static const int _minUpdateIntervalSeconds = 60; // Каждую минуту
+  LatLng? _lastLocation; // Последнее сохранённое местоположение
+
+  // Интервал для сохранения геолокации (в секундах)
+  static const int _minUpdateIntervalSeconds = 10; // Каждые 10 секунд
+  // Минимальное расстояние для сохранения новых данных (в метрах)
+  static const double _minDistanceMeters = 5.0;
 
   GpsRepo._();
 
   factory GpsRepo() => _instance ??= GpsRepo._();
 
-Future<void> update(BackgroundLocationUpdateData data) async {
-  final now = DateTime.now();
-  if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < _minUpdateIntervalSeconds) {
-    print('GPS: Skipping update, interval too short');
-    return;
-  }
+  Future<void> update(BackgroundLocationUpdateData data) async {
+    final now = DateTime.now();
+    final newLocation = LatLng(data.lat, data.lon);
 
-  final prefs = await SharedPreferences.getInstance();
-  final userId = prefs.getString('userID');
-  print('GPS: Loaded userID from SharedPreferences: $userId');
-  
-  // Исправленная проверка: userId должен быть валидной строкой с числовым значением
-  if (userId == null || userId.isEmpty) {
-    print('GPS: UserID is null or empty, aborting update');
-    return;
-  }
-  
-  // Проверяем, что userId содержит только цифры
-  if (!RegExp(r'^\d+$').hasMatch(userId)) {
-    print('GPS: Invalid userID format ($userId), aborting update');
-    return;
-  }
-  
-  // Дополнительная проверка: если это тестовый или системный пользователь, можно добавить логику
-  // Но userID = '1' может быть валидным в некоторых системах
-  
-  // Получаем UUID
-  final deviceInfo = DeviceInfoPlugin();
-  String uuid = '';
-  if (Platform.isAndroid) {
-    final androidInfo = await deviceInfo.androidInfo;
-    uuid = androidInfo.id;
-  } else if (Platform.isIOS) {
-    final iosInfo = await deviceInfo.iosInfo;
-    uuid = iosInfo.identifierForVendor ?? '';
-  }
-  print('GPS: Device UUID: $uuid');
+    // Проверяем минимальный интервал для сохранения данных
+    if (_lastUpdateTime != null &&
+        now.difference(_lastUpdateTime!).inSeconds < _minUpdateIntervalSeconds) {
+      print('GPS: Skipping update, interval too short ($_minUpdateIntervalSeconds seconds)');
+      return;
+    }
 
-  // Проверки (gps enabled, time window)
-  final gpsEnabled = prefs.getBool('gps_enabled') ?? true;
-  print('GPS: GPS enabled: $gpsEnabled');
-  if (!gpsEnabled) {
-    print('GPS: GPS is disabled by user settings');
-    return;
-  }
+    // Проверяем расстояние до последнего местоположения
+    if (_lastLocation != null) {
+      final distance = Geolocator.distanceBetween(
+        _lastLocation!.latitude,
+        _lastLocation!.longitude,
+        newLocation.latitude,
+        newLocation.longitude,
+      );
+      if (distance < _minDistanceMeters) {
+        print('GPS: Skipping update, distance too small ($distance meters < $_minDistanceMeters meters)');
+        return;
+      }
+    }
 
-  // Отправка
-  await _gpsService.sendLocationToServer(data.lat, data.lon, userId, uuid);
-  _lastUpdateTime = now;
-  print('GPS: Location update sent at $now');
-}
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userID');
+    print('GPS: Loaded userID from SharedPreferences: $userId');
+
+    // Проверяем валидность userId
+    if (userId == null || userId.isEmpty || !RegExp(r'^\d+$').hasMatch(userId)) {
+      print('GPS: Invalid userID ($userId), aborting update');
+      return;
+    }
+
+    // Получаем UUID устройства
+    final deviceInfo = DeviceInfoPlugin();
+    String uuid = '';
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      uuid = androidInfo.id;
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      uuid = iosInfo.identifierForVendor ?? '';
+    }
+    print('GPS: Device UUID: $uuid');
+
+    // Проверяем настройки GPS
+    final gpsEnabled = prefs.getBool('gps_enabled') ?? true;
+    if (!gpsEnabled) {
+      print('GPS: GPS is disabled by user settings');
+      return;
+    }
+
+    // Формируем данные для отправки
+    final formattedDate =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+
+    final gpsData = {
+      'user_id': userId,
+      'latitude': data.lat.toString(),
+      'longitude': data.lon.toString(),
+      'date': formattedDate,
+      'uuid': uuid,
+    };
+
+    // Сохраняем данные в кэш
+    await CacheManager().saveGpsData(gpsData);
+    _lastUpdateTime = now;
+    _lastLocation = newLocation; // Обновляем последнее местоположение
+    print('GPS: Saved location to cache at $now');
+
+    // Отправляем данные на сервер, если прошло достаточно времени
+    await _gpsService.sendPendingDataIfNeeded();
+  }
 }
 
 class GpsService {
-  final ApiService _apiService = ApiService(); // Используем существующий API
+  final ApiService _apiService = ApiService();
+  final CacheManager _cacheManager = CacheManager();
   bool _isSendingPendingData = false;
   DateTime? _lastSentTime;
-  static const int _minSendIntervalSeconds = 10;
 
-Future<void> sendLocationToServer(double latitude, double longitude, String userId, String uuid) async {
-  final now = DateTime.now();
-  final formattedDate = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
-      '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
-  print('GPS: Preparing to send location: lat=$latitude, lon=$longitude, userId=$userId, uuid=$uuid, date=$formattedDate');
+  // Интервал для отправки данных на сервер (в секундах)
+  static const int _minSendIntervalSeconds = 60; // Каждую минуту
+  // Максимальное количество записей в одном батче
+  static const int _maxBatchSize = 50;
 
-  final data = {
-    'user_id': userId,
-    'latitude': latitude.toString(),
-    'longitude': longitude.toString(),
-    'date': formattedDate,
-    'uuid': uuid,
-  };
+  Future<void> sendLocationToServer(Map<String, dynamic> data) async {
+    final now = DateTime.now();
+    print('GPS: Preparing to send location: $data');
 
-  // Сохраняем лог попытки
-  await _saveLog({
-    'timestamp': now.toIso8601String(),
-    'user_id': userId,
-    'latitude': latitude,
-    'longitude': longitude,
-    'status': 'pending',
-  });
-
-  // Убираем проверку на userId == '1', так как это может быть валидным ID
-  // Проверяем только базовую валидность
-  if (userId.isEmpty || !RegExp(r'^\d+$').hasMatch(userId)) {
-    print('GPS: Invalid userID format ($userId), saving to pending');
-    await _savePendingData(data);
-    await _saveLog({
+    // Сохраняем лог попытки
+    await _cacheManager.saveLog({
       'timestamp': now.toIso8601String(),
-      'user_id': userId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'status': 'invalid_user_id',
-      'error': 'UserID format is invalid',
+      'user_id': data['user_id'],
+      'latitude': data['latitude'],
+      'longitude': data['longitude'],
+      'status': 'pending',
     });
-    return;
+
+    final hasInternet = await _isInternetAvailable();
+    if (!hasInternet) {
+      print('GPS: No internet, data saved to cache: $data');
+      await _cacheManager.saveGpsData(data);
+      await _cacheManager.saveLog({
+        'timestamp': now.toIso8601String(),
+        'user_id': data['user_id'],
+        'latitude': data['latitude'],
+        'longitude': data['longitude'],
+        'status': 'no_internet',
+      });
+      return;
+    }
+
+    try {
+      final response = await _apiService.sendGpsData(data);
+      print('GPS: Successfully sent GPS data at $now: $response');
+      await _cacheManager.saveLog({
+        'timestamp': now.toIso8601String(),
+        'user_id': data['user_id'],
+        'latitude': data['latitude'],
+        'longitude': data['longitude'],
+        'status': 'success',
+        'response': response.toString(),
+      });
+    } catch (e) {
+      print('GPS: Failed to send GPS data: $e');
+      await _cacheManager.saveGpsData(data);
+      await _cacheManager.saveLog({
+        'timestamp': now.toIso8601String(),
+        'user_id': data['user_id'],
+        'latitude': data['latitude'],
+        'longitude': data['longitude'],
+        'status': 'error',
+        'error': e.toString(),
+      });
+    }
   }
 
-  final hasInternet = await _isInternetAvailable();
-  if (!hasInternet) {
-    print('GPS: No internet, saving to pending: $data');
-    await _savePendingData(data);
-    await _saveLog({
-      'timestamp': now.toIso8601String(),
-      'user_id': userId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'status': 'no_internet',
-    });
-    return;
+  Future<void> sendPendingDataIfNeeded() async {
+    final now = DateTime.now();
+    // Проверяем, прошло ли достаточно времени с последней отправки
+    if (_lastSentTime != null &&
+        now.difference(_lastSentTime!).inSeconds < _minSendIntervalSeconds) {
+      print('GPS: Skipping send, interval too short ($_minSendIntervalSeconds seconds)');
+      return;
+    }
+
+    if (_isSendingPendingData) {
+      print('GPS: Already sending pending data, skipping');
+      return;
+    }
+    _isSendingPendingData = true;
+
+    // Объявляем pendingData вне try-catch
+    List<Map<String, dynamic>> pendingData = [];
+
+    try {
+      pendingData = await _cacheManager.getPendingGpsData();
+      print('GPS: Pending data count: ${pendingData.length}');
+
+      if (pendingData.isEmpty) {
+        print('GPS: No pending data to send');
+        return;
+      }
+
+      // Ограничиваем размер пакета
+      List<Map<String, dynamic>> currentBatch = pendingData.take(_maxBatchSize).toList();
+      List<Map<String, dynamic>> remainingData = pendingData.skip(_maxBatchSize).toList();
+
+      if (currentBatch.isEmpty) {
+        print('GPS: No valid pending data to send');
+        return;
+      }
+
+      print('GPS: Sending pending data batch: ${currentBatch.length} items');
+      final response = await _apiService.sendGpsDataBatch(currentBatch);
+      print('GPS: Successfully sent pending data batch: $response');
+
+      // Очищаем отправленные данные
+      await _cacheManager.clearPendingGpsData();
+      for (var data in currentBatch) {
+        await _cacheManager.saveLog({
+          'timestamp': DateTime.now().toIso8601String(),
+          'user_id': data['user_id'],
+          'latitude': data['latitude'],
+          'longitude': data['longitude'],
+          'status': 'success',
+          'response': response.toString(),
+        });
+      }
+
+      // Сохраняем оставшиеся данные
+      for (var data in remainingData) {
+        await _cacheManager.saveGpsData(data);
+      }
+
+      _lastSentTime = now;
+    } catch (e) {
+      print('GPS: Failed to send pending data batch: $e');
+      // Сохраняем данные в кэш при ошибке
+      for (var data in pendingData) {
+        await _cacheManager.saveGpsData(data);
+      }
+    } finally {
+      _isSendingPendingData = false;
+    }
   }
 
-  // Проверяем минимальный интервал отправки
-  if (_lastSentTime != null && now.difference(_lastSentTime!).inSeconds < _minSendIntervalSeconds) {
-    print('GPS: Rate limiting - saving to pending: $data');
-    await _savePendingData(data);
-    await _saveLog({
-      'timestamp': now.toIso8601String(),
-      'user_id': userId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'status': 'rate_limited',
-    });
-    return;
-  }
-
-  try {
-    final response = await _apiService.sendGpsData(data);
-    print('GPS: Successfully sent GPS data at $now: $response');
-    await _saveLog({
-      'timestamp': now.toIso8601String(),
-      'user_id': userId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'status': 'success',
-      'response': response.toString(),
-    });
-    _lastSentTime = now;
-    
-    // Пытаемся отправить накопленные данные только после успешной отправки текущих
-    await _checkAndSendPendingData();
-  } catch (e) {
-    print('GPS: Failed to send GPS data: $e');
-    await _savePendingData(data);
-    await _saveLog({
-      'timestamp': now.toIso8601String(),
-      'user_id': userId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'status': 'error',
-      'error': e.toString(),
-    });
-  }
-}
-
-Future<void> _saveLog(Map<String, dynamic> log) async {
-  final prefs = await SharedPreferences.getInstance();
-  List<String> logs = prefs.getStringList('gps_logs') ?? [];
-  logs.add(jsonEncode(log));
-  if (logs.length > 100) logs = logs.sublist(logs.length - 100); // Ограничим 100 записями
-  await prefs.setStringList('gps_logs', logs);
-  print('GPS: Saved log: $log');
-}
-  // Остальные методы: _isInternetAvailable, _savePendingData, _checkAndSendPendingData — аналогично треккеру, но без _baseUrl (используем _apiService._postRequest)
   Future<bool> _isInternetAvailable() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     return connectivityResult != ConnectivityResult.none;
   }
-
-  Future<void> _savePendingData(Map<String, dynamic> data) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> pending = prefs.getStringList('pending_gps') ?? [];
-    pending.add(jsonEncode(data));
-    await prefs.setStringList('pending_gps', pending);
-  }
-
-Future<void> _checkAndSendPendingData() async {
-  if (_isSendingPendingData) {
-    print('GPS: Already sending pending data, skipping');
-    return;
-  }
-  _isSendingPendingData = true;
-
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> pending = prefs.getStringList('pending_gps') ?? [];
-    print('GPS: Pending data count: ${pending.length}');
-    
-    if (pending.isEmpty) {
-      print('GPS: No pending data to send');
-      return;
-    }
-
-    // Ограничиваем количество записей для отправки за раз (например, 50)
-    const batchSize = 50;
-    List<String> currentBatch = pending.take(batchSize).toList();
-    List<String> remainingPending = pending.skip(batchSize).toList();
-
-    List<Map<String, dynamic>> dataList = currentBatch
-        .map((str) {
-          try {
-            return Map<String, dynamic>.from(jsonDecode(str));
-          } catch (e) {
-            print('GPS: Error decoding pending data: $e, data: $str');
-            return null;
-          }
-        })
-        .where((data) => data != null)
-        .cast<Map<String, dynamic>>()
-        .toList();
-
-    if (dataList.isEmpty) {
-      print('GPS: No valid pending data to send');
-      // Очищаем невалидные данные
-      await prefs.setStringList('pending_gps', remainingPending);
-      return;
-    }
-
-    print('GPS: Sending pending data batch: ${dataList.length} items');
-    final response = await _apiService.sendGpsDataBatch(dataList);
-    print('GPS: Successfully sent pending data batch: $response');
-    
-    // Обновляем список pending данных, убирая отправленные
-    await prefs.setStringList('pending_gps', remainingPending);
-    
-    // Если остались еще данные, планируем следующую отправку через небольшую задержку
-    if (remainingPending.isNotEmpty) {
-      print('GPS: ${remainingPending.length} pending items remain, scheduling next batch');
-      Future.delayed(Duration(seconds: 5), () {
-        _checkAndSendPendingData();
-      });
-    }
-    
-  } catch (e) {
-    print('GPS: Failed to send pending data batch: $e');
-    // В случае ошибки не очищаем pending данные
-  } finally {
-    _isSendingPendingData = false;
-  }
-}
 }
