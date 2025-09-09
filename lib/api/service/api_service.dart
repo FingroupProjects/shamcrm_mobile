@@ -68,6 +68,7 @@ import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
@@ -10118,4 +10119,53 @@ Future<void> approveIncomingDocument(int documentId) async {
   }
 }
   
+Future<List<Storage>> getStorage() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/storage');
+  if (kDebugMode) {
+    //print('ApiService: getStorage - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    ////print('Полученные данные складов: $data');
+    
+    // Извлекаем массив из поля "result"
+    final List<dynamic> resultList = data['result'] ?? [];
+    
+    return resultList
+        .map((storage) => Storage.fromJson(storage))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки складов');
+  }
+}
+
+Future<List<Supplier>> getSupplier() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/suppliers');
+  if (kDebugMode) {
+    //print('ApiService: getSupplier - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    ////print('Полученные данные поставщиков: $data');
+    
+    // Извлекаем массив из поля "result"
+    final List<dynamic> resultList = data['result'] ?? [];
+    
+    return resultList
+        .map((supplier) => Supplier.fromJson(supplier))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки поставщиков');
+  }
+}
+
+
 }
