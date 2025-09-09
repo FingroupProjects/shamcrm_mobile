@@ -62,8 +62,7 @@ class _ClientSalesDocumentDetailsScreenState
       _isLoading = true;
     });
     try {
-      final document =
-          await _apiService.getClienSalesById(widget.documentId);
+      final document = await _apiService.getClienSalesById(widget.documentId);
       setState(() {
         currentDocument = document;
         _updateDetails(document);
@@ -423,8 +422,8 @@ class _ClientSalesDocumentDetailsScreenState
                             ),
                           _buildDetailsList(),
                           const SizedBox(height: 16),
-                          IncomingDocumentHistoryWidget(
-                              documentId: widget.documentId),
+                          // IncomingDocumentHistoryWidget(
+                          //     documentId: widget.documentId),
                           const SizedBox(height: 16),
                           if (currentDocument!.documentGoods != null &&
                               currentDocument!.documentGoods!.isNotEmpty) ...[
