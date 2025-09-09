@@ -2,15 +2,15 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+
 class ExportContactDialog extends StatelessWidget {
   final String leadName;
   final String phoneNumber;
 
-  ExportContactDialog({required this.leadName, required this.phoneNumber});
+  const ExportContactDialog({required this.leadName, required this.phoneNumber});
 
   @override
   Widget build(BuildContext context) {
-
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -23,7 +23,7 @@ class ExportContactDialog extends StatelessWidget {
         child: Text(
           AppLocalizations.of(context)!.translate('export_contact'),
           style: TextStyle(
-            fontSize: titleFontSize, 
+            fontSize: titleFontSize,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             color: Color(0xff1E2E52),
@@ -47,7 +47,7 @@ class ExportContactDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('no'),
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(false); // Возвращаем false при отмене
                 },
                 buttonColor: Colors.red,
                 textColor: Colors.white,
@@ -91,7 +91,7 @@ class ExportContactDialog extends StatelessWidget {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(true); // Возвращаем true при успехе
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -117,7 +117,7 @@ class ExportContactDialog extends StatelessWidget {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(false); // Возвращаем false при отказе в доступе
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +144,7 @@ class ExportContactDialog extends StatelessWidget {
                         duration: Duration(seconds: 3),
                       ),
                     );
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(false); // Возвращаем false при ошибке
                   }
                 },
                 buttonColor: Color(0xff1E2E52),

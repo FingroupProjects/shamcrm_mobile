@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,9 +12,11 @@ class GoodsCard extends StatefulWidget {
   final String goodsDescription;
   final String goodsCategory;
   final int goodsStockQuantity;
-  final List<GoodsFile> goodsFiles; 
+  final List<GoodsFile> goodsFiles;
+  final bool? isActive;
+  final Label? label;
 
-  GoodsCard({
+  const GoodsCard({
     Key? key,
     required this.goodsId,
     required this.goodsName,
@@ -21,6 +24,8 @@ class GoodsCard extends StatefulWidget {
     required this.goodsCategory,
     required this.goodsStockQuantity,
     required this.goodsFiles,
+    this.isActive,
+    this.label,
   }) : super(key: key);
 
   @override
@@ -31,76 +36,175 @@ class _GoodsCardState extends State<GoodsCard> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
   }
 
+  Future<void> _initializeBaseUrl() async {
+    try {
+      // Используем новый универсальный метод для получения base URL
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      // Fallback на дефолтный URL в случае ошибки
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
+  }
+
   void _navigateToGoodsDetails() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoodsDetailsScreen(
-          id: widget.goodsId,
-        ),
+        builder: (context) => GoodsDetailsScreen(id: widget.goodsId),
       ),
     );
   }
 
-Widget _buildImageWidget(GoodsFile file) {
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(8),
-    child: Image.network(
-      '$baseUrl/${file.path}', 
-         width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 100,
-            height: 100,
-            color: Colors.white,
-            child: Icon(Icons.broken_image, size: 40, color: Color(0xff99A4BA)),
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: 100,
-            height: 100,
-            color: Colors.grey[200],
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
+  GoodsFile? _getMainImage() {
+    if (widget.goodsFiles.isEmpty) {
+      return null;
+    }
+    return widget.goodsFiles.firstWhere(
+      (file) => file.isMain,
+      orElse: () => widget.goodsFiles.first,
+    );
+  }
+
+  Widget _buildImageWidget(GoodsFile file) {
+    // Строим полный URL для изображения
+    final imageUrl = baseUrl != null ? '$baseUrl/${file.path}' : null;
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: imageUrl != null 
+          ? Image.network(
+              imageUrl,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.white,
+                  child: const Icon(Icons.broken_image, size: 40, color: Color(0xff99A4BA)),
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[200],
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+            )
+          : Container(
+              width: 100,
+              height: 100,
+              color: Colors.grey[200],
+              child: const Center(child: CircularProgressIndicator()),
             ),
-          );
-        },
+    );
+  }
+
+  List<Widget> _buildLabels() {
+    List<Widget> labels = [];
+    const double labelHeight = 18;
+    const double labelPadding = 6;
+
+    if (widget.label != null) {
+      String colorString = widget.label!.color;
+      Color labelColor;
+      try {
+        if (colorString.startsWith('#')) {
+          colorString = colorString.replaceFirst('#', '');
+        }
+        if (colorString.length == 6) {
+          colorString = 'ff$colorString';
+        }
+        labelColor = Color(int.parse(colorString, radix: 16));
+      } catch (e) {
+        labelColor = Colors.grey;
+      }
+
+      labels.add(
+        Container(
+          height: labelHeight,
+          margin: const EdgeInsets.only(right: 8, bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: labelPadding, vertical: 2),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [labelColor, labelColor.withOpacity(0.7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Text(
+            widget.label!.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+        ),
+      );
+    }
+
+    return labels;
+  }
+
+  Color _getStatusBackgroundColor(bool? isActive) {
+    return isActive == true ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+  }
+
+  Color _getStatusTextColor(bool? isActive) {
+    return isActive == true ? const Color(0xFF2E7D32) : const Color(0xFFC62828);
+  }
+
+  Widget _buildStatusLabel() {
+    final localizations = AppLocalizations.of(context)!;
+    final isActive = widget.isActive ?? false;
+    final statusText = isActive ? localizations.translate('active') : localizations.translate('inactive');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getStatusBackgroundColor(isActive),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(
+          color: _getStatusTextColor(isActive),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final mainImage = _getMainImage();
     return GestureDetector(
       onTap: _navigateToGoodsDetails,
       child: Padding(
@@ -119,81 +223,68 @@ Widget _buildImageWidget(GoodsFile file) {
                       Text(
                         widget.goodsName,
                         style: TaskCardStyles.titleStyle,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // SizedBox(height: 4),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 0,
+                        runSpacing: 4,
+                        children: _buildLabels(),
+                      ),
+                      const SizedBox(height: 4),
                       RichText(
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        text: widget.goodsDescription != 'null' 
+                        text: widget.goodsDescription != 'null'
                             ? TextSpan(
                                 text: widget.goodsDescription,
                                 style: TaskCardStyles.priorityStyle.copyWith(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: const Color(0xff1E2E52),
                                 ),
                                 children: const <TextSpan>[
-                                  TextSpan(
-                                    text: '\n\u200B', 
-                                    style: TaskCardStyles.priorityStyle,
-                                  ),
+                                  TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
                                 ],
                               )
                             : const TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
                       ),
-                      RichText(
-                        maxLines: 2,
+                      const SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('subcategory_card')}: ${widget.goodsCategory}',
+                        style: TaskCardStyles.priorityStyle.copyWith(
+                          fontSize: 14,
+                          color: const Color(0xff1E2E52),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                           text: '\n\u200B', 
-                          style: TaskCardStyles.priorityStyle.copyWith(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
                       ),
-                      // SizedBox(height: 4),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: AppLocalizations.of(context)!.translate('subcategory_card'), 
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff99A4BA),
-                              ),
-                            ),
-                            TextSpan(
-                              text: widget.goodsCategory,
-                              style: TaskCardStyles.priorityStyle.copyWith(
-                                color: Color(0xff1E2E52),
-                                fontWeight: FontWeight.w600, 
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
+                      _buildStatusLabel(),
                     ],
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Container(
-                 width: 100,
-                 height: 100,
-                 child: widget.goodsFiles.isNotEmpty
-                     ? _buildImageWidget(widget.goodsFiles.first) 
-                     : Container(
-                         decoration: BoxDecoration(
-                           color: Colors.white,
-                           borderRadius: BorderRadius.circular(8),
-                         ),
-                         child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
-                       ),
-               ),
+                  width: 100,
+                  height: 100,
+                  child: mainImage != null
+                      ? _buildImageWidget(mainImage)
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                ),
               ],
             ),
           ),

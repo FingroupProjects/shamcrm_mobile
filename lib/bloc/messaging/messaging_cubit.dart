@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'messaging_state.dart';
@@ -33,7 +34,21 @@ class MessagingCubit extends Cubit<MessagingState> {
       emit(MessagesErrorState(error: e.toString()));
     }
   }
-
+Future<void> syncMessagesInBackground(int chatId) async {
+    try {
+      final messages = await apiService.getMessages(chatId);
+      if (state is MessagesLoadedState) {
+        // Обновляем сообщения только если текущее состояние MessagesLoadedState
+        final currentMessages = (state as MessagesLoadedState).messages;
+        // Обновляем только новые или изменённые сообщения
+        final updatedMessages = _mergeMessages(currentMessages, messages);
+        emit(MessagesLoadedState(messages: updatedMessages));
+        debugPrint('MessagingCubit: Synced messages in background, new count: ${updatedMessages.length}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error syncing messages in background: $e, StackTrace: $stackTrace');
+    }
+  }
 void addLocalMessage(Message message) {
   if (state is MessagesLoadedState) {
     final currentState = state as MessagesLoadedState;
@@ -349,5 +364,18 @@ void unpinMessageFromSocket(int messageId) {
       }
     }
   }
-}
+List<Message> _mergeMessages(List<Message> currentMessages, List<Message> newMessages) {
+    final merged = <Message>[];
+    final currentMap = {for (var msg in currentMessages) msg.id: msg};
 
+    // Добавляем новые сообщения и обновляем существующие
+    for (var newMsg in newMessages) {
+      currentMap[newMsg.id] = newMsg;
+    }
+
+    // Преобразуем в список и сортируем по времени (если есть createMessateTime)
+    merged.addAll(currentMap.values);
+    merged.sort((a, b) => (b.createMessateTime ?? '').compareTo(a.createMessateTime ?? ''));
+    return merged;
+  }
+}

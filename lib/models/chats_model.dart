@@ -1,5 +1,26 @@
+import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+
+class Integration {
+  final int? id;
+  final String? name;
+  final String? username;
+
+  Integration({
+    this.id,
+    this.name,
+    this.username,
+  });
+
+  factory Integration.fromJson(Map<String, dynamic> json) {
+    return Integration(
+      id: json['id'] as int?,
+      name: json['name'] as String?,
+      username: json['username'] as String?,
+    );
+  }
+}
 
 class Chats {
   final int id;
@@ -8,7 +29,7 @@ class Chats {
   final String? taskFrom;
   final String? taskTo;
   final String? description;
-  final String channel;
+  final String channel; // Это поле будет содержать channel.name
   final String lastMessage;
   final String? messageType;
   final String createDate;
@@ -19,8 +40,10 @@ class Chats {
   final Group? group;
   final Task? task;
   final ChatUser? user;
-  final String? customName; // Новое поле для кастомного названия
-  final String? customImage; // Новое поле для кастомной аватарки
+  final String? customName;
+  final String? customImage;
+  final Channel? channelObj; // Новое поле для полного объекта Channel
+  final Integration? integration; // Новое поле для объекта Integration
 
   Chats({
     required this.id,
@@ -39,14 +62,16 @@ class Chats {
     required this.chatUsers,
     this.group,
     this.task,
-    this.user, // добавим в конструктор
-    this.customName, // Добавляем в конструктор
-    this.customImage, // Добавляем в конструктор
+    this.user,
+    this.customName,
+    this.customImage,
+    this.channelObj,
+    this.integration,
   });
 
   factory Chats.fromJson(
     Map<String, dynamic> json, {
-    String? supportChatName, // Добавляем необязательный параметр
+    String? supportChatName,
     String? supportChatImage,
   }) {
     List<ChatUser> users = [];
@@ -65,24 +90,23 @@ class Chats {
     if (json['task'] != null) {
       task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
+
     ChatUser? user;
     if (json['user'] != null) {
       user = ChatUser.fromJson({'participant': json['user']});
     }
-    // Задаем кастомные значения для чата типа support
+
     String? customName;
     String? customImage;
     if (json['type'] == 'support') {
-      customName = supportChatName ??
-          'Техподдержка'; // Используем переданное значение или дефолтное
-      customImage =
-          supportChatImage ?? 'assets/icons/Profile/chat_support.png';
+      customName = json['type'];
+      customImage = supportChatImage ?? 'assets/icons/Profile/image.png';
     }
 
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
-          ? json['user']['name']
+          ? json['user']['name'] ?? 'Без имени'
           : json['task'] != null
               ? json['task']['name'] ?? ''
               : json['lead'] != null
@@ -95,27 +119,26 @@ class Chats {
       createDate: json['lastMessage'] != null
           ? json['lastMessage']['created_at'] ?? ''
           : '',
-      unreadCount: json['unread_count'],
+      unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description:
-          json['task'] != null ? json['task']['description'] ?? '' : '',
+      description: json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(json['lastMessage'])
           : '',
-      messageType:
-          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
-      canSendMessage: json["can_send_message"] ?? false,
+      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
+      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
     );
   }
 
   String? get displayName {
-    // Используем кастомное название для support, если оно задано
     if (type == 'support' && customName != null) {
       return customName;
     } else if (group != null && group!.name.isNotEmpty) {
@@ -151,9 +174,56 @@ class Chats {
     }
   }
 
+  Chats copyWith({
+    int? id,
+    String? name,
+    String? image,
+    String? taskFrom,
+    String? taskTo,
+    String? description,
+    String? channel,
+    String? lastMessage,
+    String? messageType,
+    String? createDate,
+    int? unreadCount,
+    bool? canSendMessage,
+    String? type,
+    List<ChatUser>? chatUsers,
+    Group? group,
+    Task? task,
+    ChatUser? user,
+    String? customName,
+    String? customImage,
+    Channel? channelObj,
+    Integration? integration,
+  }) {
+    return Chats(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      taskFrom: taskFrom ?? this.taskFrom,
+      taskTo: taskTo ?? this.taskTo,
+      description: description ?? this.description,
+      channel: channel ?? this.channel,
+      lastMessage: lastMessage ?? this.lastMessage,
+      messageType: messageType ?? this.messageType,
+      createDate: createDate ?? this.createDate,
+      unreadCount: unreadCount ?? this.unreadCount,
+      canSendMessage: canSendMessage ?? this.canSendMessage,
+      type: type ?? this.type,
+      chatUsers: chatUsers ?? this.chatUsers,
+      group: group ?? this.group,
+      task: task ?? this.task,
+      user: user ?? this.user,
+      customName: customName ?? this.customName,
+      customImage: customImage ?? this.customImage,
+      channelObj: channelObj ?? this.channelObj,
+      integration: integration ?? this.integration,
+    );
+  }
+
   ChatItem toChatItem() {
     String avatar;
-    // Используем кастомную аватарку для support, если она задана
     if (type == 'support' && customImage != null) {
       avatar = customImage!;
     } else if (group != null) {
@@ -190,6 +260,7 @@ class Chats {
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/facebook.png',
+      'email': 'assets/icons/leads/email.png',
     };
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
   }
@@ -292,6 +363,7 @@ class Message {
   bool isPinned;
   bool isChanged;
   bool isRead;
+  final bool isNote; // Новое поле
   final ReadStatus? readStatus;
   final String? referralBody;
 
@@ -310,6 +382,7 @@ class Message {
     this.forwardedMessage,
     this.isPinned = false,
     this.isChanged = false,
+    this.isNote = false, // Инициализация по умолчанию
     this.isRead = false,
     this.readStatus,
     this.referralBody,
@@ -332,6 +405,8 @@ class Message {
     bool? isPinned,
     bool? isChanged,
     bool? isRead,
+    bool? isNote, // Новое поле
+
     ReadStatus? readStatus,
   }) {
     return Message(
@@ -351,6 +426,7 @@ class Message {
       isChanged: isChanged ?? this.isChanged,
       isRead: isRead ?? this.isRead,
       readStatus: readStatus ?? this.readStatus,
+      isNote: isNote ?? this.isNote, // Новое поле
     );
   }
 
@@ -390,6 +466,7 @@ class Message {
         forwardedMessage: forwardedMessage,
         isRead: json['is_read'] ?? false,
         readStatus: readStatus,
+        isNote: json['is_note'] ?? false, // Парсинг is_note
         duration: Duration(
           seconds: json['voice_duration'] != null
               ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0

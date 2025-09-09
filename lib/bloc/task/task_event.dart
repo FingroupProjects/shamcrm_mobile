@@ -20,7 +20,9 @@ class FetchTasks extends TaskEvent {
   final DateTime? deadlinetoDate;
   final String? project;
   final List<String>? authors;
-  final String? department; 
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+
   FetchTasks(
     this.statusId, {
     this.query,
@@ -37,6 +39,7 @@ class FetchTasks extends TaskEvent {
     this.project,
     this.authors,
     this.department,
+    this.directoryValues, // Добавляем в конструктор
   });
 }
 
@@ -48,10 +51,42 @@ class FetchTaskStatus extends TaskEvent {
 class FetchMoreTasks extends TaskEvent {
   final int statusId;
   final int currentPage;
+  final String? query;
+  final List<int>? userIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? overdue;
+  final bool? hasFile;
+  final bool? hasDeal;
+  final bool? urgent;
+  final DateTime? deadlinefromDate;
+  final DateTime? deadlinetoDate;
+  final String? project;
+  final List<String>? authors;
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
 
-  FetchMoreTasks(this.statusId, this.currentPage);
+  FetchMoreTasks(
+    this.statusId,
+    this.currentPage, {
+    this.query,
+    this.userIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.deadlinefromDate,
+    this.deadlinetoDate,
+    this.overdue,
+    this.hasFile,
+    this.hasDeal,
+    this.urgent,
+    this.project,
+    this.authors,
+    this.department,
+    this.directoryValues, // Добавляем в конструктор
+  });
 }
-
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -60,12 +95,12 @@ class CreateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>?
-      userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>? userId;
   final String? description;
-  final List<String>? filePaths; // Изменено на список путей к файлам
-  final List<Map<String, String>>? customFields;
-  final AppLocalizations localizations; // Add this to your event
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<String>? filePaths;
+  final List<Map<String, int>>? directoryValues;
+  final AppLocalizations localizations;
 
   CreateTask({
     required this.name,
@@ -75,47 +110,48 @@ class CreateTask extends TaskEvent {
     this.startDate,
     this.endDate,
     this.projectId,
-    this.userId, // Передаём новый параметр в конструктор
+    this.userId,
     this.description,
     this.customFields,
-    this.filePaths, // Изменено на список путей к файлам
-    required this.localizations, // Add this to constructor
+    this.filePaths,
+    this.directoryValues,
+    required this.localizations,
   });
-}
-
+} 
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
   final int statusId;
+  final int taskStatusId;
   final String? priority;
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>?
-      userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>? userId;
   final String? description;
-  final int taskStatusId;
-  final List<Map<String, String>>? customFields;
-  final List<String>? filePaths; // Изменено на список путей к файлам
-  final AppLocalizations localizations; // Add this to your event
-  final List<TaskFiles>?
-      existingFiles; // Добавляем поле для существующих файлов
+    final List<Map<String, dynamic>>? customFields; // Изменяем тип
+
+  final List<String>? filePaths;
+  final List<TaskFiles>? existingFiles;
+  final List<Map<String, int>>? directoryValues; // Add for consistency
+  final AppLocalizations localizations;
 
   UpdateTask({
     required this.taskId,
     required this.name,
     required this.statusId,
+    required this.taskStatusId,
     this.priority,
     this.startDate,
     this.endDate,
     this.projectId,
     this.userId,
     this.description,
-    required this.taskStatusId,
     this.customFields,
-    this.filePaths, // Изменено на список путей к файлам
-    required this.localizations, // Add this to constructor
-    this.existingFiles, // Добавляем в конструктор
+    this.filePaths,
+    this.existingFiles,
+    this.directoryValues,
+    required this.localizations,
   });
 }
 

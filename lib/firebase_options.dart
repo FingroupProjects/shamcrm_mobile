@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '307953779464',
     projectId: 'shamcrm-23800',
     storageBucket: 'shamcrm-23800.appspot.com',
-    iosBundleId: 'com.example.crmTaskManager',
+    iosBundleId: 'com.softtech.crmTaskManager',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -69,6 +69,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '307953779464',
     projectId: 'shamcrm-23800',
     storageBucket: 'shamcrm-23800.appspot.com',
-    iosBundleId: 'com.example.crmTaskManager',
+    iosBundleId: 'com.softtech.crmTaskManager',
   );
 }

@@ -2,14 +2,24 @@ import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
+import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'dart:io'; // Добавляем для File
+import 'package:file_picker/file_picker.dart'; // Добавляем для FilePicker
+import 'dart:convert';
+
+import '../../../custom_widget/custom_textfield_deadline.dart'; // Для json.encode в API
 
 class NoticeAddScreen extends StatefulWidget {
   @override
@@ -24,13 +34,213 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   String body = '';
   String date = '';
   bool sendNotification = false;
+  // Переменные для файлов
+  List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
 
   @override
   void initState() {
     super.initState();
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
 
-  @override
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
+
+      if (result != null) {
+        double totalSize = selectedFiles.fold<double>(
+          0.0,
+          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024), // MB
+        );
+
+        double newFilesSize = result.files.fold<double>(
+          0.0,
+          (sum, file) => sum + file.size / (1024 * 1024), // MB
+        );
+
+        if (totalSize + newFilesSize > 50) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('file_size_too_large'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
+        setState(() {
+          for (var file in result.files) {
+            selectedFiles.add(file.path!);
+            fileNames.add(file.name);
+            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
+          }
+        });
+      }
+    } catch (e) {
+      print('Ошибка при выборе файла: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('error_file_pick'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
+                            width: 60,
+                            height: 60,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -138,32 +348,63 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          LeadManagerSelector(
-                            onLeadSelected: (lead) {
+                          // Lead selection
+                          LeadRadioGroupWidget(
+                            onSelectLead: (LeadData lead) {
                               setState(() {
                                 selectedLead = lead.id.toString();
                               });
                             },
-                            onManagersSelected: (managers) {
-                              setState(() {
-                                selectedManagers = managers;
-                              });
+                            selectedLead: selectedLead,
+                          ),
+                          const SizedBox(height: 8),
+                          // Description field
+                          CustomTextField(
+                            controller: TextEditingController(text: body),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('description_list'),
+                            label: AppLocalizations.of(context)!
+                                .translate('description_list'),
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
+                              }
+                              return null;
                             },
-                            onBodyChanged: (value) {
+                            onChanged: (value) {
                               setState(() {
                                 body = value;
                               });
                             },
-                            onDateChanged: (value) {
+                          ),
+                          const SizedBox(height: 8),
+                          // Date field
+                          CustomTextFieldDate(
+                            controller: TextEditingController(text: date),
+                            label: AppLocalizations.of(context)!
+                                .translate('reminder_date'),
+                            withTime: true,
+                            onDateSelected: (value) {
                               setState(() {
                                 date = value;
                               });
                             },
-                            initialLeadId: selectedLead,
-                            initialManagerIds: selectedManagers,
-                            initialBody: body,
-                            initialDate: date,
                           ),
+                          const SizedBox(height: 8),
+                          // Manager selection
+                          ManagerMultiSelectWidget(
+                            selectedManagers: selectedManagers,
+                            onSelectManagers: (managers) {
+                              setState(() {
+                                selectedManagers = managers;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 15),
+                          _buildFileSelection(),
                         ],
                       ),
                     ),
@@ -219,13 +460,49 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
     if (_formKey.currentState!.validate() && selectedLead != null) {
       DateTime? parsedDate;
       if (date.isNotEmpty) {
-        parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(date);
+        try {
+          parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(date);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          return;
+        }
       }
       if (selectedSubject == null || selectedSubject!.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Выберите тематику!'),
+            content: Text(
+              AppLocalizations.of(context)!.translate('select_subject'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         return;
@@ -239,6 +516,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
               date: parsedDate,
               sendNotification: sendNotification ? 1 : 0,
               users: selectedManagers,
+              filePaths: selectedFiles,
               localizations: AppLocalizations.of(context)!,
             ),
           );

@@ -33,6 +33,8 @@ class FilterGoods extends GoodsEvent {
 
 class FetchSubCategories extends GoodsEvent {}
 
+class ResetSubCategories extends GoodsEvent {} // Новое событие для сброса подкатегорий
+
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
@@ -44,7 +46,9 @@ class CreateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch;
+  final int? branch;
+  final int? mainImageIndex;
+  final int? labelId; // Добавляем поле для ID метки
 
   CreateGoods({
     required this.name,
@@ -58,6 +62,10 @@ class CreateGoods extends GoodsEvent {
     required this.isActive,
     this.discountPrice,
     required this.branch,
+    this.mainImageIndex,
+    this.labelId, // Добавляем в конструктор
+
+
   });
 }
 
@@ -73,7 +81,10 @@ class UpdateGoods extends GoodsEvent {
   final List<File>? images;
   final bool isActive;
   final double? discountPrice;
-  final int branch;
+  final int? branch;
+  final String? comments; // Добавляем поле comments
+  final int? mainImageIndex; // Добавляем поле mainImageIndex
+final int? labelId; // Добавляем поле для ID метки
 
   UpdateGoods({
     required this.goodId,
@@ -88,5 +99,17 @@ class UpdateGoods extends GoodsEvent {
     required this.isActive,
     this.discountPrice,
     required this.branch,
+    this.comments,
+    this.mainImageIndex,
+  this.labelId, // Добавляем в конструктор
   });
+}
+
+class SearchGoodsByBarcode extends GoodsEvent {
+  final String barcode;
+
+  SearchGoodsByBarcode(this.barcode);
+
+  @override
+  List<Object> get props => [barcode];
 }

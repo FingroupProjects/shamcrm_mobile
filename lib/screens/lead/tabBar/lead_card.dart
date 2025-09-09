@@ -27,7 +27,7 @@ class LeadCard extends StatefulWidget {
   @override
   _LeadCardState createState() => _LeadCardState();
 }
-
+//928886524
 class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin {
   late String dropdownValue;
   late int statusId;
@@ -57,42 +57,40 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  Widget _buildDealCount(String label, int? count) {
-    if (count == null || count <= 0) {
-      return Container(
-        width: 30,
-        height: 30,
-      );
-    }
-
-    Color backgroundColor;
-    if (label == 'In Progress') {
-      backgroundColor = Colors.yellow;
-    } else if (label == 'Success') {
-      backgroundColor = Colors.green;
-    } else if (label == 'Failed') {
-      backgroundColor = Colors.red;
-    } else {
-      backgroundColor = Color(0xff1E2E52);
-    }
-
+  Widget _buildDealCount(String statusColor, int count) {
+  if (count <= 0) {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        '$count',
-        style: TextStyle(
-          fontSize: 12,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
+      width: 30,
+      height: 30,
     );
   }
+
+  // Преобразуем HEX-цвет в Color
+  Color backgroundColor = _hexToColor(statusColor);
+
+  return Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: backgroundColor,
+      shape: BoxShape.circle,
+    ),
+    child: Text(
+      '$count',
+      style: const TextStyle(
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+    ),
+  );
+}
+
+// Вспомогательная функция для преобразования HEX в Color
+Color _hexToColor(String hexColor) {
+  final hexCode = hexColor.replaceAll('#', '');
+  return Color(int.parse('FF$hexCode', radix: 16));
+}
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -323,42 +321,29 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
                         ),
                       ],
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        if (widget.lead.successefullyDealsCount != null &&
-                            widget.lead.successefullyDealsCount! > 0)
-                          _buildDealCount(
-                              'Success', widget.lead.successefullyDealsCount!),
-                        if (widget.lead.successefullyDealsCount != null &&
-                            widget.lead.successefullyDealsCount! > 0 &&
-                            widget.lead.inProgressDealsCount != null &&
-                            widget.lead.inProgressDealsCount! > 0)
-                          const SizedBox(width: 2),
-                        if (widget.lead.inProgressDealsCount != null &&
-                            widget.lead.inProgressDealsCount! > 0)
-                          _buildDealCount(
-                              'In Progress', widget.lead.inProgressDealsCount!),
-                        if (widget.lead.inProgressDealsCount != null &&
-                            widget.lead.inProgressDealsCount! > 0 &&
-                            widget.lead.failedDealsCount != null &&
-                            widget.lead.failedDealsCount! > 0)
-                          const SizedBox(width: 2),
-                        if (widget.lead.failedDealsCount != null &&
-                            widget.lead.failedDealsCount! > 0)
-                          _buildDealCount(
-                              'Failed', widget.lead.failedDealsCount!),
-                        if (widget.lead.successefullyDealsCount == null ||
-                            widget.lead.successefullyDealsCount! <= 0)
-                          _buildDealCount('Success', 0),
-                        if (widget.lead.inProgressDealsCount == null ||
-                            widget.lead.inProgressDealsCount! <= 0)
-                          _buildDealCount('In Progress', 0),
-                        if (widget.lead.failedDealsCount == null ||
-                            widget.lead.failedDealsCount! <= 0)
-                          _buildDealCount('Failed', 0),
-                      ],
-                    ),
+                   // Заменяем секцию с кружочками в Column внутри build
+Row(
+  mainAxisAlignment: MainAxisAlignment.start,
+  children: [
+    // Проверяем, есть ли mainPageDeals и отображаем кружочки
+    if (widget.lead.mainPageDeals != null && widget.lead.mainPageDeals!.isNotEmpty)
+      ...widget.lead.mainPageDeals!.map((deal) {
+        return Row(
+          children: [
+            _buildDealCount(deal.statusColor, deal.count),
+            if (deal != widget.lead.mainPageDeals!.last) const SizedBox(width: 2),
+          ],
+        );
+      }).toList(),
+    // Если mainPageDeals пустой, показываем пустые кружочки для обратной совместимости
+    if (widget.lead.mainPageDeals == null || widget.lead.mainPageDeals!.isEmpty)
+      ...[
+        _buildDealCount('#000000', 0), // Пустой кружочек
+        _buildDealCount('#000000', 0), // Пустой кружочек
+        _buildDealCount('#000000', 0), // Пустой кружочек
+      ],
+  ],
+),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -385,7 +370,9 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
                             ),
                           ],
                         ),
-                        Container(
+                          const SizedBox(width: 12),
+                   Flexible(
+      child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -406,6 +393,7 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                   ),
                       ],
                     ),
                   ],

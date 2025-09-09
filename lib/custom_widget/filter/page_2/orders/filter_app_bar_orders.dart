@@ -1,19 +1,38 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/status_method_dropdown.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class OrdersFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
+  final DateTime? initialFromDate;
+  final DateTime? initialToDate;
+  final String? initialClient;
+  final String? initialStatus;
+  final String? initialPaymentMethod;
+  final List<String>? initialManagers;
+  final List<String>? initialLeads;
 
   const OrdersFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
+    this.initialFromDate,
+    this.initialToDate,
+    this.initialClient,
+    this.initialStatus,
+    this.initialPaymentMethod,
+    this.initialManagers,
+    this.initialLeads,
   }) : super(key: key);
 
   @override
@@ -26,31 +45,107 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   DateTime? _toDate;
   String? _selectedStatus;
   String? _selectedPaymentMethod;
-  String? _paymentMethod;
-  String? _statusMethod;
-
-  String? selectedLead;
-  // Список статусов заказов
-  final List<String> _orderStatuses = [
-    'Новый',
-    'Ожидает оплаты',
-    'Оплачен',
-    'В обработке',
-    'Отправлен',
-    'Завершен',
-    'Отменен',
-  ];
-
-  // Список способов оплаты
-  final List<String> _paymentMethods = [
-    'Наличные',
-    'Онлайн',
-    'Карта',
-  ];
+  List<ManagerData> _selectedManagers = [];
+  List<LeadData> _selectedLeads = [];
+  Key _paymentDropdownKey = UniqueKey();
+  Key _statusDropdownKey = UniqueKey();
+  Key _managerSelectKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
+    _fromDate = widget.initialFromDate;
+    _toDate = widget.initialToDate;
+    _clientController.text = widget.initialClient ?? '';
+    _selectedStatus = widget.initialStatus;
+    _selectedPaymentMethod = widget.initialPaymentMethod;
+    _selectedManagers = widget.initialManagers?.map((id) => ManagerData(id: int.parse(id), name: '')).toList() ?? [];
+    _selectedLeads = widget.initialLeads?.map((id) => LeadData(id: int.parse(id), name: '')).toList() ?? [];
+    _loadFilterState();
+  }
+
+  Future<void> _loadFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      final fromDateMillis = prefs.getInt('order_from_date');
+      final toDateMillis = prefs.getInt('order_to_date');
+      if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
+      if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
+      _clientController.text = prefs.getString('order_client') ?? widget.initialClient ?? '';
+      _selectedStatus = prefs.getString('order_status') ?? widget.initialStatus;
+      _selectedPaymentMethod = prefs.getString('order_payment_method') ?? widget.initialPaymentMethod;
+      final managersJson = prefs.getString('order_managers');
+      final leadsJson = prefs.getString('order_leads');
+      if (managersJson != null) {
+        _selectedManagers = (jsonDecode(managersJson) as List)
+            .map((item) => ManagerData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .toList();
+      }
+      if (leadsJson != null) {
+        _selectedLeads = (jsonDecode(leadsJson) as List)
+            .map((item) => LeadData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .toList();
+      }
+      ////print('Loaded filter state: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
+    });
+  }
+
+  Future<void> _saveFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    ////print('Saving filter state...');
+    if (_fromDate != null) {
+      await prefs.setInt('order_from_date', _fromDate!.millisecondsSinceEpoch);
+      ////print('Saved order_from_date: ${_fromDate!.millisecondsSinceEpoch}');
+    } else {
+      await prefs.remove('order_from_date');
+      ////print('Removed order_from_date');
+    }
+    if (_toDate != null) {
+      await prefs.setInt('order_to_date', _toDate!.millisecondsSinceEpoch);
+      ////print('Saved order_to_date: ${_toDate!.millisecondsSinceEpoch}');
+    } else {
+      await prefs.remove('order_to_date');
+      ////print('Removed order_to_date');
+    }
+    await prefs.setString('order_client', _clientController.text);
+    ////print('Saved order_client: ${_clientController.text}');
+    if (_selectedStatus != null) {
+      await prefs.setString('order_status', _selectedStatus!);
+      ////print('Saved order_status: $_selectedStatus');
+    } else {
+      await prefs.remove('order_status');
+      ////print('Removed order_status');
+    }
+    if (_selectedPaymentMethod != null) {
+      await prefs.setString('order_payment_method', _selectedPaymentMethod!);
+      ////print('Saved order_payment_method: $_selectedPaymentMethod');
+    } else {
+      await prefs.remove('order_payment_method');
+      ////print('Removed order_payment_method');
+    }
+    await prefs.setString('order_managers', jsonEncode(_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()));
+    ////print('Saved order_managers: ${_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()}');
+    await prefs.setString('order_leads', jsonEncode(_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()));
+    ////print('Saved order_leads: ${_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()}');
+  }
+
+  void _resetFilters() {
+    ////print('Resetting filters...');
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+      _clientController.text = '';
+      _selectedStatus = null;
+      _selectedPaymentMethod = null;
+      _selectedManagers.clear();
+      _selectedLeads.clear();
+      _paymentDropdownKey = UniqueKey();
+      _statusDropdownKey = UniqueKey();
+      _managerSelectKey = UniqueKey();
+      ////print('After reset: fromDate=$_fromDate, toDate=$_toDate, client=${_clientController.text}, status=$_selectedStatus, paymentMethod=$_selectedPaymentMethod, managers=$_selectedManagers, leads=$_selectedLeads');
+    });
+    widget.onResetFilters?.call();
+    _saveFilterState();
   }
 
   void _selectDateRange() async {
@@ -61,6 +156,24 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withOpacity(0.1),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (pickedRange != null) {
       setState(() {
@@ -68,6 +181,39 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         _toDate = pickedRange.end;
       });
     }
+  }
+
+  bool _isAnyFilterSelected() {
+    return _fromDate != null ||
+        _toDate != null ||
+        _clientController.text.isNotEmpty ||
+        _selectedStatus != null ||
+        _selectedPaymentMethod != null ||
+        _selectedManagers.isNotEmpty ||
+        _selectedLeads.isNotEmpty;
+  }
+
+  void _applyFilters() async {
+    await _saveFilterState();
+    if (!_isAnyFilterSelected()) {
+      ////print('No filters selected, resetting filters');
+      widget.onResetFilters?.call();
+    } else {
+      widget.onSelectedDataFilter?.call({
+        'fromDate': _fromDate,
+        'toDate': _toDate,
+        'client': _clientController.text.isNotEmpty ? _clientController.text : null,
+        'status': _selectedStatus,
+        'paymentMethod': _selectedPaymentMethod,
+        'managers': _selectedManagers.isNotEmpty
+            ? _selectedManagers.map((manager) => manager.id.toString()).toList()
+            : null,
+        'leads': _selectedLeads.isNotEmpty
+            ? _selectedLeads.map((lead) => lead.id.toString()).toList()
+            : null,
+      });
+    }
+    Navigator.pop(context);
   }
 
   @override
@@ -81,7 +227,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52
+            color: Color(0xff1E2E52),
             fontFamily: 'Gilroy',
           ),
         ),
@@ -90,16 +236,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() {
-                widget.onResetFilters?.call();
-                _fromDate = null;
-                _toDate = null;
-                _clientController.clear();
-                _selectedStatus = null;
-                _selectedPaymentMethod = null;
-              });
-            },
+            onPressed: _resetFilters,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -120,23 +257,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           ),
           const SizedBox(width: 10),
           TextButton(
-            onPressed: () {
-              bool isAnyFilterSelected = _fromDate != null ||
-                  _toDate != null ||
-                  _clientController.text.isNotEmpty ||
-                  _selectedStatus != null ||
-                  _selectedPaymentMethod != null;
-              if (isAnyFilterSelected) {
-                widget.onSelectedDataFilter?.call({
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                  'client': _clientController.text,
-                  'status': _selectedStatus,
-                  'paymentMethod': _selectedPaymentMethod,
-                });
-              }
-              Navigator.pop(context);
-            },
+            onPressed: _applyFilters,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -166,7 +287,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Фильтр по дате
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -202,7 +322,24 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                         ),
                       ),
                     ),
-
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ManagerMultiSelectWidget(
+                          // key: _managerSelectKey,
+                          selectedManagers: _selectedManagers
+                              .map((manager) => manager.id.toString()).toList(),
+                          onSelectManagers: (List<ManagerData> selectedUsersData) {
+                            setState(() {
+                              _selectedManagers = selectedUsersData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -210,11 +347,12 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: LeadRadioGroupWidget(
-                          selectedLead: selectedLead,
-                          onSelectLead: (LeadData selectedRegionData) {
+                        child: LeadMultiSelectWidget(
+                          selectedLeads: _selectedLeads
+                              .map((lead) => lead.id.toString()).toList(),
+                          onSelectLeads: (List<LeadData> selectedUsersData) {
                             setState(() {
-                              selectedLead = selectedRegionData.id.toString();
+                              _selectedLeads = selectedUsersData;
                             });
                           },
                         ),
@@ -228,10 +366,11 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: PaymentMethodDropdown(
-                          selectedPaymentMethod: _paymentMethod,
+                          key: _paymentDropdownKey,
+                          selectedPaymentMethod: _selectedPaymentMethod,
                           onSelectPaymentMethod: (value) {
                             setState(() {
-                              _paymentMethod = value;
+                              _selectedPaymentMethod = value;
                             });
                           },
                         ),
@@ -245,10 +384,11 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: StatusMethodDropdown(
-                          selectedstatusMethod: _statusMethod,
+                          key: _statusDropdownKey,
+                          selectedstatusMethod: _selectedStatus,
                           onSelectstatusMethod: (value) {
                             setState(() {
-                              _statusMethod = value;
+                              _selectedStatus = value;
                             });
                           },
                         ),
@@ -261,64 +401,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-    required String hint,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButton<String>(
-            value: value,
-            hint: Text(
-              hint,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                color: Color(0xff99A4BA),
-                fontSize: 14,
-              ),
-            ),
-            isExpanded: true,
-            underline: const SizedBox(),
-            items: items.map((item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
     );
   }
 }

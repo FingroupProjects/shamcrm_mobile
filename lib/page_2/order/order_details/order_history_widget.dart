@@ -17,6 +17,7 @@ class OrderHistoryWidget extends StatefulWidget {
 }
 
 class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
+  bool isHistoryExpanded = false;
   List<OrderHistory> orderHistory = [];
 
   @override
@@ -58,39 +59,75 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
           );
         }
 
-        return _buildHistoryContainer(
+        return _buildExpandableContainer(
           AppLocalizations.of(context)!.translate('order_history'),
           _buildHistoryItems(orderHistory),
+          isHistoryExpanded,
+          () {
+            setState(() {
+              isHistoryExpanded = !isHistoryExpanded;
+            });
+          },
         );
       },
     );
   }
 
-  Widget _buildHistoryContainer(String title, List<String> items) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+  Widget _buildExpandableContainer(
+    String title,
+    List<String> items,
+    bool isExpanded,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7FD),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTitleRow(title),
+            const SizedBox(height: 8),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              child: isExpanded
+                  ? SizedBox(
+                      height: 250,
+                      child: SingleChildScrollView(
+                        child: _buildItemList(items),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            child: _buildItemList(items),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Row _buildTitleRow(String title) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        Image.asset(
+          'assets/icons/tabBar/dropdown.png',
+          width: 16,
+          height: 16,
+        ),
+      ],
     );
   }
 
@@ -195,21 +232,43 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
     );
   }
 
-  List<String> _buildHistoryItems(List<OrderHistory> history) {
-    return history.map((entry) {
-      final changes = entry.changes;
-      final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user?.name ?? AppLocalizations.of(context)!.translate('unknown_user')} $formattedDate';
+List<String> _buildHistoryItems(List<OrderHistory> history) {
+  return history.map((entry) {
+    final changes = entry.changes;
+    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
+    String actionDetail = '${entry.status}\n${entry.user?.name ?? AppLocalizations.of(context)!.translate('unknown_user')} $formattedDate';
 
-      if (changes != null && changes.body != null) {
-        changes.body!.forEach((key, value) {
-          final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
-          final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('not_specified');
-          actionDetail += '\n${AppLocalizations.of(context)!.translate(key)}: $previousValue > $newValue';
-        });
-      }
+    if (changes != null && changes.body != null) {
+      changes.body!.forEach((key, value) {
+        final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('');
+        final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('');
 
-      return actionDetail;
-    }).toList();
-  }
+        // Перевод для deliveryType
+        String translatedKey = key;
+        String translatedNewValue = newValue.toString();
+        String translatedPreviousValue = previousValue.toString();
+
+        if (key == 'deliveryType') {
+          translatedKey = AppLocalizations.of(context)!.translate('delivery_method'); // Способ доставки
+          if (newValue == 'pickup') {
+            translatedNewValue = AppLocalizations.of(context)!.translate('pickup'); // Самовывоз
+          } else if (newValue == 'delivery') {
+            translatedNewValue = AppLocalizations.of(context)!.translate('delivery'); // Курьер
+          }
+          if (previousValue == 'pickup') {
+            translatedPreviousValue = AppLocalizations.of(context)!.translate('pickup'); // Самовывоз
+          } else if (previousValue == 'delivery') {
+            translatedPreviousValue = AppLocalizations.of(context)!.translate('delivery'); // Курьер
+          }
+        } else {
+          translatedKey = AppLocalizations.of(context)!.translate(key); // Другие ключи
+        }
+
+        actionDetail += '\n$translatedKey: $translatedPreviousValue > $translatedNewValue';
+      });
+    }
+
+    return actionDetail;
+  }).toList();
+}
 }

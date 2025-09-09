@@ -8,6 +8,12 @@ class FetchOrders extends OrderEvent {
   final int perPage;
   final String? query;
   final bool forceRefresh;
+  final List<String>? managerIds;
+  final List<String>? leadIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final String? status;
+  final String? paymentMethod;
 
   FetchOrders({
     this.statusId,
@@ -15,9 +21,14 @@ class FetchOrders extends OrderEvent {
     this.perPage = 20,
     this.query,
     this.forceRefresh = false,
+    this.managerIds,
+    this.leadIds,
+    this.fromDate,
+    this.toDate,
+    this.status,
+    this.paymentMethod,
   });
 }
-
 class FetchMoreOrders extends OrderEvent {
   final int? statusId;
   final int page;
@@ -43,12 +54,13 @@ class CreateOrder extends OrderEvent {
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
-  final int? deliveryAddressId; // Новое поле
+  final int? deliveryAddressId;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int statusId;
   final int? branchId;
   final String? commentToCourier;
+  final int? managerId; // Новое поле
 
   CreateOrder({
     required this.phone,
@@ -61,6 +73,7 @@ class CreateOrder extends OrderEvent {
     required this.statusId,
     this.branchId,
     this.commentToCourier,
+    this.managerId, // Добавляем в конструктор
   });
 }
 class UpdateOrder extends OrderEvent {
@@ -69,11 +82,12 @@ class UpdateOrder extends OrderEvent {
   final int leadId;
   final bool delivery;
   final String? deliveryAddress;
-  final int? deliveryAddressId; // Новое поле
+  final int? deliveryAddressId;
   final List<Map<String, dynamic>> goods;
   final int organizationId;
   final int? branchId;
   final String? commentToCourier;
+  final int? managerId; // Новое поле
 
   UpdateOrder({
     required this.orderId,
@@ -86,6 +100,7 @@ class UpdateOrder extends OrderEvent {
     required this.organizationId,
     this.branchId,
     this.commentToCourier,
+    this.managerId,
   });
 }
 class DeleteOrder extends OrderEvent {

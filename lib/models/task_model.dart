@@ -90,7 +90,7 @@ class Task {
             [],
       );
     } catch (e) {
-      print('Error parsing Task: $e');
+      //print('Error parsing Task: $e');
       return Task(
         id: 0,
         taskNumber: 0,
@@ -145,7 +145,7 @@ class TaskCustomField {
         value: json['value'] ?? '',
       );
     } catch (e) {
-      print('Error parsing TaskCustomField: $e');
+      //print('Error parsing TaskCustomField: $e');
       return TaskCustomField(id: 0, key: 'Unknown', value: 'Unknown');
     }
   }
@@ -184,7 +184,7 @@ class UserTaskImage {
         image: json['image'] is String ? json['image'] : '',
       );
     } catch (e) {
-      print('Error parsing UserTaskImage: $e');
+      //print('Error parsing UserTaskImage: $e');
       return UserTaskImage(
         id: 0,
         name: 'Не указано',

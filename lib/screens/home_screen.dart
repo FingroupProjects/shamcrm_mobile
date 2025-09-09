@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
+import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
@@ -8,7 +10,6 @@ import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_screen.dart';
-import 'package:crm_task_manager/screens/page_test.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
@@ -105,37 +106,72 @@ class _HomeScreenState extends State<HomeScreen> {
     inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
     hasAvailableScreens = true;
 
-    // Дашборд 2 
-    // widgetsGroup2.add(PlaceHolderTest(message: 'Страница 1',));
-    // titleKeysGroup2.add('appbar_dashboard');
-    // navBarTitleKeysGroup2.add('appbar_dashboard');
-    // activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
-    // inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    // hasAvailableScreens = true;
+    // ИЗМЕНЕНО: Онлайн магазин (вместо отдельных Category, Goods, Orders)
+    // Проверяем, есть ли доступ к любой части онлайн магазина
+    bool hasOnlineStoreAccess = false;
+    if (await _apiService.hasPermission('product.read') || 
+        await _apiService.hasPermission('order.read')) {
+      hasOnlineStoreAccess = true;
+    }
 
+    if (hasOnlineStoreAccess) {
+      widgetsGroup2.add(OnlineStoreScreen());
+      titleKeysGroup2.add('appbar_online_store');
+      navBarTitleKeysGroup2.add('appbar_online_store');
+      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png'); // Используем иконку категории
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // НОВЫЙ: Учет склада
+    // Проверяем, есть ли доступ к складским операциям
+    bool hasWarehouseAccess = false;
+    if (await _apiService.hasPermission('product.read') || 
+        await _apiService.hasPermission('order.read')) {
+      hasWarehouseAccess = true;
+    }
+
+    if (hasWarehouseAccess) {
+      widgetsGroup2.add(WarehouseAccountingScreen());
+      titleKeysGroup2.add('appbar_warehouse');
+      navBarTitleKeysGroup2.add('appbar_warehouse');
+      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Используем иконку товаров
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Удаляем старые отдельные экраны (они теперь доступны через OnlineStoreScreen):
+    /*
     // Категории 
-    widgetsGroup2.add(CategoryScreen());
-    titleKeysGroup2.add('appbar_categories');
-    navBarTitleKeysGroup2.add('appbar_categories');
-    activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-    hasAvailableScreens = true;
-
-    // Товары
-    widgetsGroup2.add(GoodsScreen());
-    titleKeysGroup2.add('appbar_goods');
-    navBarTitleKeysGroup2.add('appbar_goods');
-    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
-    hasAvailableScreens = true;
-
+    if (await _apiService.hasPermission('product.read')) {
+      widgetsGroup2.add(CategoryScreen());
+      titleKeysGroup2.add('appbar_categories');
+      navBarTitleKeysGroup2.add('appbar_categories');
+      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+      hasAvailableScreens = true;
+    }
+    
+    if (await _apiService.hasPermission('product.read')) {
+      // Товары
+      widgetsGroup2.add(GoodsScreen());
+      titleKeysGroup2.add('appbar_goods');
+      navBarTitleKeysGroup2.add('appbar_goods');
+      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+      hasAvailableScreens = true;
+    }
+    
     // Заказы
-    widgetsGroup2.add(OrderScreen());
-    titleKeysGroup2.add('appbar_orders');
-    navBarTitleKeysGroup2.add('appbar_orders');
-    activeIconsGroup2.add('assets/icons/MyNavBar/order_off_2.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/order_on_2.png');
-    hasAvailableScreens = true;
+    if (await _apiService.hasPermission('order.read')) {
+      widgetsGroup2.add(OrderScreen());
+      titleKeysGroup2.add('appbar_orders');
+      navBarTitleKeysGroup2.add('appbar_orders');
+      activeIconsGroup2.add('assets/icons/MyNavBar/order_off_2.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/order_on_2.png');
+      hasAvailableScreens = true;
+    }
+    */
 
     if (mounted) {
       setState(() {
@@ -149,28 +185,42 @@ class _HomeScreenState extends State<HomeScreen> {
         _activeIconsGroup2 = activeIconsGroup2;
         _inactiveIconsGroup1 = inactiveIconsGroup1;
         _inactiveIconsGroup2 = inactiveIconsGroup2;
+        
+        // Если текущий пользователь находится во второй группе, но она пуста,
+        // переключаем на первую группу
+        if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          _selectedIndexGroup1 = 0;
+          _selectedIndexGroup2 = -1;
+        }
       });
     }
-
   }
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-  if (args != null && !_isPushHandled) {
-    setState(() {
-      if (args['group'] == 1) {
-        _selectedIndexGroup1 = args['screenIndex'] ?? 0;
-        _selectedIndexGroup2 = -1;
-      } else if (args['group'] == 2) {
-        _selectedIndexGroup2 = args['screenIndex'] ?? 0;
-        _selectedIndexGroup1 = -1;
-      }
-      _isPushHandled = true;
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null && !_isPushHandled) {
+      setState(() {
+        if (args['group'] == 1) {
+          _selectedIndexGroup1 = args['screenIndex'] ?? 0;
+          _selectedIndexGroup2 = -1;
+        } else if (args['group'] == 2) {
+          // Проверяем, есть ли элементы во второй группе
+          if (_widgetOptionsGroup2.isNotEmpty) {
+            _selectedIndexGroup2 = args['screenIndex'] ?? 0;
+            _selectedIndexGroup1 = -1;
+          } else {
+            // Если нет элементов во второй группе, переключаемся на первую
+            _selectedIndexGroup1 = 0;
+            _selectedIndexGroup2 = -1;
+          }
+        }
+        _isPushHandled = true;
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {

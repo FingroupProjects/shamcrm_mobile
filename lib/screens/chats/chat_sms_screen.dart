@@ -13,6 +13,8 @@ import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
@@ -40,7 +42,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
@@ -80,6 +82,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isMenuOpen = false;
   bool _isSearching = false;
   String? _searchQuery;
+  String? integrationUsername; // Новое поле для хранения username
+  String? channelName; // Новое поле для хранения channel.name
+  bool _hasMarkedMessagesAsRead = false;
+  bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
+  
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -101,29 +108,129 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  @override
-  void initState() {
-    _checkPermissions();
-    context.read<MessagingCubit>().getMessages(widget.chatId);
+@override
+void initState() {
+  super.initState();
+  _checkPermissions();
+  context.read<ListenSenderFileCubit>().updateValue(false);
+  context.read<ListenSenderVoiceCubit>().updateValue(false);
+  context.read<ListenSenderTextCubit>().updateValue(false);
+  setUpServices();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _fetchBaseUrl(); // Ждём получения baseUrl
+    context.read<MessagingCubit>().getMessages(widget.chatId); // Вызываем после получения baseUrl
+    _scrollToBottom();
+    if (widget.endPointInTab == 'lead') {
+      await _fetchIntegration();
+    }
+  });
+}
 
-    context.read<ListenSenderFileCubit>().updateValue(false);
-    context.read<ListenSenderVoiceCubit>().updateValue(false);
-    context.read<ListenSenderTextCubit>().updateValue(false);
+  Future<void> _markMessagesAsRead() async {
+    // Проверяем, не был ли метод уже вызван
+    if (_hasMarkedMessagesAsRead) {
+      if (kDebugMode) {
+        print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
+      }
+      return;
+    }
 
-    setUpServices();
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-      _fetchBaseUrl();
+    final state = context.read<MessagingCubit>().state;
+    // Лог для отладки текущего состояния
+    if (kDebugMode) {
+      print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
+    }
+    List<Message> messages = [];
+    // Проверяем оба состояния: MessagesLoadedState и PinnedMessagesState
+    if (state is MessagesLoadedState) {
+      messages = state.messages;
+    } else if (state is PinnedMessagesState) {
+      messages = state.messages;
+    }
+
+    // Лог для количества сообщений
+    if (kDebugMode) {
+      print('ChatSmsScreen: Количество сообщений: ${messages.length}');
+    }
+
+    // Проверяем, есть ли непрочитанные сообщения
+    bool hasUnreadMessages = messages.any((msg) => !msg.isRead);
+    if (messages.isNotEmpty && hasUnreadMessages) {
+      final latestMessageId = messages.first.id;
+      // Лог для chatId и messageId
+      if (kDebugMode) {
+        print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
+      }
+      try {
+        await widget.apiService.readMessages(widget.chatId, latestMessageId);
+        if (kDebugMode) {
+          print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
+        }
+        // Устанавливаем флаг, чтобы предотвратить повторные вызовы
+        _hasMarkedMessagesAsRead = true;
+      } catch (e) {
+        // Лог для ошибок API
+        if (kDebugMode) {
+          print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('error_marking_messages_read'),
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      if (kDebugMode) {
+        print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
+      }
+      // Устанавливаем флаг, даже если сообщений нет, чтобы избежать повторных проверок
+      _hasMarkedMessagesAsRead = true;
+    }
+  }
+// Обновлённый метод для получения интеграции в ChatSmsScreen
+Future<void> _fetchIntegration() async {
+  final prefs = await SharedPreferences.getInstance();
+  try {
+    // Используем новый упрощённый метод
+    final chatData = await widget.apiService.getChatByIdWithIntegration(widget.chatId);
+    
+    debugPrint('ChatData fetched: integration.username=${chatData.integration?.username}, channel.name=${chatData.channel?.name}');
+    
+    setState(() {
+      integrationUsername = chatData.integration?.username ?? AppLocalizations.of(context)!.translate('unknown_channel');
+      channelName = chatData.channel?.name ?? 'unknown';
+      
+      // Сохраняем в SharedPreferences для быстрого доступа
+      prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
+      prefs.setString('channel_name_${widget.chatId}', channelName!);
+    });
+  } catch (e) {
+    debugPrint('Ошибка загрузки данных чата: $e');
+    
+    // Пытаемся загрузить из кеша
+    setState(() {
+      integrationUsername = prefs.getString('integration_username_${widget.chatId}') ?? 
+          AppLocalizations.of(context)!.translate('unknown_channel');
+      channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
     });
   }
-
+}
   Future<void> _playSound() async {
     try {
       await _audioPlayer.setAsset('assets/audio/send.mp3');
       await _audioPlayer.play();
     } catch (e) {
-      print('Error playing sound: $e');
+      //print('Error playing sound: $e');
     }
   }
 
@@ -131,108 +238,219 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
-  void _showDatePicker(BuildContext context, List<Message> messages) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
+Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
+  final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
+  DateTime? selectedDate;
+
+  // Преобразуем сообщения в карту дат
+  final Map<DateTime, List> events = {};
+  //print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
+  for (var message in messages) {
+    //print('Обработка сообщения: $message');
+    try {
+      final date = DateTime.parse(message.createMessateTime).toLocal();
+      //print('Парсинг даты: ${message.createMessateTime} -> $date');
+      final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
+      //print('Сформирована дата для события: $eventDate');
+      if (events[eventDate] == null) {
+        //print('Добавление нового события для даты: $eventDate');
+        events[eventDate] = [true]; // Добавляем индикатор события
+      } else {
+        //print('Событие для даты $eventDate уже существует');
+      }
+    } catch (e) {
+      //print('Ошибка парсинга даты ${message.createMessateTime}: $e');
+    }
+  }
+  //print('Карта событий после обработки: $events');
+
+  await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Container(
-          color: Colors.white,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey.shade200,
+                height: 450, // Увеличиваем высоту для корректного отображения дней недели
+                width: double.maxFinite,
+                color: Colors.white,
+                child: TableCalendar(
+                  firstDay: DateTime(2020),
+                  lastDay: DateTime(2101),
+                  focusedDay: currentDate,
+                  calendarFormat: CalendarFormat.month,
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  locale: 'ru_RU',
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.blue,
+                        width: 2,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    todayTextStyle: const TextStyle(color: Colors.blue),
+                    outsideDaysVisible: true,
+                    outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
+                  ),
+                  // Добавляем стиль для дней недели чтобы они не обрезались
+                  daysOfWeekStyle: const DaysOfWeekStyle(
+                    weekdayStyle: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    weekendStyle: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
                     ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('go_to_date'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 400,
-                child: CalendarDatePicker(
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  onDateChanged: (date) {
-                    final index = _findMessageIndexByDate(messages, date);
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                    leftChevronVisible: true,
+                    rightChevronVisible: true,
+                    titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
+                    // Добавляем форматирование заголовка для заглавной буквы
+                    titleTextFormatter: (date, locale) {
+                      final monthNames = {
+                        1: 'Январь',
+                        2: 'Февраль', 
+                        3: 'Март',
+                        4: 'Апрель',
+                        5: 'Май',
+                        6: 'Июнь',
+                        7: 'Июль',
+                        8: 'Август',
+                        9: 'Сентябрь',
+                        10: 'Октябрь',
+                        11: 'Ноябрь',
+                        12: 'Декабрь'
+                      };
+                      
+                      final monthName = monthNames[date.month] ?? '';
+                      return '$monthName ${date.year} г.';
+                    },
+                  ),
+                  calendarBuilders: CalendarBuilders(
+                    markerBuilder: (context, date, events) {
+                      //print('Проверка даты $date, события: $events');
+                      if (events.isNotEmpty) {
+                        //print('Отображение точки для даты $date');
+                        return Positioned(
+                          right: 18,
+                          bottom: 0,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        );
+                      }
+                      //print('Нет событий для даты $date');
+                      return null;
+                    },
+                  ),
+                  eventLoader: (day) {
+                    final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
+                    //print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                    return events[normalizedDay] ?? [];
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    final index = _findMessageIndexByDate(messages, selectedDay);
+                    //print('Выбрана дата $selectedDay, индекс сообщения: $index');
                     if (index != -1) {
                       Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToMessageIndex(date);
+                        _scrollToMessageIndex(selectedDay);
                       });
-                    } else {}
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Нет сообщений за ${formatDate(selectedDay)}',
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
-  int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-    int lastIndex = -1;
-    for (int i = 0; i < messages.length; i++) {
-      final messageDate = DateTime.parse(messages[i].createMessateTime);
-      if (isSameDay(messageDate, targetDate)) {
-        lastIndex = i;
-      }
-    }
-    return lastIndex;
-  }
 
-  void _scrollToMessageIndex(DateTime selectedDate) {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState || state is PinnedMessagesState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : (state as PinnedMessagesState).messages;
-
-      final messageIndex = messages.indexWhere((msg) {
-        final messageDate = DateTime.parse(msg.createMessateTime);
-        return isSameDay(messageDate, selectedDate);
-      });
-
-      if (messageIndex != -1) {
-        _scrollControllerMessage.scrollTo(
-          index: messageIndex,
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.easeInOut,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('No messages found for ${formatDate(selectedDate)}')),
-        );
-      }
+int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
+  for (int i = messages.length - 1; i >= 0; i--) {
+    final messageDate = DateTime.parse(messages[i].createMessateTime);
+    if (isSameDay(messageDate, targetDate)) {
+      return i; // Возвращаем индекс последнего сообщения за дату
     }
   }
+  return -1; // Если сообщений нет
+}
+
+void _scrollToMessageIndex(DateTime selectedDate) {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState || state is PinnedMessagesState) {
+    final messages = state is MessagesLoadedState
+        ? state.messages
+        : (state as PinnedMessagesState).messages;
+
+    final messageIndex = _findMessageIndexByDate(messages, selectedDate);
+
+    if (messageIndex != -1) {
+      debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
+      _scrollControllerMessage.scrollTo(
+        index: messageIndex,
+        alignment: 0.0, // Позиционируем сообщение вверху экрана
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Нет сообщений за ${formatDate(selectedDate)}',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+}
 
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
@@ -244,79 +462,95 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return "${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}";
   }
 
-  Widget _buildAvatar(String avatar) {
-    print('Avatar path: $avatar'); // Отладочный вывод
-    if (avatar.contains('<svg')) {
-      final imageUrl = extractImageUrlFromSvg(avatar);
-      if (imageUrl != null) {
+ Widget _buildAvatar(String avatar) {
+  // print('Avatar path: $avatar'); // Отладочный вывод
+  bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+  bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
+
+  // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
+  if (isTaskSection && !avatar.contains('<svg')) {
+    return CircleAvatar(
+      backgroundImage: AssetImage('assets/images/AvatarTask.png'),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: Colors.white,
+      onBackgroundImageError: (exception, stackTrace) {
+        // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+      },
+    );
+  }
+
+  // Обработка SVG-аватарок
+  if (avatar.contains('<svg')) {
+    final imageUrl = extractImageUrlFromSvg(avatar);
+    if (imageUrl != null) {
+      return Container(
+        width: ChatSmsStyles.avatarRadius * 2,
+        height: ChatSmsStyles.avatarRadius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      final text = extractTextFromSvg(avatar);
+      final backgroundColor = extractBackgroundColorFromSvg(avatar);
+      if (text != null && backgroundColor != null) {
         return Container(
           width: ChatSmsStyles.avatarRadius * 2,
           height: ChatSmsStyles.avatarRadius * 2,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
+            color: backgroundColor,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         );
       } else {
-        final text = extractTextFromSvg(avatar);
-        final backgroundColor = extractBackgroundColorFromSvg(avatar);
-        if (text != null && backgroundColor != null) {
-          return Container(
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: backgroundColor,
-              border: Border.all(
-                color: Colors.white,
-                width: 1,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        } else {
-          return SvgPicture.string(
-            avatar,
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            placeholderBuilder: (context) => CircularProgressIndicator(),
-          );
-        }
+        return SvgPicture.string(
+          avatar,
+          width: ChatSmsStyles.avatarRadius * 2,
+          height: ChatSmsStyles.avatarRadius * 2,
+          placeholderBuilder: (context) => CircularProgressIndicator(),
+        );
       }
     }
-    // Проверяем, является ли это аватарка чата поддержки
-    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-    try {
-      return CircleAvatar(
-        backgroundImage: AssetImage(avatar),
-        radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-        onBackgroundImageError: (exception, stackTrace) {
-          print('Error loading asset image: $avatar, $exception');
-        },
-      );
-    } catch (e) {
-      print('Fallback avatar due to error: $e');
-      return CircleAvatar(
-        backgroundImage: AssetImage('assets/images/AvatarChat.png'),
-        radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-      );
-    }
   }
+
+  // Обработка остальных случаев (локальные изображения)
+  try {
+    return CircleAvatar(
+      backgroundImage: AssetImage(avatar),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+      onBackgroundImageError: (exception, stackTrace) {
+        // print('Error loading asset image: $avatar, $exception');
+      },
+    );
+  } catch (e) {
+    // print('Fallback avatar due to error: $e');
+    return CircleAvatar(
+      backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
+      radius: ChatSmsStyles.avatarRadius,
+      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+    );
+  }
+}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
@@ -344,227 +578,224 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return null;
   }
 
- @override
-Widget build(BuildContext context) {
-  // Проверяем, является ли чат типом support
-  bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
-  print('ChatSmsScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
+  @override
+  Widget build(BuildContext context) {
+    bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
 
-  return BlocListener<DeleteMessageBloc, DeleteMessageState>(
-    listener: (context, state) {
-      if (state is DeleteMessageSuccess) {
-        context.read<MessagingCubit>().getMessages(widget.chatId);
-        if (widget.endPointInTab == 'task' ||
-            widget.endPointInTab == 'corporate') {
-          final chatsBloc = context.read<ChatsBloc>();
-          chatsBloc.add(ClearChats());
-          chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+    return BlocListener<MessagingCubit, MessagingState>(
+      // Добавлен BlocListener для вызова _markMessagesAsRead только при первой загрузке
+      listener: (context, state) {
+        if (kDebugMode) {
+          print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
         }
-      }
-    },
-    child: Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        forceMaterialTransparency: false,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        centerTitle: false, 
-        leadingWidth: 40,
-        leading: Transform.translate(
-          offset: const Offset(6, 0),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 40,
-              height: 40,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: IconButton(
-              icon: _isSearching
-                  ? Icon(Icons.close)
-                  : Image.asset('assets/icons/AppBar/search.png',
-                      width: 24, height: 24),
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  _searchQuery = null;
-                });
-                if (!_isSearching) {
-                  context.read<MessagingCubit>().getMessages(widget.chatId);
-                }
-              },
-            ),
-          ),
-        ],
-        title: Transform.translate(
-          offset: const Offset(-12, 0),
-          child: _isSearching
-              ? TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!
-                        .translate('search_appbar'),
-                    border: InputBorder.none,
-                    hintStyle:
-                        TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-                  ),
-                  onChanged: _onSearchChanged,
-                )
-              : GestureDetector(
-                  onTap: isSupportChat
-                      ? null // Игнорируем нажатие для support
-                      : () async {
-                          print('Navigating to profile, chatId: ${widget.chatId}');
-                          if (_isRequestInProgress) return;
-                          setState(() {
-                            _isRequestInProgress = true;
-                          });
-                          try {
-                            if (widget.endPointInTab == 'lead') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      UserProfileScreen(chatId: widget.chatId),
-                                ),
-                              );
-                            } else if (widget.endPointInTab == 'task') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      TaskByIdScreen(chatId: widget.chatId),
-                                ),
-                              );
-                            } else if (widget.endPointInTab == 'corporate') {
-                              final getChatById =
-                                  await ApiService().getChatById(widget.chatId);
-                              if (getChatById.chatUsers.length == 2 &&
-                                  getChatById.group == null) {
-                                String userIdCheck = '';
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                userIdCheck = prefs.getString('userID') ?? '';
-                                final participant = getChatById.chatUsers
-                                    .firstWhere((user) =>
-                                        user.participant.id.toString() !=
-                                        userIdCheck)
-                                    .participant;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ParticipantProfileScreen(
-                                      userId: participant.id.toString(),
-                                      image: participant.image,
-                                      name: participant.name,
-                                      email: participant.email,
-                                      phone: participant.phone,
-                                      login: participant.login,
-                                      lastSeen: participant.lastSeen.toString(),
-                                      buttonChat: false,
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CorporateProfileScreen(
-                                      chatId: widget.chatId,
-                                      chatItem: widget.chatItem,
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'ОШИБКА!',
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                  duration: Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          } finally {
-                            setState(() {
-                              _isRequestInProgress = false;
-                            });
-                          }
-                        },
-                  child: Row(
-                    children: [
-                      _buildAvatar(widget.chatItem.avatar),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.chatItem.name.isEmpty
-                              ? AppLocalizations.of(context)!
-                                  .translate('no_name')
-                              : widget.chatItem.name,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: isSupportChat
-                                ? ChatSmsStyles.appBarTitleColor // Серый для support
-                                : ChatSmsStyles.appBarTitleColor,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
+        // Вызываем _markMessagesAsRead только для MessagesLoadedState или PinnedMessagesState
+        if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
+          _markMessagesAsRead();
+        }
+      },
+      child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
+        listener: (context, state) {
+          if (state is DeleteMessageSuccess) {
+            context.read<MessagingCubit>().getMessages(widget.chatId);
+            if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
+              final chatsBloc = context.read<ChatsBloc>();
+              chatsBloc.add(ClearChats());
+              chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+            }
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            forceMaterialTransparency: false,
+            scrolledUnderElevation: 0,
+            elevation: 0,
+            centerTitle: false,
+            leadingWidth: 40,
+            leading: Transform.translate(
+              offset: const Offset(6, 0),
+              child: IconButton(
+                icon: Image.asset(
+                  'assets/icons/arrow-left.png',
+                  width: 40,
+                  height: 40,
                 ),
-          ),
-      ),
-      backgroundColor: const Color(0xffF4F7FD),
-      body: Column(
-        children: [
-          Expanded(child: messageListUi()),
-          if (widget.canSendMessage && _canCreateChat)
-            inputWidget()
-          else
-            Padding(
-              padding: const EdgeInsets.only(bottom: 50),
-              child: Center(
-                child: Text(
-                  widget.canSendMessage
-                      ? AppLocalizations.of(context)!
-                          .translate('not_premission_to_send_sms')
-                      : AppLocalizations.of(context)!
-                          .translate('24_hour_leads'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    color: AppColors.textPrimary700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
               ),
             ),
-        ],
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: IconButton(
+                  icon: _isSearching
+                      ? const Icon(Icons.close)
+                      : Image.asset('assets/icons/AppBar/search.png',
+                          width: 24, height: 24),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      _searchQuery = null;
+                    });
+                    if (!_isSearching) {
+                      context.read<MessagingCubit>().getMessages(widget.chatId);
+                    }
+                  },
+                ),
+              ),
+            ],
+            title: Transform.translate(
+              offset: const Offset(-12, 0),
+              child: _isSearching
+                  ? TextField(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                        border: InputBorder.none,
+                        hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
+                      ),
+                      onChanged: _onSearchChanged,
+                    )
+                  : GestureDetector(
+                      onTap: isSupportChat
+                          ? null
+                          : () async {
+                              if (_isRequestInProgress) return;
+                              setState(() {
+                                _isRequestInProgress = true;
+                              });
+                              try {
+                                if (widget.endPointInTab == 'lead') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                                    ),
+                                  );
+                                } else if (widget.endPointInTab == 'task') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                                    ),
+                                  );
+                                } else if (widget.endPointInTab == 'corporate') {
+                                  final getChatById = await widget.apiService.getChatById(widget.chatId);
+                                  if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                                    String userIdCheck = '';
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                    userIdCheck = prefs.getString('userID') ?? '';
+                                    final participant = getChatById.chatUsers
+                                        .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                                        .participant;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ParticipantProfileScreen(
+                                          userId: participant.id.toString(),
+                                          image: participant.image,
+                                          name: participant.name,
+                                          email: participant.email,
+                                          phone: participant.phone,
+                                          login: participant.login,
+                                          lastSeen: participant.lastSeen.toString(),
+                                          buttonChat: false,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CorporateProfileScreen(
+                                          chatId: widget.chatId,
+                                          chatItem: widget.chatItem,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'ОШИБКА!',
+                                        style: const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                setState(() {
+                                  _isRequestInProgress = false;
+                                });
+                              }
+                            },
+                      child: Row(
+                        children: [
+                          _buildAvatar(widget.chatItem.avatar),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              isSupportChat
+                                  ? AppLocalizations.of(context)!.translate('support_chat_name')
+                                  : widget.chatItem.name.isEmpty
+                                      ? AppLocalizations.of(context)!.translate('no_name')
+                                      : widget.chatItem.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: ChatSmsStyles.appBarTitleColor,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Gilroy',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+          backgroundColor: const Color(0xffF4F7FD),
+          body: Column(
+            children: [
+              Expanded(child: messageListUi()),
+              if (widget.canSendMessage && _canCreateChat)
+                inputWidget()
+              else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 50),
+                  child: Center(
+                    child: Text(
+                      widget.canSendMessage
+                          ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                          : AppLocalizations.of(context)!.translate('24_hour_leads'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        color: AppColors.textPrimary700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+     
+
 
   void _scrollToMessageReply(int messageId) {
     final state = context.read<MessagingCubit>().state;
@@ -597,174 +828,189 @@ Widget build(BuildContext context) {
     }
   }
 
-  Widget messageListUi() {
-    return BlocBuilder<MessagingCubit, MessagingState>(
-      builder: (context, state) {
-        if (state is MessagesErrorState) {
-          return Center(child: Text("Ошибка!"));
+
+Widget messageListUi() {
+  return BlocBuilder<MessagingCubit, MessagingState>(
+    builder: (context, state) {
+      debugPrint('messageListUi: Building with state: $state');
+      if (state is MessagesErrorState) {
+        return Center(child: Text("Ошибка!"));
+      }
+      if (state is MessagesLoadingState) {
+        return Center(child: CircularProgressIndicator.adaptive());
+      }
+      if (state is MessagesLoadedState ||
+          state is ReplyingToMessageState ||
+          state is PinnedMessagesState ||
+          state is EditingMessageState) {
+        final messages = state is MessagesLoadedState
+            ? state.messages
+            : state is ReplyingToMessageState
+                ? state.messages
+                : state is PinnedMessagesState
+                    ? state.messages
+                    : (state as EditingMessageState).messages;
+        debugPrint('messageListUi: Rendering ${messages.length} messages');
+        final pinnedMessages = state is PinnedMessagesState
+            ? state.pinnedMessages
+            : state is ReplyingToMessageState
+                ? state.pinnedMessages
+                : state is EditingMessageState
+                    ? state.pinnedMessages
+                    : [];
+
+        if (messages.isEmpty) {
+          return Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('not_sms'),
+              style: TextStyle(color: AppColors.textPrimary700),
+            ),
+          );
         }
-        if (state is MessagesLoadingState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadedState ||
-            state is ReplyingToMessageState ||
-            state is PinnedMessagesState ||
-            state is EditingMessageState) {
-          final messages = state is MessagesLoadedState
-              ? state.messages
-              : state is ReplyingToMessageState
-                  ? state.messages
-                  : state is PinnedMessagesState
-                      ? state.messages
-                      : (state as EditingMessageState).messages;
-          final pinnedMessages = state is PinnedMessagesState
-              ? state.pinnedMessages
-              : state is ReplyingToMessageState
-                  ? state.pinnedMessages
-                  : state is EditingMessageState
-                      ? state.pinnedMessages
-                      : [];
 
-          if (messages.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: AppColors.textPrimary700),
-              ),
-            );
-          }
+        debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName'); // Лог для отладки
 
-          return Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: ScrollablePositionedList.builder(
-                    itemScrollController: _scrollControllerMessage,
-                    itemCount: messages.length,
-                    reverse: true,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final messageDate =
-                          DateTime.parse(message.createMessateTime);
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _scrollControllerMessage,
+                  itemCount: messages.length,
+                  reverse: true,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final messageDate =
+                        DateTime.parse(message.createMessateTime);
 
-                      bool shouldShowDate = false;
-                      if (index == messages.length - 1) {
-                        shouldShowDate = true;
-                      } else {
-                        final previousMessage = messages[index + 1];
-                        final previousMessageDate =
-                            DateTime.parse(previousMessage.createMessateTime);
-                        shouldShowDate =
-                            !isSameDay(messageDate, previousMessageDate);
-                      }
+                    bool shouldShowDate = false;
+                    if (index == messages.length - 1) {
+                      shouldShowDate = true;
+                    } else {
+                      final previousMessage = messages[index + 1];
+                      final previousMessageDate =
+                          DateTime.parse(previousMessage.createMessateTime);
+                      shouldShowDate =
+                          !isSameDay(messageDate, previousMessageDate);
+                    }
 
-                      // Определяем, является ли сообщение первым
-                      bool isFirstMessage = index == messages.length - 1;
+                    bool isFirstMessage = index == messages.length - 1;
 
-                      List<Widget> widgets = [];
+                    List<Widget> widgets = [];
 
-                      if (shouldShowDate) {
-                        widgets.add(
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8),
-                            child: GestureDetector(
-                              onTap: () => _showDatePicker(context, messages),
-                              child: Center(
-                                child: Text(
-                                  formatDate(messageDate),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black,
-                                  ),
+                    if (shouldShowDate) {
+                      widgets.add(
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, bottom: 8),
+                          child: GestureDetector(
+                            onTap: () => _showDatePicker(context, messages),
+                            child: Center(
+                              child: Text(
+                                formatDate(messageDate),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: "Gilroy",
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.black,
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      }
-                      widgets.add(
-                        MessageItemWidget(
-                          message: message,
-                          chatId: widget.chatId,
-                          endPointInTab: widget.endPointInTab,
-                          apiServiceDownload: widget.apiServiceDownload,
-                          baseUrl: baseUrl,
-                          onReplyTap: _scrollToMessageReply,
-                          highlightedMessageId: _highlightedMessageId,
-                          onMenuStateChanged: (isOpen) {
-                            setState(() {
-                              _isMenuOpen = isOpen;
-                            });
-                          },
-                          focusNode: _focusNode,
-                          isRead: message.isRead,
-                          isFirstMessage: isFirstMessage,
                         ),
                       );
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: widgets,
-                      );
-                    },
-                  ),
+                    }
+                    widgets.add(
+                      MessageItemWidget(
+                        message: message,
+                        chatId: widget.chatId,
+                        endPointInTab: widget.endPointInTab,
+                        apiServiceDownload: widget.apiServiceDownload,
+                        baseUrl: baseUrl,
+                        onReplyTap: _scrollToMessageReply,
+                        highlightedMessageId: _highlightedMessageId,
+                        onMenuStateChanged: (isOpen) {
+                          setState(() {
+                            _isMenuOpen = isOpen;
+                          });
+                        },
+                        focusNode: _focusNode,
+                        isRead: message.isRead,
+                        isFirstMessage: isFirstMessage,
+                      ),
+                    );
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: widgets,
+                    );
+                  },
                 ),
               ),
-              if (pinnedMessages.isNotEmpty)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Column(
-                    children: [
-                      Material(
-                        color: Colors.transparent,
-                        child: PinnedMessageWidget(
-                          message: pinnedMessages.last.text,
-                          onUnpin: () {
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  if (widget.endPointInTab == 'lead' && integrationUsername != null)
+                    Material(
+                      color: Colors.transparent,
+                      child: PinnedLeadMessageWidget(
+                        message: '@$integrationUsername',
+                        channelType: channelName,
+                        onTap: null,
+                      ),
+                    ),
+                  if (pinnedMessages.isNotEmpty)
+                    Material(
+                      color: Colors.transparent,
+                      child: PinnedMessageWidget(
+                        message: pinnedMessages.last.text,
+                        onUnpin: () {
+                          context
+                              .read<MessagingCubit>()
+                              .unpinMessage(pinnedMessages.last);
+                        },
+                        onTap: () {
+                          _scrollToMessageReply(pinnedMessages.last.id);
+                          if (pinnedMessages.isNotEmpty) {
+                            final updatedPinnedMessages =
+                                List<Message>.from(pinnedMessages);
+                            final firstPinnedMessage =
+                                updatedPinnedMessages.removeAt(0);
+                            updatedPinnedMessages.add(firstPinnedMessage);
                             context
                                 .read<MessagingCubit>()
-                                .unpinMessage(pinnedMessages.last);
-                          },
-                          onTap: () {
-                            _scrollToMessageReply(pinnedMessages.last.id);
-                            if (pinnedMessages.isNotEmpty) {
-                              final updatedPinnedMessages =
-                                  List<Message>.from(pinnedMessages);
-                              final firstPinnedMessage =
-                                  updatedPinnedMessages.removeAt(0);
-                              updatedPinnedMessages.add(firstPinnedMessage);
-                              context
-                                  .read<MessagingCubit>()
-                                  .updatePinnedMessages(updatedPinnedMessages);
-                            }
-                          },
-                        ),
+                                .updatePinnedMessages(updatedPinnedMessages);
+                          }
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                ],
+              ),
+            ),
+            if (_isMenuOpen)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
                 ),
-              if (_isMenuOpen)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.3),
-                  ),
-                ),
-            ],
-          );
-        }
-        return Container();
-      },
-    );
-  }
-
-  Widget inputWidget() {
-    return InputField(
+              ),
+          ],
+        );
+      }
+      return Container();
+    },
+  );
+}
+Widget inputWidget() {
+  return SafeArea(
+    bottom: true,
+    top: false,
+    child: InputField(
       onSend: _onSendInButton,
       onAttachFile: _onPickFilePressed,
       focusNode: _focusNode,
@@ -814,225 +1060,198 @@ Widget build(BuildContext context) {
         }
         context.read<ListenSenderVoiceCubit>().updateValue(false);
       },
-    );
-  }
+    ),
+  );
+}
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
     return '${directory.path}/$fileName';
   }
 
-  void setUpServices() async {
-    debugPrint('--------------------------- start socket:::::::');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+void setUpServices() async {
+  debugPrint('Setting up socket for chatId: ${widget.chatId}');
+  final prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
+  if (token == null || token.isEmpty) {
+    debugPrint('Error: Token is null or empty');
+    return;
+  }
 
-    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Проверяем домены для старой логики
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
+  // Проверяем домен для email-верификации
+  String? verifiedDomain = await ApiService().getVerifiedDomain();
+  debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint(exception);
-      },
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
-
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
-
-    socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String UUID = prefs.getString('userID') ?? '';
-
-        Message msg;
-        if (mm.message?.type == 'voice' ||
-            mm.message?.type == 'file' ||
-            mm.message?.type == 'image' ||
-            mm.message?.type == 'document') {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            filePath: mm.message?.filePath.toString() ?? '',
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            duration: Duration(
-                seconds: (mm.message?.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        } else {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        }
-
-        setState(() {
-          context.read<MessagingCubit>().updateMessageFromSocket(msg);
-        });
-
-        if (!msg.isMyMessage) {
-          await _audioPlayer.setAsset('assets/audio/get.mp3');
-          await _audioPlayer.play();
-        }
-
-        _scrollToBottom();
-      });
-      myPresenceChannel.bind('chat.messageEdited').listen((event) async {
-        try {
-          MessageSocketData mm = messageSocketDataFromJson(event.data);
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          String UUID = prefs.getString('userID') ?? '';
-          print('userID : $UUID');
-
-          Message msg;
-          if (mm.message?.type == 'voice' ||
-              mm.message?.type == 'file' ||
-              mm.message?.type == 'image' ||
-              mm.message?.type == 'document') {
-            ForwardedMessage? forwardedMessage;
-            if (mm.message?.forwardedMessage != null) {
-              forwardedMessage =
-                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-            }
-
-            msg = Message(
-              id: mm.message?.id ?? 0,
-              filePath: mm.message?.filePath.toString() ?? '',
-              text: mm.message?.text ?? mm.message?.type ?? '',
-              type: mm.message?.type ?? '',
-              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                  mm.message?.sender?.type == 'user'),
-              createMessateTime: mm.message?.createdAt?.toString() ?? '',
-              duration: Duration(
-                  seconds: (mm.message?.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20),
-              senderName: mm.message?.sender?.name ?? 'Unknown sender',
-              forwardedMessage: forwardedMessage,
-              isChanged: mm.message?.isChanged ?? false,
-              isRead: true,
-            );
-          } else {
-            ForwardedMessage? forwardedMessage;
-            if (mm.message?.forwardedMessage != null) {
-              forwardedMessage =
-                  ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-            }
-            msg = Message(
-              id: mm.message?.id ?? 0,
-              text: mm.message?.text ?? mm.message?.type ?? '',
-              type: mm.message?.type ?? '',
-              createMessateTime: mm.message?.createdAt?.toString() ?? '',
-              isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                  mm.message?.sender?.type == 'user'),
-              senderName: mm.message?.sender?.name ?? 'Unknown sender',
-              forwardedMessage: forwardedMessage,
-              isChanged: mm.message?.isChanged ?? false,
-              isRead: true,
-            );
-          }
-
-          setState(() {
-            context.read<MessagingCubit>().updateMessageFromSocket(msg);
-          });
-        } catch (e) {
-          print('Error processing messageEdited event: $e');
-        }
-      });
-
-      myPresenceChannel.bind('chat.pinned').listen((event) async {
-        try {
-          final data = jsonDecode(event.data);
-          final type = data['type'];
-          final messageData = data['message'];
-          final message = Message.fromJson(messageData);
-          final messageId = message.id;
-
-          if (type == 'pinned') {
-            context.read<MessagingCubit>().pinMessageFromSocket(message);
-          } else if (type == 'unpinned') {
-            context.read<MessagingCubit>().unpinMessageFromSocket(messageId);
-          }
-        } catch (e) {
-          print("Error handling pinned event: $e");
-        }
-      });
-
-      myPresenceChannel.bind('chat.read').listen((event) async {
-        final readData = jsonDecode(event.data);
-        if (readData['messages'] is List) {
-          context
-              .read<MessagingCubit>()
-              .updateMessageReadStatusFromSocket(readData);
-          setState(() {});
-        } else {
-          print(
-              'Error: Expected "messages" to be a List but found ${readData['messages']}');
-        }
-      });
-    });
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
+  // Если домены отсутствуют, используем verifiedDomain или резервные значения
+  if (enteredMainDomain == null || enteredDomain == null) {
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      // Для email-верификации используем verifiedDomain
+      enteredMainDomain = verifiedDomain.split('-back.').last;
+      enteredDomain = verifiedDomain.split('-back.').first;
+      debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+    } else {
+      // Резервные значения для отладки
+      enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
+      enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
+      debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
+      // Сохраняем резервные значения в SharedPreferences
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+      await prefs.setString('enteredDomain', enteredDomain);
     }
   }
+
+  final customOptions = PusherChannelsOptions.custom(
+    uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+    metadata: PusherChannelsOptionsMetadata.byDefault(),
+  );
+
+  socketClient = PusherChannelsClient.websocket(
+    options: customOptions,
+    connectionErrorHandler: (exception, trace, refresh) {
+      debugPrint('Socket connection error: $exception, StackTrace: $trace');
+      Future.delayed(Duration(seconds: 5), () async {
+        try {
+          await socketClient.connect();
+          debugPrint('Socket reconnect attempted');
+        } catch (e, stackTrace) {
+          debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+        }
+      });
+      refresh();
+    },
+    minimumReconnectDelayDuration: const Duration(seconds: 1),
+  );
+
+  final myPresenceChannel = socketClient.presenceChannel(
+    'presence-chat.${widget.chatId}',
+    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Tenant': '$enteredDomain-back',
+      },
+      onAuthFailed: (exception, trace) {
+        debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
+      },
+    ),
+  );
+
+  socketClient.onConnectionEstablished.listen((_) {
+    debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
+    myPresenceChannel.subscribeIfNotUnsubscribed();
+    debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
+  });
+
+  myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
+    debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
+  });
+
+  myPresenceChannel.bind('pusher:subscription_error').listen((event) {
+    debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
+  });
+
+chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+  debugPrint('Received chat.message event: ${event.data}');
+  try {
+    if (event.data == null || event.data.isEmpty) {
+      debugPrint('Error: chat.message event data is null or empty');
+      return;
+    }
+
+    debugPrint('Raw event data type: ${event.data.runtimeType}');
+    debugPrint('Raw event data: ${event.data}');
+
+    MessageSocketData mm = messageSocketDataFromJson(event.data);
+    debugPrint('Parsed MessageSocketData: $mm');
+
+    if (mm.message == null) {
+      debugPrint('Error: MessageSocketData.message is null');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userID') ?? '';
+    debugPrint('User UUID: $UUID');
+
+    Message msg;
+    if (mm.message?.type == 'voice' ||
+        mm.message?.type == 'file' ||
+        mm.message?.type == 'image' ||
+        mm.message?.type == 'document') {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        filePath: mm.message?.filePath.toString() ?? '',
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        duration: Duration(
+            seconds: (mm.message?.voiceDuration != null)
+                ? double.parse(mm.message!.voiceDuration.toString()).round()
+                : 20),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
+    } else {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
+    }
+
+    debugPrint('Constructed Message: $msg');
+    context.read<MessagingCubit>().updateMessageFromSocket(msg);
+    debugPrint('Message dispatched to MessagingCubit: $msg');
+
+    if (!msg.isMyMessage) {
+      await _audioPlayer.setAsset('assets/audio/get.mp3');
+      await _audioPlayer.play();
+      debugPrint('Played notification sound for incoming message');
+    }
+
+    _scrollToBottom();
+    debugPrint('Scrolled to bottom after receiving message');
+
+    // Опциональная фоновая синхронизация с API без изменения состояния
+    try {
+      await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
+      debugPrint('Synced messages with API in background');
+    } catch (e, stackTrace) {
+      debugPrint('Error syncing messages with API: $e, StackTrace: $stackTrace');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('Error processing chat.message event: $e, StackTrace: $stackTrace');
+  }
+});
+
+  try {
+    await socketClient.connect();
+    debugPrint('Socket connection initiated');
+  } catch (e, stackTrace) {
+    debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
+  }
+}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -1287,6 +1506,7 @@ class MessageItemWidget extends StatelessWidget {
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
+          isNote: message.isNote, // Передаем is_note
         );
       case 'image':
         return ImageMessageBubble(
@@ -1314,12 +1534,12 @@ class MessageItemWidget extends StatelessWidget {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
               } catch (e) {
                 if (kDebugMode) {
-                  print('Error opening file!');
+                  //print('Error opening file!');
                 }
               }
             } else {
               if (kDebugMode) {
-                print('Invalid file path. Cannot open file.');
+                //print('Invalid file path. Cannot open file.');
               }
             }
           },
@@ -1336,42 +1556,13 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 
-  Widget textState() {
-    String? replyMessageText;
-    if (message.forwardedMessage != null &&
-        message.forwardedMessage!.type == 'voice') {
-      replyMessageText = "Голосовое сообщение";
-    } else {
-      replyMessageText = message.forwardedMessage?.text;
+  String time(String createMessateTime) {
+    try {
+      final dateTime = DateTime.parse(createMessateTime).toLocal();
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return '';
     }
-    return MessageBubble(
-      message: message.text,
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      senderName: message.senderName.toString(),
-      replyMessage: replyMessageText,
-      replyMessageId: message.forwardedMessage?.id,
-      onReplyTap: (int replyMessageId) {
-        onReplyTap?.call(replyMessageId);
-      },
-      isHighlighted: highlightedMessageId == message.id,
-      isChanged: message.isChanged,
-      isRead: message.isRead,
-    );
-  }
-
-  Widget imageState() {
-    return ImageMessageBubble(
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      filePath: message.filePath ?? 'Unknown file format',
-      fileName: message.text,
-      message: message,
-      senderName: message.senderName,
-      replyMessage: message.forwardedMessage?.text,
-      isHighlighted: highlightedMessageId == message.id,
-      isRead: message.isRead,
-    );
   }
 
   void _showMessageContextMenu(
@@ -1422,8 +1613,6 @@ class MessageItemWidget extends StatelessWidget {
       final List<PopupMenuItem> menuItems = [];
 
       if (showReadersList) {
-        final List<PopupMenuItem> menuItems = [];
-
         menuItems.add(
           PopupMenuItem(
             child: InkWell(
@@ -1877,3 +2066,6 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 }
+
+/*
+*/

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet.dart';
+import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -30,23 +31,18 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     _initializeBaseUrl();
   }
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-    } catch (error) {
-      print('Error initializing baseUrl: $error');
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
+ Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return _buildGoodsList(widget.goods);
@@ -156,7 +152,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   Widget _buildImageWidget(Good good) {
     if (baseUrl == null) {
-      print('Base URL is null for ${good.goodName}');
+      //print('Base URL is null for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -167,11 +163,11 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       files = good.variantGood!.files;
     }
 
-    print('Good files for ${good.goodName}: ${good.good.files}');
-    print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
+    //print('Good files for ${good.goodName}: ${good.good.files}');
+    //print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
 
     if (files.isEmpty) {
-      print('No files found for ${good.goodName}');
+      //print('No files found for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -183,7 +179,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
         height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('Image loading error for ${good.goodName}: $error');
+          //print('Image loading error for ${good.goodName}: $error');
           return _buildPlaceholderImage();
         },
         loadingBuilder: (context, child, loadingProgress) {
@@ -208,56 +204,45 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     );
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GoodsDetailsScreen(
-          id: good.goodId,
-        ),
+  int correctGoodId = good.getCorrectGoodId();
+  print('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
+  
+  if (correctGoodId == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ошибка: Не удалось определить ID товара'),
+        backgroundColor: Colors.red,
       ),
     );
+    return;
   }
 
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => GoodsDetailsScreen(
+        id: correctGoodId,
+        isFromOrder: true,
+      ),
+    ),
+  );
+}
+
   Row _buildTitleRow(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.start, // Выравнивание заголовка слева
+    children: [
+      Text(
+        title,
+        style: TaskCardStyles.titleStyle.copyWith(
+          fontWeight: FontWeight.w500,
         ),
-        TextButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => ProductSelectionSheet(order: widget.order),
-            );
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: const Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            AppLocalizations.of(context)!.translate('add'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }
 
 class DeleteGoodsDialog extends StatelessWidget {

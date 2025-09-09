@@ -1,8 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/login_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'login_event.dart'; // Импортируйте ваш файл событий логина
-import 'login_state.dart'; // Импортируйте ваш файл состояний логина
+import 'login_event.dart';
+import 'login_state.dart';
 import 'dart:io';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
@@ -13,11 +13,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoading());
       if (await _checkInternetConnection()) {
         try {
+          // ВАЖНО: Убеждаемся что baseUrl установлен
+          if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
+            // Пытаемся инициализировать еще раз
+            await apiService.initialize();
+            
+            // Если все еще null, значит проблема
+            if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
+              emit(LoginError('Ошибка инициализации. Попробуйте еще раз.'));
+              return;
+            }
+          }
+          
+          //print('LoginBloc: Используем baseUrl: ${apiService.baseUrl}');
+          
           final loginModel = LoginModel(login: event.login, password: event.password);
           final loginResponse = await apiService.login(loginModel);
-          emit(LoginLoaded(loginResponse.token, loginResponse.user)); // Передайте токен в LoginLoaded
+          emit(LoginLoaded(loginResponse.token, loginResponse.user));
         } catch (e) {
-          emit(LoginError('Не правильный Логин или Пароль'));
+          //print('LoginBloc: Ошибка входа: $e');
+          emit(LoginError('Неправильный логин или пароль'));
         }
       } else {
         emit(LoginError('Нет подключения к интернету'));

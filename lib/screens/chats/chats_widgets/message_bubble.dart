@@ -1,11 +1,14 @@
+
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:html/dom.dart' as dom;
 import 'package:crm_task_manager/utils/app_colors.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatelessWidget {
   final String message;
@@ -18,6 +21,7 @@ class MessageBubble extends StatelessWidget {
   final bool isHighlighted;
   final bool isChanged;
   final bool isRead;
+  final bool isNote;
 
   MessageBubble({
     Key? key,
@@ -31,6 +35,7 @@ class MessageBubble extends StatelessWidget {
     this.isHighlighted = false,
     required this.isChanged,
     required this.isRead,
+    required this.isNote,
   }) : super(key: key);
 
   @override
@@ -88,7 +93,7 @@ class MessageBubble extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                         color: Colors.black87,
                       ),
-                      maxLines: 3,
+                      maxLines: 2222,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -97,9 +102,11 @@ class MessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: isSender
-                      ? ChatSmsStyles.messageBubbleSenderColor
-                      : ChatSmsStyles.messageBubbleReceiverColor,
+                  color: isNote
+                      ? ChatSmsStyles.messageBubbleNoteColor
+                      : isSender
+                          ? ChatSmsStyles.messageBubbleSenderColor
+                          : ChatSmsStyles.messageBubbleReceiverColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -113,7 +120,7 @@ class MessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
-                    _buildMessageWithLinks(context, message),
+                    _buildMessageWithHtml(context, message),
                     if (isChanged)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -147,7 +154,9 @@ class MessageBubble extends StatelessWidget {
                       Icon(
                         isRead ? Icons.done_all : Icons.done_all,
                         size: 18,
-                        color: isRead ? const Color.fromARGB(255, 45, 28, 235) : Colors.grey.shade400,
+                        color: isRead
+                            ? const Color.fromARGB(255, 45, 28, 235)
+                            : Colors.grey.shade400,
                       ),
                   ],
                 ),
@@ -158,127 +167,137 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageWithLinks(BuildContext context, String text) {
-    final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
-    final matches = linkRegExp.allMatches(text);
-
+  Widget _buildMessageWithHtml(BuildContext context, String text) {
     final double maxWidth = MediaQuery.of(context).size.width * 0.7;
 
-    Widget textWidget;
-    if (matches.isEmpty) {
-      textWidget = Text(
-        text,
-        style: isSender
-            ? ChatSmsStyles.senderMessageTextStyle
-            : ChatSmsStyles.receiverMessageTextStyle,
-        maxLines: 10000000,
-        overflow: TextOverflow.ellipsis,
-      );
-    } else {
-      List<TextSpan> spans = [];
-      int start = 0;
-      for (final match in matches) {
-        if (match.start > start) {
-          spans.add(TextSpan(text: text.substring(start, match.start)));
-        }
-        final String url = match.group(0)!;
-        spans.add(
-          TextSpan(
-            text: url,
-            style: TextStyle(
-              color: isSender ? Colors.white : Colors.blue,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
-              fontSize: 14,
-            ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-                final RenderBox messageBox = context.findRenderObject() as RenderBox;
-                final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+    // Парсим HTML
+    final document = parse(text);
+    List<TextSpan> spans = [];
 
-                showMenu(
-                  context: context,
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  position: RelativeRect.fromLTRB(
-                    position.dx + messageBox.size.width / 2.5,
-                    position.dy,
-                    position.dx + messageBox.size.width / 2 + 1,
-                    position.dy + messageBox.size.height,
-                  ),
-                  items: [
-                    _buildMenuItem(
-                      icon: 'assets/icons/chats/menu_icons/open.svg',
-                      text: AppLocalizations.of(context)!.translate('open_url_source'),
-                      iconColor: Colors.black,
-                      textColor: Colors.black,
-                      onTap: () async {
-                        Navigator.pop(context);
-                        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                      },
+    void parseNode(dom.Node node, TextStyle baseStyle) {
+      if (node is dom.Text) {
+        spans.add(TextSpan(text: node.text, style: baseStyle));
+      } else if (node is dom.Element) {
+        TextStyle newStyle = baseStyle;
+        if (node.localName == 'strong') {
+          newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
+        } else if (node.localName == 'em') {
+          newStyle = newStyle.copyWith(fontStyle: FontStyle.italic);
+        } else if (node.localName == 's') {
+          newStyle = newStyle.copyWith(decoration: TextDecoration.lineThrough);
+        } else if (node.localName == 'a') {
+          final url = node.attributes['href'] ?? '';
+          spans.add(
+            TextSpan(
+              text: node.text,
+              style: newStyle.copyWith(
+                color: isSender ? Colors.white : Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  final RenderBox overlay =
+                      Overlay.of(context).context.findRenderObject() as RenderBox;
+                  final RenderBox messageBox =
+                      context.findRenderObject() as RenderBox;
+                  final Offset position =
+                      messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+
+                  showMenu(
+                    context: context,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    _buildMenuItem(
-                      icon: 'assets/icons/chats/menu_icons/copy.svg',
-                      text: AppLocalizations.of(context)!.translate('copy'),
-                      iconColor: Colors.black,
-                      textColor: Colors.black,
-                      onTap: () {
-                        Navigator.pop(context);
-                        Clipboard.setData(ClipboardData(text: url));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              AppLocalizations.of(context)!.translate('copy_url_source_text'),
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                    position: RelativeRect.fromLTRB(
+                      position.dx + messageBox.size.width / 2.5,
+                      position.dy,
+                      position.dx + messageBox.size.width / 2 + 1,
+                      position.dy + messageBox.size.height,
+                    ),
+                    items: [
+                      _buildMenuItem(
+                        icon: 'assets/icons/chats/menu_icons/open.svg',
+                        text: AppLocalizations.of(context)!
+                            .translate('open_url_source'),
+                        iconColor: Colors.black,
+                        textColor: Colors.black,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          launchUrl(Uri.parse(url),
+                              mode: LaunchMode.externalApplication);
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: 'assets/icons/chats/menu_icons/copy.svg',
+                        text: AppLocalizations.of(context)!.translate('copy'),
+                        iconColor: Colors.black,
+                        textColor: Colors.black,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Clipboard.setData(ClipboardData(text: url));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('copy_url_source_text'),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
                               ),
+                              behavior: SnackBarBehavior.floating,
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.green,
+                              elevation: 3,
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              duration: Duration(seconds: 3),
                             ),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: Colors.green,
-                            elevation: 3,
-                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-          ),
-        );
-        start = match.end;
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+            ),
+          );
+          return;
+        }
+
+        for (var child in node.nodes) {
+          parseNode(child, newStyle);
+        }
       }
-      if (start < text.length) {
-        spans.add(TextSpan(text: text.substring(start)));
-      }
-      textWidget = RichText(
-        text: TextSpan(
-          style: isSender
-              ? ChatSmsStyles.senderMessageTextStyle
-              : ChatSmsStyles.receiverMessageTextStyle,
-          children: spans,
-        ),
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-      );
+    }
+
+    // Определяем базовый стиль текста в зависимости от isNote
+    final baseStyle = isNote
+        ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
+        : isSender
+            ? ChatSmsStyles.senderMessageTextStyle
+            : ChatSmsStyles.receiverMessageTextStyle;
+
+    for (var node in document.body!.nodes) {
+      parseNode(node, baseStyle);
     }
 
     return Container(
-      constraints: BoxConstraints(
-        maxWidth: maxWidth,
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: RichText(
+        text: TextSpan(
+          style: baseStyle,
+          children: spans,
+        ),
+        maxLines: 10000000,
+        overflow: TextOverflow.ellipsis,
       ),
-      child: textWidget,
     );
   }
 

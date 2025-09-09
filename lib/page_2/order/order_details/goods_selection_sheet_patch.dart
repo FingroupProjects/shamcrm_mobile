@@ -1,12 +1,15 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order order;
@@ -26,45 +29,139 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   int _currentPage = 1;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  int? currencyId; // Поле для хранения currency_id
 
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
-    context.read<GoodsBloc>().add(FetchGoods(page: _currentPage));
-    _resetGoodsSelection();
+    _loadCurrencyId(); // Загружаем currencyId при инициализации
+    context.read<VariantBloc>().add(FetchVariants(page: _currentPage));
+    _resetVariantSelection();
     _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _initializeBaseUrl() async {
+ Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
+  }
+}
+
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
     try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
       setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
+        currencyId = savedCurrencyId ?? 0;
       });
-    } catch (error) {
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id: $e');
+      }
       setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
+        currencyId = 1; // По умолчанию доллар
       });
     }
   }
 
-  void _resetGoodsSelection() {
-    final state = context.read<GoodsBloc>().state;
-    if (state is GoodsDataLoaded) {
-      for (var product in state.goods) {
-        product.isSelected = false;
-        product.quantitySelected = 1;
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('ProductSelectionSheetAdd: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null) price = 0;
+    String symbol = '₽'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('ProductSelectionSheetAdd: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+        if (kDebugMode) {
+          print('ProductSelectionSheetAdd: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('ProductSelectionSheetAdd: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
+  }
+
+  void _resetVariantSelection() {
+    final state = context.read<VariantBloc>().state;
+    if (state is VariantDataLoaded) {
+      for (var variant in state.variants) {
+        variant.isSelected = false;
+        variant.quantitySelected = 1;
       }
     }
   }
 
-  void _filterProducts(String query, List<Goods> goods) {
+  void _filterProducts(String query) {
     setState(() {
       _searchQuery = query;
     });
+    context.read<VariantBloc>().add(SearchVariants(query));
   }
 
   void _onScroll() {
@@ -72,32 +169,33 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         _hasMore) {
-      _loadMoreGoods();
+      _loadMoreVariants();
     }
   }
 
-  void _loadMoreGoods() {
-    final state = context.read<GoodsBloc>().state;
-    if (state is GoodsDataLoaded) {
+  void _loadMoreVariants() {
+    final state = context.read<VariantBloc>().state;
+    if (state is VariantDataLoaded) {
       setState(() {
         _isLoadingMore = true;
       });
       context
-          .read<GoodsBloc>()
-          .add(FetchMoreGoods(state.pagination.currentPage));
+          .read<VariantBloc>()
+          .add(FetchMoreVariants(state.pagination.currentPage));
     }
   }
 
-  void _returnSelectedProducts(List<Goods> goods) {
-    final selectedProducts = goods
-        .where((product) => product.isSelected == true)
-        .map((product) => {
-              'id': product.id,
-              'name': product.name,
-              'price': product.discountPrice ?? 0.0,
-              'quantity': product.quantitySelected ?? 1,
-              'imagePath':
-                  product.files.isNotEmpty ? product.files[0].path : null,
+  void _returnSelectedProducts(List<Variant> variants) {
+    final selectedProducts = variants
+        .where((variant) => variant.isSelected == true)
+        .map((variant) => {
+              'id': variant.id,
+              'name': _getDisplayName(variant),
+              'price': variant.price ?? 0.0,
+              'quantity': variant.quantitySelected,
+              'imagePath': variant.good?.files.isNotEmpty == true
+                  ? variant.good!.files[0].path
+                  : null,
             })
         .toList();
 
@@ -130,6 +228,17 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     Navigator.pop(context, selectedProducts);
   }
 
+  String _getDisplayName(Variant variant) {
+    if (variant.attributeValues.isNotEmpty) {
+      return variant.attributeValues
+          .map((attr) => attr.value)
+          .join(', ');
+    }
+    return variant.fullName?.isNotEmpty == true
+        ? variant.fullName!
+        : variant.good?.name ?? 'Без названия';
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -150,35 +259,39 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           _buildSearchField(),
           const SizedBox(height: 12),
           Expanded(
-            child: BlocConsumer<GoodsBloc, GoodsState>(
+            child: BlocConsumer<VariantBloc, VariantState>(
               listener: (context, state) {
-                if (state is GoodsDataLoaded) {
+                if (state is VariantDataLoaded) {
                   setState(() {
                     _isLoadingMore = false;
-                    _hasMore = state.pagination.currentPage <
-                        state.pagination.totalPages;
+                    _hasMore =
+                        state.pagination.currentPage < state.pagination.totalPages;
                   });
                 }
               },
               builder: (context, state) {
-                // Показываем загрузку только для первой страницы
-                if (state is GoodsLoading && _currentPage == 1) {
+                if (state is VariantLoading && _currentPage == 1) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (state is GoodsDataLoaded) {
-                  final filteredProducts = _searchQuery.isEmpty
-                      ? state.goods
-                      : state.goods
-                          .where((product) => product.name
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()))
+                } else if (state is VariantDataLoaded) {
+                  final filteredVariants = _searchQuery.isEmpty
+                      ? state.variants
+                      : state.variants
+                          .where((variant) =>
+                              _getDisplayName(variant)
+                                  .toLowerCase()
+                                  .contains(_searchQuery.toLowerCase()))
                           .toList();
-                  return _buildProductList(filteredProducts, state);
-                } else if (state is GoodsEmpty) {
-                  return  Center(child: Text(AppLocalizations.of(context)!.translate('no_products_found')));
-                } else if (state is GoodsError) {
+                  return _buildProductList(filteredVariants, state);
+                } else if (state is VariantEmpty) {
+                  return Center(
+                      child: Text(AppLocalizations.of(context)!
+                          .translate('no_products_found')));
+                } else if (state is VariantError) {
                   return Center(child: Text(state.message));
                 }
-                return  Center(child: Text(AppLocalizations.of(context)!.translate('loading_data')));
+                return Center(
+                    child: Text(AppLocalizations.of(context)!
+                        .translate('loading_data')));
               },
             ),
           ),
@@ -194,8 +307,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-           Text(
-          AppLocalizations.of(context)!.translate('add_producted'),
+          Text(
+            AppLocalizations.of(context)!.translate('add_producted'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -216,15 +329,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
-        onChanged: (query) {
-          final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) {
-            _filterProducts(query, state.goods);
-          }
-        },
+        onChanged: _filterProducts,
         decoration: InputDecoration(
-          hintText:  AppLocalizations.of(context)!.translate('search_product_placeholder'),
-          hintStyle: TextStyle( fontFamily: 'Gilroy', fontSize: 14, color: Color(0xff99A4BA)),
+          hintText:
+              AppLocalizations.of(context)!.translate('search_product_placeholder'),
+          hintStyle: TextStyle(
+              fontFamily: 'Gilroy', fontSize: 14, color: Color(0xff99A4BA)),
           prefixIcon: Icon(Icons.search, color: Color(0xff99A4BA)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -243,16 +353,16 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildProductList(List<Goods> products, GoodsDataLoaded state) {
+  Widget _buildProductList(List<Variant> variants, VariantDataLoaded state) {
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: products.length + (_isLoadingMore ? 1 : 0),
+            itemCount: variants.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == products.length && _isLoadingMore) {
+              if (index == variants.length && _isLoadingMore) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(8.0),
@@ -260,14 +370,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                   ),
                 );
               }
-              final product = products[index];
+              final variant = variants[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
-                      product.isSelected = !product.isSelected;
-                      if (!product.isSelected) product.quantitySelected = 1;
+                      variant.isSelected = !variant.isSelected;
+                      if (!variant.isSelected) variant.quantitySelected = 1;
                     });
                   },
                   child: Container(
@@ -286,10 +396,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     ),
                     child: Row(
                       children: [
-                        _buildProductImage(product),
+                        _buildProductImage(variant),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildProductDetails(product)),
-                        _buildSelectionIndicator(product),
+                        Expanded(child: _buildProductDetails(variant)),
+                        _buildSelectionIndicator(variant),
                       ],
                     ),
                   ),
@@ -302,15 +412,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildProductImage(Goods product) {
+  Widget _buildProductImage(Variant variant) {
     return SizedBox(
       width: 48,
       height: 48,
-      child: product.files.isNotEmpty && baseUrl != null
+      child: variant.good?.files.isNotEmpty == true && baseUrl != null
           ? ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                '$baseUrl/${product.files[0].path}',
+                '$baseUrl/${variant.good!.files[0].path}',
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
@@ -342,87 +452,87 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
- Widget _buildProductDetails(Goods product) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        product.name,
-        style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52)),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      // Убрали отображение ID
-      // const SizedBox(height: 4),
-      // Text(
-      //   product.id.toString(),
-      //   style: const TextStyle(
-      //       fontSize: 12,
-      //       fontFamily: 'Gilroy',
-      //       fontWeight: FontWeight.w500,
-      //       color: Color(0xff99A4BA)),
-      // ),
-      if (product.isSelected) ...[
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('stock_quantity_details'),
-              style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA)),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove, size: 20),
-                  color: const Color(0xff1E2E52),
-                  onPressed: () {
-                    if (product.quantitySelected > 1)
-                      setState(() => product.quantitySelected--);
-                  },
-                ),
-                Text(
-                  '${product.quantitySelected}',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add, size: 20),
-                  color: const Color(0xff1E2E52),
-                  onPressed: () => setState(() => product.quantitySelected++),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildProductDetails(Variant variant) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getDisplayName(variant),
+          style: const TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+        const SizedBox(height: 4),
+        Text(
+          _formatPrice(variant.price),
+          style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff4759FF)),
+        ),
+        if (variant.isSelected) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('stock_quantity_details'),
+                style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA)),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove, size: 20),
+                    color: const Color(0xff1E2E52),
+                    onPressed: () {
+                      if (variant.quantitySelected > 1)
+                        setState(() => variant.quantitySelected--);
+                    },
+                  ),
+                  Text(
+                    '${variant.quantitySelected}',
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 20),
+                    color: const Color(0xff1E2E52),
+                    onPressed: () => setState(() => variant.quantitySelected++),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ],
-    ],
-  );
-}
-  Widget _buildSelectionIndicator(Goods product) {
+    );
+  }
+
+  Widget _buildSelectionIndicator(Variant variant) {
     return Container(
       width: 24,
       height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-            color: product.isSelected
+            color: variant.isSelected
                 ? const Color(0xff4CAF50)
                 : const Color(0xff99A4BA),
             width: 2),
       ),
-      child: product.isSelected
+      child: variant.isSelected
           ? const Icon(Icons.check, color: Color(0xff4CAF50), size: 16)
           : null,
     );
@@ -433,8 +543,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: ElevatedButton(
         onPressed: () {
-          final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) _returnSelectedProducts(state.goods);
+          final state = context.read<VariantBloc>().state;
+          if (state is VariantDataLoaded) _returnSelectedProducts(state.variants);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
@@ -457,7 +567,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 }
 
-extension GoodsSelection on Goods {
+extension VariantSelection on Variant {
   static final _isSelected = Expando<bool>();
   static final _quantitySelected = Expando<int>();
 

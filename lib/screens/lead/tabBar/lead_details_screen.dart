@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
@@ -20,16 +24,21 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -72,6 +81,86 @@ class LeadDetailsScreen extends StatefulWidget {
   _LeadDetailsScreenState createState() => _LeadDetailsScreenState();
 }
 
+class FileCacheManager {
+  static final FileCacheManager _instance = FileCacheManager._internal();
+  factory FileCacheManager() => _instance;
+  FileCacheManager._internal();
+
+  static const String CACHE_INFO_KEY = 'file_cache_info';
+  late SharedPreferences _prefs;
+  final Map<int, String> _cachedFiles = {};
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
+    _prefs = await SharedPreferences.getInstance();
+    await _loadCacheInfo();
+    _initialized = true;
+  }
+
+  Future<void> _loadCacheInfo() async {
+    final String? cacheInfo = _prefs.getString(CACHE_INFO_KEY);
+    if (cacheInfo != null) {
+      final Map<String, dynamic> cacheMap = json.decode(cacheInfo);
+      cacheMap.forEach((key, value) {
+        _cachedFiles[int.parse(key)] = value.toString();
+      });
+    }
+  }
+
+  Future<void> _saveCacheInfo() async {
+    final Map<String, dynamic> cacheMap = {};
+    _cachedFiles.forEach((key, value) {
+      cacheMap[key.toString()] = value;
+    });
+    await _prefs.setString(CACHE_INFO_KEY, json.encode(cacheMap));
+  }
+
+  Future<String?> getCachedFilePath(int fileId) async {
+    await init();
+    if (_cachedFiles.containsKey(fileId)) {
+      final file = File(_cachedFiles[fileId]!);
+      if (await file.exists()) {
+        return _cachedFiles[fileId];
+      } else {
+        _cachedFiles.remove(fileId);
+        await _saveCacheInfo();
+      }
+    }
+    return null;
+  }
+
+  Future<void> cacheFile(int fileId, String filePath) async {
+    await init();
+    _cachedFiles[fileId] = filePath;
+    await _saveCacheInfo();
+  }
+
+  Future<void> clearCache() async {
+    await init();
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+    _cachedFiles.clear();
+    await _saveCacheInfo();
+  }
+
+  Future<int> getCacheSize() async {
+    await init();
+    int totalSize = 0;
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        totalSize += await file.length();
+      }
+    }
+    return totalSize;
+  }
+}
+
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
   LeadById? currentLead;
@@ -80,11 +169,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canReadNotes = false;
   bool _canReadDeal = false;
   bool _canExportContact = false;
+  bool _canReadOrders = true;
   bool _isExportContactEnabled = false;
+  bool _isDownloading = false;
+  Map<int, double> _downloadProgress = {};
 
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
-
+  StreamSubscription? _prefsSubscription;
   final GlobalKey keyLeadHistory = GlobalKey();
   final GlobalKey keyLeadEdit = GlobalKey();
   final GlobalKey keyLeadDelete = GlobalKey();
@@ -96,20 +188,99 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false; 
-  Map<String, dynamic>? tutorialProgress; 
-  
+  bool _isTutorialInProgress = false;
+  Map<String, dynamic>? tutorialProgress;
+
+  Set<String> _normalizedContactPhones = {};
+  bool _isLoadingContacts = true;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
     _checkPermissions().then((_) {
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+      context
+          .read<LeadByIdBloc>()
+          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+      if (_canReadOrders) {
+        context
+            .read<OrderByLeadBloc>()
+            .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+      }
+      _loadContactsToCache();
     });
     _fetchTutorialProgress();
+    _listenToPrefsChanges();
+  }
 
+  Future<void> _loadContactsToCache() async {
+    try {
+      if (!await FlutterContacts.requestPermission()) {
+        setState(() {
+          _isLoadingContacts = false;
+        });
+        return;
+      }
+
+      List<Contact> contacts =
+          await FlutterContacts.getContacts(withProperties: true);
+
+      Set<String> normalizedPhones = {};
+      for (var contact in contacts) {
+        for (var phone in contact.phones) {
+          String normalizedPhone =
+              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+          normalizedPhones.add(normalizedPhone);
+        }
+      }
+
+      setState(() {
+        _normalizedContactPhones = normalizedPhones;
+        _isLoadingContacts = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingContacts = false;
+      });
+    }
+  }
+
+  bool _isPhoneInContacts(String phoneNumber) {
+    String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    bool exists = _normalizedContactPhones.contains(normalizedLeadPhone);
+    return exists;
+  }
+
+  Future<void> _addContact(String name, String phone) async {
+    bool? result = await showDialog<bool>(
+      context: context,
+      builder: (context) => ExportContactDialog(
+        leadName: name,
+        phoneNumber: phone,
+      ),
+    );
+    if (result == true) {
+      String normalizedPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+      setState(() {
+        _normalizedContactPhones.add(normalizedPhone);
+      });
+    }
+  }
+
+  Future<void> _listenToPrefsChanges() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _prefsSubscription =
+        Stream.periodic(Duration(seconds: 1)).listen((_) async {
+      bool newValue = prefs.getBool('switchContact') ?? false;
+      if (newValue != _isExportContactEnabled) {
+        setState(() {
+          _isExportContactEnabled = newValue;
+        });
+      }
+    });
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -121,26 +292,21 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
       await prefs.setString(
           'tutorial_progress', json.encode(progress['result']));
-
       bool isTutorialShown =
           prefs.getBool('isTutorialShownLeadDetails') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
-
-      // Инициализируем targets с актуальными значениями разрешений
       _initTutorialTargets();
-
       if (tutorialProgress != null &&
           tutorialProgress!['leads']?['view'] == false &&
           !isTutorialShown &&
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -152,23 +318,28 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
-
         _initTutorialTargets();
-
         if (tutorialProgress != null &&
             tutorialProgress!['leads']?['view'] == false &&
             !isTutorialShown &&
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
   }
 
+  @override
+  void dispose() {
+    _prefsSubscription?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _initTutorialTargets() {
-    targets.clear(); // Очищаем список перед добавлением
+    targets.clear();
     targets.addAll([
       createTarget(
         identify: "LeadHistory",
@@ -260,12 +431,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, skipping');
       return;
     }
 
@@ -276,7 +445,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         tutorialProgress!['leads']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      print('Tutorial conditions not met');
       return;
     }
 
@@ -312,9 +480,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
       onSkip: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
-        _apiService.markPageCompleted("leads", "view").catchError((e) {
-          print('Error marking page completed on skip: $e');
-        });
+        _apiService.markPageCompleted("leads", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
@@ -323,9 +489,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
       onFinish: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
-        _apiService.markPageCompleted("leads", "view").catchError((e) {
-          print('Error marking page completed on finish: $e');
-        });
+        _apiService.markPageCompleted("leads", "view").catchError((e) {});
         setState(() {
           _isTutorialShown = true;
           _isTutorialInProgress = false;
@@ -334,15 +498,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     ).show(context: context);
   }
 
-  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
+    final canReadOrder = await _apiService.hasPermission('order.read');
 
     setState(() {
       _canEditLead = canEdit;
@@ -350,79 +513,95 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _canReadNotes = canReadNotes;
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
+      _canReadOrders = canReadOrder;
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
-
   }
 
-  // Обновление данных лида
   void _updateDetails(LeadById lead) {
     currentLead = lead;
     details = [
       {
-        'label': AppLocalizations.of(context)!.translate('name_details'),
+        'label': AppLocalizations.of(context)!.translate('lead_name'),
         'value': lead.name
       },
       {
         'label': AppLocalizations.of(context)!.translate('phone_use'),
         'value': lead.phone ?? ''
       },
+      if (lead.manager != null)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('manager_details')}',
+          'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+        }
+      else
+        {'label': '', 'value': 'become_manager'},
       {
-        'label': AppLocalizations.of(context)!.translate('region_details'),
+        'label': '${AppLocalizations.of(context)!.translate('region_details')}',
         'value': lead.region?.name ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('manager_details'),
-        'value': lead.manager != null
-            ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('system_text'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('source_details'),
+        'label': '${AppLocalizations.of(context)!.translate('source_details')}',
         'value': lead.source?.name ?? ''
       },
+      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
       {
-        'label': AppLocalizations.of(context)!.translate('email_details'),
+        'label': '${AppLocalizations.of(context)!.translate('email_details')}',
         'value': lead.email ?? ''
       },
+      if (lead.phone_verified_at != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+          'value': formatDate(lead.birthday)
+        },
+      if (lead.phone_verified_at != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+          'value': lead.priceType?.name ?? ''
+        },
       {
-        'label': AppLocalizations.of(context)!.translate('birthday_details'),
-        'value': formatDate(lead.birthday)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details_lead'),
+        'label':
+            '${AppLocalizations.of(context)!.translate('description_details_lead')}',
         'value': lead.description ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'label': '${AppLocalizations.of(context)!.translate('author_details')}',
         'value': lead.author?.name ?? ''
       },
+       {
+        'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+        'value': lead.salesFunnel?.name ?? ''
+      },
       {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'label':
+            '${AppLocalizations.of(context)!.translate('created_at_details')}',
         'value': formatDate(lead.createdAt)
       },
       {
-        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'label': '${AppLocalizations.of(context)!.translate('status_details')}',
         'value': lead.leadStatus?.title ?? ''
       },
+      if (lead.files != null && lead.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value':
+              '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+        },
     ];
     for (var field in lead.leadCustomFields) {
+      // print(
+      //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value});
     }
-  }
-
-  bool _isTextOverflow(String text, TextStyle style, double maxWidth) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: ui.TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
-
-    return textPainter.didExceedMaxLines;
+    for (var dirValue in lead.directoryValues) {
+      final directoryName = dirValue.entry?.directory.name;
+      final value = dirValue.entry?.values['value'] ?? '';
+      details.add({'label': '$directoryName:', 'value': value});
+    }
   }
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
@@ -451,42 +630,31 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget build(BuildContext context) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
+        //showTutorial();
         setState(() {
           _isTutorialShown = true;
         });
       });
     }
-    return Scaffold(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<OrderByLeadBloc>(
+          create: (context) => OrderByLeadBloc(context.read<ApiService>()),
+        ),
+      ],
+      child: Scaffold(
         appBar: _buildAppBar(
             context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
-            if (state is LeadByIdLoaded) {
-            } else if (state is LeadByIdError) {
+            if (state is LeadByIdError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
+                showCustomSnackBar(
+                  context: context,
+                  message:
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
+                  isSuccess: false,
                 );
               });
             }
@@ -499,6 +667,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdLoaded) {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
+                // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
                 return Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -511,6 +680,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         key: keyLeadNavigateChat,
                         leadId: int.parse(widget.leadId),
                         leadName: widget.leadName,
+                        chats: state.lead.chats
+                            .map((chat) => {
+                                  'id': chat.id,
+                                  'integration': chat.integration != null
+                                      ? {
+                                          'id': chat.integration!.id,
+                                          'name': chat.integration!.name,
+                                          'username':
+                                              chat.integration!.username,
+                                        }
+                                      : null,
+                                })
+                            .toList(),
                       ),
                       const SizedBox(height: 8),
                       if (selectedOrganization != null)
@@ -525,14 +707,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         NotesWidget(
                           leadId: int.parse(widget.leadId),
                           key: keyLeadNotice,
-                          managerId:
-                              lead.manager?.id, // Передаем managerId из лида
+                          managerId: lead.manager?.id,
                         ),
-                      // const SizedBox(height: 16),
                       if (_canReadDeal)
                         DealsWidget(
-                            leadId: int.parse(widget.leadId), key: keyLeadDeal),
-                      // const SizedBox(height: 16),
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadDeal,
+                        ),
+                      if (_canReadOrders)
+                        OrdersWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: GlobalKey(),
+                        ),
                       ContactPersonWidget(
                           leadId: int.parse(widget.leadId),
                           key: keyLeadContactPerson),
@@ -555,10 +741,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               return Center(child: Text(''));
             },
           ),
-        ));
+        ),
+      ),
+    );
   }
 
-  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -639,7 +826,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           ? DateFormat('dd/MM/yyyy')
                               .format(DateTime.parse(currentLead!.createdAt!))
                           : null;
-
                       final shouldUpdate = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -649,6 +835,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             statusId: currentLead!.statusId,
                             sourceId: currentLead!.source != null
                                 ? currentLead!.source!.id.toString()
+                                : '',
+                            salesFunnelId: currentLead!.salesFunnel != null
+                                ? currentLead!.salesFunnel!.id.toString()
                                 : '',
                             region: currentLead!.region != null
                                 ? currentLead!.region!.id.toString()
@@ -666,12 +855,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             email: currentLead!.email,
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,
+                            directoryValues: currentLead!.directoryValues,
+                            files: currentLead!.files,
+                            // phoneVerifiedAt: currentLead!.phone_verified_at,
+                            // verificationCode: currentLead!.verification_code,
+                            priceTypeId: currentLead!.priceType?.id.toString(),
+                            priceTypeName: currentLead!.priceType?.name,
                           ),
                         ),
                       );
-
                       if (shouldUpdate == true) {
-                        // Перезагружаем данные лида
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
                             leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -703,48 +896,193 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  Future<void> _addContact(String name, String phone) async {
-    showDialog(
-      context: context,
-      builder: (context) => ExportContactDialog(
-        leadName: name,
-        phoneNumber: phone,
-      ),
-    );
-  }
-
   Widget _buildDetailsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: details.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            details[index]['label']!,
-            details[index]['value']!,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (currentLead?.verification_code != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Код верификации: ${currentLead!.verification_code}',
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF3935e7),
+              ),
+            ),
           ),
-        );
-      },
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: details.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: currentLead?.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = currentLead!.files![index];
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
+                                    width: 60,
+                                    height: 60,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
+                                  ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor:
+                                          Colors.grey.withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(
-                          AppLocalizations.of(context)!.translate('lead')) ||
-                      label.contains(AppLocalizations.of(context)!
-                          .translate('description_details_lead')))
-                  ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value, label),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label == AppLocalizations.of(context)!.translate('lead_name'))
+                    Row(
+                      children: [
+                        _buildExpandableText(
+                            label, value, constraints.maxWidth * 0.7),
+                        if (currentLead?.phone_verified_at != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Image.asset(
+                              'assets/icons/badge.png',
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    Expanded(
+                      child: (label.contains(
+                                  AppLocalizations.of(context)!
+                                      .translate('lead')) ||
+                              label.contains(AppLocalizations.of(context)!
+                                  .translate('description_details_lead')))
+                          ? _buildExpandableText(
+                              label, value, constraints.maxWidth)
+                          : _buildValue(value, label),
+                    ),
+                  if (label == AppLocalizations.of(context)!.translate('phone_use') &&
+                      _canExportContact &&
+                      _isExportContactEnabled)
+                    _isLoadingContacts
+                        ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF1E2E52),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : !_isPhoneInContacts(value)
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: GestureDetector(
+                                  onTap: () => _addContact(widget.leadName, value),
+                                  child: Icon(
+                                    Icons.contacts,
+                                    size: 24,
+                                    color: Color(0xFF1E2E52),
+                                  ),
+                                ),
+                              )
+                            : Container(),
+                ],
+              ),
             ),
           ],
         );
@@ -752,18 +1090,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
+      final formatted = DateFormat('dd/MM/yyyy').format(parsedDate);
+      return formatted;
     } catch (e) {
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
-  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -771,13 +1108,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xfff99A4BA),
+        color: Color(0xff99A4BA),
       ),
     );
   }
 
   Widget _buildValue(String value, String label) {
-    if (value.isEmpty) return Container();
+    if (value.isEmpty) {
+      return Container();
+    }
 
     if (label == AppLocalizations.of(context)!.translate('phone_use')) {
       return Row(
@@ -796,19 +1135,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               ),
             ),
           ),
-          if (_canExportContact && _isExportContactEnabled)
-            GestureDetector(
-              onTap: () => _addContact(widget.leadName, value),
-              child: Icon(
-                Icons.contacts,
-                size: 24,
-                color: Color(0xFF1E2E52),
-              ),
-            ),
         ],
       );
     }
-
     if (label == 'WhatsApp:') {
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
@@ -825,6 +1154,58 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     }
 
+    if (label == '' && value == 'become_manager') {
+      return Padding(
+        padding: EdgeInsets.only(left: 0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Text(
+              '${AppLocalizations.of(context)!.translate('manager_details')}  ',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                _assignManager();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Color(0xff1E2E52),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.person_add_alt_1,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      AppLocalizations.of(context)!.translate('become_manager'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Text(
       value,
       style: TextStyle(
@@ -833,14 +1214,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         fontWeight: FontWeight.w500,
         color: Color(0xFF1E2E52),
       ),
-      overflow: TextOverflow.visible,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -873,7 +1249,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+                    textAlign: TextAlign.justify,
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -887,7 +1263,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
                 ),
@@ -906,7 +1284,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-  // Добавьте эту функцию для совершения звонка
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -918,74 +1295,158 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    // Убираем все не числовые символы из номера телефона
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
-    // Если номер начинается с '8', заменяем на '+7'
     if (cleanNumber.startsWith('8')) {
       cleanNumber = '+7${cleanNumber.substring(1)}';
-    }
-    // Если номер начинается с '7', добавляем '+'
-    else if (cleanNumber.startsWith('7')) {
+    } else if (cleanNumber.startsWith('7')) {
       cleanNumber = '+$cleanNumber';
     }
 
     try {
       Uri whatsappUri;
       if (Platform.isIOS) {
-        // Для iOS используем другую схему URL
         whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
       } else {
-        // Для Android оставляем прежнюю схему
         whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
       }
-
       if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
-        // Если не удалось открыть, показываем сообщение
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        showCustomSnackBar(
+          context: context,
+          message:
               AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            duration: Duration(seconds: 3),
-          ),
+          isSuccess: false,
         );
       }
     } catch (e) {
-      // Обработка ошибок
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showCustomSnackBar(
+        context: context,
+        message:
             AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> _assignManager() async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('confirm_manager_title'),
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E2E52),
+              ),
             ),
           ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          content: Text(
+            AppLocalizations.of(context)!.translate('confirm_manager_message'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1E2E52),
+            ),
           ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          duration: Duration(seconds: 3),
-        ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('no'),
+                    onPressed: () {
+                      Navigator.of(context).pop(false);
+                    },
+                    buttonColor: Colors.red,
+                    textColor: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('yes'),
+                    onPressed: () {
+                      Navigator.of(context).pop(true);
+                    },
+                    buttonColor: Color(0xFF1E2E52),
+                    textColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) {
+      return;
+    }
+
+    if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('phone_required'),
+        isSuccess: false,
+      );
+      return;
+    }
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userID = prefs.getString('userID');
+      if (userID == null || userID.isEmpty) {
+        return;
+      }
+      int? parsedUserId = int.tryParse(userID);
+
+      final completer = Completer<void>();
+      final leadBloc = context.read<LeadBloc>();
+
+      final listener = context.read<LeadBloc>().stream.listen((state) {
+        if (state is LeadSuccess) {
+          completer.complete();
+        } else if (state is LeadError) {
+          completer.completeError(Exception(state.message));
+        }
+      });
+
+      final localizations = AppLocalizations.of(context)!;
+      leadBloc.add(UpdateLead(
+        leadId: currentLead!.id,
+        name: currentLead!.name,
+        phone: currentLead!.phone ?? "",
+        managerId: parsedUserId,
+        leadStatusId: currentLead?.leadStatus?.id ?? 0,
+        localizations: localizations,
+        existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+      ));
+
+      await completer.future;
+      listener.cancel();
+      context
+          .read<LeadByIdBloc>()
+          .add(FetchLeadByIdEvent(leadId: currentLead!.id));
+      context.read<LeadBloc>().add(FetchLeadStatuses());
+      showCustomSnackBar(
+        context: context,
+        message:
+            AppLocalizations.of(context)!.translate('manager_assigned_success'),
+        isSuccess: true,
+      );
+    } catch (e) {
+      showCustomSnackBar(
+        context: context,
+        message:
+            AppLocalizations.of(context)!.translate('manager_assign_failed'),
+        isSuccess: false,
       );
     }
   }

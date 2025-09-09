@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 class ImageListPopup extends StatefulWidget {
   final List<String> imagePaths;
 
+
   const ImageListPopup({Key? key, required this.imagePaths}) : super(key: key);
 
   @override
@@ -75,7 +76,6 @@ class _ImageListPopupState extends State<ImageListPopup>
     setState(() {
       widget.imagePaths.removeAt(index);
       _selectedIndices.remove(index);
-      // Adjust selected indices after deletion
       _selectedIndices.removeWhere((i) => i >= widget.imagePaths.length);
       if (_selectedIndices.isEmpty) {
         _isSelectionMode = false;
@@ -90,7 +90,6 @@ class _ImageListPopupState extends State<ImageListPopup>
       }
       final String item = widget.imagePaths.removeAt(oldIndex);
       widget.imagePaths.insert(newIndex, item);
-      // Update selected indices
       final newSelected = <int>{};
       for (var index in _selectedIndices) {
         if (index == oldIndex) {
@@ -137,13 +136,43 @@ class _ImageListPopupState extends State<ImageListPopup>
   }
 
   Future<void> _addPhoto() async {
-    // Directly open the gallery to pick multiple images
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         widget.imagePaths.addAll(pickedFiles.map((file) => file.path));
       });
     }
+  }
+
+  bool _isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
+  String _getFileName(String imagePath) {
+    if (_isUrl(imagePath)) {
+      return path.basename(Uri.parse(imagePath).path);
+    }
+    return path.basename(imagePath);
+  }
+
+  String _getFileSize(String imagePath) {
+    if (_isUrl(imagePath)) {
+      return '520.02 KB'; // Size not available for URLs
+    }
+    try {
+      final file = File(imagePath);
+      final sizeInKb = (file.lengthSync() / 1024).toStringAsFixed(2);
+      return '$sizeInKb KB';
+    } catch (e) {
+      return '520.02 KB';
+    }
+  }
+
+  ImageProvider _getImageProvider(String imagePath) {
+    if (_isUrl(imagePath)) {
+      return NetworkImage(imagePath);
+    }
+    return FileImage(File(imagePath));
   }
 
   @override
@@ -163,17 +192,18 @@ class _ImageListPopupState extends State<ImageListPopup>
               child: Container(
                 padding: const EdgeInsets.all(20),
                 constraints: BoxConstraints(
-                  maxWidth: 400,
+                  maxWidth: 450,
                   maxHeight: MediaQuery.of(context).size.height * 0.8,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('selected_images'),
+                          AppLocalizations.of(context)!
+                              .translate('selected_images'),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -181,27 +211,47 @@ class _ImageListPopupState extends State<ImageListPopup>
                             color: Color(0xff1E2E52),
                           ),
                         ),
-                        if (_selectedIndices.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          TweenAnimationBuilder(
-                            tween: Tween<double>(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 200),
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: value,
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    color: Colors.red[400],
-                                    size: 24,
-                                  ),
-                                  onPressed: _deleteSelected,
-                                  tooltip: AppLocalizations.of(context)!.translate('delete_selected'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                        Row(
+                          children: [
+                            if (_selectedIndices.isNotEmpty) ...[
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 200),
+                                builder: (context, value, child) {
+                                  return Transform.scale(
+                                    scale: value,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Colors.red[400],
+                                        size: 24,
+                                      ),
+                                      onPressed: _deleteSelected,
+                                      tooltip: AppLocalizations.of(context)!
+                                          .translate('delete_selected'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Color(0xff1E2E52),
+                                size: 24,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedIndices.clear();
+                                  _isSelectionMode = false;
+                                });
+                                Navigator.pop(context);
+                              },
+                              tooltip: AppLocalizations.of(context)!
+                                  .translate('close'),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -217,7 +267,8 @@ class _ImageListPopupState extends State<ImageListPopup>
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  AppLocalizations.of(context)!.translate('no_images'),
+                                  AppLocalizations.of(context)!
+                                      .translate('no_images'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -233,16 +284,14 @@ class _ImageListPopupState extends State<ImageListPopup>
                               itemCount: widget.imagePaths.length,
                               onReorder: _reorderImages,
                               itemBuilder: (context, index) {
-                                final file = File(widget.imagePaths[index]);
-                                final fileName = path.basename(file.path);
-                                final fileSize = file.lengthSync();
-                                final sizeInKb =
-                                    (fileSize / 1024).toStringAsFixed(2);
+                                final imagePath = widget.imagePaths[index];
+                                final fileName = _getFileName(imagePath);
+                                final fileSize = _getFileSize(imagePath);
                                 return ClipRRect(
-                                  key: ValueKey(widget.imagePaths[index]),
+                                  key: ValueKey(imagePath),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Dismissible(
-                                    key: ValueKey(widget.imagePaths[index]),
+                                    key: ValueKey(imagePath),
                                     direction: DismissDirection.startToEnd,
                                     background: Container(
                                       margin: const EdgeInsets.symmetric(
@@ -286,8 +335,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                                           if (_isSelectionMode) {
                                             _toggleSelection(index);
                                           } else {
-                                            _showFullImage(context,
-                                                widget.imagePaths[index]);
+                                            _showFullImage(context, imagePath);
                                           }
                                         },
                                         onLongPress: () {
@@ -319,7 +367,6 @@ class _ImageListPopupState extends State<ImageListPopup>
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              // Thumbnail
                                               Container(
                                                 width: 60,
                                                 height: 60,
@@ -327,10 +374,14 @@ class _ImageListPopupState extends State<ImageListPopup>
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   image: DecorationImage(
-                                                    image: FileImage(file),
+                                                    image: _getImageProvider(
+                                                        imagePath),
                                                     fit: BoxFit.cover,
                                                     onError: (exception,
-                                                        stackTrace) {},
+                                                        stackTrace) {
+                                                      // print(
+                                                      //     'Error loading image: $exception');
+                                                    },
                                                   ),
                                                   border: Border.all(
                                                     color: _selectedIndices
@@ -342,7 +393,6 @@ class _ImageListPopupState extends State<ImageListPopup>
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
-                                              // File Info
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -363,7 +413,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(
-                                                      '$sizeInKb KB',
+                                                      fileSize,
                                                       style: TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
@@ -376,7 +426,6 @@ class _ImageListPopupState extends State<ImageListPopup>
                                                   ],
                                                 ),
                                               ),
-                                              // Drag Handle for Reordering
                                               if (_isSelectionMode)
                                                 ReorderableDragStartListener(
                                                   index: index,
@@ -397,7 +446,6 @@ class _ImageListPopupState extends State<ImageListPopup>
                             ),
                     ),
                     const SizedBox(height: 16),
-                    // Close and Add Buttons
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -410,7 +458,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                               backgroundColor: Color(0xff4A90E2),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 12,
                                 vertical: 12,
                               ),
                               shape: RoundedRectangleBorder(
@@ -418,17 +466,28 @@ class _ImageListPopupState extends State<ImageListPopup>
                               ),
                               elevation: 3,
                             ),
-                            child: Text(
-                          AppLocalizations.of(context)!.translate('add'),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                                color: Colors.white,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.add,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('add'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Gilroy',
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
                               setState(() {
@@ -441,7 +500,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                               backgroundColor: Color(0xff1E2E52),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 12,
                                 vertical: 12,
                               ),
                               shape: RoundedRectangleBorder(
@@ -450,7 +509,7 @@ class _ImageListPopupState extends State<ImageListPopup>
                               elevation: 3,
                             ),
                             child: Text(
-                              AppLocalizations.of(context)!.translate('close'),
+                              AppLocalizations.of(context)!.translate('save'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -473,11 +532,21 @@ class _ImageListPopupState extends State<ImageListPopup>
   }
 }
 
-// Full Image View
 class FullImageView extends StatelessWidget {
   final String imagePath;
 
   const FullImageView({Key? key, required this.imagePath}) : super(key: key);
+
+  bool _isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
+  ImageProvider _getImageProvider(String imagePath) {
+    if (_isUrl(imagePath)) {
+      return NetworkImage(imagePath);
+    }
+    return FileImage(File(imagePath));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -495,8 +564,8 @@ class FullImageView extends StatelessWidget {
         child: InteractiveViewer(
           minScale: 0.5,
           maxScale: 4.0,
-          child: Image.file(
-            File(imagePath),
+          child: Image(
+            image: _getImageProvider(imagePath),
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => Icon(
               Icons.broken_image,

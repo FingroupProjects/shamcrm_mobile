@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class EventEvent {}
@@ -11,6 +12,7 @@ class FetchEvents extends EventEvent {
   final DateTime? toDate; 
   final DateTime? noticefromDate; 
   final DateTime? noticetoDate; 
+  final int? salesFunnelId; // Новый параметр
 
   FetchEvents({
     this.refresh = false,
@@ -21,7 +23,9 @@ class FetchEvents extends EventEvent {
     this.toDate,
     this.noticefromDate,
     this.noticetoDate,
+    this.salesFunnelId,
   });
+
 }
 
 
@@ -39,15 +43,17 @@ class CreateNotice extends EventEvent {
   final DateTime? date;
   final int sendNotification;
   final List<int> users;
+  final List<String>? filePaths; // Новое поле для файлов
   final AppLocalizations localizations;
 
   CreateNotice({
     required this.title,
     required this.body,
     required this.leadId,
-   this.date,
+    this.date,
     required this.sendNotification,
     required this.users,
+    this.filePaths, // Добавляем в конструктор
     required this.localizations,
   });
 }
@@ -61,6 +67,8 @@ class UpdateNotice extends EventEvent {
   final int sendNotification;
   final List<int> users;
   final AppLocalizations localizations;
+  final List<String>? filePaths; // Новое поле для новых файлов
+  final List<NoticeFiles> existingFiles; // Существующие файлы
 
   UpdateNotice({
     required this.noticeId,
@@ -71,6 +79,8 @@ class UpdateNotice extends EventEvent {
     required this.sendNotification,
     required this.users,
     required this.localizations,
+    this.filePaths, // Добавляем
+    required this.existingFiles, // Добавляем
   });
 }
 

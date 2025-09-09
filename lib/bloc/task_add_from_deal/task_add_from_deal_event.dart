@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskAddFromDealEvent {}
+
 class FetchTaskDealStatuses extends TaskAddFromDealEvent {}
 
 class CreateTaskFromDeal extends TaskAddFromDealEvent {
@@ -14,9 +15,9 @@ class CreateTaskFromDeal extends TaskAddFromDealEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
-  final List<String>? filePaths; // Изменено на список путей к файлам
-  final List<Map<String, String>>? customFields;
-  // final AppLocalizations localizations;  // Add this to your event
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<String>? filePaths;
+  final List<Map<String, int>>? directoryValues;
 
   CreateTaskFromDeal({
     required this.dealId,
@@ -30,8 +31,7 @@ class CreateTaskFromDeal extends TaskAddFromDealEvent {
     this.userId,
     this.description,
     this.customFields,
-    this.filePaths, // Изменено на список путей к файлам
-        // required this.localizations,  // Add this to constructor
-
+    this.filePaths,
+    this.directoryValues,
   });
 }

@@ -1,12 +1,21 @@
+
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBarPage2 extends StatefulWidget {
@@ -22,7 +31,8 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final VoidCallback? onGoodsResetFilters;
-  final Map<String, dynamic> currentFilters; // Added to receive filter data
+  final Map<String, dynamic> currentFilters;
+  final List<String>? initialLabels;
 
   CustomAppBarPage2({
     super.key,
@@ -38,7 +48,8 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterOrderIcon = true,
     this.onFilterGoodsSelected,
     this.onGoodsResetFilters,
-    required this.currentFilters, // Required parameter
+    required this.currentFilters,
+    this.initialLabels,
   });
 
   @override
@@ -65,12 +76,17 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   Color _iconColor = Colors.black;
   late Timer _timer;
   bool _isGoodsFiltering = false;
+  bool _canCreateProduct = false; // Новая переменная для права product.create
+  bool _canCreateOrder = false; // Новая переменная для права order.create
+  // bool _isGoodsFiltering = false;
+  bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
+  
 
   @override
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print('CustomAppBarPage2: Инициализация AppBar');
+      //print('CustomAppBarPage2: Инициализация AppBar');
     }
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
@@ -83,6 +99,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 
     _loadNotificationState();
     _setUpSocketForNotifications();
+    _checkPermissions(); // Проверяем права доступа при инициализации
 
     _blinkController = AnimationController(
       vsync: this,
@@ -108,8 +125,77 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     });
 
     // Set initial filtering state based on currentFilters
-    _isGoodsFiltering = widget.currentFilters.isNotEmpty;
+    _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['managers'] != null &&
+            widget.currentFilters['managers'].isNotEmpty);
+
+            _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['managers'] != null &&
+            widget.currentFilters['managers'].isNotEmpty);
+    _isOrdersFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['fromDate'] != null ||
+            widget.currentFilters['toDate'] != null ||
+            widget.currentFilters['client'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['paymentMethod'] != null ||
+            (widget.currentFilters['managers'] != null &&
+                widget.currentFilters['managers'].isNotEmpty));
   }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final canCreateProduct = await _apiService.hasPermission('product.create');
+      final canCreateOrder = await _apiService.hasPermission('order.create');
+      final canReadNotice = await _apiService.hasPermission('notice.read');
+      setState(() {
+        _canCreateProduct = canCreateProduct;
+        _canCreateOrder = canCreateOrder;
+        _canReadNotice = canReadNotice;
+        if (kDebugMode) {
+          //print('CustomAppBarPage2: Проверка разрешений: product.create = $_canCreateProduct, order.create = $_canCreateOrder, notice.read = $_canReadNotice');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _canCreateProduct = false;
+        _canCreateOrder = false;
+        _canReadNotice = false;
+        if (kDebugMode) {
+          //print('CustomAppBarPage2: Ошибка при проверке прав: $e');
+        }
+      });
+    }
+  }
+Future<void> _scanBarcode() async {
+  try {
+    // Открываем экран сканирования
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _BarcodeScannerScreen(),
+      ),
+    );
+    
+    if (result != null && result != '-1') {
+      if (kDebugMode) {
+        print('CustomAppBarPage2: Отсканирован штрихкод: $result');
+      }
+      context.read<GoodsBloc>().add(SearchGoodsByBarcode(result));
+    } else {
+      if (kDebugMode) {
+        print('CustomAppBarPage2: Сканирование отменено');
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('CustomAppBarPage2: Ошибка сканирования: $e');
+    }
+    showCustomSnackBar(
+      context: context,
+      message: AppLocalizations.of(context)!.translate('barcode_scan_error'),
+      isSuccess: false,
+    );
+  }
+}
 
   Future<void> _checkOverdueTasks() async {
     try {
@@ -120,12 +206,12 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           _hasOverdueTasks = hasOverdue;
         });
         if (kDebugMode) {
-          print('CustomAppBarPage2: Проверка просроченных задач: $_hasOverdueTasks');
+          //print('CustomAppBarPage2: Проверка просроченных задач: $_hasOverdueTasks');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('CustomAppBarPage2: Ошибка проверки просроченных задач: $e');
+        //print('CustomAppBarPage2: Ошибка проверки просроченных задач: $e');
       }
     }
   }
@@ -135,8 +221,10 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
+    notificationSubscription.cancel();
+    socketClient.disconnect();
     if (kDebugMode) {
-      print('CustomAppBarPage2: Очистка ресурсов');
+      //print('CustomAppBarPage2: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -148,13 +236,13 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       _hasNewNotification = hasNewNotification;
     });
     if (kDebugMode) {
-      print('CustomAppBarPage2: Загрузка состояния уведомлений: $_hasNewNotification');
+      //print('CustomAppBarPage2: Загрузка состояния уведомлений: $_hasNewNotification');
     }
   }
 
   Future<void> _setUpSocketForNotifications() async {
     if (kDebugMode) {
-      print('CustomAppBarPage2: Настройка сокета для уведомлений');
+      //print('CustomAppBarPage2: Настройка сокета для уведомлений');
     }
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -172,13 +260,13 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         if (kDebugMode) {
-          print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
+          //print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
         }
       },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
-    String userId = prefs.getString('userID') ?? '';
+    String userId = prefs.getString('unique_id') ?? '';
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -193,7 +281,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         },
         onAuthFailed: (exception, trace) {
           if (kDebugMode) {
-            print('CustomAppBarPage2: Ошибка авторизации сокета: $exception');
+            //print('CustomAppBarPage2: Ошибка авторизации сокета: $exception');
           }
         },
       ),
@@ -204,7 +292,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
         if (kDebugMode) {
-          print('CustomAppBarPage2: Получено уведомление: ${event.data}');
+          //print('CustomAppBarPage2: Получено уведомление: ${event.data}');
         }
         setState(() {
           _hasNewNotification = true;
@@ -216,22 +304,12 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     try {
       await socketClient.connect();
       if (kDebugMode) {
-        print('CustomAppBarPage2: Успешное соединение сокета');
+        //print('CustomAppBarPage2: Успешное соединение сокета');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('CustomAppBarPage2: Ошибка соединения сокета: $e');
+        //print('CustomAppBarPage2: Ошибка соединения сокета: $e');
       }
-    }
-  }
-
-  Future<void> _checkPermissions() async {
-    final canReadNotice = await _apiService.hasPermission('notice.read');
-    setState(() {
-      _canReadNotice = canReadNotice;
-    });
-    if (kDebugMode) {
-      print('CustomAppBarPage2: Проверка разрешений: notice.read = $_canReadNotice');
     }
   }
 
@@ -251,19 +329,19 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         });
         await prefs.setString('userProfileImage_$UUID', _userImage);
         if (kDebugMode) {
-          print('CustomAppBarPage2: Загружено изображение профиля: $_userImage');
+          //print('CustomAppBarPage2: Загружено изображение профиля: $_userImage');
         }
       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
         });
         if (kDebugMode) {
-          print('CustomAppBarPage2: Использовано кэшированное изображение: $_userImage');
+          //print('CustomAppBarPage2: Использовано кэшированное изображение: $_userImage');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('CustomAppBarPage2: Ошибка загрузки профиля: $e');
+        //print('CustomAppBarPage2: Ошибка загрузки профиля: $e');
       }
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
@@ -277,7 +355,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _lastLoadedImage = '';
     await _loadUserProfile();
     if (kDebugMode) {
-      print('CustomAppBarPage2: Обновление изображения профиля');
+      //print('CustomAppBarPage2: Обновление изображения профиля');
     }
   }
 
@@ -493,116 +571,749 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                     });
                   }
                   if (kDebugMode) {
-                    print('CustomAppBarPage2: Переключение поиска: $_isSearching');
+                    //print('CustomAppBarPage2: Переключение поиска: $_isSearching');
                   }
                 },
               ),
             ),
           ),
-        if (widget.showFilterIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isGoodsFiltering ? _iconColor : null,
-              ),
+        if (widget.showFilterIcon && _canCreateProduct)
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/icons/AppBar/scanner.png',// Предполагается, что есть иконка для штрихкода
+              width: 24,
+              height: 24,
             ),
-            onPressed: () {
-              if (kDebugMode) {
-                print('CustomAppBarPage2: Нажата кнопка фильтра для товаров');
-              }
-              navigateToGoodsFilterScreen(context);
-            },
           ),
-        if (widget.showFilterOrderIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-              ),
+          onPressed: _scanBarcode,
+          tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
+        ),
+               if (widget.showFilterIcon && _canCreateProduct)
+
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 0),
+            child: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+              color: _isGoodsFiltering ? _iconColor : null,
             ),
-            onPressed: () {
-              if (kDebugMode) {
-                print('CustomAppBarPage2: Нажата кнопка фильтра для заказов');
-              }
-              navigateToOrderFilterScreen(context);
-            },
           ),
-      ]),
+          onPressed: () {
+            navigateToGoodsFilterScreen(context);
+          },
+        ),
+      if (widget.showFilterOrderIcon && _canCreateOrder)
+        IconButton(
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/icons/AppBar/filter.png',
+              width: 24,
+              height: 24,
+              color: _isOrdersFiltering ? _iconColor : null, // Добавляем мигание
+            ),
+          ),
+          onPressed: () {
+            navigateToOrderFilterScreen(context);
+          },
+        ),
+    ]),
     );
   }
 
-  void navigateToGoodsFilterScreen(BuildContext context) {
-    if (kDebugMode) {
-      print('CustomAppBarPage2: Переход к экрану фильтров товаров');
-      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
-    }
-    // Extract initial filter data
-    List<int>? initialCategoryIds;
-    double? initialDiscountPercent;
-    
-    if (widget.currentFilters.containsKey('category_id') &&
-        widget.currentFilters['category_id'] is List &&
-        widget.currentFilters['category_id'].isNotEmpty) {
-      initialCategoryIds = (widget.currentFilters['category_id'] as List)
-          .map((id) => int.tryParse(id.toString()) ?? 0)
-          .where((id) => id != 0)
-          .toList();
-    }
-    
-    if (widget.currentFilters.containsKey('discount_percent')) {
-      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
-          ? widget.currentFilters['discount_percent']
-          : double.tryParse(widget.currentFilters['discount_percent'].toString());
-    }
+void navigateToGoodsFilterScreen(BuildContext context) {
+  if (kDebugMode) {
+    print('CustomAppBarPage2: Переход к экрану фильтров товаров');
+    print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+  }
+  List<int>? initialCategoryIds;
+  double? initialDiscountPercent;
+  List<String>? initialLabels;
+  bool? initialIsActive;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GoodsFilterScreen(
-          onSelectedDataFilter: (filters) {
-            if (kDebugMode) {
-              print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
-            }
-            setState(() {
-              _isGoodsFiltering = filters.isNotEmpty;
-            });
-            widget.onFilterGoodsSelected?.call(filters);
-          },
-          onResetFilters: () {
-            if (kDebugMode) {
-              print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
-            }
-            setState(() {
-              _isGoodsFiltering = false;
-            });
-            widget.onGoodsResetFilters?.call();
-          },
-          initialCategoryIds: initialCategoryIds,
-          initialDiscountPercent: initialDiscountPercent,
+  if (widget.currentFilters.containsKey('category_id') &&
+      widget.currentFilters['category_id'] is List &&
+      widget.currentFilters['category_id'].isNotEmpty) {
+    initialCategoryIds = (widget.currentFilters['category_id'] as List)
+        .map((id) => int.tryParse(id.toString()) ?? 0)
+        .where((id) => id != 0)
+        .toList();
+  }
+
+  if (widget.currentFilters.containsKey('discount_percent')) {
+    initialDiscountPercent = widget.currentFilters['discount_percent'] is double
+        ? widget.currentFilters['discount_percent']
+        : double.tryParse(widget.currentFilters['discount_percent'].toString());
+  }
+
+  if (widget.currentFilters.containsKey('label_id') &&
+      widget.currentFilters['label_id'] is List &&
+      widget.currentFilters['label_id'].isNotEmpty) {
+    initialLabels = List<String>.from(widget.currentFilters['label_id']);
+  }
+
+  if (widget.currentFilters.containsKey('is_active')) {
+    initialIsActive = widget.currentFilters['is_active'] as bool?;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => GoodsFilterScreen(
+        onSelectedDataFilter: (filters) {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
+          }
+          setState(() {
+            _isGoodsFiltering = filters.isNotEmpty;
+          });
+          widget.onFilterGoodsSelected?.call(filters);
+        },
+        onResetFilters: () {
+          if (kDebugMode) {
+            print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
+          }
+          setState(() {
+            _isGoodsFiltering = false;
+          });
+          widget.onGoodsResetFilters?.call();
+        },
+        initialCategoryIds: initialCategoryIds,
+        initialDiscountPercent: initialDiscountPercent,
+        initialLabels: initialLabels,
+        initialIsActive: initialIsActive,
+      ),
+    ),
+  );
+}
+
+void navigateToOrderFilterScreen(BuildContext context) {
+  if (kDebugMode) {
+    //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
+    //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+  }
+
+  DateTime? initialFromDate = widget.currentFilters['fromDate'];
+  DateTime? initialToDate = widget.currentFilters['toDate'];
+  String? initialClient = widget.currentFilters['client'];
+  String? initialStatus = widget.currentFilters['status'];
+  String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
+  List<String>? initialManagers = widget.currentFilters['managers'] != null
+      ? List<String>.from(widget.currentFilters['managers'])
+      : null;
+  List<String>? initialLeads = widget.currentFilters['leads'] != null
+      ? List<String>.from(widget.currentFilters['leads'])
+      : null;
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OrdersFilterScreen(
+        onSelectedDataFilter: (filters) {
+          if (kDebugMode) {
+            //print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
+          }
+          setState(() {
+            _isOrdersFiltering = filters.isNotEmpty ||
+                (filters['managers'] != null && filters['managers'].isNotEmpty) ||
+                (filters['leads'] != null && filters['leads'].isNotEmpty) ||
+                filters['fromDate'] != null ||
+                filters['toDate'] != null ||
+                filters['client'] != null ||
+                filters['status'] != null ||
+                filters['paymentMethod'] != null;
+          });
+          widget.onFilterGoodsSelected?.call(filters);
+        },
+        onResetFilters: () {
+          if (kDebugMode) {
+            //print('CustomAppBarPage2: Сброс фильтров из OrdersFilterScreen');
+          }
+          setState(() {
+            _isOrdersFiltering = false;
+            widget.currentFilters.clear(); // Очищаем фильтры
+          });
+          widget.onGoodsResetFilters?.call();
+        },
+        initialFromDate: initialFromDate,
+        initialToDate: initialToDate,
+        initialClient: initialClient,
+        initialStatus: initialStatus,
+        initialPaymentMethod: initialPaymentMethod,
+        initialManagers: initialManagers,
+        initialLeads: initialLeads,
+      ),
+    ),
+  );
+}
+}
+
+
+
+
+class _BarcodeScannerScreen extends StatefulWidget {
+  @override
+  _BarcodeScannerScreenState createState() => _BarcodeScannerScreenState();
+}
+
+class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
+    with TickerProviderStateMixin {
+  MobileScannerController controller = MobileScannerController();
+  bool isScanned = false;
+  bool isFlashOn = false;
+  
+  late AnimationController _scanLineController;
+  late AnimationController _pulseController;
+  late Animation<double> _scanLineAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Анимация сканирующей линии
+    _scanLineController = AnimationController(
+      duration: Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+    
+    _scanLineAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scanLineController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Анимация пульсации углов
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  // Функция для выбора изображения из галереи и сканирования штрих-кода
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image != null) {
+        // Показываем индикатор загрузки
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00FF88)),
+                  ),
+                  // SizedBox(height: 16),
+                  // Text(
+                  //   'Сканирование изображения...',
+                  //   style: TextStyle(color: Colors.white),
+                  // ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Сканируем штрих-код из выбранного изображения
+        final BarcodeCapture? barcodeCapture = await controller.analyzeImage(image.path);
+        
+        // Убираем индикатор загрузки
+        Navigator.of(context).pop();
+        
+        if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
+          final String code = barcodeCapture.barcodes.first.rawValue ?? '';
+          if (code.isNotEmpty) {
+            // Успешно нашли штрих-код
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop(code);
+          } else {
+            _showErrorMessage('Штрих-код не найден на изображении');
+          }
+        } else {
+          _showErrorMessage('Штрих-код не найден на изображении');
+        }
+      }
+    } catch (e) {
+      // Убираем индикатор если он показывается
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      _showErrorMessage('Ошибка при обработке изображения');
+    }
+  }
+
+  // Показать сообщение об ошибке
+  void _showErrorMessage(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Ошибка',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF00FF88)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Камера на весь экран
+          MobileScanner(
+            controller: controller,
+            onDetect: (capture) {
+              if (!isScanned) {
+                isScanned = true;
+                // Вибрация при успешном сканировании
+                HapticFeedback.lightImpact();
+                final List<Barcode> barcodes = capture.barcodes;
+                if (barcodes.isNotEmpty) {
+                  final String code = barcodes.first.rawValue ?? '';
+                  Navigator.of(context).pop(code);
+                }
+              }
+            },
+          ),
+          
+          // Темный оверлей с вырезом для сканирования
+          _buildScanOverlay(),
+          
+          // Верхняя панель
+          _buildTopBar(),
+          
+          // Нижняя панель
+          _buildBottomPanel(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanOverlay() {
+    return CustomPaint(
+      painter: ScanOverlayPainter(),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+          child: Container(
+            width: 280,
+            height: 280,
+            child: Stack(
+              children: [
+                // Анимированные углы рамки
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: ScanFramePainter(_pulseAnimation.value),
+                      size: Size(280, 280),
+                    );
+                  },
+                ),
+                
+                // Сканирующая линия
+                AnimatedBuilder(
+                  animation: _scanLineAnimation,
+                  builder: (context, child) {
+                    return Positioned(
+                      top: _scanLineAnimation.value * 260 + 10,
+                      left: 20,
+                      right: 20,
+                      child: Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              Color(0xFF00FF88),
+                              Color(0xFF00FF88),
+                              Colors.transparent,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF00FF88).withOpacity(0.8),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  void navigateToOrderFilterScreen(BuildContext context) {
-    if (kDebugMode) {
-      print('CustomAppBarPage2: Переход к экрану фильтров заказов');
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OrdersFilterScreen(
-          onSelectedDataFilter: widget.onFilterGoodsSelected,
-          onResetFilters: widget.onGoodsResetFilters,
+  Widget _buildTopBar() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 16,
+          right: 16,
+          bottom: 16,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.8),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Row(
+          children: [
+            // Кнопка назад
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop('-1'),
+              ),
+            ),
+            
+            Expanded(
+              child: Text(
+                'Сканер штрих-кода',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            
+            // Кнопка фонарика
+            Container(
+              decoration: BoxDecoration(
+                color: isFlashOn 
+                    ? Color(0xFF00FF88).withOpacity(0.2)
+                    : Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isFlashOn 
+                      ? Color(0xFF00FF88)
+                      : Colors.white.withOpacity(0.2),
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  isFlashOn ? Icons.flash_on : Icons.flash_off,
+                  color: isFlashOn ? Color(0xFF00FF88) : Colors.white,
+                ),
+                onPressed: () {
+                  controller.toggleTorch();
+                  setState(() {
+                    isFlashOn = !isFlashOn;
+                  });
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildBottomPanel() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: 32,
+          left: 24,
+          right: 24,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              Colors.black.withOpacity(0.9),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Инструкция
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.qr_code_scanner,
+                    color: Color(0xFF00FF88),
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Наведите камеру на штрих-код',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: 24),
+            
+            // Кнопки действий
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Кнопка галереи
+                _buildActionButton(
+                  icon: Icons.photo_library,
+                  label: 'Галерея',
+                  onPressed: _pickImageFromGallery,
+                ),
+                
+                // Центральная кнопка отмены
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.15),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: () => Navigator.of(context).pop('-1'),
+                  ),
+                ),
+                
+                // Пустое место для симметрии
+                SizedBox(width: 64),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.15),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(icon, color: Colors.white),
+            onPressed: onPressed,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _scanLineController.dispose();
+    _pulseController.dispose();
+    controller.dispose();
+    super.dispose();
+  }
+}
+
+// Класс для рисования оверлея с вырезом
+class ScanOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(0.6)
+      ..style = PaintingStyle.fill;
+
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final scanRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 280,
+      height: 280,
+    );
+
+    final path = Path()
+      ..addRect(rect)
+      ..addRRect(RRect.fromRectAndRadius(scanRect, Radius.circular(20)))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Класс для рисования анимированной рамки
+class ScanFramePainter extends CustomPainter {
+  final double animationValue;
+
+  ScanFramePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Color(0xFF00FF88).withOpacity(animationValue)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final cornerLength = 30.0;
+    final cornerRadius = 20.0;
+
+    // Верхний левый угол
+    canvas.drawPath(
+      Path()
+        ..moveTo(cornerRadius, 0)
+        ..lineTo(cornerLength, 0)
+        ..moveTo(0, cornerRadius)
+        ..lineTo(0, cornerLength),
+      paint,
+    );
+
+    // Верхний правый угол
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width - cornerLength, 0)
+        ..lineTo(size.width - cornerRadius, 0)
+        ..moveTo(size.width, cornerRadius)
+        ..lineTo(size.width, cornerLength),
+      paint,
+    );
+
+    // Нижний левый угол
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, size.height - cornerLength)
+        ..lineTo(0, size.height - cornerRadius)
+        ..moveTo(cornerRadius, size.height)
+        ..lineTo(cornerLength, size.height),
+      paint,
+    );
+
+    // Нижний правый угол
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width, size.height - cornerLength)
+        ..lineTo(size.width, size.height - cornerRadius)
+        ..moveTo(size.width - cornerRadius, size.height)
+        ..lineTo(size.width - cornerLength, size.height),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

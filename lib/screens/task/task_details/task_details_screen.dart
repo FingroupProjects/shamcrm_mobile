@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
@@ -10,11 +9,13 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_copy_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
@@ -37,17 +38,15 @@ class TaskDetailsScreen extends StatefulWidget {
   final int? statusId;
   final String? project;
   final int? projectId;
-  // final String? user;
   final List<int>? userId;
-  // final String? projectName;
   final String? description;
   final String? startDate;
   final String? endDate;
   final String? sum;
   final int? priority;
   final List<TaskCustomField> taskCustomFields;
-  final String? taskFile; // Добавлено поле для файла
-  final List<TaskFiles>? files; // вместо String? taskFile
+  final String? taskFile;
+  final List<TaskFiles>? files;
   final DateTime? initialDate;
 
   TaskDetailsScreen({
@@ -55,21 +54,19 @@ class TaskDetailsScreen extends StatefulWidget {
     this.taskNumber,
     required this.taskName,
     required this.taskStatus,
-     this.statusId,
+    this.statusId,
     this.project,
     this.projectId,
-    // this.user,
     this.userId,
     this.description,
     this.startDate,
     this.endDate,
     this.sum,
     this.files,
-    // this.projectName,
     this.priority,
     required this.taskCustomFields,
-    this.taskFile, // Инициализация опционального параметра
-    this.initialDate
+    this.taskFile,
+    this.initialDate,
   });
 
   @override
@@ -85,7 +82,6 @@ class FileCacheManager {
   late SharedPreferences _prefs;
   final Map<int, String> _cachedFiles = {};
   bool _initialized = false;
- 
 
   Future<void> init() async {
     if (_initialized) return;
@@ -144,7 +140,6 @@ class FileCacheManager {
     await _saveCacheInfo();
   }
 
-  // Метод для получения размера кэша
   Future<int> getCacheSize() async {
     await init();
     int totalSize = 0;
@@ -163,6 +158,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   TaskById? currentTask;
   bool _canEditTask = false;
   bool _canDeleteTask = false;
+  bool _canCreateTask = false;
+  bool _hasTaskCreateForMySelfPermission = false;
+  int? _currentUserId;
+  bool _isAuthor = false;
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   bool _isDownloading = false;
@@ -174,210 +173,221 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final GlobalKey keyTaskForReview = GlobalKey();
   final GlobalKey keyTaskHistory = GlobalKey();
 
-  List<TargetFocus> targets = [];
-  bool _isTutorialShown = false; 
-  bool _isTutorialInProgress = false; // Добавлено для защиты от повторного вызова
-  Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
+  // List<TargetFocus> targets = [];
+  // bool _isTutorialShown = false;
+  // bool _isTutorialInProgress = false;
+  // Map<String, dynamic>? tutorialProgress;
 
   @override
   void initState() {
     super.initState();
-    print('================================================================');
-    print(widget.statusId);
-    print('================================================================');
-
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
-    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
-    _fetchTutorialProgress(); // Загружаем данные туториала и инициализируем targets
+    context
+        .read<TaskByIdBloc>()
+        .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+    // _fetchTutorialProgress();
   }
 
-  void _initTutorialTargets() {
-  targets.addAll([
-    createTarget(
-      identify: "TaskEdit",
-      keyTarget: keyTaskEdit,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-  if (_canDeleteTask)
-    createTarget(
-      identify: "TaskDelete",
-      keyTarget: keyTaskDelete,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "TaskNavigateChat",
-      keyTarget: keyTaskNavigateChat,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-    createTarget(
-      identify: "TaskForReview",
-      keyTarget: keyTaskForReview,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-    createTarget(
-      identify: "TaskHistory",
-      keyTarget: keyTaskHistory,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
-      align: ContentAlign.top,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(bottom: 70)
-    ),
-  ]);
-}
-
-
-
-void showTutorial() async {
-  if (_isTutorialInProgress) {
-    print('Tutorial already in progress, skipping');
-    return;
-  }
-
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-
-  if (tutorialProgress == null ||
-      tutorialProgress!['tasks']?['view'] == true ||
-      isTutorialShown ||
-      _isTutorialShown) {
-    print('Tutorial conditions not met');
-    return;
-  }
-
-  setState(() {
-    _isTutorialInProgress = true;
-  });
-  await Future.delayed(const Duration(milliseconds: 500));
-
-  TutorialCoachMark(
-    targets: targets,
-    textSkip: AppLocalizations.of(context)!.translate('skip'),
-    textStyleSkip: TextStyle(
-      color: Colors.white,
-      fontFamily: 'Gilroy',
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      shadows: [
-        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-      ],
-    ),
-    colorShadow: Color(0xff1E2E52),
-    onSkip: () {
-      prefs.setBool('isTutorialShownTasksDet', true);
-      _apiService.markPageCompleted("tasks", "view").catchError((e) {
-        print('Error marking page completed on skip: $e');
-      });
-      setState(() {
-        _isTutorialShown = true;
-        _isTutorialInProgress = false;
-      });
-      return true;
-    },
-    onFinish: () {
-      prefs.setBool('isTutorialShownTasksDet', true);
-      _apiService.markPageCompleted("tasks", "view").catchError((e) {
-        print('Error marking page completed on finish: $e');
-      });
-      setState(() {
-        _isTutorialShown = true;
-        _isTutorialInProgress = false;
-      });
-    },
-  ).show(context: context);
-  print('Showing tutorial for TaskDetails');
-}
-
-Future<void> _fetchTutorialProgress() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final progress = await _apiService.getTutorialProgress();
-    setState(() {
-      tutorialProgress = progress['result'];
-    });
-    await prefs.setString('tutorial_progress', json.encode(progress['result']));
-
-    bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-    setState(() {
-      _isTutorialShown = isTutorialShown;
-    });
-
-    // Инициализируем targets перед проверкой условий
-    _initTutorialTargets();
-
-    // Проверяем условия и запускаем туториал
-    if (tutorialProgress != null &&
-        tutorialProgress!['tasks']?['view'] == false &&
-        !isTutorialShown &&
-        !_isTutorialInProgress &&
-        targets.isNotEmpty && // Добавляем проверку на непустой список
-        mounted) {
-      showTutorial();
-    }
-  } catch (e) {
-    print('Error fetching tutorial progress: $e');
-    final prefs = await SharedPreferences.getInstance();
-    final savedProgress = prefs.getString('tutorial_progress');
-    if (savedProgress != null) {
-      setState(() {
-        tutorialProgress = json.decode(savedProgress);
-      });
-      bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-      setState(() {
-        _isTutorialShown = isTutorialShown;
-      });
-
-      // Инициализируем targets перед проверкой условий
-      _initTutorialTargets();
-
-      if (tutorialProgress != null &&
-          tutorialProgress!['tasks']?['view'] == false &&
-          !isTutorialShown &&
-          !_isTutorialInProgress &&
-          targets.isNotEmpty && // Добавляем проверку на непустой список
-          mounted) {
-        showTutorial();
-      }
-    }
-  }
-}
-  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
-    final canEdit = await _apiService.hasPermission('task.update');
-    final canDelete = await _apiService.hasPermission('task.delete');
-    setState(() {
-      _canEditTask = canEdit;
-      _canDeleteTask = canDelete;
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('userID');
+      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+
+      final results = await Future.wait([
+        _apiService.hasPermission('task.update'),
+        _apiService.hasPermission('task.delete'),
+        _apiService.hasPermission('task.create'),
+        _apiService.hasPermission('task.createForMySelf'),
+      ]);
+
+      setState(() {
+        _canEditTask = results[0] as bool;
+        _canDeleteTask = results[1] as bool;
+        _canCreateTask = results[2] as bool;
+        _hasTaskCreateForMySelfPermission = results[3] as bool;
+        _currentUserId = userId;
+        // _isAuthor обновляется в _updateDetails, чтобы избежать зависимости от null currentTask
+      });
+    } catch (e) {
+      print('TaskDetailsScreen: Error checking permissions or userID: $e');
+      setState(() {
+        _canEditTask = false;
+        _canDeleteTask = false;
+        _canCreateTask = false;
+        _hasTaskCreateForMySelfPermission = false;
+        _currentUserId = null;
+        _isAuthor = false;
+      });
+    }
   }
 
-  // Обновление данных задачи
+  // void _initTutorialTargets() {
+  //   targets.addAll([
+  //     createTarget(
+  //       identify: "TaskEdit",
+  //       keyTarget: keyTaskEdit,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //       contentPosition: ContentPosition.above,
+  //     ),
+  //     if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+  //       createTarget(
+  //         identify: "TaskDelete",
+  //         keyTarget: keyTaskDelete,
+  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
+  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
+  //         align: ContentAlign.bottom,
+  //         context: context,
+  //         contentPosition: ContentPosition.above,
+  //       ),
+  //     createTarget(
+  //       identify: "TaskNavigateChat",
+  //       keyTarget: keyTaskNavigateChat,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //     ),
+  //     createTarget(
+  //       identify: "TaskForReview",
+  //       keyTarget: keyTaskForReview,
+  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
+  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
+  //       align: ContentAlign.bottom,
+  //       context: context,
+  //     ),
+  //     createTarget(
+  //         identify: "TaskHistory",
+  //         keyTarget: keyTaskHistory,
+  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
+  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
+  //         align: ContentAlign.top,
+  //         context: context,
+  //         contentPosition: ContentPosition.above,
+  //         contentPadding: EdgeInsets.only(bottom: 70)),
+  //   ]);
+  // }
+
+  // void showTutorial() async {
+  //   if (_isTutorialInProgress) {
+  //     return;
+  //   }
+
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+
+  //   if (tutorialProgress == null ||
+  //       tutorialProgress!['tasks']?['view'] == true ||
+  //       isTutorialShown ||
+  //       _isTutorialShown) {
+  //     return;
+  //   }
+
+  //   setState(() {
+  //     _isTutorialInProgress = true;
+  //   });
+  //   await Future.delayed(const Duration(milliseconds: 500));
+
+  //   TutorialCoachMark(
+  //     targets: targets,
+  //     textSkip: AppLocalizations.of(context)!.translate('skip'),
+  //     textStyleSkip: TextStyle(
+  //       color: Colors.white,
+  //       fontFamily: 'Gilroy',
+  //       fontSize: 20,
+  //       fontWeight: FontWeight.w600,
+  //       shadows: [
+  //         Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+  //         Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+  //         Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+  //         Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+  //       ],
+  //     ),
+  //     colorShadow: Color(0xff1E2E52),
+  //     onSkip: () {
+  //       prefs.setBool('isTutorialShownTasksDet', true);
+  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
+  //       setState(() {
+  //         _isTutorialShown = true;
+  //         _isTutorialInProgress = false;
+  //       });
+  //       return true;
+  //     },
+  //     onFinish: () {
+  //       prefs.setBool('isTutorialShownTasksDet', true);
+  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
+  //       setState(() {
+  //         _isTutorialShown = true;
+  //         _isTutorialInProgress = false;
+  //       });
+  //     },
+  //   ).show(context: context);
+  // }
+
+  // Future<void> _fetchTutorialProgress() async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final progress = await _apiService.getTutorialProgress();
+  //     setState(() {
+  //       tutorialProgress = progress['result'];
+  //     });
+  //     await prefs.setString('tutorial_progress', json.encode(progress['result']));
+
+  //     bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+  //     setState(() {
+  //       _isTutorialShown = isTutorialShown;
+  //     });
+
+  //     _initTutorialTargets();
+
+  //     if (tutorialProgress != null &&
+  //         tutorialProgress!['tasks']?['view'] == false &&
+  //         !isTutorialShown &&
+  //         !_isTutorialInProgress &&
+  //         targets.isNotEmpty &&
+  //         mounted) {
+  //       //showTutorial();
+  //     }
+  //   } catch (e) {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final savedProgress = prefs.getString('tutorial_progress');
+  //     if (savedProgress != null) {
+  //       setState(() {
+  //         tutorialProgress = json.decode(savedProgress);
+  //       });
+  //       bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+  //       setState(() {
+  //         _isTutorialShown = isTutorialShown;
+  //       });
+
+  //       _initTutorialTargets();
+
+  //       if (tutorialProgress != null &&
+  //           tutorialProgress!['tasks']?['view'] == false &&
+  //           !isTutorialShown &&
+  //           !_isTutorialInProgress &&
+  //           targets.isNotEmpty &&
+  //           mounted) {
+  //         //showTutorial();
+  //       }
+  //     }
+  //   }
+  // }
+
   void _updateDetails(TaskById? task) {
     if (task == null) {
       currentTask = null;
       details.clear();
+      _isAuthor = false; // Обновляем _isAuthor
       return;
     }
-    print(task.taskStatus!.taskStatus.name);
+
+    currentTask = task;
+    _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
 
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
@@ -385,43 +395,52 @@ Future<void> _fetchTutorialProgress() async {
       3: AppLocalizations.of(context)!.translate('urgent'),
     };
 
-    currentTask = task;
     details = [
-      {'label': AppLocalizations.of(context)!.translate('task_name'),
-        'value': task?.name ?? "" },
-      {'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+      {
+        'label': AppLocalizations.of(context)!.translate('task_name'),
+        'value': task.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
         'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
       },
-      {'label': AppLocalizations.of(context)!.translate('description_details'),
+      {
+        'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
-      {'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': task.user != null && task.user!.isNotEmpty ? task.user!
-                .map((user) => '${user.name} ${user.lastname ?? ''}')
-                .join(', ') : '',
+      {
+        'label': AppLocalizations.of(context)!.translate('assignee'),
+        'value': task.user != null && task.user!.isNotEmpty
+            ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+            : '',
       },
-      {'label': AppLocalizations.of(context)!.translate('project_details'),
+      {
+        'label': AppLocalizations.of(context)!.translate('project_details'),
         'value': task.project?.name ?? ''
       },
-      {  'label': AppLocalizations.of(context)!.translate('dead_line'),
+      {
+        'label': AppLocalizations.of(context)!.translate('dead_line'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
-      { 'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': task.taskStatus?.taskStatus.name ?? '',
+      {
+        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'value': task.taskStatus?.taskStatus?.name ?? '',
       },
-      { 'label': AppLocalizations.of(context)!.translate('author_details'),
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
         'value': task.author?.name ?? ''
       },
-      { 'label':
-            AppLocalizations.of(context)!.translate('creation_date_details'),
+      {
+        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt)
       },
-    if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
-      { 'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-        'value': task.deal!.name!
-      },
+      if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
+        {
+          'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+          'value': task.deal!.name!
+        },
       if (task.files != null && task.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
@@ -432,451 +451,179 @@ Future<void> _fetchTutorialProgress() async {
     for (var field in task.taskCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
+
+    if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
+      for (var dirValue in task.directoryValues!) {
+        details.add({
+          'label': '${dirValue.entry.directory.name}:',
+          'value': dirValue.entry.values['value'] ?? '',
+        });
+      }
+    }
   }
 
-@override
-Widget build(BuildContext context) {
-  return BlocListener<TaskByIdBloc, TaskByIdState>(
-    listener: (context, state) {
-      if (state is TaskByIdLoaded) {
-      } else if (state is TaskByIdError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${state.message}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
+  AppBar _buildAppBar(BuildContext context, String title) {
+    // Закомментирован код туториала
+    // if (!_isTutorialShown) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     //showTutorial();
+    //     setState(() {
+    //       _isTutorialShown = true;
+    //     });
+    //   });
+    // }
+    return AppBar(
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      centerTitle: false,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 40,
+              height: 40,
             ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
+            onPressed: () {
+              Navigator.pop(context, widget.statusId);
+            },
           ),
-        );
-      }
-    },
-    child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-      builder: (context, state) {
-        if (state is TaskByIdLoading) {
-          return Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-            ),
-          );
-        } else if (state is TaskByIdLoaded) {
-          if (state.task == null) {
-            return Scaffold(
-              body: Center(
-                child: Text(
-                  AppLocalizations.of(context)!.translate('task_data_unavailable'),
+        ),
+      ),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+      actions: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canCreateTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/copy.png',
+                  width: 24,
+                  height: 24,
                 ),
-              ),
-            );
-          }
-          TaskById task = state.task!;
-          _updateDetails(task);
-
-          return Scaffold(
-            appBar: _buildAppBar(
-              context, 
-              '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'
-            ),
-            backgroundColor: Colors.white,
-            body: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: ListView(
-                children: [
-                  _buildDetailsList(),
-                  Row(
-                    children: [
-                      Expanded(
-                        key: keyTaskNavigateChat,
-                        flex: task.isFinished == 1 ? 100 : 55,
-                        child: TaskNavigateToChat(
-                          chatId: task.chat!.id,
-                          taskName: widget.taskName,
-                          canSendMessage: task.chat!.canSendMessage,
+                onPressed: () async {
+                  if (currentTask != null) {
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskCopyScreen(
+                          task: currentTask!,
+                          statusId: currentTask!.taskStatus?.id ?? widget.statusId ?? 0,
                         ),
                       ),
-                      if (task.isFinished == 0) ...[
-                        SizedBox(
-                          width: 8,
-                          height: 60,
-                        ),
-                        Expanded(
-                         key: keyTaskForReview,
-                          flex: 45,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext dialogContext) => AlertDialog(
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                  title: Text(
-                                    AppLocalizations.of(context)!.translate('confirm_task_completion'),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  content: Container(
-                                    width: double.maxFinite,
-                                    child: Row(
-                                      mainAxisAlignment:MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: TextButton(
-                                            onPressed: () => Navigator.pop(dialogContext),
-                                            child: Text( AppLocalizations.of(context)!.translate('cancel'),
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Gilroy',
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            style: TextButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              minimumSize: Size(80, 48),
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: 16),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 16),
-                                        Expanded(
-                                          child: StatefulBuilder(
-                                            builder: (BuildContext context,
-                                                StateSetter setState) {
-                                              return TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () async {
-                                                        setState(() {
-                                                          _isLoading = true;
-                                                        });
-
-                                                        final taskId = int.parse(widget.taskId);
-                                                        try {
-                                                          final result =await context.read<ApiService>().finishTask(taskId);
-                                                          if (result['success'] == true) {
-                                                            Navigator.pop(dialogContext);
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                  result['message'] ?? '',
-                                                                  style: TextStyle(
-                                                                    fontFamily: 'Gilroy',
-                                                                    fontSize: 16,
-                                                                    fontWeight:FontWeight.w500,
-                                                                    color: Colors.white,
-                                                                  ),
-                                                                ),
-                                                                behavior: SnackBarBehavior.floating,
-                                                                margin: EdgeInsets.symmetric(
-                                                                  horizontal: 16,
-                                                                  vertical: 8,
-                                                                ),
-                                                                shape: RoundedRectangleBorder(
-                                                                  borderRadius: BorderRadius.circular(12),
-                                                                ),
-                                                                backgroundColor: Colors.green,
-                                                                elevation: 3,
-                                                                padding: EdgeInsets .symmetric(
-                                                                  vertical: 12,
-                                                                  horizontal: 16,
-                                                                ),
-                                                                duration: Duration(seconds: 2),
-                                                              ),
-                                                            );
-                                                            context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                                            widget.initialDate?.month ?? DateTime.now().month,
-                                                            widget.initialDate?.year ?? DateTime.now().year));
-                                                            context.read<TaskBloc>().add(FetchTaskStatuses());
-                                                          } else {
-                                                            Navigator.pop(dialogContext);
-                                                            ScaffoldMessenger.of(context) .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text( result['message'] ?? '',
-                                                                  style: TextStyle(
-                                                                    fontFamily: 'Gilroy',
-                                                                    fontSize: 16,
-                                                                    fontWeight:
-                                                                        FontWeight.w500,
-                                                                    color: Colors.white,
-                                                                  ),
-                                                                ),
-                                                                behavior: SnackBarBehavior .floating,
-                                                                margin: EdgeInsets.symmetric(
-                                                                  horizontal: 16,
-                                                                  vertical: 8,
-                                                                ),
-                                                                shape: RoundedRectangleBorder(
-                                                                  borderRadius: BorderRadius.circular(12),
-                                                                ),
-                                                                backgroundColor: Colors.red,
-                                                                elevation: 3,
-                                                                padding: EdgeInsets.symmetric(
-                                                                  vertical: 12,
-                                                                  horizontal: 16,
-                                                                ),
-                                                                duration:Duration(seconds: 2),
-                                                              ),
-                                                            );
-                                                          }
-                                                        } catch (e) {
-                                                          Navigator.pop(dialogContext);
-                                                          ScaffoldMessenger.of(context).showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                e.toString(),
-                                                                style: TextStyle(
-                                                                  fontFamily: 'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:FontWeight.w500,
-                                                                  color: Colors.white,
-                                                                ),
-                                                              ),
-                                                              backgroundColor: Colors.red,
-                                                            ),
-                                                          );
-                                                        } finally {
-                                                          setState(() {
-                                                            _isLoading = false;
-                                                          });
-                                                        }
-                                                      },
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
-                                                    : Text( AppLocalizations.of(context)!
-                                                            .translate('confirm'),
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontFamily: 'Gilroy',
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff1E2E52),
-                                                  minimumSize: Size(130, 48),
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(8),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  backgroundColor:
-                                      Color.fromARGB(255, 255, 255, 255),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: Color(0xFF1E2E52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('for_review'),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ActionHistoryWidgetTask(taskId: int.parse(widget.taskId), key: keyTaskHistory),
-                ],
-              ),
-            ),
-          );
-        } else if (state is TaskByIdError) {
-          return Scaffold(
-            body: Center(
-              child: Text(state.message),
-            ),
-          );
-        }
-        return Scaffold(
-          body: Center(
-            child: Text(''),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-  AppBar _buildAppBar(BuildContext context, String title) {
-       if (!_isTutorialShown) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showTutorial();
-              setState(() {
-                _isTutorialShown = true; 
-              });
-            });
-          }
-  return AppBar(
-    backgroundColor: Colors.white,
-    forceMaterialTransparency: true, 
-    elevation: 0,
-    centerTitle: false,
-    leadingWidth: 40,
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 0),
-      child: Transform.translate(
-        offset: const Offset(0, -2), 
-        child: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 40,
-            height: 40,
-          ),
-          onPressed: () {
-            Navigator.pop(context, widget.statusId);
-          },
-        ),
-      ),
-    ),
-    title: Transform.translate(
-      offset: const Offset(-10, 0), 
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
-    ),
-    actions: [
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-        if (_canEditTask)
-          IconButton(
-            key: keyTaskEdit,
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-                    final createdAtString = currentTask?.createdAt != null &&
-                          currentTask!.createdAt!.isNotEmpty
-                        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(currentTask!.createdAt!))
-                        : null;
-
-                    if (currentTask != null) {
-                      final shouldUpdate = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TaskEditScreen(
-                            taskId: currentTask!.id,
-                            taskName: currentTask!.name,
-                            priority: currentTask!.priority,
-                            taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
-                            project: currentTask!.project?.id.toString(),
-                            user: currentTask!.user != null && currentTask!.user!.isNotEmpty
-                                ? currentTask!.user!.map((user) => user.id) .toList()
-                                : null,
-                            statusId: currentTask!.taskStatus?.id ?? 0,
-                            // statusId: widget.statusId ?? 0,
-                            description: currentTask!.description,
-                            startDate: currentTask!.startDate,
-                            endDate: currentTask!.endDate,
-                            createdAt: createdAtString,
-                            taskCustomFields: currentTask!.taskCustomFields,
-                            // file: currentTask!.taskFile,
-                            files: currentTask!.files,
-                          ),
-                        ),
-                      );
-
-                      if (shouldUpdate == true) {
-                        context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                        context.read<TaskBloc>().add(FetchTaskStatuses());
-                          context.read<CalendarBloc>().add(FetchCalendarEvents(
-                         widget.initialDate?.month ?? DateTime.now().month,
-                         widget.initialDate?.year ?? DateTime.now().year));
-                      }
-                    }
-                  },
-                ),
-              if (_canDeleteTask)
-                IconButton(
-                  key: keyTaskDelete,
-                  padding: EdgeInsets.only(right: 8),
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
                     );
-                  },
+                    if (shouldUpdate == true) {
+                      context
+                          .read<TaskByIdBloc>()
+                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<CalendarBloc>().add(FetchCalendarEvents(
+                          widget.initialDate?.month ?? DateTime.now().month,
+                          widget.initialDate?.year ?? DateTime.now().year));
+                    }
+                  }
+                },
+              ),
+            if (_canEditTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+              IconButton(
+                key: keyTaskEdit,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
                 ),
-            ],
-          ),
+                onPressed: () async {
+                  final createdAtString = currentTask?.createdAt != null &&
+                          currentTask!.createdAt!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                          .format(DateTime.parse(currentTask!.createdAt!))
+                      : null;
+
+                  if (currentTask != null) {
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskEditScreen(
+                          taskId: currentTask!.id,
+                          taskName: currentTask!.name,
+                          priority: currentTask!.priority,
+                          taskStatus:
+                              currentTask!.taskStatus?.taskStatus.toString() ??
+                                  '',
+                          project: currentTask!.project?.id.toString(),
+                          user: currentTask!.user != null &&
+                                  currentTask!.user!.isNotEmpty
+                              ? currentTask!.user!
+                                  .map((user) => user.id)
+                                  .toList()
+                              : null,
+                          statusId: currentTask!.taskStatus?.id ?? 0,
+                          description: currentTask!.description,
+                          startDate: currentTask!.startDate,
+                          endDate: currentTask!.endDate,
+                          createdAt: createdAtString,
+                          taskCustomFields: currentTask!.taskCustomFields,
+                          files: currentTask!.files,
+                          directoryValues: currentTask!.directoryValues,
+                        ),
+                      ),
+                    );
+                    if (shouldUpdate == true) {
+                      context
+                          .read<TaskByIdBloc>()
+                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<CalendarBloc>().add(FetchCalendarEvents(
+                          widget.initialDate?.month ?? DateTime.now().month,
+                          widget.initialDate?.year ?? DateTime.now().year));
+                    }
+                  }
+                },
+              ),
+            if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+              IconButton(
+                key: keyTaskDelete,
+                padding: EdgeInsets.only(right: 8),
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        DeleteTaskDialog(taskId: currentTask!.id),
+                  );
+                },
+              ),
+          ],
+        ),
       ],
     );
   }
 
-  // Построение списка деталей задачи
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -895,14 +642,11 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    // Специальная обработка для названия и описания
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
-        label ==
-            AppLocalizations.of(context)!.translate('description_details') ||
-        label ==
-            AppLocalizations.of(context)!.translate('project_details') ||
-        label ==
-            AppLocalizations.of(context)!.translate('status_details')) {
+        label == AppLocalizations.of(context)!.translate('description_details') ||
+        label == AppLocalizations.of(context)!.translate('project_details') ||
+        label == AppLocalizations.of(context)!.translate('author_details') ||
+        label == AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -976,7 +720,7 @@ Widget build(BuildContext context) {
           _buildLabel(label),
           SizedBox(height: 8),
           Container(
-            height: 120, // Высота контейнера для файлов
+            height: 120,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: currentTask?.files?.length ?? 0,
@@ -989,7 +733,15 @@ Widget build(BuildContext context) {
                   child: GestureDetector(
                     onTap: () {
                       if (!_isDownloading) {
-                        _showFile(file.path, file.id);
+                        FileUtils.showFile(
+                          context: context,
+                          fileUrl: file.path,
+                          fileId: file.id,
+                          setState: setState,
+                          downloadProgress: _downloadProgress,
+                          isDownloading: _isDownloading,
+                          apiService: _apiService,
+                        );
                       }
                     },
                     child: Container(
@@ -999,20 +751,18 @@ Widget build(BuildContext context) {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Иконка файла
                               Image.asset(
                                 'assets/icons/files/$fileExtension.png',
                                 width: 60,
                                 height: 60,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Image.asset(
-                                    'assets/icons/files/file.png', // Дефолтная иконка
+                                    'assets/icons/files/file.png',
                                     width: 60,
                                     height: 60,
                                   );
                                 },
                               ),
-                              // Индикатор загрузки
                               if (_downloadProgress.containsKey(file.id))
                                 CircularProgressIndicator(
                                   value: _downloadProgress[file.id],
@@ -1048,8 +798,7 @@ Widget build(BuildContext context) {
       );
     }
 
-    if (label ==
-        AppLocalizations.of(context)!.translate('priority_level_colon')) {
+    if (label == AppLocalizations.of(context)!.translate('priority_level_colon')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1082,7 +831,7 @@ Widget build(BuildContext context) {
         ],
       );
     }
- if (label == AppLocalizations.of(context)!.translate('task_by_deal')) {
+    if (label == AppLocalizations.of(context)!.translate('task_by_deal')) {
       return GestureDetector(
         onTap: () {
           if (currentTask?.deal?.id != null) {
@@ -1092,7 +841,9 @@ Widget build(BuildContext context) {
                   dealId: currentTask!.deal!.id.toString(),
                   dealName: value,
                   dealStatus: "",
-                  statusId: 0, sum: '', dealCustomFields: [],
+                  statusId: 0,
+                  sum: '',
+                  dealCustomFields: [],
                 ),
               ),
             );
@@ -1111,8 +862,8 @@ Widget build(BuildContext context) {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty && currentTask?.deal?.id != null 
-                      ? TextDecoration.underline 
+                  decoration: value.isNotEmpty && currentTask?.deal?.id != null
+                      ? TextDecoration.underline
                       : null,
                 ),
                 maxLines: 1,
@@ -1137,27 +888,24 @@ Widget build(BuildContext context) {
 
   Color _getPriorityBackgroundColor(String priority) {
     final priorityColors = {
-
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), 
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), 
-      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE), 
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9),
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9),
+      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE),
     };
     return priorityColors[priority] ?? Color(0xFFE8F5E9);
   }
 
   Color _getPriorityBorderColor(String priority) {
     final priorityBorderColors = {
-      AppLocalizations.of(context)!.translate('normal'): Colors.green, 
-      AppLocalizations.of(context)!.translate('normal'): Colors.green, 
-      AppLocalizations.of(context)!.translate('urgent'): Colors.red, 
-
+      AppLocalizations.of(context)!.translate('normal'): Colors.green,
+      AppLocalizations.of(context)!.translate('normal'): Colors.green,
+      AppLocalizations.of(context)!.translate('urgent'): Colors.red,
     };
     return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
   }
 
   Color _getPriorityColor(String priority) {
     final priorityColors = {
-
       AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
       AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
       AppLocalizations.of(context)!.translate('urgent'): Color(0xFFC62828),
@@ -1165,95 +913,9 @@ Widget build(BuildContext context) {
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
-  Future<void> _showFile(String fileUrl, int fileId) async {
-    try {
-      if (_isDownloading) return;
-      final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
-      if (cachedFilePath != null) {
-        final result = await OpenFile.open(cachedFilePath);
-        if (result.type == ResultType.error) {
-          _showErrorSnackBar(
-              AppLocalizations.of(context)!.translate('failed_to_open_file'));
-        }
-        return;
-      }
-
-      setState(() {
-        _isDownloading = true;
-        _downloadProgress[fileId] = 0;
-      });
-
-      final enteredDomainMap = await ApiService().getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      final fullUrl = Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
-
-      final appDir = await getApplicationDocumentsDirectory();
-      final cacheDir = Directory('${appDir.path}/cached_files');
-      if (!await cacheDir.exists()) {
-        await cacheDir.create(recursive: true);
-      }
-
-      final fileName = '${fileId}_${fileUrl.split('/').last}';
-      final filePath = '${cacheDir.path}/$fileName';
-
-      final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath,
-          onReceiveProgress: (received, total) {
-        if (total != -1) {
-          setState(() {
-            _downloadProgress[fileId] = received / total;
-          });
-        }
-      });
-
-      await FileCacheManager().cacheFile(fileId, filePath);
-
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      final result = await OpenFile.open(filePath);
-      if (result.type == ResultType.error) {
-        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
-      }
-    } catch (e) {
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
-    }
-  }
-
-// Функция для показа ошибки
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
-
   void _showUsersDialog(String users) {
-    List<String> userList = users.split(',').map((user) => user.trim()).toList();
+    List<String> userList =
+        users.split(',').map((user) => user.trim()).toList();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1276,13 +938,13 @@ Widget build(BuildContext context) {
               SizedBox(
                 height: 400,
                 child: ListView.builder(
-                  itemExtent: 40, // Уменьшаем высоту элемента
+                  itemExtent: 40,
                   itemCount: userList.length,
                   itemBuilder: (context, index) {
                     return ListTile(
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 2), // Минимальный вертикальный отступ
+                          vertical: 2),
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
@@ -1312,7 +974,6 @@ Widget build(BuildContext context) {
     );
   }
 
-  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -1325,7 +986,6 @@ Widget build(BuildContext context) {
     );
   }
 
-  // Построение значения
   Widget _buildValue(String value) {
     return Text(
       value,
@@ -1339,19 +999,6 @@ Widget build(BuildContext context) {
     );
   }
 
-
-  
-  // Функция для форматирования даты
-  // String formatDate(String? dateString) {
-  //   if (dateString == null || dateString.isEmpty) return '';
-  //   try {
-  //     final parsedDate = DateTime.parse(dateString);
-  //     return DateFormat('dd.MM.yyyy').format(parsedDate);
-  //   } catch (e) {
-  //     return 'Неверный формат';
-  //   }
-  // }
-  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -1362,7 +1009,6 @@ Widget build(BuildContext context) {
     }
   }
 
-  // Функция для показа диалогового окна с полным текстом
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
@@ -1393,8 +1039,7 @@ Widget build(BuildContext context) {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    textAlign: TextAlign.justify, // Выровнять текст по ширине
-
+                    textAlign: TextAlign.justify,
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -1420,4 +1065,284 @@ Widget build(BuildContext context) {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<TaskByIdBloc, TaskByIdState>(
+      listener: (context, state) {
+        if (state is TaskByIdError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+        builder: (context, state) {
+          // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
+          if (state is TaskByIdLoaded && state.task != null) {
+            // Обновляем данные без setState
+            currentTask = state.task;
+            _isAuthor = _currentUserId != null && state.task!.author?.id != null && _currentUserId == state.task!.author!.id;
+
+            final Map<int, String> priorityLevels = {
+              1: AppLocalizations.of(context)!.translate('normal'),
+              2: AppLocalizations.of(context)!.translate('normal'),
+              3: AppLocalizations.of(context)!.translate('urgent'),
+            };
+
+            details = [
+              {
+                'label': AppLocalizations.of(context)!.translate('task_name'),
+                'value': state.task!.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+                'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('description_details'),
+                'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('assignee'),
+                'value': state.task!.user != null && state.task!.user!.isNotEmpty
+                    ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+                    : '',
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('project_details'),
+                'value': state.task!.project?.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('dead_line'),
+                'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
+                    ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
+                    : ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('status_details'),
+                'value': state.task!.taskStatus?.taskStatus?.name ?? '',
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('author_details'),
+                'value': state.task!.author?.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+                'value': formatDate(state.task!.createdAt)
+              },
+              if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
+                {
+                  'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+                  'value': state.task!.deal!.name!
+                },
+              if (state.task!.files != null && state.task!.files!.isNotEmpty)
+                {
+                  'label': AppLocalizations.of(context)!.translate('files_details'),
+                  'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+                },
+            ];
+
+            for (var field in state.task!.taskCustomFields) {
+              details.add({'label': '${field.key}:', 'value': field.value});
+            }
+
+            if (state.task!.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
+              for (var dirValue in state.task!.directoryValues!) {
+                details.add({
+                  'label': '${dirValue.entry.directory.name}:',
+                  'value': dirValue.entry.values['value'] ?? '',
+                });
+              }
+            }
+          } else {
+            currentTask = null;
+            details.clear();
+            _isAuthor = false;
+          }
+
+          if (state is TaskByIdLoading) {
+            return Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              ),
+            );
+          } else if (state is TaskByIdLoaded) {
+            if (state.task == null) {
+              return Scaffold(
+                body: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('task_data_unavailable'),
+                  ),
+                ),
+              );
+            }
+            TaskById task = state.task!;
+
+            return Scaffold(
+              appBar: _buildAppBar(context, '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
+              backgroundColor: Colors.white,
+              body: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: ListView(
+                  children: [
+                    _buildDetailsList(),
+                    Row(
+                      children: [
+                        Expanded(
+                          key: keyTaskNavigateChat,
+                          flex: task.isFinished == 1 ? 100 : 55,
+                          child: TaskNavigateToChat(
+                            chatId: task.chat!.id,
+                            taskName: widget.taskName,
+                            canSendMessage: task.chat!.canSendMessage,
+                          ),
+                        ),
+                        if (task.isFinished == 0) ...[
+                          SizedBox(width: 8, height: 60),
+                          Expanded(
+                            key: keyTaskForReview,
+                            flex: 45,
+                            child: ElevatedButton(
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  title: Text(
+                                    AppLocalizations.of(context)!.translate('confirm_task_completion'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
+                                  ),
+                                  content: Container(
+                                    width: double.maxFinite,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: TextButton(
+                                            onPressed: () => Navigator.pop(dialogContext),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              minimumSize: Size(80, 48),
+                                              padding: EdgeInsets.symmetric(horizontal: 16),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                            child: Text(
+                                              AppLocalizations.of(context)!.translate('cancel'),
+                                              style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 16),
+                                        Expanded(
+                                          child: StatefulBuilder(
+                                            builder: (context, setState) => TextButton(
+                                              onPressed: _isLoading ? null : () async {
+                                                setState(() => _isLoading = true);
+                                                final taskId = int.parse(widget.taskId);
+                                                try {
+                                                  final result = await context.read<ApiService>().finishTask(taskId);
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                                                      elevation: 3,
+                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      duration: Duration(seconds: 2),
+                                                    ),
+                                                  );
+                                                  if (result['success'] == true) {
+                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
+                                                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                                                  }
+                                                } catch (e) {
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
+                                                  );
+                                                } finally {
+                                                  setState(() => _isLoading = false);
+                                                }
+                                              },
+                                              style: TextButton.styleFrom(
+                                                backgroundColor: Color(0xff1E2E52),
+                                                minimumSize: Size(130, 48),
+                                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: _isLoading
+                                                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                                  : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Color(0xFF1E2E52),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: Text(
+                                AppLocalizations.of(context)!.translate('for_review'),
+                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ActionHistoryWidgetTask(
+                        taskId: int.parse(widget.taskId), key: keyTaskHistory),
+                  ],
+                ),
+              ),
+            );
+          } else if (state is TaskByIdError) {
+            return Scaffold(
+              body: Center(
+                child: Text(state.message),
+              ),
+            );
+          }
+          return Scaffold(
+            body: Center(
+              child: Text(''),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

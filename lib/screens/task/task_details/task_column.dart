@@ -230,14 +230,26 @@ class _TaskColumnState extends State<TaskColumn> {
   }
 
 
+Future<void> _checkPermission() async {
+  try {
+    // Параллельно проверяем оба разрешения
+    final results = await Future.wait([
+      _apiService.hasPermission('task.create'),
+      _apiService.hasPermission('task.createForMySelf'),
+    ]);
 
-  Future<void> _checkPermission() async {
-    bool hasPermission = await _apiService.hasPermission('task.create');
+    // Устанавливаем _hasPermissionToAddTask в true, если есть хотя бы одно разрешение
     setState(() {
-      _hasPermissionToAddTask = hasPermission;
+      _hasPermissionToAddTask = results[0] || results[1];
+    });
+  } catch (e) {
+    // Обработка ошибок при запросе к API
+    print('Ошибка при проверке разрешений: $e');
+    setState(() {
+      _hasPermissionToAddTask = false; // В случае ошибки отключаем кнопку
     });
   }
-
+}
   Future<void> _onRefresh() async {
     // При обновлении заново загружаем задачи и статусы
     BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());

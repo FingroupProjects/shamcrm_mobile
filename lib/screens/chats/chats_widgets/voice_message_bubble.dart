@@ -19,13 +19,17 @@ class VoiceMessageWidget extends StatefulWidget {
 }
 
 class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
-  with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin {
   late VoiceController _audioController;
+
   @override
   void initState() {
     super.initState();
+    // Формируем источник аудио в зависимости от filePath
+    final String audioSource = _getAudioSource();
+
     _audioController = VoiceController(
-      audioSrc: '${widget.baseUrl.replaceAll('/api', '')}/storage/${widget.message.filePath}',
+      audioSrc: audioSource,
       onComplete: () {
         // Действия при завершении воспроизведения
       },
@@ -36,15 +40,26 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
         // Действия при воспроизведении
       },
       onError: (err) {
-        // Действия при ошибке
+        // Обработка ошибок воспроизведения
+        debugPrint('Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
       },
       maxDuration: widget.message.duration.inSeconds > 0
           ? widget.message.duration
           : const Duration(seconds: 5),
-      isFile: false,
+      isFile: false, // Ссылка, а не локальный файл
     );
   }
-  
+
+  // Метод для определения источника аудио
+  String _getAudioSource() {
+    final filePath = widget.message.filePath ?? '';
+    // Если filePath начинается с https://, используем его как есть
+    if (filePath.startsWith('https://')) {
+      return filePath;
+    }
+    // Иначе формируем путь через baseUrl
+    return '${widget.baseUrl.replaceAll('/api', '')}/storage/$filePath';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +104,8 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(time(widget.message.createMessateTime),
+              Text(
+                time(widget.message.createMessateTime),
                 style: const TextStyle(
                   fontSize: 12,
                   color: ChatSmsStyles.appBarTitleColor,
@@ -115,10 +131,10 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
 
   @override
   void dispose() {
-    _audioController.dispose(); 
+    _audioController.dispose();
     super.dispose();
   }
 
   @override
-  bool get wantKeepAlive => true; 
+  bool get wantKeepAlive => true;
 }

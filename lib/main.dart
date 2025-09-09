@@ -8,9 +8,12 @@ import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
+import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
@@ -23,6 +26,7 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/use
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
+import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
@@ -30,6 +34,7 @@ import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_status_for_filter/lead_status_for_filter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
@@ -61,17 +66,23 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
+import 'package:crm_task_manager/bloc/pricce_type/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -89,6 +100,9 @@ import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/phone_verification_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -103,7 +117,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final apiService = ApiService();
+  final apiService = ApiService(); 
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
@@ -122,7 +136,7 @@ void main() async {
   await getFCMTokens(apiService);
 
   FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
+  await firebaseApi.initNotifications(); 
   RemoteMessage? initialMessage = firebaseApi.getInitialMessage();
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -213,7 +227,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllLeadMultiBloc()),
         BlocProvider(create: (context) => DealBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskBloc(widget.apiService)),
-        BlocProvider(create: (context) => MyTaskBloc(widget.apiService)),
+        BlocProvider(create: (context) => MyTaskBloc(widget.apiService)), 
         BlocProvider(create: (context) => GetTaskProjectBloc()),
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
@@ -221,15 +235,15 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
-        BlocProvider( create: (context) => TaskStatusNameBloc(widget.apiService)),
-        BlocProvider( create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
-        BlocProvider( create: (context) =>    GetAllClientBloc(apiService: widget.apiService)),
-        BlocProvider( create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
@@ -241,28 +255,28 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider( create: (context) => ChatsBloc(ApiService()), ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()), ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider( create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider( create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider( create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider( create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
-        BlocProvider( create: (context) => ProcessSpeedBlocManager(ApiService())),
+        BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
         BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider( create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
-        BlocProvider( create: (context) => LeadToCBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
@@ -282,6 +296,18 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
+        BlocProvider(create: (context) => GetDirectoryBloc()),
+        BlocProvider(create: (context) => OrderByLeadBloc(widget.apiService)),
+        BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
+        BlocProvider(create: (context) => LabelBloc(widget.apiService)),
+        BlocProvider(create: (context) => VariantBloc(widget.apiService)),
+        BlocProvider(create: (context) => CallCenterBloc(ApiService()),),
+        BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
+        BlocProvider(create: (context) => OperatorBloc(ApiService())),
+        BlocProvider(create: (context) => TemplateBloc(ApiService())),
+        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
+        BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
+        
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
@@ -332,8 +358,16 @@ class _MyAppState extends State<MyApp> {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/pin_screen': (context) => PinScreen(),
+          // '/phone_verification': (context) => PhoneVerificationScreen(),
+          // '/phone_call': (context) => PhoneCallScreen(),
+          '/profile': (context) => ProfileScreen(),
+
         },
       ),
     );
   }
 }
+
+/*
+
+*/

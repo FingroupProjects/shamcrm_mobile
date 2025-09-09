@@ -1,16 +1,17 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -20,17 +21,25 @@ import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdo
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderAddScreen extends StatefulWidget {
   final Order? order;
   final int? organizationId;
+  final int? leadId;
 
-  const OrderAddScreen({this.order, super.key, this.organizationId});
+  const OrderAddScreen({this.order, this.organizationId, this.leadId, super.key});
 
   @override
   State<OrderAddScreen> createState() => _OrderAddScreenState();
@@ -51,10 +60,19 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   List<Branch> branches = [];
   String? selectedDialCode;
   String? baseUrl;
+  String? selectedManager;
+  bool isManagerInvalid = false;
+    final ApiService _apiService = ApiService();
+
+  bool isManagerManuallySelected = false;
+  int? currencyId; // Поле для хранения currency_id
 
   @override
   void initState() {
     super.initState();
+    if (widget.leadId != null) {
+      selectedLead = widget.leadId.toString();
+    }
     _phoneController = TextEditingController(text: widget.order?.phone ?? '');
     _deliveryAddressController =
         TextEditingController(text: widget.order?.deliveryAddress ?? '');
@@ -89,8 +107,102 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeBaseUrl();
       _loadStatuses();
+      _loadCurrencyId(); // Загружаем currencyId
       context.read<BranchBloc>().add(FetchBranches());
     });
+  }
+
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('OrderAddScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderAddScreen: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('OrderAddScreen: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderAddScreen: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null) price = 0;
+    String symbol = 'UZS'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('OrderAddScreen: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = 'UZS';
+        if (kDebugMode) {
+          print('OrderAddScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('OrderAddScreen: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
   }
 
   Future<void> _loadStatuses() async {
@@ -115,25 +227,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
   }
 
-  Future<void> _initializeBaseUrl() async {
-    final apiService = ApiService();
-    try {
-      final enteredDomainMap = await apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        });
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://shamcrm.com/storage/';
-        });
-      }
-    }
+Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   @override
   void dispose() {
@@ -233,12 +338,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
         BlocProvider(
-            create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) => BranchBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
+            create: (context) =>
+                DeliveryAddressBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -282,19 +386,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   selectedLead = state.orderDetails!.lead.id.toString();
                   _deliveryMethod = state.orderDetails!.delivery
                       ? AppLocalizations.of(context)!.translate('delivery')
-                      : AppLocalizations.of(context)!
-                          .translate('self_delivery');
-                  _selectedDeliveryAddress = state.orderDetails!.deliveryAddress !=
-                          null
-                      ? DeliveryAddress(
-                          id: state.orderDetails!.deliveryAddressId ?? 0,
-                          address: state.orderDetails!.deliveryAddress ?? '',
-                          leadId: state.orderDetails!.lead.id,
-                          isActive: 0,
-                          createdAt: '',
-                          updatedAt: '',
-                        )
-                      : null;
+                      : AppLocalizations.of(context)!.translate('self_delivery');
+                  _selectedDeliveryAddress =
+                      state.orderDetails!.deliveryAddress != null
+                          ? DeliveryAddress(
+                              id: state.orderDetails!.deliveryAddressId ?? 0,
+                              address: state.orderDetails!.deliveryAddress ?? '',
+                              leadId: state.orderDetails!.lead.id,
+                              isActive: 0,
+                              createdAt: '',
+                              updatedAt: '',
+                            )
+                          : null;
                 });
               });
             }
@@ -310,31 +413,53 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       key: const Key('order_add_scroll_view'),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          LeadRadioGroupWidget(
-                            key: const Key('lead_radio_group'),
-                            selectedLead: selectedLead,
-                            onSelectLead: (LeadData lead) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  setState(() {
-                                    selectedLead = lead.id.toString();
-                                    _selectedDeliveryAddress = null;
-                                  });
-                                  context
-                                      .read<DeliveryAddressBloc>()
-                                      .add(FetchDeliveryAddresses(
-                                        leadId: lead.id,
-                                        // organizationId:
-                                        //     widget.organizationId ?? 1,
-                                      ));
+                          const SizedBox(height: 8),
+                          if (widget.leadId == null)
+                            LeadWithManager(
+                              selectedLead: selectedLead,
+                              onSelectLead: (LeadData selectedLeadData) {
+                                if (selectedLead == selectedLeadData.id.toString()) {
+                                  return;
                                 }
+                                setState(() {
+                                  selectedLead = selectedLeadData.id.toString();
+                                  if (!isManagerManuallySelected &&
+                                      selectedLeadData.managerId != null) {
+                                    final managerBlocState =
+                                        context.read<GetAllManagerBloc>().state;
+                                    if (managerBlocState is GetAllManagerSuccess) {
+                                      final managers =
+                                          managerBlocState.dataManager.result ?? [];
+                                      try {
+                                        final matchingManager = managers.firstWhere(
+                                          (manager) =>
+                                              manager.id == selectedLeadData.managerId,
+                                        );
+                                        selectedManager = matchingManager.id.toString();
+                                      } catch (e) {
+                                        selectedManager = null;
+                                      }
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                          if (widget.leadId == null) const SizedBox(height: 8),
+                          ManagerForLead(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false;
+                                isManagerManuallySelected = true;
                               });
                             },
+                            hasError: isManagerInvalid,
                           ),
                           const SizedBox(height: 16),
                           CustomPhoneNumberInput(
@@ -355,8 +480,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               }
                               return null;
                             },
-                            label: AppLocalizations.of(context)!
-                                .translate('phone'),
+                            label: AppLocalizations.of(context)!.translate('phone'),
                           ),
                           const SizedBox(height: 16),
                           _buildItemsSection(),
@@ -379,8 +503,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           ),
                           const SizedBox(height: 8),
                           if (_deliveryMethod ==
-                              AppLocalizations.of(context)!
-                                  .translate('self_delivery'))
+                              AppLocalizations.of(context)!.translate('self_delivery'))
                             BranchRadioGroupWidget(
                               selectedStatus: _selectedBranch?.toString(),
                               onSelectStatus: (Branch selectedStatusData) {
@@ -390,8 +513,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               },
                             ),
                           if (_deliveryMethod ==
-                              AppLocalizations.of(context)!
-                                  .translate('delivery'))
+                              AppLocalizations.of(context)!.translate('delivery'))
                             DeliveryAddressDropdown(
                               leadId: int.parse(selectedLead ?? '0'),
                               organizationId: widget.organizationId ?? 1,
@@ -519,7 +641,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52))),
                 Text(
-                    '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
+                    _formatPrice(total),
                     style: const TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
@@ -568,8 +690,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         return const Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff4759FF)),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
                           ),
                         );
                       },
@@ -592,13 +714,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         color: Color(0xff1E2E52)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
-                // const SizedBox(height: 4),
-                // Text(item['id'].toString(),
-                //     style: const TextStyle(
-                //         fontSize: 12,
-                //         fontFamily: 'Gilroy',
-                //         fontWeight: FontWeight.w500,
-                //         color: Color(0xff99A4BA))),
               ],
             ),
           ),
@@ -618,7 +733,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
                               color: Color(0xff99A4BA))),
-                      Text('${item['price'].toStringAsFixed(3)}',
+                      Text(_formatPrice(item['price']),
                           style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
@@ -637,7 +752,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               fontWeight: FontWeight.w500,
                               color: Color(0xff99A4BA))),
                       Text(
-                          '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                          _formatPrice(item['price'] * (item['quantity'] ?? 1)),
                           style: const TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
@@ -691,130 +806,135 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, -1))
-        ]),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffF4F7FD),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [
+        BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, -1))
+      ]),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffF4F7FD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('cancel'),
-                  style: const TextStyle(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('cancel'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                  if (selectedManager == null) {
+                    setState(() {
+                      isManagerInvalid = true;
+                    });
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_manager'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
+                  if (_deliveryMethod ==
+                          AppLocalizations.of(context)!
+                              .translate('self_delivery') &&
+                      _selectedBranch == null) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_branch'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
+                  if (_deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('delivery') &&
+                      _selectedDeliveryAddress == null) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_delivery_address'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
+
+                  final orderBloc = context.read<OrderBloc>();
+                  final isPickup = _deliveryMethod ==
+                      AppLocalizations.of(context)!.translate('self_delivery');
+
+                  orderBloc.add(CreateOrder(
+                    phone: selectedDialCode!,
+                    leadId: widget.leadId ?? int.parse(selectedLead ?? '0'),
+                    delivery: !isPickup,
+                    deliveryAddress:
+                        isPickup ? null : _selectedDeliveryAddress?.address,
+                    deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
+                    goods: _items
+                        .map((item) => {
+                              'variant_id': item['id'].toString(),
+                              'quantity': item['quantity'] ?? 1,
+                              'price': item['price'].toString(),
+                            })
+                        .toList(),
+                    organizationId: widget.organizationId ?? 1,
+                    statusId: selectedStatusId ?? 1,
+                    branchId: isPickup ? _selectedBranch?.id : null,
+                    commentToCourier: _commentController.text.isNotEmpty
+                        ? _commentController.text
+                        : null,
+                    managerId: selectedManager != null
+                        ? int.parse(selectedManager!)
+                        : null,
+                  ));
+
+                  await Future.delayed(const Duration(milliseconds: 500));
+
+                  if (orderBloc.state is OrderSuccess && mounted) {
+                    final successState = orderBloc.state as OrderSuccess;
+                    Navigator.pop(context, {
+                      'statusId': successState.statusId,
+                      'success': true,
+                    });
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12)),
+              child: Text(
+                AppLocalizations.of(context)!.translate('create'),
+                style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
+                    color: Colors.white),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                    if (_deliveryMethod ==
-                            AppLocalizations.of(context)!
-                                .translate('self_delivery') &&
-                        _selectedBranch == null) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate('please_select_branch'),
-                        isSuccess: false,
-                      );
-                      return;
-                    }
-                    if (_deliveryMethod ==
-                            AppLocalizations.of(context)!
-                                .translate('delivery') &&
-                        _selectedDeliveryAddress == null) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate('please_select_delivery_address'),
-                        isSuccess: false,
-                      );
-                      return;
-                    }
-
-                    final orderBloc = context.read<OrderBloc>();
-                    final isPickup = _deliveryMethod ==
-                        AppLocalizations.of(context)!.translate('self_delivery');
-
-                    orderBloc.add(CreateOrder(
-                      phone: selectedDialCode ?? _phoneController.text,
-                      leadId: int.parse(selectedLead ?? '0'),
-                      delivery: !isPickup,
-                      deliveryAddress: isPickup
-                          ? null
-                          : _selectedDeliveryAddress?.address,
-                      deliveryAddressId:
-                          isPickup ? null : _selectedDeliveryAddress?.id,
-                      goods: _items
-                          .map((item) => {
-                                'variant_id': item['id'].toString(),
-                                'quantity': item['quantity'] ?? 1,
-                                'price': item['price'].toString(),
-                              })
-                          .toList(),
-                      organizationId: widget.organizationId ?? 1,
-                      statusId: selectedStatusId ?? 1,
-                      branchId: isPickup ? _selectedBranch?.id : null,
-                      commentToCourier: _commentController.text.isNotEmpty
-                          ? _commentController.text
-                          : null,
-                    ));
-
-                    await Future.delayed(const Duration(milliseconds: 500));
-
-                    if (orderBloc.state is OrderSuccess && mounted) {
-                      final successState = orderBloc.state as OrderSuccess;
-                      Navigator.pop(context, {
-                        'statusId': successState.statusId,
-                        'success': true,
-                      });
-                    }
-                  } else if (mounted) {
-                    showCustomSnackBar(
-                      context: context,
-                      message: _items.isEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('add_at_least_one_product')
-                          : AppLocalizations.of(context)!
-                              .translate('fill_all_required_fields'),
-                      isSuccess: false,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12)),
-                child: Text(AppLocalizations.of(context)!.translate('create'),
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white)),
-              ),
-            ),
-          ],
-        ));
+          ),
+        ],
+      ),
+    );
   }
 }

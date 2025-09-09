@@ -10,17 +10,45 @@ class GoodsLoading extends GoodsState {}
 class GoodsDataLoaded extends GoodsState {
   final List<Goods> goods;
   final Pagination pagination;
-  final int currentPage;
   final List<SubCategoryAttributesData> subCategories;
+  final List<SubCategoryAttributesData> selectedSubCategories;
+  final List<String> selectedLabels;
+  final int currentPage;
 
-  GoodsDataLoaded(this.goods, this.pagination, this.subCategories, {this.currentPage = 1});
+  GoodsDataLoaded(
+    this.goods,
+    this.pagination,
+    this.subCategories, {
+    this.selectedSubCategories = const [],
+    this.selectedLabels = const [],
+    this.currentPage = 1,
+  });
 
-  GoodsDataLoaded merge(List<Goods> newGoods, Pagination newPagination, List<SubCategoryAttributesData> newSubCategories) {
+  GoodsDataLoaded merge(
+    List<Goods> newGoods,
+    Pagination newPagination,
+    List<SubCategoryAttributesData> newSubCategories,
+    List<SubCategoryAttributesData> newSelectedSubCategories,
+    List<String> newSelectedLabels,
+  ) {
+    // Фильтруем только уникальные товары по id
+    final uniqueGoods = [...goods, ...newGoods].fold<List<Goods>>(
+      [],
+      (uniqueList, item) {
+        if (!uniqueList.any((existing) => existing.id == item.id)) {
+          uniqueList.add(item);
+        }
+        return uniqueList;
+      },
+    );
+
     return GoodsDataLoaded(
-      [...goods, ...newGoods],
+      uniqueGoods,
       newPagination,
       newSubCategories,
-      currentPage: currentPage + 1,
+      selectedSubCategories: newSelectedSubCategories,
+      selectedLabels: newSelectedLabels,
+      currentPage: newPagination.currentPage,
     );
   }
 }
@@ -64,4 +92,16 @@ class Pagination {
       totalPages: json['total_pages'] ?? 1,
     );
   }
+}
+
+// В goods_state.dart
+class GoodsBarcodeSearchResult extends GoodsState {
+  final List<Goods> goods;
+  final String? error;
+
+  GoodsBarcodeSearchResult({required this.goods, this.error});
+
+  bool get isSingle => goods.length == 1;
+  bool get isMultiple => goods.length > 1;
+  bool get isEmpty => goods.isEmpty;
 }

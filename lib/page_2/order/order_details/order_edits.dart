@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -12,6 +12,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -20,10 +21,14 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dro
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderEditScreen extends StatefulWidget {
   final Order order;
@@ -40,14 +45,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   late TextEditingController _commentController;
   late List<Map<String, dynamic>> _items;
   String? selectedLead;
+  String? selectedManager;
   String? _deliveryMethod;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
   String? selectedDialCode;
   String? baseUrl;
   List<Branch> branches = [];
+    final ApiService _apiService = ApiService();
 
-@override
+  int? currencyId; // Поле для хранения currency_id
+
+  @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController();
@@ -65,6 +74,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       };
     }).toList();
     selectedLead = widget.order.lead.id.toString();
+    selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
             id: widget.order.deliveryAddressId ?? 0,
@@ -76,21 +86,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           )
         : null;
 
-    // Инициализация _selectedBranch на основе branchId и branchName
     if (widget.order.branchId != null && widget.order.branchName != null) {
       _selectedBranch = Branch(
         id: widget.order.branchId!,
         name: widget.order.branchName!,
-        address: '', // Адрес может быть пустым, так как он не используется в UI
+        address: '',
+        isActive: 0,
       );
     }
 
     String phoneText = widget.order.phone;
-    for (var country in countries) {
-      if (phoneText.startsWith(country.dialCode)) {
-        selectedDialCode = country.dialCode;
-        _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
-        break;
+    if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
+      for (var country in countries) {
+        if (phoneText.startsWith(country.dialCode)) {
+          selectedDialCode = country.dialCode;
+          _phoneController.text = phoneText.replaceFirst(country.dialCode, '');
+          break;
+        }
       }
     }
     if (selectedDialCode == null) {
@@ -100,41 +112,126 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeBaseUrl();
+      _loadCurrencyId(); // Загружаем currencyId
       context.read<BranchBloc>().add(FetchBranches());
-      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-            leadId: widget.order.lead.id,
-          ));
+      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     });
   }
 
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  // Инициализация метода доставки с использованием локализации
-  _deliveryMethod = widget.order.delivery
-      ? AppLocalizations.of(context)!.translate('delivery')
-      : AppLocalizations.of(context)!.translate('self_delivery');
-}
-  Future<void> _initializeBaseUrl() async {
-    final apiService = ApiService();
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
     try {
-      final enteredDomainMap = await apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-        });
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+
+      if (kDebugMode) {
+        print('OrderEditScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          baseUrl = 'https://shamcrm.com/storage/';
-        });
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
       }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderEditScreen: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
     }
   }
 
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('OrderEditScreen: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderEditScreen: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null) price = 0;
+    String symbol = '₽'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('OrderEditScreen: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = '₽';
+        if (kDebugMode) {
+          print('OrderEditScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('OrderEditScreen: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _deliveryMethod = widget.order.delivery
+        ? AppLocalizations.of(context)!.translate('delivery')
+        : AppLocalizations.of(context)!.translate('self_delivery');
+  }
+
+  Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
+  }
+}
   @override
   void dispose() {
     _phoneController.dispose();
@@ -264,9 +361,17 @@ void didChangeDependencies() {
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
                                       leadId: lead.id,
-                                      // organizationId: widget.order.organizationId ?? 1,
                                     ));
                               }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          ManagerRadioGroupWidget(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                              });
                             },
                           ),
                           const SizedBox(height: 16),
@@ -354,7 +459,7 @@ void didChangeDependencies() {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('edit_order')} #${widget.order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('edit_order')} №${widget.order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -442,7 +547,7 @@ void didChangeDependencies() {
                   ),
                 ),
                 Text(
-                  '${total.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}',
+                  _formatPrice(total),
                   style: const TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
@@ -525,16 +630,6 @@ void didChangeDependencies() {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                // const SizedBox(height: 4),
-                // Text(
-                //   item['id'].toString(),
-                //   style: const TextStyle(
-                //     fontSize: 12,
-                //     fontFamily: 'Gilroy',
-                //     fontWeight: FontWeight.w500,
-                //     color: Color(0xff99A4BA),
-                  // ),?
-                // ),
               ],
             ),
           ),
@@ -556,7 +651,7 @@ void didChangeDependencies() {
                         ),
                       ),
                       Text(
-                        '${item['price'].toStringAsFixed(3)}',
+                        _formatPrice(item['price']),
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -580,7 +675,7 @@ void didChangeDependencies() {
                         ),
                       ),
                       Text(
-                        '${(item['price'] * (item['quantity'] ?? 1)).toStringAsFixed(3)}',
+                        _formatPrice(item['price'] * (item['quantity'] ?? 1)),
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -719,6 +814,7 @@ void didChangeDependencies() {
                         commentToCourier: _commentController.text.isNotEmpty
                             ? _commentController.text
                             : null,
+                        managerId: selectedManager != null ? int.parse(selectedManager!) : null,
                       ));
                 } else {
                   showCustomSnackBar(

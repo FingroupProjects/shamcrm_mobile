@@ -35,6 +35,7 @@ Future<void> _onFetchEvents(
         toDate: event.toDate,
         noticefromDate: event.noticefromDate,
         noticetoDate: event.noticetoDate,
+        salesFunnelId: event.salesFunnelId, // Передаем новый параметр
       );
 
       emit(EventDataLoaded(
@@ -83,31 +84,30 @@ Future<void> _onFetchEvents(
       }
     }
   }
-  Future<void> _createNotice(
-      CreateNotice event, Emitter<EventState> emit) async {
-    emit(EventLoading());
-    try {
-      final result = await apiService.createNotice(
-        title: event.title,
-        body: event.body,
-        leadId: event.leadId,
-        date: event.date,
-        sendNotification: event.sendNotification,
-        users: event.users,
-      );
+Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
+  emit(EventLoading());
+  try {
+    final result = await apiService.createNotice(
+      title: event.title,
+      body: event.body,
+      leadId: event.leadId,
+      date: event.date,
+      sendNotification: event.sendNotification,
+      users: event.users,
+      filePaths: event.filePaths, // Передаем файлы
+    );
 
-      if (result['success']) {
-        emit(EventSuccess(
-            event.localizations.translate('notice_created_successfully')));
-        add(FetchEvents());
-      } else {
-        emit(EventError(event.localizations.translate(result['message'])));
-      }
-    } catch (e) {
-      emit(EventError(event.localizations.translate('error_notice_create')));
+    if (result['success']) {
+      emit(EventSuccess(
+          event.localizations.translate('notice_created_successfully')));
+      add(FetchEvents());
+    } else {
+      emit(EventError(event.localizations.translate(result['message'])));
     }
+  } catch (e) {
+    emit(EventError(event.localizations.translate('error_notice_create')));
   }
-
+}
   Future<void> _updateNotice(
       UpdateNotice event, Emitter<EventState> emit) async {
     emit(EventUpdateLoading());
@@ -120,6 +120,8 @@ Future<void> _onFetchEvents(
         date: event.date,
         sendNotification: event.sendNotification,
         users: event.users,
+        filePaths: event.filePaths, // Передаем новые файлы
+      existingFiles: event.existingFiles, // Передаем существующие файлы
       );
 
       if (result['success']) {

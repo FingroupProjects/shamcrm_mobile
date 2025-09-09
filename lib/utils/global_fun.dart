@@ -19,7 +19,7 @@ Future<File?> urlToFile(String imageUrl) async {
     await file.writeAsBytes(response.bodyBytes);
     return file;
   } catch (e) {
-    print('Error converting URL to file: $e');
+    //print('Error converting URL to file: $e');
     return null;
   }
 }
@@ -38,7 +38,7 @@ Future<void> cleanTempFiles() async {
       }
     }
   } catch (e) {
-    print('Error cleaning temp files: $e');
+    //print('Error cleaning temp files: $e');
   }
 }
 
@@ -46,10 +46,10 @@ Future<File?> convertAudioFile(String inputPath, String outputPath) async {
   // await FFmpegKit.execute('-i $inputPath $outputPath').then((session) async {
   //   final returnCode = await session.getReturnCode();
   //   if (returnCode!.isValueSuccess()) {
-  //     print('Konvertatsiya muvaffaqiyatli yakunlandi!');
+  //     //print('Konvertatsiya muvaffaqiyatli yakunlandi!');
   //     return File(outputPath);
   //   } else {
-  //     print('Konvertatsiya muvaffaqiyatsiz yakunlandi: $returnCode');
+  //     //print('Konvertatsiya muvaffaqiyatsiz yakunlandi: $returnCode');
   //     return null;
   //   }
   // });
@@ -65,16 +65,16 @@ Future<void> uploadFile(File file, String uploadUrl) async {
 
   try {
     Response response = await dio.post(uploadUrl, data: formData);
-    print('Fayl yuklandi: ${response.statusCode}');
+    //print('Fayl yuklandi: ${response.statusCode}');
   } catch (e) {
-    print('Fayl yuklashda xatolik!');
+    //print('Fayl yuklashda xatolik!');
   }
 }
 
 String time(String dateAndTime) {
-  // print('------- time 1');
-  // print(DateTime.now().timeZoneOffset.inMinutes);
-  // print('------- time 2');
+  // //print('------- time 1');
+  // //print(DateTime.now().timeZoneOffset.inMinutes);
+  // //print('------- time 2');
   if(DateTime.now().timeZoneOffset.inMinutes > 0) {
     if(dateAndTime.isEmpty) dateAndTime = DateTime.now().subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes)).toString();
   } else {
@@ -91,7 +91,7 @@ String time(String dateAndTime) {
         (DateTime.now().timeZoneOffset.inMinutes > 0)  ? dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),) :  dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),),
     );
 
-    // print(time); // Natija: 11:22:22
+    // //print(time); // Natija: 11:22:22
   } catch (e) {
     str = dateAndTime;
   }

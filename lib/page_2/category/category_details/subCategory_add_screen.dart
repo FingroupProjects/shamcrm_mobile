@@ -18,6 +18,7 @@ class SubCategoryAddBottomSheet {
     final TextEditingController categoryNameController = TextEditingController();
     File? _image;
     bool _isImageSelected = true;
+        bool isActive = false;
     List<CustomField> customFields = [];
     String selectedType = 'a'; 
     bool isAffectingPrice = false;
@@ -123,7 +124,7 @@ class SubCategoryAddBottomSheet {
                                   setState(() {
                                     selectedType = type;
                                   });
-                                },
+                                },isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -307,6 +308,7 @@ class SubCategoryAddBottomSheet {
                                   categoryNameController.text,
                                   categoryId,
                                   _image,
+                                  isActive,
                                   context,
                                   customFields,
                                   selectedType,
@@ -337,6 +339,8 @@ class SubCategoryAddBottomSheet {
     String name,
     int categoryId,
     File? image,
+        bool isActive,
+
     BuildContext context,
     List<CustomField> customFields,
     String selectedType,
@@ -361,6 +365,7 @@ class SubCategoryAddBottomSheet {
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
+        isParent: isActive, // Передаём isActive как isParent
       ));
     } catch (e) {
         showCustomSnackBar(

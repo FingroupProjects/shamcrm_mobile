@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -22,8 +23,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Goods goods;
+  final List<GoodsFile> sortedFiles;
+  final int? initialMainImageIndex;
 
-  GoodsEditScreen({required this.goods});
+  GoodsEditScreen({
+    required this.goods,
+    required this.sortedFiles,
+    this.initialMainImageIndex,
+  });
 
   @override
   _GoodsEditScreenState createState() => _GoodsEditScreenState();
@@ -35,13 +42,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController goodsDescriptionController;
   late TextEditingController discountPriceController;
   late TextEditingController stockQuantityController;
-
+  final TextEditingController commentsController = TextEditingController();
   subCatAttr.SubCategoryAttributesData? selectedCategory;
+  
   Branch? selectedBranch;
   bool isBranchValid = true;
   List<Branch> branches = [];
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
+  String? selectlabel; // Используем для хранения ID метки
   bool isCategoryValid = true;
   bool isImagesValid = true;
   bool isLoading = false;
@@ -51,108 +60,83 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   Map<String, TextEditingController> attributeControllers = {};
   List<Map<String, dynamic>> tableAttributes = [];
   final ImagePicker _picker = ImagePicker();
+  int? mainImageIndex;
 
   @override
   void initState() {
     super.initState();
-    print(
-        'GoodsEditScreen: Initializing with goods: ${widget.goods.toString()}');
-    print(
-        'GoodsEditScreen: Goods attributes: ${widget.goods.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Goods variants: ${widget.goods.variants?.map((variant) => {
-              'id': variant.id,
-              'attributeValues': variant.attributeValues
-                  ?.map((attr) => {
-                        'categoryAttributeId': attr.categoryAttribute?.id,
-                        'attributeName':
-                            attr.categoryAttribute?.attribute?.name,
-                        'value': attr.value,
-                      })
-                  .toList(),
-              'price': variant.variantPrice?.price,
-              'files': variant.files?.map((file) => file.path).toList(),
-            }).toList()}');
-
     _initializeFieldsWithDefaults();
     _loadAllDataSequentially();
   }
 
-  void _initializeFieldsWithDefaults() {
-    goodsNameController = TextEditingController(text: widget.goods.name ?? '');
-    goodsDescriptionController = TextEditingController(
-      text: (widget.goods.description ?? '') == 'null'
-          ? ''
-          : (widget.goods.description ?? ''),
-    );
-    discountPriceController = TextEditingController(
-        text: widget.goods.discountPrice?.toString() ?? '');
-    stockQuantityController =
-        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
-    isActive = widget.goods.isActive ?? false;
-    // Инициализируем selectedBranch как null, выбор будет после загрузки branches
-    selectedBranch = null;
-    print(
-        'GoodsEditScreen: Initialized fields - name: ${goodsNameController.text}, description: ${goodsDescriptionController.text}, discountPrice: ${discountPriceController.text}, quantity: ${stockQuantityController.text}, isActive: $isActive, selectedBranch: ${selectedBranch?.name}');
-  }
+ void _initializeFieldsWithDefaults() {
+  goodsNameController = TextEditingController(text: widget.goods.name ?? '');
+  goodsDescriptionController = TextEditingController(
+    text: (widget.goods.description ?? '') == 'null'
+        ? ''
+        : (widget.goods.description ?? ''),
+  );
+  discountPriceController = TextEditingController(
+      text: widget.goods.discountPrice?.toString() ?? '');
+  stockQuantityController =
+      TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+  commentsController.text = widget.goods.comments ?? '';
+  //print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
+  selectlabel = widget.goods.label?.id?.toString(); // Исправлено
+  isActive = widget.goods.isActive ?? false;
+  selectedBranch = null;
+  _imagePaths =
+      widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
+  mainImageIndex = widget.initialMainImageIndex ?? 0;
+
+}
 
   Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-      baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      print('GoodsEditScreen: Base URL initialized: $baseUrl');
-    } catch (error) {
-      baseUrl = 'https://shamcrm.com/storage/';
-      print('GoodsEditScreen: Fallback Base URL used: $baseUrl');
-    }
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);
-    print('GoodsEditScreen: Loading all data sequentially...');
     try {
       await _initializeBaseUrl();
-      if (mounted && widget.goods.files.isNotEmpty) {
+      if (mounted && widget.sortedFiles.isNotEmpty) {
         setState(() {
-          _imagePaths = widget.goods.files
+          _imagePaths = widget.sortedFiles
               .map((file) => '$baseUrl/${file.path}')
               .toList();
-          print('GoodsEditScreen: Initialized _imagePaths: $_imagePaths');
         });
       }
       await fetchSubCategories();
       await fetchBranches();
 
-      // Синхронизируем selectedBranch с branches
       if (widget.goods.branches != null && widget.goods.branches!.isNotEmpty) {
         final goodsBranchId = widget.goods.branches![0].id;
         selectedBranch = branches.firstWhere(
           (branch) => branch.id == goodsBranchId,
-          // orElse: () => null,
         );
-        print(
-            'GoodsEditScreen: Synchronized selectedBranch: ${selectedBranch?.name}');
       }
 
       _initializeFieldsWithData();
     } catch (e) {
-      print('GoodsEditScreen: Error loading all data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.translate('error_loading_data'))),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .translate('error_loading_data'))),
         );
       }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
-        print('GoodsEditScreen: Finished loading data, isLoading: $isLoading');
       }
     }
   }
@@ -163,27 +147,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           branches = fetchedBranches;
-          print('GoodsEditScreen: Fetched branches: ${branches.map((branch) => {
-                'id': branch.id,
-                'name': branch.name
-              }).toList()}');
         });
       }
     } catch (e) {
-      print('GoodsEditScreen: Error fetching branches: $e');
       throw e;
     }
   }
 
   void _initializeFieldsWithData() {
-    print('GoodsEditScreen: Initializing fields with data...');
-    print(
-        'GoodsEditScreen: Category - ID: ${widget.goods.category.id}, Name: ${widget.goods.category.name}');
-
     Map<String, Map<String, dynamic>> individualAttributesMap = {};
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
       for (var variant in widget.goods.variants!) {
-        print('GoodsEditScreen: Processing variant ID: ${variant.id}');
         if (variant.attributeValues != null) {
           for (var attrValue in variant.attributeValues!) {
             if (attrValue.categoryAttribute?.attribute != null &&
@@ -197,34 +171,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                   'isIndividual': true,
                   'value': null,
                 };
-                print(
-                    'GoodsEditScreen: Added unique individual attribute - name: $attrName, id: ${attrValue.categoryAttribute!.id}');
-              } else {
-                print(
-                    'GoodsEditScreen: Skipped duplicate individual attribute - name: $attrName');
               }
-            } else {
-              print(
-                  'GoodsEditScreen: Skipping attribute value - not individual or missing data: ${attrValue.toString()}');
             }
           }
-        } else {
-          print(
-              'GoodsEditScreen: Variant ID ${variant.id} has no attribute values');
         }
       }
-    } else {
-      print('GoodsEditScreen: No variants found in goods');
     }
 
     List<Map<String, dynamic>> individualAttributes =
         individualAttributesMap.values.toList();
-    print(
-        'GoodsEditScreen: Unique individual attributes collected: ${individualAttributes.map((attr) => {
-              'id': attr['id'],
-              'name': attr['name'],
-              'isIndividual': attr['isIndividual']
-            }).toList()}');
 
     final allAttributes = [
       ...widget.goods.attributes
@@ -243,14 +198,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           )),
     ].toSet().toList();
 
-    print(
-        'GoodsEditScreen: All attributes (non-individual + individual): ${allAttributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-
     selectedCategory = subCatAttr.SubCategoryAttributesData(
       id: widget.goods.category.id,
       name: widget.goods.category.name,
@@ -265,40 +212,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               .any((attr) => attr['name'].toLowerCase() == 'price'),
     );
 
-    print(
-        'GoodsEditScreen: Selected category attributes: ${selectedCategory!.attributes.map((attr) => {
-              'id': attr.id,
-              'name': attr.name,
-              'value': attr.value,
-              'isIndividual': attr.isIndividual
-            }).toList()}');
-    print(
-        'GoodsEditScreen: Has price characteristics: ${selectedCategory!.hasPriceCharacteristics}');
-
     attributeControllers.clear();
     tableAttributes.clear();
-    print('GoodsEditScreen: Cleared attributeControllers and tableAttributes');
 
     for (var attribute
         in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
       attributeControllers[attribute.name] =
           TextEditingController(text: attribute.value ?? '');
-      print(
-          'GoodsEditScreen: Added non-individual attribute - name: ${attribute.name}, value: ${attribute.value}');
     }
 
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-      print('GoodsEditScreen: Processing variants to build tableAttributes...');
       for (var variant in widget.goods.variants!) {
-        print('GoodsEditScreen: Processing variant ID ${variant.id}');
-        print(
-            'GoodsEditScreen: Variant attribute values: ${variant.attributeValues?.map((attr) => {
-                  'categoryAttributeId': attr.categoryAttribute?.id,
-                  'attributeName': attr.categoryAttribute?.attribute?.name,
-                  'value': attr.value,
-                  'id': attr.id,
-                }).toList()}');
-
         Map<String, dynamic> newRow = {
           'id': variant.id,
           'attribute_ids': {},
@@ -307,14 +231,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
         var individualAttrs =
             selectedCategory!.attributes.where((a) => a.isIndividual).toList();
-        if (individualAttrs.isEmpty) {
-          print(
-              'GoodsEditScreen: No individual attributes found in selected category');
-        }
         for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
-          print(
-              'GoodsEditScreen: Initialized controller for individual attribute: ${attr.name}');
         }
 
         if (variant.attributeValues != null &&
@@ -326,64 +244,26 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 newRow[attrName].text = attrValue.value ?? '';
                 if (attrValue.id != 0) {
                   newRow['attribute_ids'][attrName] = attrValue.id;
-                  print(
-                      'GoodsEditScreen: Set value for attribute $attrName: ${attrValue.value}, id: ${attrValue.id}');
-                } else {
-                  print(
-                      'GoodsEditScreen: Attribute $attrName has id 0, skipping id assignment');
                 }
-              } else {
-                print(
-                    'GoodsEditScreen: Attribute $attrName not found in newRow');
               }
-            } else {
-              print(
-                  'GoodsEditScreen: Missing categoryAttribute or attribute for attrValue: ${attrValue.toString()}');
             }
           }
-        } else {
-          print(
-              'GoodsEditScreen: No attribute values for variant ID ${variant.id}');
         }
 
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
             text: variant.variantPrice?.price?.toString() ?? '0.0',
           );
-          print(
-              'GoodsEditScreen: Added price for variant: ${newRow['price'].text}');
         }
 
         newRow['images'] =
             variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
                 [];
-        print('GoodsEditScreen: Added images for variant: ${newRow['images']}');
-
         tableAttributes.add(newRow);
-        print('GoodsEditScreen: Added new row to tableAttributes: $newRow');
       }
     } else {
-      print('GoodsEditScreen: No variants found, adding empty row');
       addTableRow();
     }
-
-    print(
-        'GoodsEditScreen: Final tableAttributes: ${tableAttributes.map((row) => {
-              'id': row['id'],
-              'attributes': row.keys
-                  .where((key) =>
-                      key != 'images' &&
-                      key != 'price' &&
-                      key != 'id' &&
-                      key != 'attribute_ids' &&
-                      key != 'is_active')
-                  .map((key) => {key: row[key].text})
-                  .toList(),
-              'attribute_ids': row['attribute_ids'],
-              'price': row['price']?.text,
-              'images': row['images'],
-              'is_active': row['is_active'],
-            }).toList()}');
   }
 
   Future<void> fetchSubCategories() async {
@@ -392,15 +272,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() {
           subCategories = categories;
-          print(
-              'GoodsEditScreen: Fetched subcategories: ${subCategories.map((cat) => {
-                    'id': cat.id,
-                    'name': cat.name
-                  }).toList()}');
         });
       }
     } catch (e) {
-      print('GoodsEditScreen: Error fetching subcategories: $e');
       throw e;
     }
   }
@@ -410,14 +284,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
       isBranchValid = selectedBranch != null;
-      print(
-          'GoodsEditScreen: Form validation - isCategoryValid: $isCategoryValid, isImagesValid: $isImagesValid, isBranchValid: $isBranchValid');
+      if (_imagePaths.isNotEmpty && mainImageIndex == null) {
+        isImagesValid = false;
+      }
     });
   }
 
   void addTableRow({List<String>? images}) {
     if (selectedCategory == null) {
-      print('GoodsEditScreen: Cannot add table row - selectedCategory is null');
       return;
     }
     setState(() {
@@ -428,37 +302,125 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       for (var attr
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
-        print(
-            'GoodsEditScreen: Added empty controller for attribute: ${attr.name}');
       }
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
-        print('GoodsEditScreen: Added empty price controller');
       }
       newRow['images'] = images ?? [];
       tableAttributes.add(newRow);
-      print('GoodsEditScreen: Added new empty row to tableAttributes: $newRow');
     });
   }
 
   void removeTableRow(int index) {
     setState(() {
-      print('GoodsEditScreen: Removing table row at index $index');
       tableAttributes.removeAt(index);
-      print('GoodsEditScreen: Updated tableAttributes: $tableAttributes');
     });
   }
 
   void _showImageListPopup(List<String> images) {
-    print('GoodsEditScreen: Showing image list popup with images: $images');
     showDialog(
       context: context,
       builder: (context) => ImageListPopup(imagePaths: images),
     );
   }
 
+  Future<void> _showImagePickerOptions() async {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text(
+                  AppLocalizations.of(context)!.translate('make_photo'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text(
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMultipleImages();
+                },
+              ),
+              SizedBox(height: 0),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _imagePaths.add(pickedFile.path);
+        if (mainImageIndex == null && _imagePaths.isNotEmpty) {
+          mainImageIndex = _imagePaths.length - 1;
+        }
+        isImagesValid = true;
+      });
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    final pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        _imagePaths.addAll(pickedFiles.map((file) => file.path));
+        if (mainImageIndex == null && _imagePaths.isNotEmpty) {
+          mainImageIndex = _imagePaths.length - pickedFiles.length;
+        }
+        isImagesValid = true;
+      });
+    }
+  }
+
+  void _removeImage(String imagePath) {
+    setState(() {
+      final removedIndex = _imagePaths.indexOf(imagePath);
+      _imagePaths.remove(imagePath);
+      if (mainImageIndex == removedIndex) {
+        mainImageIndex = _imagePaths.isNotEmpty ? 0 : null;
+      } else if (mainImageIndex != null && removedIndex < mainImageIndex!) {
+        mainImageIndex = mainImageIndex! - 1;
+      }
+      isImagesValid = _imagePaths.isNotEmpty;
+    });
+  }
+
+  void _setMainImage(int index) {
+    setState(() {
+      mainImageIndex = index;
+    });
+  }
+
   void _showImagePickerOptionsForRow(int rowIndex) async {
-    print('GoodsEditScreen: Showing image picker options for row $rowIndex');
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -487,7 +449,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -509,47 +472,35 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
-    print(
-        'GoodsEditScreen: Picking image for row $rowIndex from source: $source');
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         tableAttributes[rowIndex]['images'].add(pickedFile.path);
-        print(
-            'GoodsEditScreen: Added image to row $rowIndex: ${pickedFile.path}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
-    } else {
-      print('GoodsEditScreen: No image picked for row $rowIndex');
     }
   }
 
   Future<void> _pickMultipleImagesForRow(int rowIndex) async {
-    print('GoodsEditScreen: Picking multiple images for row $rowIndex');
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
         tableAttributes[rowIndex]['images']
             .addAll(pickedFiles.map((file) => file.path));
-        print(
-            'GoodsEditScreen: Added multiple images to row $rowIndex: ${pickedFiles.map((file) => file.path).toList()}');
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
-    } else {
-      print('GoodsEditScreen: No images picked for row $rowIndex');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print('GoodsEditScreen: Building widget tree...');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
-        AppLocalizations.of(context)!.translate('edit_goods'),
+          AppLocalizations.of(context)!.translate('edit_goods'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -579,17 +530,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 children: [
                   CustomTextField(
                     controller: goodsNameController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
-                    label: AppLocalizations.of(context)!.translate('goods_name'),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_goods_name'),
+                    label:
+                        AppLocalizations.of(context)!.translate('goods_name'),
                     validator: (value) => value == null || value.isEmpty
-                        ? AppLocalizations.of(context)!.translate('field_required')
+                        ? AppLocalizations.of(context)!
+                            .translate('field_required')
                         : null,
                   ),
-                  const SizedBox(height: 8),
+                 
+                   const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
-                    label: AppLocalizations.of(context)!.translate('goods_description'),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('enter_goods_description'),
+                    label: AppLocalizations.of(context)!
+                        .translate('goods_description'),
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,
                   ),
@@ -598,34 +555,37 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // const SizedBox(height: 8),
-                        // Text(
-                        //   'Цена',
-                        //   style: TextStyle(
-                        //     fontSize: 16,
-                        //     fontWeight: FontWeight.w500,
-                        //     fontFamily: 'Gilroy',
-                        //     color: Color(0xff1E2E52),
-                        //   ),
-                        // ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         CustomTextField(
                           controller: discountPriceController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                    label: AppLocalizations.of(context)!.translate('goods_price_details'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_price'),
+                          label: AppLocalizations.of(context)!
+                              .translate('goods_price_details'),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
                         ),
                       ],
                     ),
+                  const SizedBox(height: 8),
+                  LabelWidget(
+                    selectedLabel: selectlabel,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectlabel = newValue;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 8),
                   branches.isEmpty
                       ? Center(
@@ -636,15 +596,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           ),
                         )
                       : BranchesDropdown(
-                          label: AppLocalizations.of(context)!.translate('branch'),
+                          label:
+                              AppLocalizations.of(context)!.translate('branch'),
                           selectedBranch: selectedBranch,
-                          branches: branches, // Передаём branches, даже если он пуст
+                          branches: branches,
                           onSelectBranch: (Branch branch) {
                             setState(() {
                               selectedBranch = branch;
                               isBranchValid = true;
-                              print(
-                                  'GoodsEditScreen: Branch selected - ${selectedBranch?.name}, isBranchValid: $isBranchValid');
                             });
                           },
                         ),
@@ -652,7 +611,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!.translate('please_select_branch'),
+                        AppLocalizations.of(context)!
+                            .translate('please_select_branch'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -689,8 +649,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           TextEditingController();
                                     }
                                   }
-                                  print(
-                                      'GoodsEditScreen: Category selected - ${selectedCategory?.name}, isCategoryValid: $isCategoryValid');
                                 });
                               },
                               subCategories:
@@ -701,7 +659,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  AppLocalizations.of(context)!.translate('please_select_subcategory'),
+                                  AppLocalizations.of(context)!
+                                      .translate('please_select_subcategory'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.red,
@@ -711,30 +670,41 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               ),
                           ],
                         ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   if (selectedCategory != null &&
                       selectedCategory!.attributes.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Divider(color: Color(0xff1E2E52)),
-                        Center(
-                          child: Text(
-                             AppLocalizations.of(context)!.translate('product_characteristic'),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: Color(0xff1E2E52), width: 1.0),
+                              borderRadius: BorderRadius.circular(14.0),
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('characteristic'),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        Divider(color: Color(0xff1E2E52)),
                         ...selectedCategory!.attributes
                             .where((attr) => !attr.isIndividual)
                             .map((attribute) {
-                          print(
-                              'GoodsEditScreen: Rendering non-individual attribute: ${attribute.name}');
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -775,14 +745,20 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           .where((attr) => attr.isIndividual)
                                           .toSet()
                                           .toList();
-                                      print(
-                                          'GoodsEditScreen: Building DataTable with individual attributes: ${individualAttrs.map((attr) => attr.name).toList()}');
-                                      print(
-                                          'GoodsEditScreen: Number of individual attributes: ${individualAttrs.length}');
-                                      print(
-                                          'GoodsEditScreen: Number of variants (rows): ${tableAttributes.length}');
 
                                       List<DataColumn> columns = [
+                                        DataColumn(
+                                          label: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate('image_message'),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
                                         ...individualAttrs
                                             .map((attr) => DataColumn(
                                                   label: Text(
@@ -800,7 +776,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                             .hasPriceCharacteristics)
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('goods_price_details'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('price'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -811,18 +788,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         DataColumn(
                                           label: Text(
-                                              AppLocalizations.of(context)!.translate('image_message'),
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              fontFamily: 'Gilroy',
-                                              color: Color(0xff1E2E52),
-                                            ),
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                              AppLocalizations.of(context)!.translate('status_lead_profile'),
+                                            AppLocalizations.of(context)!
+                                                .translate('status'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
@@ -844,89 +811,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         ),
                                       ];
 
-                                      print(
-                                          'GoodsEditScreen: DataTable columns: ${columns.map((col) => (col.label as Text).data).toList()}');
-
                                       List<DataRow> rows = tableAttributes
                                           .asMap()
                                           .entries
                                           .map((entry) {
                                         int index = entry.key;
                                         Map<String, dynamic> row = entry.value;
-                                        print(
-                                            'GoodsEditScreen: Building row $index with data: ${row.keys.map((key) => {
-                                                  key: row[key]
-                                                          is TextEditingController
-                                                      ? row[key].text
-                                                      : row[key]
-                                                }).toList()}');
 
                                         List<DataCell> cells = [
-                                          ...individualAttrs.map((attr) =>
-                                              DataCell(
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: TextField(
-                                                    controller: row[
-                                                            attr.name] ??
-                                                        TextEditingController(),
-                                                    decoration: InputDecoration(
-                                                      hintText:
-                                                          '${AppLocalizations.of(context)!.translate('please_enter')}${attr.name}',
-                                                      hintStyle: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff99A4BA),
-                                                      ),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                      ),
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 16),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )),
-                                          if (selectedCategory!
-                                              .hasPriceCharacteristics)
-                                            DataCell(
-                                              SizedBox(
-                                                width: 150,
-                                                child: TextField(
-                                                  controller: row['price'] ??
-                                                      TextEditingController(),
-                                                  decoration: InputDecoration(
-                                                    hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                                                    hintStyle: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff99A4BA),
-                                                    ),
-                                                    border: OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    contentPadding:
-                                                        EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 16),
-                                                  ),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                ),
-                                              ),
-                                            ),
                                           DataCell(
                                             Row(
                                               children: [
@@ -1009,14 +901,81 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                               ],
                                             ),
                                           ),
+                                          ...individualAttrs.map((attr) =>
+                                              DataCell(
+                                                SizedBox(
+                                                  width: 150,
+                                                  child: TextField(
+                                                    controller: row[
+                                                            attr.name] ??
+                                                        TextEditingController(),
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff99A4BA),
+                                                      ),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 16),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )),
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
+                                            DataCell(
+                                              SizedBox(
+                                                width: 150,
+                                                child: TextField(
+                                                  controller: row['price'] ??
+                                                      TextEditingController(),
+                                                  decoration: InputDecoration(
+                                                    hintText:
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'enter_price'),
+                                                    hintStyle: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontFamily: 'Gilroy',
+                                                      color: Color(0xff99A4BA),
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 16),
+                                                  ),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                ),
+                                              ),
+                                            ),
                                           DataCell(
                                             Switch(
                                               value: row['is_active'],
                                               onChanged: (value) {
                                                 setState(() {
                                                   row['is_active'] = value;
-                                                  print(
-                                                      'GoodsEditScreen: Toggled is_active for variant $index to: $value');
                                                 });
                                               },
                                               activeColor: const Color.fromARGB(
@@ -1042,13 +1001,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           ),
                                         ];
 
-                                        print(
-                                            'GoodsEditScreen: Row $index cells created');
                                         return DataRow(cells: cells);
                                       }).toList();
-
-                                      print(
-                                          'GoodsEditScreen: DataTable rows created: ${rows.length}');
 
                                       return DataTable(
                                         columnSpacing: 16,
@@ -1116,7 +1070,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!.translate('select_image'),
+                                    AppLocalizations.of(context)!
+                                        .translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -1134,47 +1089,80 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   runSpacing: 10,
                                   padding: const EdgeInsets.all(8),
                                   children: [
-                                    ..._imagePaths.map((imagePath) {
-                                      return Container(
-                                        key: ValueKey(imagePath),
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          image: DecorationImage(
-                                            image: imagePath.startsWith('http')
-                                                ? NetworkImage(imagePath)
-                                                    as ImageProvider
-                                                : FileImage(File(imagePath)),
-                                            fit: BoxFit.cover,
+                                    ..._imagePaths.asMap().entries.map((entry) {
+                                      final index = entry.key;
+                                      final imagePath = entry.value;
+                                      return GestureDetector(
+                                        onTap: () => _setMainImage(index),
+                                        child: Container(
+                                          key: ValueKey(imagePath),
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: mainImageIndex == index
+                                                ? Border.all(
+                                                    color: Colors.blue,
+                                                    width: 2)
+                                                : null,
+                                            image: DecorationImage(
+                                              image: imagePath
+                                                      .startsWith('http')
+                                                  ? NetworkImage(imagePath)
+                                                      as ImageProvider
+                                                  : FileImage(File(imagePath)),
+                                              fit: BoxFit.cover,
+                                            ),
                                           ),
-                                        ),
-                                        child: Stack(
-                                          children: [
-                                            Positioned(
-                                              top: 4,
-                                              right: 4,
-                                              child: GestureDetector(
-                                                onTap: () =>
-                                                    _removeImage(imagePath),
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.5),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                    size: 16,
+                                          child: Stack(
+                                            children: [
+                                              Positioned(
+                                                top: 4,
+                                                right: 4,
+                                                child: GestureDetector(
+                                                  onTap: () =>
+                                                      _removeImage(imagePath),
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black
+                                                          .withOpacity(0.5),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.close,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                              Positioned(
+                                                bottom: 4,
+                                                right: 4,
+                                                child: mainImageIndex == index
+                                                    ? Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.blue,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.check,
+                                                          color: Colors.white,
+                                                          size: 16,
+                                                        ),
+                                                      )
+                                                    : SizedBox.shrink(),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       );
                                     }).toList(),
@@ -1199,7 +1187,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                               AppLocalizations.of(context)!.translate('add_image'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1215,8 +1204,19 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       final item =
                                           _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
-                                      print(
-                                          'GoodsEditScreen: Reordered _imagePaths: $_imagePaths');
+                                      if (mainImageIndex != null) {
+                                        if (mainImageIndex == oldIndex) {
+                                          mainImageIndex = newIndex;
+                                        } else if (oldIndex < mainImageIndex! &&
+                                            newIndex >= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! - 1;
+                                        } else if (oldIndex > mainImageIndex! &&
+                                            newIndex <= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! + 1;
+                                        }
+                                      } else if (_imagePaths.isNotEmpty) {
+                                        mainImageIndex = 0;
+                                      }
                                     });
                                   },
                                 ),
@@ -1249,7 +1249,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        AppLocalizations.of(context)!.translate('please_select_image'),
+                        AppLocalizations.of(context)!
+                            .translate('please_select_image'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.red,
@@ -1265,7 +1266,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('status_product'),
+                              AppLocalizations.of(context)!
+                                  .translate('status_product'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -1278,8 +1280,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               onTap: () {
                                 setState(() {
                                   isActive = !isActive;
-                                  print(
-                                      'GoodsEditScreen: Toggled isActive to: $isActive');
                                 });
                               },
                               child: Container(
@@ -1296,8 +1296,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                       onChanged: (value) {
                                         setState(() {
                                           isActive = value;
-                                          print(
-                                              'GoodsEditScreen: Switch changed isActive to: $isActive');
                                         });
                                       },
                                       activeColor: const Color.fromARGB(
@@ -1312,7 +1310,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
+                                      isActive
+                                          ? AppLocalizations.of(context)!
+                                              .translate('active_swtich')
+                                          : AppLocalizations.of(context)!
+                                              .translate('inactive_swtich'),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -1363,7 +1365,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       ),
                     )
                   : CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('save'),
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('save'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
@@ -1376,7 +1379,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: AppLocalizations.of(context)!.translate('fill_required_fields'),
+                            message: AppLocalizations.of(context)!
+                                .translate('fill_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -1389,105 +1393,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     );
   }
 
-  Future<void> _showImagePickerOptions() async {
-    print('GoodsEditScreen: Showing image picker options');
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.camera_alt),
-                title: Text(
-                  AppLocalizations.of(context)!.translate('make_photo'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library),
-                title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickMultipleImages();
-                },
-              ),
-              SizedBox(height: 0),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    print('GoodsEditScreen: Picking image from source: $source');
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _imagePaths.add(pickedFile.path);
-        isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added image: ${pickedFile.path}, _imagePaths: $_imagePaths');
-      });
-    } else {
-      print('GoodsEditScreen: No image picked');
-    }
-  }
-
-  Future<void> _pickMultipleImages() async {
-    print('GoodsEditScreen: Picking multiple images');
-    final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _imagePaths.addAll(pickedFiles.map((file) => file.path));
-        isImagesValid = true;
-        print(
-            'GoodsEditScreen: Added multiple images: ${pickedFiles.map((file) => file.path).toList()}, _imagePaths: $_imagePaths');
-      });
-    } else {
-      print('GoodsEditScreen: No images picked');
-    }
-  }
-
-  void _removeImage(String imagePath) {
-    setState(() {
-      _imagePaths.remove(imagePath);
-      isImagesValid = _imagePaths.isNotEmpty;
-      print(
-          'GoodsEditScreen: Removed image: $imagePath, _imagePaths: $_imagePaths, isImagesValid: $isImagesValid');
-    });
-  }
-
   void _updateProduct() async {
     setState(() => isLoading = true);
-    print('GoodsEditScreen: Updating product...');
     try {
       List<Map<String, dynamic>> attributes = [];
       List<Map<String, dynamic>> variants = [];
 
       if (selectedCategory != null) {
-        print('GoodsEditScreen: Processing non-individual attributes...');
         for (var attribute
             in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
@@ -1496,17 +1408,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
-            print(
-                'GoodsEditScreen: Added non-individual attribute - category_attribute_id: ${attribute.id}, value: ${controller.text.trim()}');
-          } else {
-            print(
-                'GoodsEditScreen: Skipped non-individual attribute ${attribute.name} - empty or missing controller');
           }
         }
 
-        print('GoodsEditScreen: Processing variants...');
         for (var row in tableAttributes) {
-          print('GoodsEditScreen: Processing row: $row');
           Map<String, dynamic> variant = {
             'is_active': row['is_active'],
             'variant_attributes': [],
@@ -1514,10 +1419,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
           if (row['id'] != null && row['id'] != 0) {
             variant['id'] = row['id'];
-            print('GoodsEditScreen: Added variant id: ${row['id']}');
-          } else {
-            print(
-                'GoodsEditScreen: Variant id is null or 0, treating as new variant');
           }
 
           List<String> variantImagePaths = row['images']?.cast<String>() ?? [];
@@ -1527,10 +1428,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               File file = File(path);
               if (await file.exists()) {
                 variantImages.add(file);
-                print('GoodsEditScreen: Added variant image: $path');
-              } else {
-                print(
-                    'GoodsEditScreen: Variant file not found, skipping: $path');
               }
             }
           }
@@ -1547,19 +1444,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
               if (row['attribute_ids'] != null &&
                   row['attribute_ids'][attr.name] != null) {
                 variantAttribute['id'] = row['attribute_ids'][attr.name];
-                print(
-                    'GoodsEditScreen: Added variant attribute id: ${variantAttribute['id']} for attribute ${attr.name}');
-              } else {
-                print(
-                    'GoodsEditScreen: No id found for attribute ${attr.name}, treating as new attribute');
               }
 
               variant['variant_attributes'].add(variantAttribute);
-              print(
-                  'GoodsEditScreen: Added variant attribute - ${variantAttribute.toString()}');
-            } else {
-              print(
-                  'GoodsEditScreen: Skipped variant attribute ${attr.name} - empty or missing controller');
             }
           }
 
@@ -1569,35 +1456,22 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 priceController.text.trim().isNotEmpty) {
               variant['price'] =
                   double.tryParse(priceController.text.trim()) ?? 0.0;
-              print(
-                  'GoodsEditScreen: Added variant price: ${variant['price']}');
             } else {
               variant['price'] = 0.0;
-              print('GoodsEditScreen: Set default variant price: 0.0');
             }
           } else {
             variant['price'] = 0.0;
-            print(
-                'GoodsEditScreen: Set variant price to 0.0 (has_price_characteristics: false)');
           }
 
           if (variantImages.isNotEmpty) {
             variant['files'] = variantImages;
-            print(
-                'GoodsEditScreen: Added variant files: ${variantImages.map((file) => file.path).toList()}');
           }
 
           if (variant['variant_attributes'].isNotEmpty) {
             variants.add(variant);
-            print('GoodsEditScreen: Added variant: $variant');
-          } else {
-            print('GoodsEditScreen: Skipped variant - no variant_attributes');
           }
         }
       }
-
-      print('GoodsEditScreen: Final attributes: $attributes');
-      print('GoodsEditScreen: Final variants: $variants');
 
       List<File> generalImages = [];
       for (var path in _imagePaths) {
@@ -1605,12 +1479,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           File file = File(path);
           if (await file.exists()) {
             generalImages.add(file);
-            print('GoodsEditScreen: Added general image: $path');
-          } else {
-            print('GoodsEditScreen: General image not found, skipping: $path');
           }
         }
       }
+
+      int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null; // Преобразуем selectlabel в labelId
 
       final response = await _apiService.updateGoods(
         goodId: widget.goods.id,
@@ -1627,9 +1500,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
             ? null
             : double.tryParse(discountPriceController.text),
         branch: selectedBranch!.id,
+        comments: commentsController.text.trim(),
+        mainImageIndex: mainImageIndex ?? 0,
+        labelId: labelId, // Передаём labelId
       );
 
-      print('GoodsEditScreen: Update response: $response');
       if (response['success'] == true) {
         showCustomSnackBar(
           context: context,
@@ -1642,17 +1517,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ??  AppLocalizations.of(context)!.translate('error_update_product'),
+          message: response['message'] ??
+              AppLocalizations.of(context)!.translate('error_update_product'),
           isSuccess: false,
         );
       }
     } catch (e, stackTrace) {
       setState(() => isLoading = false);
-      print('GoodsEditScreen: Error updating product: $e');
-      print('GoodsEditScreen: Stack trace: $stackTrace');
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('error_update_product'),
+        message:
+            AppLocalizations.of(context)!.translate('error_update_product'),
         isSuccess: false,
       );
     }
@@ -1664,6 +1539,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     goodsDescriptionController.dispose();
     discountPriceController.dispose();
     stockQuantityController.dispose();
+    commentsController.dispose();
     attributeControllers.values.forEach((controller) => controller.dispose());
     for (var row in tableAttributes) {
       for (var attr in row.values) {
@@ -1672,7 +1548,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
       }
     }
-    print('GoodsEditScreen: Disposed controllers');
     super.dispose();
   }
 }

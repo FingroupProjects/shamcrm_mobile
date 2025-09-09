@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -38,31 +39,36 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final ApiService _apiService = ApiService();
-  bool _canEditNotice = false; 
-  bool _canDeleteNotice = false; 
+  bool _canEditNotice = false;
+  bool _canDeleteNotice = false;
   final TextEditingController conclusionController = TextEditingController();
   final GlobalKey keyNoticeEdit = GlobalKey();
   final GlobalKey keyNoticeFinish = GlobalKey();
-  final GlobalKey keyNoticeDelete = GlobalKey(); 
+  final GlobalKey keyNoticeDelete = GlobalKey();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false; 
-  Duration _duration = Duration.zero; 
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
-  final ApiService apiService = ApiService(); 
+  final ApiService apiService = ApiService();
   bool _isTutorialShown = false;
-  bool _isTutorialInProgress = false; 
-  Map<String, dynamic>? tutorialProgress; 
+  bool _isTutorialInProgress = false;
+  Map<String, dynamic>? tutorialProgress;
+  bool _isDownloading = false; // Флаг загрузки
+  Map<int, double> _downloadProgress =
+      {}; // Прогресс загрузки для каждого файла
 
   @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
-      context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
-      _setupAudioPlayer(); 
+      context
+          .read<NoticeBloc>()
+          .add(FetchNoticeEvent(noticeId: widget.noticeId));
+      _setupAudioPlayer();
     });
-   _fetchTutorialProgress();
+    _fetchTutorialProgress();
   }
 
   void _setupAudioPlayer() {
@@ -94,7 +100,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   void _initTargets() {
-    targets.clear(); 
+    targets.clear();
     double screenHeight = MediaQuery.of(context).size.height;
     double boxHeight = screenHeight * 0.1;
 
@@ -103,8 +109,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeEdit',
           keyTarget: keyNoticeEdit,
-          title: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_Notice_edit_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -112,8 +120,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         createTarget(
           identify: 'keyNoticeDelete',
           keyTarget: keyNoticeDelete,
-          title: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_title'),
-          description: AppLocalizations.of(context)!.translate('tutorial_Notice_delete_description'),
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_description'),
           align: ContentAlign.bottom,
           context: context,
         ),
@@ -142,7 +152,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Padding(
                     padding: EdgeInsets.zero,
                     child: Text(
-                      AppLocalizations.of(context)!.translate('tutorial_Notice_Finish_description'),
+                      AppLocalizations.of(context)!
+                          .translate('tutorial_Notice_Finish_description'),
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -158,8 +169,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       createTarget(
         identify: 'keyDealHistory',
         keyTarget: keyDealHistory,
-        title: AppLocalizations.of(context)!.translate('tutorial_Notice_history_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_Notice_history_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_description'),
         align: ContentAlign.top,
         context: context,
       ),
@@ -168,12 +181,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      print('Tutorial already in progress, skipping');
+      ////print('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      print('No targets available for tutorial, skipping');
+      ////print('No targets available for tutorial, skipping');
       return;
     }
 
@@ -185,7 +198,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         tutorialProgress!['notices']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      print('Tutorial conditions not met');
+      ////print('Tutorial conditions not met');
       return;
     }
 
@@ -215,16 +228,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       focusAnimationDuration: Duration(milliseconds: 300),
       pulseAnimationDuration: Duration(milliseconds: 500),
       onClickTarget: (target) {
-        print("Target clicked: ${target.identify}");
+        ////print("Target clicked: ${target.identify}");
       },
       onClickOverlay: (target) {
-        print("Overlay clicked: ${target.identify}");
+        ////print("Overlay clicked: ${target.identify}");
       },
       onSkip: () {
-        print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+        ////print(AppLocalizations.of(context)!.translate('tutorial_skip'));
         prefs.setBool('isTutorialShownNoticeDetails', true);
         _apiService.markPageCompleted("notices", "view").catchError((e) {
-          print('Error marking page completed on skip: $e');
+          ////print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -233,10 +246,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         return true;
       },
       onFinish: () {
-        print("Tutorial finished");
+        ////print("Tutorial finished");
         prefs.setBool('isTutorialShownNoticeDetails', true);
         _apiService.markPageCompleted("notices", "view").catchError((e) {
-          print('Error marking page completed on finish: $e');
+          ////print('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -336,10 +349,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           !_isTutorialInProgress &&
           targets.isNotEmpty &&
           mounted) {
-        showTutorial();
+        //showTutorial();
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      ////print('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -360,7 +373,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             !_isTutorialInProgress &&
             targets.isNotEmpty &&
             mounted) {
-          showTutorial();
+          //showTutorial();
         }
       }
     }
@@ -504,9 +517,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 Future.delayed(const Duration(milliseconds: 1),
                                     () {
                                   if (mounted) {
-                                 context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                  widget.initialDate?.month ?? DateTime.now().month,
-                                  widget.initialDate?.year ?? DateTime.now().year));
+                                    context.read<CalendarBloc>().add(
+                                        FetchCalendarEvents(
+                                            widget.initialDate?.month ??
+                                                DateTime.now().month,
+                                            widget.initialDate?.year ??
+                                                DateTime.now().year));
                                     context
                                         .read<EventBloc>()
                                         .add(FetchEvents());
@@ -531,126 +547,158 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     });
   }
 
-  Widget _buildVoicePlayer(
-      String? recordPath, int? callDuration, ApiService apiService) {
-    if (recordPath == null || recordPath.isEmpty) {
-      return const Text(
-        'Запись не найдена',
-        style: TextStyle(color: Color(0xFFE53935)),
-      );
-    }
+Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
+  // Логирование входных параметров
+  //print('Voice Player: recordUrl="$recordUrl", callDuration=$callDuration');
 
-    String audioUrl = apiService.getRecordingUrl(recordPath);
-    print('AUDIO URL: $audioUrl');
+  // Проверка валидности URL
+  if (!Uri.parse(recordUrl!).isAbsolute) {
+    //print('Voice Player: Invalid URL format: $recordUrl');
+    return const Text(
+      'Некорректный URL записи',
+      style: TextStyle(
+        color: Color(0xFFE53935),
+        fontSize: 14,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
 
-    // Format the duration for display
-    String formatDuration(Duration duration) {
-      String twoDigits(int n) => n.toString().padLeft(2, '0');
-      final minutes = twoDigits(duration.inMinutes.remainder(60));
-      final seconds = twoDigits(duration.inSeconds.remainder(60));
-      return '$minutes:$seconds';
-    }
+  // Форматирование длительности
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 2,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () async {
+  return StatefulBuilder(
+    builder: (context, setState) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () async {
+                try {
                   if (_isPlaying) {
                     await _audioPlayer.pause();
                     setState(() {
                       _isPlaying = false;
                     });
+                    //print('Voice Player: Audio paused');
                   } else {
-                    await _audioPlayer.setSourceUrl(audioUrl);
+                    //print('Voice Player: Attempting to play audio from $recordUrl');
+                    await _audioPlayer.setSourceUrl(recordUrl);
                     await _audioPlayer.resume();
                     setState(() {
                       _isPlaying = true;
                     });
+                    //print('Voice Player: Audio playing');
                   }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.blue,
-                    size: 24,
-                  ),
+                } catch (e) {
+                  //print('Voice Player: Error playing audio: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate('audio_playback_error'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.blue,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                formatDuration(_position),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xff1E2E52),
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              formatDuration(_position),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xff1E2E52),
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Slider(
-                  value: _position.inSeconds.toDouble(),
-                  min: 0.0,
-                  max: _duration.inSeconds > 0
-                      ? _duration.inSeconds.toDouble()
-                      : (callDuration ?? 0).toDouble(),
-                  activeColor: Colors.blue,
-                  inactiveColor: Colors.grey[300],
-                  onChanged: (value) async {
-                    final newPosition = Duration(seconds: value.toInt());
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Slider(
+                value: _position.inSeconds.toDouble(),
+                min: 0.0,
+                max: _duration.inSeconds > 0
+                    ? _duration.inSeconds.toDouble()
+                    : (callDuration ?? 0).toDouble(),
+                activeColor: Colors.blue,
+                inactiveColor: Colors.grey[300],
+                onChanged: (value) async {
+                  final newPosition = Duration(seconds: value.toInt());
+                  try {
                     await _audioPlayer.seek(newPosition);
                     setState(() {
                       _position = newPosition;
                     });
-                  },
-                ),
+                    //print('Voice Player: Seek to ${formatDuration(newPosition)}');
+                  } catch (e) {
+                    //print('Voice Player: Error seeking audio: $e');
+                  }
+                },
               ),
-              const SizedBox(width: 8),
-              Text(
-                formatDuration(Duration(seconds: callDuration ?? 0)),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xff1E2E52),
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              formatDuration(Duration(seconds: callDuration ?? 0)),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xff1E2E52),
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildFinishButton(Notice notice, {Key? key}) {
-  if (notice.isFinished || notice.date == null) {
+    if (notice.isFinished || notice.date == null) {
       return const SizedBox.shrink();
     }
     return Padding(
-      key: key, 
+      key: key,
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: CustomButton(
         buttonText: AppLocalizations.of(context)!.translate('finish_event'),
@@ -869,6 +917,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   sendNotification:
                                       false, // or true, depending on the logic
                                   canFinish: false, // or true
+                                  files:
+                                      notice.files, // Ensure files are passed
                                 ),
                               ),
                             ),
@@ -883,9 +933,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 .read<HistoryLeadsBloc>()
                                 .add(FetchNoticeHistory(notice.lead!.id));
 
-                          context.read<CalendarBloc>().add(FetchCalendarEvents(
-                         widget.initialDate?.month ?? DateTime.now().month,
-                         widget.initialDate?.year ?? DateTime.now().year));
+                            context.read<CalendarBloc>().add(
+                                FetchCalendarEvents(
+                                    widget.initialDate?.month ??
+                                        DateTime.now().month,
+                                    widget.initialDate?.year ??
+                                        DateTime.now().year));
                           }
                         },
                       );
@@ -926,123 +979,108 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildDetailsList(Notice notice) {
-    late final int leadId = notice.lead!.id;
-    final List<Map<String, String>> details = [
+ Widget _buildDetailsList(Notice notice) {
+  late final int leadId = notice.lead!.id;
+  final List<Map<String, dynamic>> details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('title'),
+      'value': notice.title,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('lead_name'),
+      'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('body'),
+      'value': notice.body,
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('date'),
+      'value': notice.date != null
+          ? formatDate(notice.date.toString())
+          : AppLocalizations.of(context)!.translate(''),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('assignee'),
+      'value': notice.users
+          .map((user) => '${user.name} ${user.lastname ?? ''}')
+          .join(', '),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('author_details'),
+      'value': notice.author != null
+          ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
+          : AppLocalizations.of(context)!.translate(''),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'value': formatDate(notice.createdAt.toString()),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('is_finished'),
+      'value': notice.isFinished
+          ? AppLocalizations.of(context)!.translate('finished')
+          : AppLocalizations.of(context)!.translate('in_progress'),
+    },
+    if (notice.files != null && notice.files!.isNotEmpty)
       {
-        'label': AppLocalizations.of(context)!.translate('title'),
-        'value': notice.title
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value':
+            '${notice.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('body'),
-        'value': notice.body
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('date'),
-        'value': notice.date != null
-            ? formatDate(notice.date.toString())
-            : AppLocalizations.of(context)!.translate('call_recording'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': notice.users
-            .map((user) => '${user.name} ${user.lastname ?? ''}')
-            .join(', '),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': notice.author != null
-            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('call_recording'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': formatDate(notice.createdAt.toString())
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('is_finished'),
-        'value': notice.isFinished
-            ? AppLocalizations.of(context)!.translate('finished')
-            : AppLocalizations.of(context)!.translate('in_progress'),
-      },
-    ];
+  ];
 
-    if (notice.call != null) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('caller'),
-        'value': notice.call!.caller,
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('internal_number'),
-        'value': notice.call!.internalNumber ??
-            AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_duration'),
-        'value': notice.call!.callDuration != null
+  // Добавляем информацию о звонке как единый элемент, если она есть
+  if (notice.call != null) {
+    details.add({
+      'label': 'call_details', // Специальный ключ для обозначения блока звонка
+      'value': '', // Значение не используется, так как данные берутся из notice.call
+      'call_data': {
+        'caller': notice.call!.caller,
+        'internal_number': notice.call!.internalNumber ??
+            AppLocalizations.of(context)!.translate(''),
+        'call_duration': notice.call!.callDuration != null
             ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label':
-            AppLocalizations.of(context)!.translate('call_ringing_duration'),
-        'value': notice.call!.callRingingDuration != null
+            : AppLocalizations.of(context)!.translate(''),
+        'call_ringing_duration': notice.call!.callRingingDuration != null
             ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_recording'),
-        'value': '',
-      });
-    }
-
-    if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('conclusions'),
-        'value': notice.conclusion!,
-      });
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: details.length,
-          itemBuilder: (context, index) {
-            // Устанавливаем одинаковый отступ для всех элементов, кроме блока звонка
-            if (notice.call != null && index >= details.length - 5) {
-              // Предполагаем, что последние 5 элементов — это поля звонка
-              return _buildDetailItem(
-                details[index]['label']!,
-                details[index]['value']!,
-                leadId,
-                notice,
-                index,
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: _buildDetailItem(
-                details[index]['label']!,
-                details[index]['value']!,
-                leadId,
-                notice,
-                index,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 0), // Убираем лишнее пространство после списка
-      ],
-    );
+            : AppLocalizations.of(context)!.translate(''),
+        'call_recording': '', // Пустое значение для обработки в _buildDetailItem
+      },
+    });
   }
 
+  if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('conclusions'),
+      'value': notice.conclusion!,
+    });
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: details.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: _buildDetailItem(
+              details[index]['label']!,
+              details[index]['value']!,
+              leadId,
+              notice,
+              index,
+              callData: details[index]['call_data'],
+            ),
+          );
+        },
+      ),
+    ],
+  );
+}
   void _showUsersDialog(String users) {
     List<String> userList =
         users.split(',').map((user) => user.trim()).toList();
@@ -1112,422 +1150,494 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     return '$minutes:$seconds';
   }
 
-  Widget _buildDetailItem(
-      String label, String value, int leadId, Notice notice, int index) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        if (label == AppLocalizations.of(context)!.translate('assignee') &&
-            value.contains(',')) {
-          label = AppLocalizations.of(context)!.translate('assignees');
+Widget _buildDetailItem(
+    String label,
+    String value,
+    int leadId,
+    Notice notice,
+    int index, {
+    Map<String, String>? callData,
+  }) {
+  return LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) {
+      if (label == AppLocalizations.of(context)!.translate('assignee') &&
+          value.contains(',')) {
+        label = AppLocalizations.of(context)!.translate('assignees');
+      }
+
+      // Обработка блока звонка
+      if (label == 'call_details' && notice.call != null) {
+        bool isMissed = notice.call!.missed ?? false;
+        bool isIncoming = notice.call!.incoming ?? false;
+        Color statusColor;
+        String statusText;
+
+        if (!isMissed && isIncoming) {
+          statusColor = const Color(0xffE6F4EA);
+          statusText = AppLocalizations.of(context)!.translate('incoming_call');
+        } else if (isMissed && isIncoming) {
+          statusColor = const Color(0xffFEE6E6);
+          statusText = AppLocalizations.of(context)!.translate('missed_call');
+        } else if (!isMissed && !isIncoming) {
+          statusColor = const Color(0xffE6F4EA);
+          statusText = AppLocalizations.of(context)!.translate('outgoing_call');
+        } else {
+          statusColor = const Color(0xffFEE6E6);
+          statusText = AppLocalizations.of(context)!.translate('outgoing_call_unanswered');
         }
 
-        if (notice.call != null &&
-            (label == AppLocalizations.of(context)!.translate('caller') ||
-                label ==
-                    AppLocalizations.of(context)!
-                        .translate('internal_number') ||
-                label ==
-                    AppLocalizations.of(context)!.translate('call_duration') ||
-                label ==
-                    AppLocalizations.of(context)!
-                        .translate('call_ringing_duration'))) {
-          bool isMissed = notice.call!.missed ?? false;
-          bool isIncoming = notice.call!.incoming ?? false;
-          Color statusColor;
-          String statusText;
-
-          if (!isMissed && isIncoming) {
-            statusColor = const Color(0xffE6F4EA);
-            statusText =
-                AppLocalizations.of(context)!.translate('incoming_call');
-          } else if (isMissed && isIncoming) {
-            statusColor = const Color(0xffFEE6E6);
-            statusText = AppLocalizations.of(context)!.translate('missed_call');
-          } else if (!isMissed && !isIncoming) {
-            statusColor = const Color(
-                0xffE6F4EA); // Можно выбрать другой цвет, если нужно
-            statusText =
-                AppLocalizations.of(context)!.translate('outgoing_call');
-          } else {
-            statusColor = const Color(0xffFEE6E6);
-            statusText = AppLocalizations.of(context)!
-                .translate('outgoing_call_unanswered');
-          }
-
-          if (label == AppLocalizations.of(context)!.translate('caller')) {
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xffF5F7FA),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        // Возвращаем единый Container для всех полей звонка
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xffF5F7FA),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Caller
+              Row(
                 children: [
-                  // Text(
-                  //   AppLocalizations.of(context)!.translate('phone_call'),
-                  //   style: const TextStyle(
-                  //     fontSize: 16,
-                  //     fontFamily: 'Gilroy',
-                  //     fontWeight: FontWeight.w600,
-                  //     color: Color(0xff1E2E52),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 12),
-                  //   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xff1E2E52),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.phone,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context)!
-                            .translate('lead_deal_card'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          notice.call!.caller,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xff1E2E52),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context)!.translate('meneger_code'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Text(
-                        notice.call!.internalNumber ?? '',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Call Duration
-                  Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xff1E2E52),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.timer,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context)!
-                                .translate('call_duration') +
-                            ': ',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Text(
-                        notice.call!.callDuration != null
-                            ? _formatDuration(
-                                Duration(seconds: notice.call!.callDuration!))
-                            : '00:00',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xff1E2E52),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.notifications,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context)!
-                                .translate('call_ringing_duration') +
-                            ': ',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Text(
-                        notice.call!.callRingingDuration != null
-                            ? _formatDuration(Duration(
-                                seconds: notice.call!.callRingingDuration!))
-                            : '00:00',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Status Bar
                   Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(8),
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xff1E2E52),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info,
-                          color: statusColor == const Color(0xffFEE6E6)
-                              ? Colors.red
-                              : Colors.green,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: statusColor == const Color(0xffFEE6E6)
-                                ? Colors.red
-                                : Colors.green,
-                          ),
-                        ),
-                      ],
+                    child: const Center(
+                      child: Icon(
+                        Icons.phone,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
-                  // Условный рендеринг проигрывателя
-                  if (notice.call!.callRecordPath != null &&
-                      !notice.call!.missed &&
-                      (notice.call!.callDuration ?? 0) > 0)
-                    _buildVoicePlayer(
-                      notice.call!.callRecordPath,
-                      notice.call!.callDuration,
-                      apiService, // Добавляем третий аргумент
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context)!.translate('lead_deal_card'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
                     ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      callData!['caller']!,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ),
                 ],
               ),
+              const SizedBox(height: 12),
+              // Internal Number
+              Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xff1E2E52),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context)!.translate('meneger_code'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  Text(
+                    callData!['internal_number']!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Call Duration
+              Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xff1E2E52),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.timer,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context)!.translate('call_duration') + ': ',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  Text(
+                    callData!['call_duration']!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Call Ringing Duration
+              Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xff1E2E52),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.notifications,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context)!.translate('call_ringing_duration') + ': ',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  Text(
+                    callData!['call_ringing_duration']!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Status Bar
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info,
+                      color: statusColor == const Color(0xffFEE6E6) ? Colors.red : Colors.green,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: statusColor == const Color(0xffFEE6E6) ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Call Recording
+              // const SizedBox(height: 12),
+              Text(
+                AppLocalizations.of(context)!.translate('call_recording'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+              // const SizedBox(height: 8),
+              (notice.call!.callRecordUrl != null || notice.call!.callRecordPath != null) &&
+                      !notice.call!.missed &&
+                      (notice.call!.callDuration ?? 0) > 0
+                  ? _buildVoicePlayer(
+                      notice.call!.callRecordUrl ?? notice.call!.callRecordPath,
+                      notice.call!.callDuration,
+                    )
+                  : Text(
+                      AppLocalizations.of(context)!.translate('no_recording_available'),
+                      style: const TextStyle(
+                        color: Color(0xFFE53935),
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+            ],
+          ),
+        );
+      }
+
+      if (label == AppLocalizations.of(context)!.translate('assignees')) {
+        return GestureDetector(
+          onTap: () => _showUsersDialog(value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value.split(',').take(3).join(', ') +
+                      (value.split(',').length > 3
+                          ? ' и еще ${value.split(',').length - 3}...'
+                          : ''),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (label == AppLocalizations.of(context)!.translate('lead_name')) {
+        return GestureDetector(
+          onTap: () {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: leadId.toString(),
+                  leadName: value,
+                  leadStatus: "",
+                  statusId: 1,
+                ),
+              ),
             );
-          }
-          return const SizedBox.shrink();
-        }
-        if (label == AppLocalizations.of(context)!.translate('assignees')) {
-          return GestureDetector(
-            onTap: () => _showUsersDialog(value),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(label),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value.split(',').take(3).join(', ') +
-                        (value.split(',').length > 3
-                            ? ' и еще ${value.split(',').length - 3}...'
-                            : ''),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                      decoration: TextDecoration.underline,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
                   ),
                 ),
-              ],
-            ),
-          );
-        }
+              ),
+            ],
+          ),
+        );
+      }
 
-        if (label == AppLocalizations.of(context)!.translate('lead_name')) {
-          return GestureDetector(
-            onTap: () {
-              print('LEAD ID ENTER------');
-              print(leadId);
-              navigatorKey.currentState?.push(
-                MaterialPageRoute(
-                  builder: (context) => LeadDetailsScreen(
-                    leadId: leadId.toString(),
-                    leadName: value,
-                    leadStatus: "",
-                    statusId: 1,
-                  ),
-                ),
-              );
-            },
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(label),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (label == AppLocalizations.of(context)!.translate('body')) {
-          return GestureDetector(
-            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(label),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                      decoration: TextDecoration.underline,
-                    ),
-                    maxLines: 7,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (label == AppLocalizations.of(context)!.translate('conclusions')) {
-          return GestureDetector(
-            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(label),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                      decoration: TextDecoration.underline,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // Default rendering for other fields
-        return Row(
+      if (label == AppLocalizations.of(context)!.translate('files_details')) {
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildValue(value),
+            SizedBox(height: 8),
+            Container(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: notice.files?.length ?? 0,
+                itemBuilder: (context, index) {
+                  final file = notice.files![index];
+                  final fileExtension =
+                      file.name.split('.').last.toLowerCase();
+
+                  return Padding(
+                    padding: EdgeInsets.only(right: 16),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (!_isDownloading) {
+                          FileUtils.showFile(
+                            context: context,
+                            fileUrl: file.path,
+                            fileId: file.id,
+                            setState: setState,
+                            downloadProgress: _downloadProgress,
+                            isDownloading: _isDownloading,
+                            apiService: _apiService,
+                          );
+                        }
+                      },
+                      child: Container(
+                        width: 100,
+                        child: Column(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/icons/files/$fileExtension.png',
+                                  width: 60,
+                                  height: 60,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/icons/files/file.png',
+                                      width: 60,
+                                      height: 60,
+                                    );
+                                  },
+                                ),
+                                if (_downloadProgress.containsKey(file.id))
+                                  CircularProgressIndicator(
+                                    value: _downloadProgress[file.id],
+                                    strokeWidth: 3,
+                                    backgroundColor:
+                                        Colors.grey.withOpacity(0.3),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xff1E2E52),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              file.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         );
-      },
-    );
-  }
+      }
+
+      if (label == AppLocalizations.of(context)!.translate('body')) {
+        return GestureDetector(
+          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                  maxLines: 7,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (label == AppLocalizations.of(context)!.translate('conclusions')) {
+        return GestureDetector(
+          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildValue(value),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildLabel(String label) {
     return Text(

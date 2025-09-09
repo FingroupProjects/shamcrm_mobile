@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
@@ -55,6 +57,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<int>? _selectedUserIds;
   bool _showCustomTabBar = true;
   bool _hasPermissionToAddTask = false;
+  List<Map<String, dynamic>> _selectedDirectoryValues = []; // Добавляем directoryValues
 
   String _lastSearchQuery = "";
 
@@ -76,12 +79,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _intialToDate;
   DateTime? _intialDeadlineFromDate;
   DateTime? _intialDeadlineToDate;
+  List<Map<String, dynamic>> _initialDirectoryValues = []; // Добавляем initialDirectoryValues
   bool _initialOverdue = false;
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
-  List<String> _selectedAuthors = []; // Add this
-  List<String> _initialSelectedAuthors = []; // Add this
+  List<String> _selectedAuthors = []; 
+  List<String> _initialSelectedAuthors = []; 
   String? _selectedDepartment;
   String? _initialSelectedDepartment;
   final GlobalKey keySearchIcon = GlobalKey();
@@ -100,6 +104,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _loadUserRoles();
+    _loadFilterState(); // Загружаем состояние фильтров
     TaskCache.getTaskStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
@@ -124,19 +129,99 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _checkPermissions();
   }
 
-  void _onScroll() {
+Future<void> _loadFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedUsers = (jsonDecode(prefs.getString('task_selected_users') ?? '[]') as List)
+          .map((u) => UserData.fromJson(u))
+          .toList();
+      _selectedStatuses = prefs.getInt('task_selected_statuses');
+      _fromDate = prefs.getString('task_from_date') != null
+          ? DateTime.parse(prefs.getString('task_from_date')!)
+          : null;
+      _toDate = prefs.getString('task_to_date') != null
+          ? DateTime.parse(prefs.getString('task_to_date')!)
+          : null;
+      _deadlinefromDate = prefs.getString('task_deadline_from_date') != null
+          ? DateTime.parse(prefs.getString('task_deadline_from_date')!)
+          : null;
+      _deadlinetoDate = prefs.getString('task_deadline_to_date') != null
+          ? DateTime.parse(prefs.getString('task_deadline_to_date')!)
+          : null;
+      _isOverdue = prefs.getBool('task_is_overdue') ?? false;
+      _hasFile = prefs.getBool('task_has_file') ?? false;
+      _hasDeal = prefs.getBool('task_has_deal') ?? false;
+      _isUrgent = prefs.getBool('task_is_urgent') ?? false;
+      _selectedProject = prefs.getString('task_selected_project');
+      _selectedAuthors = (jsonDecode(prefs.getString('task_selected_authors') ?? '[]') as List).cast<String>();
+      _selectedDepartment = prefs.getString('task_selected_department');
+      _selectedDirectoryValues = (jsonDecode(prefs.getString('task_selected_directory_values') ?? '[]') as List)
+          .map((d) => Map<String, dynamic>.from(d))
+          .toList();
+
+      _initialselectedUsers = List.from(_selectedUsers);
+      _initialSelStatus = _selectedStatuses;
+      _intialFromDate = _fromDate;
+      _intialToDate = _toDate;
+      _intialDeadlineFromDate = _deadlinefromDate;
+      _intialDeadlineToDate = _deadlinetoDate;
+      _initialOverdue = _isOverdue;
+      _initialHasFile = _hasFile;
+      _initialHasDeal = _hasDeal;
+      _initialUrgent = _isUrgent;
+      _initialSelectedAuthors = List.from(_selectedAuthors);
+      _initialSelectedDepartment = _selectedDepartment;
+      _initialDirectoryValues = List.from(_selectedDirectoryValues);
+      
+    });
+  }
+void _onScroll() {
   if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     if (taskBloc.state is TaskDataLoaded) {
       final state = taskBloc.state as TaskDataLoaded;
       if (!taskBloc.allTasksFetched) {
         final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        taskBloc.add(FetchMoreTasks(currentStatusId, state.currentPage));
+        taskBloc.add(FetchMoreTasks(
+          currentStatusId,
+          state.currentPage,
+          query: _lastSearchQuery,
+          userIds: _selectedUsers.map((user) => user.id).toList(),
+          statusIds: _selectedStatuses,
+          fromDate: _fromDate,
+          toDate: _toDate,
+          overdue: _isOverdue,
+          hasFile: _hasFile,
+          hasDeal: _hasDeal,
+          urgent: _isUrgent,
+          deadlinefromDate: _deadlinefromDate,
+          deadlinetoDate: _deadlinetoDate,
+          project: _selectedProject,
+          authors: _selectedAuthors,
+          department: _selectedDepartment,
+          directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+        ));
       }
     }
   }
 }
-
+Future<void> _saveFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('task_selected_users', jsonEncode(_selectedUsers.map((u) => u.toJson()).toList()));
+    await prefs.setInt('task_selected_statuses', _selectedStatuses ?? 0);
+    await prefs.setString('task_from_date', _fromDate?.toIso8601String() ?? '');
+    await prefs.setString('task_to_date', _toDate?.toIso8601String() ?? '');
+    await prefs.setString('task_deadline_from_date', _deadlinefromDate?.toIso8601String() ?? '');
+    await prefs.setString('task_deadline_to_date', _deadlinetoDate?.toIso8601String() ?? '');
+    await prefs.setBool('task_is_overdue', _isOverdue);
+    await prefs.setBool('task_has_file', _hasFile);
+    await prefs.setBool('task_has_deal', _hasDeal);
+    await prefs.setBool('task_is_urgent', _isUrgent);
+    await prefs.setString('task_selected_project', _selectedProject ?? '');
+    await prefs.setString('task_selected_authors', jsonEncode(_selectedAuthors));
+    await prefs.setString('task_selected_department', _selectedDepartment ?? '');
+    await prefs.setString('task_selected_directory_values', jsonEncode(_selectedDirectoryValues));
+  }
   @override
   void dispose() {
     _scrollController.dispose();
@@ -160,7 +245,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading user roles: $e');
+      //print('Error loading user roles: $e');
       if (mounted) {
         setState(() { userRoles = ['Error loading roles']; });
       }
@@ -191,7 +276,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initTutorialTargets();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          showTutorial();
+          //showTutorial();
         }
       });
     }
@@ -223,7 +308,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for TaskScreen, skipping');
+      //print('Tutorial already shown for TaskScreen, skipping');
       return;
     }
 
@@ -247,20 +332,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print('Tutorial skipped for TaskScreen');
+        //print('Tutorial skipped for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
+          _isTaskScreenTutorialCompleted = true;
         });
         return true;
       },
       onFinish: () {
-        print('Tutorial finished for TaskScreen');
+        //print('Tutorial finished for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
+          _isTaskScreenTutorialCompleted = true;
         });
       },
     ).show(context: context);
@@ -285,9 +370,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      authors:
-          _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
-      department: _selectedDepartment, // Убедитесь, что это есть
+      authors: _selectedAuthors,
+      department: _selectedDepartment, 
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+      
     ));
   }
 
@@ -300,15 +386,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _toDate = filterData['toDate'];
       _deadlinefromDate = filterData['deadlinefromDate'];
       _deadlinetoDate = filterData['deadlinetoDate'];
-      // Добавляем новые фильтры
       _isOverdue = filterData['overdue'] ?? false;
       _hasFile = filterData['hasFile'] ?? false;
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
-      _selectedAuthors = filterData['authors'] ?? []; // Add this
+      _selectedAuthors = filterData['authors'] ?? []; 
+      _selectedDirectoryValues = (filterData['directory_values'] as List?)?.map((item) => {
+          'directory_id': item['directory_id'],
+          'entry_id': item['entry_id'],
+        }).toList() ?? []; // Добавляем directory_values
 
-      // Сохраняем начальные значения
       _initialselectedUsers = filterData['users'] ?? [];
       _initialSelStatus = filterData['statuses'];
       _intialFromDate = filterData['fromDate'];
@@ -322,6 +410,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialSelectedAuthors = filterData['authors'] ?? [];
       _selectedDepartment = filterData['department'];
       _initialSelectedDepartment = filterData['department'];
+      _initialDirectoryValues = List.from(_selectedDirectoryValues); // Обновляем initial
     });
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -344,6 +433,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       project: _selectedProject,
       authors: _selectedAuthors,
       department: _selectedDepartment,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -361,6 +451,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       currentStatusId,
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -381,6 +472,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -405,6 +497,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
 
@@ -418,7 +511,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _lastSearchQuery = '';
       _searchController.clear();
 
-      // Сбрасываем новые фильтры
       _isOverdue = false;
       _hasFile = false;
       _hasDeal = false;
@@ -426,9 +518,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _deadlinefromDate = null;
       _deadlinetoDate = null;
       _selectedProject = null;
-      _selectedAuthors = []; // Add this
-
-      // Сбрасываем начальные значения
+      _selectedAuthors = []; 
+_selectedDirectoryValues = []; // Очищаем directoryValues
       _initialselectedUsers = [];
       _initialSelStatus = null;
       _intialFromDate = null;
@@ -439,7 +530,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
-      _initialSelectedAuthors = []; // Add this
+      _initialSelectedAuthors = []; 
       _selectedDepartment = null;
       _initialSelectedDepartment = null;
     });
@@ -453,8 +544,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchTasks(query, currentStatusId);
   }
-
-  // Метод для проверки разрешени
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -494,7 +583,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             onStatusAndDateRangeSelected: _handleStatusAndDateSelected,
             initialUsers: _initialselectedUsers,
             initialStatuses: _initialSelStatus,
-            initialAuthors: _initialSelectedAuthors, // Add this
+            initialAuthors: _initialSelectedAuthors,
             initialDepartment: _initialSelectedDepartment,
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,
@@ -504,12 +593,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
+            initialDirectoryValuesTask: _initialDirectoryValues, // Передаем initialDirectoryValues
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectTask: !_showCustomTabBar,
             showFilterIcon: false,
+            showCallCenter: true,
             showMyTaskIcon: true,
             showFilterIconDeal: false,
             showEvent: false,
@@ -531,14 +622,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       _toDate == null &&
                       _deadlinefromDate == null &&
                       _deadlinetoDate == null) {
-                    print("IF SEARCH EMPTY AND NO FILTERS");
+                    //print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
                     });
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
                     taskBloc.add(FetchTaskStatuses());
                   } else {
-                    print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                    //print("IF SEARCH EMPTY BUT FILTERS EXIST");
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
                     taskBloc.add(FetchTasks(
@@ -557,11 +648,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       deadlinetoDate: _toDate,
                       authors: _selectedAuthors,
                       department: _selectedDepartment,
+                      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
                     ));
                   }
                 } else if (_selectedUserIds != null &&
                     _selectedUserIds!.isNotEmpty) {
-                  print("ELSE IF SEARCH NOT EMPTY");
+                  //print("ELSE IF SEARCH NOT EMPTY");
 
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -597,7 +689,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Task> tasks) {
-    // Если идёт поиск и ничего не найдено
     if (_isSearching && tasks.isEmpty) {
       return Center(
         child: Text(
@@ -611,7 +702,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
       );
     }
-    // Если пользователь выбран, но задач нет
     else if (_isUser && tasks.isEmpty) {
       return Center(
         child: Text(
@@ -627,7 +717,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
       );
     }
-    // Если задачи пусты, но поиск не активен
     else if (tasks.isEmpty) {
       return Center(
         child: Text(
@@ -642,7 +731,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Если задачи есть, показываем список
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
@@ -656,10 +744,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               name: task.taskStatus?.taskStatus?.name ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {
-                print('Статус задачи обновлён');
+                //print('Статус задачи обновлён');
               },
               onStatusId: (StatusLeadId) {
-                print('onStatusId вызван с id: $StatusLeadId');
+                //print('onStatusId вызван с id: $StatusLeadId');
               },
             ),
           );
@@ -673,7 +761,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         if (state is TaskDataLoaded) {
           final List<Task> tasks = state.tasks;
-          // Если включён поиск и список задач пуст
           if (_isSearching && tasks.isEmpty) {
             return Center(
               child: Text(
@@ -688,7 +775,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           }
 
-          // Если показывается список пользователя и он пуст
           if (_isUser && tasks.isEmpty) {
             return Center(
               child: Text(
@@ -705,7 +791,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           }
 
-          // Если есть задачи, отображаем их
           if (tasks.isNotEmpty) {
             return Flexible(
               child: ListView.builder(
@@ -730,7 +815,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           }
         }
 
-        // Если задачи загружаются
         if (state is TaskLoading) {
           debugPrint('Loading tasks...');
           return const Center(
@@ -741,7 +825,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           );
         }
 
-        // Если состояние неизвестное или пустое
         debugPrint('Unknown state or no data');
         return Center(
           child: Text(
@@ -814,7 +897,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? "0"; // Используем leadsCount
+          taskCount = taskStatus?.tasksCount ?? "0"; 
         }
         return GestureDetector(
           key: _tabKeys[index],
@@ -916,7 +999,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (state is TaskLoaded) {
           await TaskCache.cacheTaskStatuses(state.taskStatuses
               .map((status) =>
-                  {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+                  {'id': status.id, 'title': status.taskStatus?.name ?? ""})
               .toList());
           setState(() {
             _tabTitles = state.taskStatuses
@@ -1016,7 +1099,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
-          // print('state: ${state.runtimeType}');
+          // //print('state: ${state.runtimeType}');
           if (state is TaskDataLoaded) {
             final List<Task> tasks = state.tasks;
             return searchWidget(tasks);
@@ -1044,7 +1127,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   name: title,
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
+                    //print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 

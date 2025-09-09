@@ -1,6 +1,6 @@
 {
-    "name": "shamcrm_mobile",
-    "short_name": "shamcrm_mobile",
+    "name": "crm_task_manager",
+    "short_name": "crm_task_manager",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

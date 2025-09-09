@@ -9,6 +9,7 @@ import 'deal_state.dart';
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
   bool allDealsFetched = false; 
+  bool isFetching = false; // Новый флаг
   Map<int, int> _dealCounts = {}; 
   String? _currentQuery;
   List<int>? _currentManagerIds;
@@ -18,6 +19,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   List<int>? _currentLeadIds;
   bool? _currentHasTasks;
   int? _currentDaysWithoutActivity;
+  List<Map<String, dynamic>>? _currentDirectoryValues;
+
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -31,7 +34,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<UpdateDealStatusEdit>(_updateDealStatusEdit);
     on<FetchDealStatus>(_fetchDealStatus);
   }
-Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) async {
+
+  Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
     try {
       final dealStatus = await apiService.getDealStatus(event.dealStatusId);
@@ -40,63 +44,79 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
       emit(DealError('Failed to fetch deal status: ${e.toString()}'));
     }
   }
-  // Метод для загрузки сделок с учётом кэша
+
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+  if (isFetching) {
+    print('DealBloc: _fetchDeals - Already fetching, skipping');
+    return;
+  }
+  isFetching = true;
+  try {
+    print('DealBloc: _fetchDeals - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
     emit(DealLoading());
 
-     _currentQuery = event.query;
-     _currentManagerIds = event.managerIds;
-     _currentStatusId = event.statusIds;
-     _currentFromDate = event.fromDate;
-     _currentToDate = event.toDate;
-     _currentLeadIds = event.leadIds;
-     _currentHasTasks = event.hasTasks;
-     _currentDaysWithoutActivity = event.daysWithoutActivity;
+    _currentQuery = event.query;
+    _currentManagerIds = event.managerIds;
+    _currentStatusId = event.statusIds;
+    _currentFromDate = event.fromDate;
+    _currentToDate = event.toDate;
+    _currentLeadIds = event.leadIds;
+    _currentHasTasks = event.hasTasks;
+    _currentDaysWithoutActivity = event.daysWithoutActivity;
+    _currentDirectoryValues = event.directoryValues;
 
     if (!await _checkInternetConnection()) {
+      print('DealBloc: _fetchDeals - No internet connection');
       final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
       if (cachedDeals.isNotEmpty) {
         emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+        emit(DealWarning('Используются кэшированные данные из-за отсутствия интернета'));
       } else {
         emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
       }
       return;
     }
 
-    try {
-      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-      if (cachedDeals.isNotEmpty) {
-        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
-      }
-
-      final deals = await apiService.getDeals(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managers: event.managerIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        leads: event.leadIds,
-        hasTasks: event.hasTasks,
-        daysWithoutActivity: event.daysWithoutActivity
-
-      );
-
-      await DealCache.cacheDealsForStatus(event.statusId, deals);
-
-      final dealCounts = Map<int, int>.from(_dealCounts);
-      for (var deal in deals) {
-        dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
-      }
-
-      allDealsFetched = deals.isEmpty;
-      emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
-    } catch (e) {
-      emit(DealError('Не удалось загрузить данные!'));
+    final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+    if (cachedDeals.isNotEmpty) {
+      print('DealBloc: _fetchDeals - Emitting cached deals: ${cachedDeals.length}');
+      emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
     }
+
+    final deals = await apiService.getDeals(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+      managers: event.managerIds,
+      statuses: event.statusIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      leads: event.leadIds,
+      hasTasks: event.hasTasks,
+      daysWithoutActivity: event.daysWithoutActivity,
+      directoryValues: event.directoryValues,
+      salesFunnelId: event.salesFunnelId,
+    );
+
+    await DealCache.cacheDealsForStatus(event.statusId, deals);
+    print('DealBloc: _fetchDeals - Cached deals for statusId: ${event.statusId}, count: ${deals.length}');
+
+    final dealCounts = Map<int, int>.from(_dealCounts);
+    for (var deal in deals) {
+      dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
+    }
+
+    allDealsFetched = deals.isEmpty;
+    emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+  } catch (e) {
+    print('DealBloc: _fetchDeals - Error: $e');
+    emit(DealError('Не удалось загрузить данные!'));
+  } finally {
+    isFetching = false;
   }
+}
+
 
 // Метод для загрузки статусов сделок с учётом кэша
   Future<void> _fetchDealStatuses(
@@ -150,45 +170,45 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
     }
   }
 
-Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) async {
-  if (allDealsFetched) return;
+  Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) async {
+    if (allDealsFetched) return;
 
-  if (!await _checkInternetConnection()) {
-    emit(DealError('Нет подключения к интернету'));
-    return;
-  }
-
-  try {
-    final deals = await apiService.getDeals(
-      _currentStatusId ?? event.statusId, 
-      page: event.currentPage + 1,
-      perPage: 20,
-      search: _currentQuery,
-      managers: _currentManagerIds,
-      statuses: _currentStatusId,
-      fromDate: _currentFromDate,
-      toDate: _currentToDate,
-      leads: _currentLeadIds,
-      hasTasks: _currentHasTasks,
-      daysWithoutActivity: _currentDaysWithoutActivity,
-    );
-
-    if (deals.isEmpty) {
-      allDealsFetched = true;
+    if (!await _checkInternetConnection()) {
+      emit(DealError('Нет подключения к интернету'));
       return;
     }
 
-    if (state is DealDataLoaded) {
-      final currentState = state as DealDataLoaded;
-      emit(currentState.merge(deals));
-    }
-  } catch (e) {
-    emit(DealError('Не удалось загрузить дополнительные сделки!'));
-  }
-}
+    try {
+      final deals = await apiService.getDeals(
+        _currentStatusId ?? event.statusId,
+        page: event.currentPage + 1,
+        perPage: 20,
+        search: _currentQuery,
+        managers: _currentManagerIds,
+        statuses: _currentStatusId,
+        fromDate: _currentFromDate,
+        toDate: _currentToDate,
+        leads: _currentLeadIds,
+        hasTasks: _currentHasTasks,
+        daysWithoutActivity: _currentDaysWithoutActivity,
+        directoryValues: _currentDirectoryValues, // Передаем directory_values
+      );
 
-  Future<void> _createDealStatus(
-      CreateDealStatus event, Emitter<DealState> emit) async {
+      if (deals.isEmpty) {
+        allDealsFetched = true;
+        return;
+      }
+
+      if (state is DealDataLoaded) {
+        final currentState = state as DealDataLoaded;
+        emit(currentState.merge(deals));
+      }
+    } catch (e) {
+      emit(DealError('Не удалось загрузить дополнительные сделки!'));
+    }
+  }
+
+ Future<void> _createDealStatus(CreateDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
@@ -198,7 +218,14 @@ Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) asyn
 
     try {
       final result = await apiService.createDealStatus(
-          event.title, event.color, event.day);
+        event.title,
+        event.color,
+        event.day,
+        event.notificationMessage,
+        event.showOnMainPage,
+        event.isSuccess,
+        event.isFailure,
+      );
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
@@ -207,12 +234,11 @@ Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) asyn
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(
-          DealError(event.localizations.translate('error_delete_status_deal')));
+      emit(DealError(event.localizations.translate('error_delete_status_deal')));
     }
   }
 
-  Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
+Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
       emit(DealError(event.localizations.translate('no_internet_connection')));
@@ -230,55 +256,54 @@ Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) asyn
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
         customFields: event.customFields,
+        directoryValues: event.directoryValues,
+        filePaths: event.filePaths,
       );
       if (result['success']) {
-        emit(DealSuccess(
-            event.localizations.translate('deal_created_successfully')));
-        // add(FetchDeals(event.dealStatusId));
+        emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
       } else {
-        emit(DealError(result['message']));
+        emit(DealError(event.localizations.translate(result['message'])));
       }
     } catch (e) {
-      emit(DealError(
-          event.localizations.translate('error_deal_create_successfully')));
+      emit(DealError(event.localizations.translate('error_deal_create_successfully')));
     }
   }
 
-  Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+  emit(DealLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      final result = await apiService.updateDeal(
-        dealId: event.dealId,
-        name: event.name,
-        dealStatusId: event.dealStatusId,
-        managerId: event.managerId,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        sum: event.sum,
-        description: event.description,
-        dealtypeId: event.dealtypeId,
-        leadId: event.leadId,
-        customFields: event.customFields,
-      );
-
-      if (result['success']) {
-        emit(DealSuccess(
-            event.localizations.translate('deal_update_successfully')));
-        // add(FetchDeals(event.dealStatusId));
-      } else {
-        emit(DealError(result['message']));
-      }
-    } catch (e) {
-      emit(DealError(
-          event.localizations.translate('error_deal_update_successfully')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(DealError(event.localizations.translate('no_internet_connection')));
+    return;
   }
+
+  try {
+    final result = await apiService.updateDeal(
+      dealId: event.dealId,
+      name: event.name,
+      dealStatusId: event.dealStatusId,
+      managerId: event.managerId,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      sum: event.sum ?? '',
+      description: event.description,
+      dealtypeId: event.dealtypeId,
+      leadId: event.leadId,
+      customFields: event.customFields,
+      directoryValues: event.directoryValues,
+      filePaths: event.filePaths,
+      existingFiles: event.existingFiles,
+    );
+
+    if (result['success']) {
+      emit(DealSuccess(event.localizations.translate('deal_updated_successfully')));
+    } else {
+      emit(DealError(result['message']));
+    }
+  } catch (e) {
+    emit(DealError(event.localizations.translate('error_deal_update')));
+  }
+}
 
   Future<bool> _checkInternetConnection() async {
     try {
@@ -340,6 +365,8 @@ Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) asyn
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.notificationMessage,
+        event.showOnMainPage,
       );
 
       if (response['result'] == 'Success') {

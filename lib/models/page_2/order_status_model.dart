@@ -1,49 +1,59 @@
 class OrderStatus {
   final int id;
   final String name;
-  final String? notificationMessage;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final bool isSuccess;
   final bool isFailed;
-  final bool canceled; // Новое поле
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final bool canceled;
+  final String? notificationMessage;
+  final String color;
+  final int position;
+  final int ordersCount; // Новое поле
 
   OrderStatus({
     required this.id,
     required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isSuccess,
+    required this.isFailed,
+    required this.canceled,
     this.notificationMessage,
-    this.isSuccess = false,
-    this.isFailed = false,
-    this.canceled = false, // Значение по умолчанию
-    this.createdAt,
-    this.updatedAt,
+    required this.color,
+    required this.position,
+    required this.ordersCount, // Добавляем в конструктор
   });
 
   factory OrderStatus.fromJson(Map<String, dynamic> json) {
     return OrderStatus(
       id: json['id'] ?? 0,
-      name: json['title'] ?? json['name'] ?? '',
+      name: json['name'] ?? '',
+      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toString()),
+      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toString()),
+      isSuccess: json['is_success'] == 1,
+      isFailed: json['is_failed'] == 1,
+      canceled: json['canceled'] == 1,
       notificationMessage: json['notification_message'],
-      // Преобразуем int (0 или 1) в bool
-      isSuccess: (json['is_success'] ?? 0) == 1,
-      isFailed: (json['is_failed'] ?? 0) == 1,
-      canceled: (json['canceled'] ?? 0) == 1, // Преобразуем int в bool
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
+      color: json['color'] ?? '#000',
+      position: json['position'] ?? 0,
+      ordersCount: json['orders_count'] ?? 0, // Читаем orders_count
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': name,
       'name': name,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'is_success': isSuccess ? 1 : 0,
+      'is_failed': isFailed ? 1 : 0,
+      'canceled': canceled ? 1 : 0,
       'notification_message': notificationMessage,
-      'is_success': isSuccess ? 1 : 0, // Преобразуем bool в int для API
-      'is_failed': isFailed ? 1 : 0,   // Преобразуем bool в int для API
-      'canceled': canceled ? 1 : 0,    // Преобразуем bool в int для API
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'color': color,
+      'position': position,
+      'orders_count': ordersCount, // Добавляем в JSON
     };
   }
 }

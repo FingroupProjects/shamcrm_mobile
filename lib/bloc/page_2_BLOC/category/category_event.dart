@@ -20,6 +20,7 @@ class CreateCategory extends CategoryEvent {
   final File? image;
   final String displayType;
   final bool hasPriceCharacteristics;
+  final bool isParent; // Новое поле
 
   CreateCategory({
     required this.name,
@@ -28,10 +29,19 @@ class CreateCategory extends CategoryEvent {
     this.image,
     required this.displayType,
     required this.hasPriceCharacteristics,
+    required this.isParent, // Добавляем в конструктор
   });
 
   @override
-  List<Object?> get props => [name, parentId, attributes, image, displayType, hasPriceCharacteristics];
+  List<Object?> get props => [
+        name,
+        parentId,
+        attributes,
+        image,
+        displayType,
+        hasPriceCharacteristics,
+        isParent, // Добавляем в props
+      ];
 }
 
 class UpdateCategory extends CategoryEvent {
@@ -77,4 +87,13 @@ class DeleteCategory extends CategoryEvent {
 
   @override
   List<Object?> get props => [catgeoryId];
+}
+
+class FetchSubCategoryById extends CategoryEvent {
+  final int categoryId;
+
+  FetchSubCategoryById(this.categoryId);
+
+  @override
+  List<Object> get props => [categoryId];
 }

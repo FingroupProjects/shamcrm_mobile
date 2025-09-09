@@ -42,6 +42,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>Bitcode</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -58,26 +60,31 @@
 		<true/>
 	</dict>
 	<key>NSAppleMusicUsageDescription</key>
-	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для
-			улучшения управления задачами.</string>
+	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
 	<key>NSBiometricUsageDescription</key>
 	<string>Нам нужно ваше разрешение на использование биометрии для безопасного входа в систему.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Access camera</string>
+	<string>Для сканирования QR-кодов.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Мы используем ваши контакты, чтобы вы могли легко выбрать номер клиента и быстро добавить его как лида. Мы загружаем на сервер только данные выбранного контакта — ваша полная адресная книга никогда не загружается автоматически.</string>
 	<key>NSDocumentsUsageDescription</key>
 	<string>Это приложение требует доступ к документам для управления файлами.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Это приложение требует использование Face ID для аутентификации</string>
+	<string>Это приложение требует использование Face ID для аутентификации.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>shamCRM использует ваше местоположение для отслеживания геолокации сотрудников в фоновом режиме, чтобы администраторы могли видеть местоположение пользователей в реальном времени для управления задачами и координации.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
+	<string>shamCRM использует ваше местоположение для предоставления функций геолокации, таких как отображение вашего текущего положения в приложении.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Это приложение требует доступа к микрофону.</string>
+	<string>Мы используем микрофон для записи голосовых сообщений в чате.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Нужен доступ к камере для сканирования штрихкодов</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>The app saves the image to your photo gallery.</string>
+	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+	<string>Для загрузки изображения с QR-кодом.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений и рекламы.</string>
+	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -115,13 +122,5 @@
 	<true/>
 	<key>com.apple.security.device.microphone</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Для сканирования QR-кодов</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Для загрузки изображения с QR-кодом</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Это приложение требует доступа к вашим контактам.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 </dict>
 </plist>

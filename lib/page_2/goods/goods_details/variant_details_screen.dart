@@ -19,27 +19,23 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      final enteredDomain = enteredDomainMap['enteredDomain'];
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-      print('VariantDetailsScreen: baseUrl set to $baseUrl');
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-      print('VariantDetailsScreen: Error initializing baseUrl: $error');
-    }
+ Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
   @override
   void initState() {
     super.initState();
-    print('VariantDetailsScreen: Initializing for variant ID ${widget.variant.id}');
+    //print('VariantDetailsScreen: Initializing for variant ID ${widget.variant.id}');
     _initializeBaseUrl();
   }
 
@@ -51,18 +47,18 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
 
   void _updateDetails() {
     final variant = widget.variant;
-    print('VariantDetailsScreen: Updating details for variant ID ${variant.id}');
-    print('VariantDetailsScreen: Variant attributeValues count: ${variant.attributeValues.length}');
+    //print('VariantDetailsScreen: Updating details for variant ID ${variant.id}');
+    //print('VariantDetailsScreen: Variant attributeValues count: ${variant.attributeValues.length}');
 
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('goods_price_details'),
         'value': variant.variantPrice?.price.toString() ?? '0',
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('start_date'),
-        'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate('not_specified'),
-      },
+      // {
+      //   'label': AppLocalizations.of(context)!.translate('start_date'),
+      //   'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate(''),
+      // },
       {
         'label': AppLocalizations.of(context)!.translate('status_lead_profile'),
         'value': variant.isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
@@ -70,7 +66,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
       // Добавляем все атрибуты из attributeValues
       ...variant.attributeValues.map((val) {
         final label = val.categoryAttribute?.attribute?.name ?? AppLocalizations.of(context)!.translate('characteristic') ;
-        final value = val.value.isNotEmpty ? val.value : AppLocalizations.of(context)!.translate('not_specified');
+        final value = val.value.isNotEmpty ? val.value : AppLocalizations.of(context)!.translate('');
         return {
           'label': label,
           'value': value,
@@ -152,7 +148,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
-    print('VariantDetailsScreen: Displaying image placeholder');
+    //print('VariantDetailsScreen: Displaying image placeholder');
     return Container(
       color: Colors.grey[200],
       child: const Center(
@@ -162,7 +158,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    print('VariantDetailsScreen: Building AppBar with title $title');
+    //print('VariantDetailsScreen: Building AppBar with title $title');
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -176,7 +172,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
           child: IconButton(
             icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
             onPressed: () {
-              print('VariantDetailsScreen: Back button pressed');
+              //print('VariantDetailsScreen: Back button pressed');
               Navigator.pop(context);
             },
           ),
@@ -198,7 +194,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    print('VariantDetailsScreen: Building details list with ${details.length} items');
+    //print('VariantDetailsScreen: Building details list with ${details.length} items');
     return ListView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -212,7 +208,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    print('VariantDetailsScreen: Building detail item - label: $label, value: $value');
+    //print('VariantDetailsScreen: Building detail item - label: $label, value: $value');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -242,7 +238,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    print('VariantDetailsScreen: Showing full text dialog - title: $title');
+    //print('VariantDetailsScreen: Showing full text dialog - title: $title');
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -284,7 +280,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('close'),
                 onPressed: () {
-                  print('VariantDetailsScreen: Closing full text dialog');
+                  //print('VariantDetailsScreen: Closing full text dialog');
                   Navigator.pop(context);
                 },
                 buttonColor: const Color(0xff1E2E52),

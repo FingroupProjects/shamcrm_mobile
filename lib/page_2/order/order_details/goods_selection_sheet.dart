@@ -1,25 +1,25 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
-class ProductSelectionSheet extends StatefulWidget {
+class VariantSelectionSheet extends StatefulWidget {
   final Order order;
 
-  const ProductSelectionSheet({required this.order, super.key});
+  const VariantSelectionSheet({required this.order, super.key});
 
   @override
-  State<ProductSelectionSheet> createState() => _ProductSelectionSheetState();
+  State<VariantSelectionSheet> createState() => _VariantSelectionSheetState();
 }
 
-class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
+class _VariantSelectionSheetState extends State<VariantSelectionSheet> {
   String _searchQuery = '';
   String _selectedFilter = 'Новый';
   String? baseUrl;
@@ -33,27 +33,24 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   void initState() {
     super.initState();
     _initializeBaseUrl();
-    context.read<GoodsBloc>().add(FetchGoods(page: _currentPage));
+    context.read<VariantBloc>().add(FetchVariants(page: _currentPage));
     _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      setState(() {
-        baseUrl = 'https://$enteredDomain-back.$enteredMainDomain/storage';
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
-      });
-    }
+Future<void> _initializeBaseUrl() async {
+  try {
+    final staticBaseUrl = await _apiService.getStaticBaseUrl();
+    setState(() {
+      baseUrl = staticBaseUrl;
+    });
+  } catch (error) {
+    setState(() {
+      baseUrl = 'https://shamcrm.com/storage';
+    });
   }
+}
 
-  void _filterProducts(String query, List<Goods> goods) {
+  void _filterVariants(String query, List<Variant> variants) {
     setState(() {
       _searchQuery = query;
     });
@@ -70,37 +67,37 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         _hasMore) {
-      _loadMoreGoods();
+      _loadMoreVariants();
     }
   }
 
-  void _loadMoreGoods() {
-    final state = context.read<GoodsBloc>().state;
-    if (state is GoodsDataLoaded) {
+  void _loadMoreVariants() {
+    final state = context.read<VariantBloc>().state;
+    if (state is VariantDataLoaded) {
       setState(() {
         _isLoadingMore = true;
       });
       context
-          .read<GoodsBloc>()
-          .add(FetchMoreGoods(state.pagination.currentPage));
+          .read<VariantBloc>()
+          .add(FetchMoreVariants(state.currentPage));
     }
   }
 
-  void _updateOrderWithSelectedProducts(List<Goods> goods) {
-    final selectedProducts = goods
-        .where((product) => product.isSelected == true)
-        .map((product) => {
-              'good_id': product.id,
-              'quantity': product.quantitySelected ?? 1,
-              'price': product.discountPrice ?? 0.0,
+  void _updateOrderWithSelectedVariants(List<Variant> variants) {
+    final selectedVariants = variants
+        .where((variant) => variant.isSelected == true)
+        .map((variant) => {
+              'variant_id': variant.id, // Изменено на variant_id
+              'quantity': variant.quantitySelected ?? 1,
+              'price': variant.price ?? 0.0,
             })
         .toList();
 
-    if (selectedProducts.isEmpty) {
+    if (selectedVariants.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('please_select_product'),
+            AppLocalizations.of(context)!.translate('please_select_variant'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -128,7 +125,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
               'price': good.price,
             }).toList();
 
-    final updatedGoods = [...currentGoods, ...selectedProducts];
+    final updatedGoods = [...currentGoods, ...selectedVariants];
 
     context.read<OrderBloc>().add(UpdateOrder(
           orderId: widget.order.id,
@@ -163,9 +160,9 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
           _buildSearchField(),
           const SizedBox(height: 12),
           Expanded(
-            child: BlocConsumer<GoodsBloc, GoodsState>(
+            child: BlocConsumer<VariantBloc, VariantState>(
               listener: (context, state) {
-                if (state is GoodsDataLoaded) {
+                if (state is VariantDataLoaded) {
                   setState(() {
                     _isLoadingMore = false;
                     _hasMore = state.pagination.currentPage <
@@ -174,23 +171,27 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                 }
               },
               builder: (context, state) {
-                if (state is GoodsLoading && _currentPage == 1) {
+                if (state is VariantLoading && _currentPage == 1) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (state is GoodsDataLoaded) {
-                  final filteredProducts = _searchQuery.isEmpty
-                      ? state.goods
-                      : state.goods
-                          .where((product) => product.name
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()))
+                } else if (state is VariantDataLoaded) {
+                  final filteredVariants = _searchQuery.isEmpty
+                      ? state.variants
+                      : state.variants
+                          .where((variant) => variant.fullName
+                              ?.toLowerCase()
+                              .contains(_searchQuery.toLowerCase()) ?? false)
                           .toList();
-                  return _buildProductList(filteredProducts, state);
-                } else if (state is GoodsEmpty) {
-                  return  Center(child: Text(AppLocalizations.of(context)!.translate('no_products_found')));
-                } else if (state is GoodsError) {
+                  return _buildVariantList(filteredVariants, state);
+                } else if (state is VariantEmpty) {
+                  return Center(
+                      child: Text(AppLocalizations.of(context)!
+                          .translate('no_variants_found')));
+                } else if (state is VariantError) {
                   return Center(child: Text(state.message));
                 }
-                return  Center(child: Text(AppLocalizations.of(context)!.translate('loading_data')));
+                return Center(
+                    child: Text(AppLocalizations.of(context)!
+                        .translate('loading_data')));
               },
             ),
           ),
@@ -206,8 +207,8 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-           Text(
-            AppLocalizations.of(context)!.translate('add_producted'),
+          Text(
+            AppLocalizations.of(context)!.translate('add_product'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -229,13 +230,14 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         onChanged: (query) {
-          final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded) {
-            _filterProducts(query, state.goods);
+          final state = context.read<VariantBloc>().state;
+          if (state is VariantDataLoaded) {
+            _filterVariants(query, state.variants);
           }
         },
         decoration: InputDecoration(
-          hintText: AppLocalizations.of(context)!.translate('search_product_placeholder'),
+          hintText: AppLocalizations.of(context)!
+              .translate('search_variant_placeholder'),
           hintStyle: TextStyle(
               fontFamily: 'Gilroy', fontSize: 14, color: Color(0xff99A4BA)),
           prefixIcon: Icon(Icons.search, color: Color(0xff99A4BA)),
@@ -256,16 +258,16 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     );
   }
 
-  Widget _buildProductList(List<Goods> products, GoodsDataLoaded state) {
+  Widget _buildVariantList(List<Variant> variants, VariantDataLoaded state) {
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: products.length + (_isLoadingMore ? 1 : 0),
+            itemCount: variants.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == products.length && _isLoadingMore) {
+              if (index == variants.length && _isLoadingMore) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(8.0),
@@ -273,14 +275,14 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                   ),
                 );
               }
-              final product = products[index];
+              final variant = variants[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
-                      product.isSelected = !product.isSelected;
-                      if (!product.isSelected) product.quantitySelected = 1;
+                      variant.isSelected = !variant.isSelected;
+                      if (!variant.isSelected) variant.quantitySelected = 1;
                     });
                   },
                   child: Container(
@@ -299,10 +301,10 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                     ),
                     child: Row(
                       children: [
-                        _buildProductImage(product),
+                        _buildVariantImage(variant),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildProductDetails(product)),
-                        _buildSelectionIndicator(product),
+                        Expanded(child: _buildVariantDetails(variant)),
+                        _buildSelectionIndicator(variant),
                       ],
                     ),
                   ),
@@ -315,44 +317,25 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     );
   }
 
-  Widget _buildProductImage(Goods product) {
+  Widget _buildVariantImage(Variant variant) {
+    // Варианты не содержат изображений, используем заглушку
     return SizedBox(
       width: 48,
       height: 48,
-      child: product.files.isNotEmpty && baseUrl != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                '$baseUrl/${product.files[0].path}',
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildPlaceholderImage(),
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return _buildPlaceholderImage();
-                },
-              ),
-            )
-          : _buildPlaceholderImage(),
+      child: Container(
+        color: Colors.grey[200],
+        child: const Center(
+            child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      ),
     );
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      color: Colors.grey[200],
-      child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
-    );
-  }
-
-  Widget _buildProductDetails(Goods product) {
+  Widget _buildVariantDetails(Variant variant) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          product.name,
+          variant.fullName ?? 'Вариант ${variant.id}',
           style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
@@ -361,21 +344,33 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        // const SizedBox(height: 4),
+        // Text(
+        //   'ID: ${variant.id}',
+        //   style: const TextStyle(
+        //       fontSize: 12,
+        //       fontFamily: 'Gilroy',
+        //       fontWeight: FontWeight.w500,
+        //       color: Color(0xff99A4BA)),
+        // ),
         const SizedBox(height: 4),
-        Text(
-          product.id.toString(),
-          style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff99A4BA)),
-        ),
-        if (product.isSelected) ...[
+        // Отображаем атрибуты варианта
+        ...variant.attributeValues.map((attr) => Text(
+              '${attr.categoryAttribute?.attribute?.name ?? ''}: ${attr.value}',
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff99A4BA)),
+            )),
+        if (variant.isSelected) ...[
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text( AppLocalizations.of(context)!.translate('stock_quantity_details'),
+              Text(
+                  AppLocalizations.of(context)!
+                      .translate('stock_quantity_details'),
                   style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -387,12 +382,12 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                     icon: const Icon(Icons.remove, size: 20),
                     color: const Color(0xff1E2E52),
                     onPressed: () {
-                      if (product.quantitySelected > 1)
-                        setState(() => product.quantitySelected--);
+                      if (variant.quantitySelected > 1)
+                        setState(() => variant.quantitySelected--);
                     },
                   ),
                   Text(
-                    '${product.quantitySelected}',
+                    '${variant.quantitySelected}',
                     style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
@@ -402,7 +397,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                   IconButton(
                     icon: const Icon(Icons.add, size: 20),
                     color: const Color(0xff1E2E52),
-                    onPressed: () => setState(() => product.quantitySelected++),
+                    onPressed: () => setState(() => variant.quantitySelected++),
                   ),
                 ],
               ),
@@ -413,19 +408,19 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
     );
   }
 
-  Widget _buildSelectionIndicator(Goods product) {
+  Widget _buildSelectionIndicator(Variant variant) {
     return Container(
       width: 24,
       height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-            color: product.isSelected
-                ? const Color(0xff4CAF50)
+            color: variant.isSelected
+                ? const Color.fromARGB(255, 86, 76, 175)
                 : const Color(0xff99A4BA),
             width: 2),
       ),
-      child: product.isSelected
+      child: variant.isSelected
           ? const Icon(Icons.check, color: Color(0xff4CAF50), size: 16)
           : null,
     );
@@ -436,9 +431,10 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: ElevatedButton(
         onPressed: () {
-          final state = context.read<GoodsBloc>().state;
-          if (state is GoodsDataLoaded)
-            _updateOrderWithSelectedProducts(state.goods);
+          final state = context.read<VariantBloc>().state;
+          if (state is VariantDataLoaded) {
+            _updateOrderWithSelectedVariants(state.variants);
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
@@ -448,7 +444,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
         ),
         child: Center(
           child: Text(
-          AppLocalizations.of(context)!.translate('add'),
+            AppLocalizations.of(context)!.translate('add'),
             style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -461,7 +457,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
   }
 }
 
-extension GoodsSelection on Goods {
+extension VariantSelection on Variant {
   static final _isSelected = Expando<bool>();
   static final _quantitySelected = Expando<int>();
 

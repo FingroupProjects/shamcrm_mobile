@@ -1,14 +1,17 @@
+
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart'; // Добавляем импорт состояний
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,12 +39,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   SubCategoryAttributesData? selectedCategory;
   Branch? selectedBranch;
   bool isActive = true;
-  List<Branch> branches = [];
+  List<Branch>? branches = [];
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
   bool isImagesValid = true;
   bool isBranchValid = true;
+  int? mainImageIndex;
+  String? selectlabel;
 
   final ImagePicker _picker = ImagePicker();
   List<String> _imagePaths = [];
@@ -54,8 +59,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    // Запрашиваем филиалы через BLoC
     context.read<BranchBloc>().add(FetchBranches());
+    mainImageIndex = 0;
   }
 
   Future<void> fetchSubCategories() async {
@@ -66,7 +71,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         subCategories = categories;
       });
     } catch (e) {
-      print('Error fetching subcategories: $e');
+      //print('Error fetching subcategories: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -76,7 +81,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       isCategoryValid = selectedCategory != null;
       isImagesValid = _imagePaths.isNotEmpty;
-      isBranchValid = selectedBranch != null;
     });
   }
 
@@ -206,22 +210,49 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: BlocListener<BranchBloc, BranchState>(
-        listener: (context, state) {
-          if (state is BranchLoaded) {
-            setState(() {
-              branches = state.branches;
-              print('GoodsAddScreen: Branches loaded: ${branches.map((b) => b.name).toList()}');
-            });
-          } else if (state is BranchError) {
-            print('GoodsAddScreen: Error loading branches: ${state.message}');
-            showCustomSnackBar(
-              context: context,
-              message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
-              isSuccess: false,
-            );
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<BranchBloc, BranchState>(
+            listener: (context, state) {
+              if (state is BranchLoaded) {
+                setState(() {
+                  branches = state.branches;
+                });
+              } else if (state is BranchError) {
+                showCustomSnackBar(
+                  context: context,
+                  message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
+                  isSuccess: false,
+                );
+              }
+            },
+          ),
+          BlocListener<GoodsBloc, GoodsState>(
+            listener: (context, state) {
+              if (state is GoodsSuccess) {
+                //print('GoodsAddScreen: GoodsSuccess received - ${state.message}');
+                setState(() => isLoading = false); // Сбрасываем isLoading
+                showCustomSnackBar(
+                  context: context,
+                  message: state.message,
+                  isSuccess: true,
+                );
+                Navigator.pop(context); // Закрываем экран
+              } else if (state is GoodsError) {
+                //print('GoodsAddScreen: GoodsError received - ${state.message}');
+                setState(() => isLoading = false);
+                showCustomSnackBar(
+                  context: context,
+                  message: state.message,
+                  isSuccess: false,
+                );
+              } else if (state is GoodsLoading) {
+                //print('GoodsAddScreen: GoodsLoading state');
+                setState(() => isLoading = true);
+              }
+            },
+          ),
+        ],
         child: Padding(
           padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
           child: GestureDetector(
@@ -273,6 +304,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         ],
                       ),
                     const SizedBox(height: 8),
+                    LabelWidget(
+                      selectedLabel: selectlabel,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectlabel = newValue;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
                     BranchesDropdown(
                       label: AppLocalizations.of(context)!.translate('branch'),
                       selectedBranch: selectedBranch,
@@ -284,18 +324,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    // if (!isBranchValid)
-                    //   Padding(
-                    //     padding: const EdgeInsets.only(top: 4),
-                    //     child: Text(
-                    //       AppLocalizations.of(context)!.translate('select_branch'),
-                    //       style: TextStyle(
-                    //         fontSize: 14,
-                    //         color: Colors.red,
-                    //         fontWeight: FontWeight.w400,
-                    //       ),
-                    //     ),
-                    //   ),
                     const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
@@ -314,35 +342,34 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       subCategories: subCategories,
                       isValid: isCategoryValid,
                     ),
-                    // if (!isCategoryValid)
-                    //   Padding(
-                    //     padding: const EdgeInsets.only(top: 4),
-                    //     child: Text(
-                    //       AppLocalizations.of(context)!.translate('select_subcategory'),
-                    //       style: TextStyle(
-                    //         fontSize: 14,
-                    //         color: Colors.red,
-                    //         fontWeight: FontWeight.w400,
-                    //       ),
-                    //     ),
-                    //   ),
+                    const SizedBox(height: 16),
                     if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Divider(color: Color(0xff1E2E52)),
-                          Center(
-                            child: Text(
-                              AppLocalizations.of(context)!.translate('characteristic'),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Color(0xff1E2E52), width: 1.0),
+                                borderRadius: BorderRadius.circular(14.0),
+                              ),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('characteristic'),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          Divider(color: Color(0xff1E2E52)),
                           ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,20 +407,28 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         headingRowHeight: 56,
                                         dividerThickness: 0,
                                         columns: [
-                                          ...selectedCategory!.attributes
-                                              .where((attr) => attr.isIndividual)
-                                              .map((attr) => DataColumn(
-                                                    label: Text(
-                                                      attr.name,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
-                                                      ),
-                                                    ),
-                                                  ))
-                                              .toList(),
+                                          DataColumn(
+                                            label: Text(
+                                              AppLocalizations.of(context)!.translate('image_message'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                          ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataColumn(
+                                                label: Text(
+                                                  attr.name,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontFamily: 'Gilroy',
+                                                    color: Color(0xff1E2E52),
+                                                  ),
+                                                ),
+                                              )).toList(),
                                           if (selectedCategory!.hasPriceCharacteristics)
                                             DataColumn(
                                               label: Text(
@@ -406,17 +441,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                 ),
                                               ),
                                             ),
-                                          DataColumn(
-                                            label: Text(
-                                              AppLocalizations.of(context)!.translate('image_message'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
                                           DataColumn(
                                             label: Text(
                                               AppLocalizations.of(context)!.translate('status'),
@@ -445,53 +469,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           Map<String, dynamic> row = entry.value;
                                           return DataRow(
                                             cells: [
-                                              ...selectedCategory!.attributes
-                                                  .where((attr) => attr.isIndividual)
-                                                  .map((attr) => DataCell(
-                                                        SizedBox(
-                                                          width: 150,
-                                                          child: TextField(
-                                                            controller: row[attr.name],
-                                                            decoration: InputDecoration(
-                                                              hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                              hintStyle: TextStyle(
-                                                                fontSize: 12,
-                                                                fontWeight: FontWeight.w500,
-                                                                fontFamily: 'Gilroy',
-                                                                color: Color(0xff99A4BA),
-                                                              ),
-                                                              border: OutlineInputBorder(
-                                                                borderRadius: BorderRadius.circular(12),
-                                                              ),
-                                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ))
-                                                  .toList(),
-                                              if (selectedCategory!.hasPriceCharacteristics)
-                                                DataCell(
-                                                  SizedBox(
-                                                    width: 150,
-                                                    child: TextField(
-                                                      controller: row['price'],
-                                                      decoration: InputDecoration(
-                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                                                        hintStyle: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w500,
-                                                          fontFamily: 'Gilroy',
-                                                          color: Color(0xff99A4BA),
-                                                        ),
-                                                        border: OutlineInputBorder(
-                                                          borderRadius: BorderRadius.circular(12),
-                                                        ),
-                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                                      ),
-                                                      keyboardType: TextInputType.number,
-                                                    ),
-                                                  ),
-                                                ),
                                               DataCell(
                                                 Row(
                                                   children: [
@@ -538,13 +515,55 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     ),
                                                     IconButton(
                                                       icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                                                      onPressed: row['images'].isNotEmpty
-                                                          ? () => _showImageListPopup(row['images'])
-                                                          : null,
+                                                      onPressed: row['images'].isNotEmpty ? () => _showImageListPopup(row['images']) : null,
                                                     ),
                                                   ],
                                                 ),
                                               ),
+                                              ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataCell(
+                                                    SizedBox(
+                                                      width: 150,
+                                                      child: TextField(
+                                                        controller: row[attr.name],
+                                                        decoration: InputDecoration(
+                                                          hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                          hintStyle: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w500,
+                                                            fontFamily: 'Gilroy',
+                                                            color: Color(0xff99A4BA),
+                                                          ),
+                                                          border: OutlineInputBorder(
+                                                            borderRadius: BorderRadius.circular(12),
+                                                          ),
+                                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )).toList(),
+                                              if (selectedCategory!.hasPriceCharacteristics)
+                                                DataCell(
+                                                  SizedBox(
+                                                    width: 150,
+                                                    child: TextField(
+                                                      controller: row['price'],
+                                                      decoration: InputDecoration(
+                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                                                        hintStyle: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w500,
+                                                          fontFamily: 'Gilroy',
+                                                          color: Color(0xff99A4BA),
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                      ),
+                                                      keyboardType: TextInputType.number,
+                                                    ),
+                                                  ),
+                                                ),
                                               DataCell(
                                                 Switch(
                                                   value: row['is_active'],
@@ -638,40 +657,69 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     runSpacing: 10,
                                     padding: const EdgeInsets.all(8),
                                     children: [
-                                      ..._imagePaths.map((imagePath) {
-                                        return Container(
-                                          key: ValueKey(imagePath),
-                                          width: 100,
-                                          height: 100,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(12),
-                                            image: DecorationImage(
-                                              image: FileImage(File(imagePath)),
-                                              fit: BoxFit.cover,
+                                      ..._imagePaths.asMap().entries.map((entry) {
+                                        int index = entry.key;
+                                        String imagePath = entry.value;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              mainImageIndex = index;
+                                            });
+                                          },
+                                          child: Container(
+                                            key: ValueKey(imagePath),
+                                            width: 100,
+                                            height: 100,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(12),
+                                              image: DecorationImage(
+                                                image: FileImage(File(imagePath)),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              border: mainImageIndex == index
+                                                  ? Border.all(color: Colors.blue, width: 2)
+                                                  : null,
                                             ),
-                                          ),
-                                          child: Stack(
-                                            children: [
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: GestureDetector(
-                                                  onTap: () => _removeImage(imagePath),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.all(4),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black.withOpacity(0.5),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      color: Colors.white,
-                                                      size: 16,
+                                            child: Stack(
+                                              children: [
+                                                Positioned(
+                                                  top: 4,
+                                                  right: 4,
+                                                  child: GestureDetector(
+                                                    onTap: () => _removeImage(imagePath),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black.withOpacity(0.5),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.close,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
+                                                if (mainImageIndex == index)
+                                                  Positioned(
+                                                    bottom: 4,
+                                                    right: 4,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.check,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
                                         );
                                       }).toList(),
@@ -706,6 +754,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                       setState(() {
                                         final item = _imagePaths.removeAt(oldIndex);
                                         _imagePaths.insert(newIndex, item);
+                                        if (mainImageIndex == oldIndex) {
+                                          mainImageIndex = newIndex;
+                                        } else if (mainImageIndex != null && oldIndex < mainImageIndex! && newIndex >= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! - 1;
+                                        } else if (mainImageIndex != null && oldIndex > mainImageIndex! && newIndex <= mainImageIndex!) {
+                                          mainImageIndex = mainImageIndex! + 1;
+                                        }
                                       });
                                     },
                                   ),
@@ -736,7 +791,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     if (!isImagesValid)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('    ${AppLocalizations.of(context)!.translate('please_select_image')}',
+                        child: Text(
+                          '    ${AppLocalizations.of(context)!.translate('please_select_image')}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.red,
@@ -833,11 +889,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: isLoading
-                  ? SizedBox(
+                  ? const SizedBox(
                       height: 48,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: CircularProgressIndicator(color: const Color(0xff4759FF)),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Color(0xff4759FF)),
                       ),
                     )
                   : CustomButton(
@@ -846,7 +901,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
+                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
@@ -936,182 +991,150 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   void _removeImage(String imagePath) {
     setState(() {
+      int removedIndex = _imagePaths.indexOf(imagePath);
       _imagePaths.remove(imagePath);
       isImagesValid = _imagePaths.isNotEmpty;
+      if (_imagePaths.isEmpty) {
+        mainImageIndex = null;
+      } else if (mainImageIndex != null && removedIndex <= mainImageIndex!) {
+        mainImageIndex = (mainImageIndex! - 1).clamp(0, _imagePaths.length - 1);
+      }
     });
   }
 
-void _createProduct() async {
-  validateForm();
-  if (formKey.currentState!.validate() && isCategoryValid && isImagesValid && isBranchValid) {
-    bool isPriceValid = true;
-    if (selectedCategory!.hasPriceCharacteristics) {
-      for (var row in tableAttributes) {
-        final priceController = row['price'] as TextEditingController?;
-        if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
-          isPriceValid = false;
-          print('Validation failed: priceController is $priceController, text is "${priceController?.text}"');
-          break;
-        }
-      }
-    }
-    if (!isPriceValid) {
-      showCustomSnackBar(
-        context: context,
-        message: AppLocalizations.of(context)!.translate('fill_all_prices'),
-        isSuccess: false,
-      );
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      List<Map<String, dynamic>> attributes = [];
-      List<Map<String, dynamic>> variants = [];
-
-      for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
-        final controller = attributeControllers[attribute.name];
-        if (controller != null && controller.text.trim().isNotEmpty) {
-          attributes.add({
-            'category_attribute_id': attribute.id,
-            'value': controller.text.trim(),
-          });
-        }
-      }
-
-      for (var row in tableAttributes) {
-        Map<String, dynamic> variant = {
-          'is_active': row['is_active'],
-          'variant_attributes': [],
-        };
-
-        List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
-        List<File> variantImages = [];
-        for (var path in variantImagePaths) {
-          File file = File(path);
-          if (await file.exists()) {
-            variantImages.add(file);
-          } else {
-            print('File not found, skipping: $path');
+  void _createProduct() async {
+    validateForm();
+    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+      bool isPriceValid = true;
+      if (selectedCategory!.hasPriceCharacteristics) {
+        for (var row in tableAttributes) {
+          final priceController = row['price'] as TextEditingController?;
+          if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
+            isPriceValid = false;
+            break;
           }
         }
+      }
+      if (!isPriceValid) {
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('fill_all_prices'),
+          isSuccess: false,
+        );
+        return;
+      }
 
-        for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
-          final controller = row[attr.name] as TextEditingController?;
+      setState(() => isLoading = true);
+      //print('GoodsAddScreen: Starting product creation');
+
+      try {
+        List<Map<String, dynamic>> attributes = [];
+        List<Map<String, dynamic>> variants = [];
+
+        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+          final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
-            variant['variant_attributes'].add({
-              'category_attribute_id': attr.id,
+            attributes.add({
+              'category_attribute_id': attribute.id,
               'value': controller.text.trim(),
             });
           }
         }
 
-        if (selectedCategory!.hasPriceCharacteristics) {
-          final priceController = row['price'] as TextEditingController?;
-          if (priceController != null && priceController.text.trim().isNotEmpty) {
-            final price = double.tryParse(priceController.text.trim());
-            if (price != null) {
-              variant['price'] = price;
-              print('Variant price set to: $price');
+        for (var row in tableAttributes) {
+          Map<String, dynamic> variant = {
+            'is_active': row['is_active'],
+            'variant_attributes': [],
+          };
+
+          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+          List<File> variantImages = [];
+          for (var path in variantImagePaths) {
+            File file = File(path);
+            if (await file.exists()) {
+              variantImages.add(file);
+            } else {
+              //print('File not found, skipping: $path');
+            }
+          }
+
+          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+            final controller = row[attr.name] as TextEditingController?;
+            if (controller != null && controller.text.trim().isNotEmpty) {
+              variant['variant_attributes'].add({
+                'category_attribute_id': attr.id,
+                'value': controller.text.trim(),
+              });
+            }
+          }
+
+          if (selectedCategory!.hasPriceCharacteristics) {
+            final priceController = row['price'] as TextEditingController?;
+            if (priceController != null && priceController.text.trim().isNotEmpty) {
+              final price = double.tryParse(priceController.text.trim());
+              variant['price'] = price ?? 0.0;
             } else {
               variant['price'] = 0.0;
-              print('Invalid price format: "${priceController.text}", set to 0.0');
             }
           } else {
             variant['price'] = 0.0;
-            print('Price is empty or null, set to 0.0');
           }
-        } else {
-          variant['price'] = 0.0;
-          print('hasPriceCharacteristics is false, price set to 0.0');
+
+          if (variantImages.isNotEmpty) {
+            variant['files'] = variantImages;
+          }
+
+          if (variant['variant_attributes'].isNotEmpty) {
+            variants.add(variant);
+          }
         }
 
-        if (variantImages.isNotEmpty) {
-          variant['files'] = variantImages;
+        List<File> images = [];
+        for (var path in _imagePaths) {
+          File file = File(path);
+          if (await file.exists()) {
+            images.add(file);
+          }
         }
 
-        if (variant['variant_attributes'].isNotEmpty) {
-          variants.add(variant);
-        }
-      }
+        int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null;
+        //print('GoodsAddScreen: Creating product with labelId: $labelId');
 
-      List<File> generalImages = [];
-      for (var path in _imagePaths) {
-        File file = File(path);
-        if (await file.exists()) {
-          generalImages.add(file);
-        }
-      }
-
-      final response = await _apiService.createGoods(
-        name: goodsNameController.text.trim(),
-        parentId: selectedCategory!.id,
-        description: goodsDescriptionController.text.trim(),
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
-        attributes: attributes,
-        variants: variants,
-        images: generalImages,
-        isActive: isActive,
-        discountPrice: selectedCategory!.hasPriceCharacteristics
-            ? null
-            : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-        branch: selectedBranch!.id,
-        price: selectedCategory!.hasPriceCharacteristics
-            ? (double.tryParse((tableAttributes.isNotEmpty ? tableAttributes[0]['price']?.text : null) ?? '') ?? 0.0)
-            : null, // Добавляем price для корня объекта
-      );
-
-      if (response['success'] == true) {
-        showCustomSnackBar(
-          context: context,
-          message: AppLocalizations.of(context)!.translate('product_updated'),
-          isSuccess: true,
-        );
-        Navigator.pop(context, true);
-        context.read<GoodsBloc>().add(FetchGoods());
-      } else {
+        context.read<GoodsBloc>().add(
+              CreateGoods(
+                name: goodsNameController.text.trim(),
+                parentId: selectedCategory!.id,
+                description: goodsDescriptionController.text.trim(),
+                quantity: int.tryParse(stockQuantityController.text) ?? 0,
+                unitId: int.tryParse(unitIdController.text) ?? 0,
+                attributes: attributes,
+                variants: variants,
+                images: images,
+                isActive: isActive,
+                discountPrice: selectedCategory!.hasPriceCharacteristics
+                    ? null
+                    : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+                branch: selectedBranch?.id,
+                mainImageIndex: mainImageIndex,
+                labelId: labelId,
+              ),
+            );
+      } catch (e, stackTrace) {
+        //print('GoodsAddScreen: Error creating product - $e');
+        //print(stackTrace);
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
-          message: response['message'] ?? AppLocalizations.of(context)!.translate('error_adding_goods'),
+          message: 'Произошла ошибка: $e',
           isSuccess: false,
         );
       }
-    } catch (e, stackTrace) {
-      setState(() => isLoading = false);
-      print('Error creating product: $e');
-      print(stackTrace);
+    } else {
       showCustomSnackBar(
         context: context,
-        message: '${AppLocalizations.of(context)!.translate('error_adding_goods')}: ${e.toString()}',
+        message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
         isSuccess: false,
       );
     }
-  } else {
-    showCustomSnackBar(
-      context: context,
-      message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
-      isSuccess: false,
-    );
-  }
-}
-
-  @override
-  void dispose() {
-    goodsNameController.dispose();
-    goodsDescriptionController.dispose();
-    discountPriceController.dispose();
-    stockQuantityController.dispose();
-    unitIdController.dispose();
-    attributeControllers.values.forEach((controller) => controller.dispose());
-    for (var row in tableAttributes) {
-      for (var attr in row.values) {
-        if (attr is TextEditingController) {
-          attr.dispose();
-        }
-      }
-    }
-    super.dispose();
   }
 }

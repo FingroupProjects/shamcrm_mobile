@@ -4,14 +4,19 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.da
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final int orderId;
@@ -24,6 +29,7 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.order,
     required this.categoryName,
     this.organizationId,
+    super.key,
   });
 
   @override
@@ -32,62 +38,213 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
+  final ApiService _apiService = ApiService();
+  bool _canEditOrder = false;
+  int? currencyId; // Поле для хранения currency_id
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
+    _loadCurrencyId(); // Загружаем currencyId
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
   }
 
- void _updateDetails(Order order) {
-  String formattedDate = order.lead.createdAt != null
-      ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
-      : AppLocalizations.of(context)!.translate('not_specified');
+  // Метод загрузки currencyId из SharedPreferences
+  Future<void> _loadCurrencyId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
 
-  details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('order_number'),
-      'value': order.orderNumber
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client'),
-      'value': order.lead.name
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('client_phone'),
-      'value': order.phone
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_date'),
-      'value': formattedDate
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('order_status'),
-      'value': order.orderStatus.name
-    },
-    {
-      'label': order.delivery
-          ? AppLocalizations.of(context)!.translate('order_address')
-          : AppLocalizations.of(context)!.translate('branch_order'),
-      'value': order.delivery
-          ? (order.deliveryAddress ??
-              AppLocalizations.of(context)!.translate('not_specified'))
-          : (order.branchName ??
-              AppLocalizations.of(context)!.translate('not_specified')),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('comment_client'),
-      'value': order.commentToCourier ??
-          AppLocalizations.of(context)!.translate('no_comment')
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('price'),
-      'value': order.sum != null && order.sum! > 0
-          ? '${order.sum!.toStringAsFixed(3)} ${AppLocalizations.of(context)!.translate('currency')}'
-          : AppLocalizations.of(context)!.translate('0')
-    },
-  ];
-}
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+      }
+
+      setState(() {
+        currencyId = savedCurrencyId ?? 0;
+      });
+
+      if (currencyId == 0 || currencyId == null) {
+        await _fetchCurrencyFromAPI();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод загрузки currency_id из API
+  Future<void> _fetchCurrencyFromAPI() async {
+    try {
+      final apiService = ApiService();
+      final organizationId = await apiService.getSelectedOrganization();
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
+
+      if (settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('currency_id', settings.currencyId);
+
+        setState(() {
+          currencyId = settings.currencyId;
+        });
+
+        if (kDebugMode) {
+          print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
+      }
+      setState(() {
+        currencyId = 1; // По умолчанию доллар
+      });
+    }
+  }
+
+  // Метод форматирования цены
+  String _formatPrice(double? price) {
+    if (price == null || price <= 0) {
+      return '0 UZS'; // По умолчанию 0 UZS
+    }
+    String symbol = 'UZS'; // По умолчанию сум
+
+    if (kDebugMode) {
+      print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
+    }
+
+    switch (currencyId) {
+      case 1:
+        symbol = '\$';
+        break;
+      case 2:
+        symbol = '€';
+        break;
+      case 3:
+        symbol = 'UZS';
+        break;
+      case 4:
+        symbol = 'TJS';
+        break;
+      default:
+        symbol = 'UZS';
+        if (kDebugMode) {
+          print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+        }
+    }
+
+    if (kDebugMode) {
+      print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
+    }
+
+    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
+  }
+
+  Future<void> _checkPermissions() async {
+    final canEdit = await _apiService.hasPermission('order.update');
+
+    setState(() {
+      _canEditOrder = canEdit;
+    });
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
+      );
+      return;
+    }
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.translate('call_failed'))),
+      );
+    }
+  }
+
+  String formatPaymentType(String? paymentType, BuildContext context) {
+    switch (paymentType?.toLowerCase()) {
+      case 'cash':
+        return 'Наличными';
+      case 'alif':
+        return 'ALIF';
+      case 'click':
+        return 'CLICK';
+      case 'payme':
+        return 'PAYME';
+      default:
+        return AppLocalizations.of(context)!.translate('');
+    }
+  }
+
+  void _updateDetails(Order order) {
+    String formattedDate = order.lead.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+        : AppLocalizations.of(context)!.translate('');
+
+    details = [
+      {
+        'label': AppLocalizations.of(context)!.translate('order_number'),
+        'value': order.orderNumber
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client'),
+        'value': order.lead.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('manager_details'),
+        'value': order.manager?.name ?? 'become_manager'
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('client_phone'),
+        'value': order.phone
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_date'),
+        'value': formattedDate
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('order_status'),
+        'value': order.orderStatus.name
+      },
+      {
+        'label': order.delivery
+            ? AppLocalizations.of(context)!.translate('order_address')
+            : AppLocalizations.of(context)!.translate('branch_order'),
+        'value': order.delivery
+            ? (order.deliveryAddress ??
+                AppLocalizations.of(context)!.translate(''))
+            : (order.branchName ??
+                AppLocalizations.of(context)!.translate('')),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('comment_client'),
+        'value': order.commentToCourier ??
+            AppLocalizations.of(context)!.translate('no_comment')
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('price'),
+        'value': _formatPrice(order.sum)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('payment_method_title'),
+        'value': formatPaymentType(order.paymentMethod, context)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('payment_status_title'),
+        'value': formatPaymentType(order.paymentStatus, context)
+      },
+    ];
+  }
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -95,8 +252,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -153,66 +309,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  void _showHistoryDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('order_history'),
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 400),
-                width: double.maxFinite,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: BlocProvider(
-                  create: (context) =>
-                      OrderHistoryBloc(context.read<ApiService>())
-                        ..add(FetchOrderHistory(widget.orderId)),
-                  child: OrderHistoryWidget(orderId: widget.orderId),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff1E2E52),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('close'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -233,11 +329,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               appBar: _buildAppBar(context, state.orderDetails!),
               backgroundColor: Colors.white,
               body: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   children: [
                     _buildDetailsList(),
+                    const SizedBox(height: 16),
+                    OrderHistoryWidget(orderId: widget.orderId),
+                    const SizedBox(height: 16),
                     OrderGoodsScreen(
                       goods: state.orderDetails!.goods,
                       order: widget.order,
@@ -269,7 +367,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('order_title')} #${order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('order_title')} №${order.orderNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -278,36 +376,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(
-            Icons.history,
-            size: 30,
-            color: Color.fromARGB(224, 0, 0, 0),
+        if (_canEditOrder)
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              final updatedOrder = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OrderEditScreen(order: order),
+                ),
+              );
+              if (updatedOrder != null) {
+                context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+              }
+            },
           ),
-          onPressed: _showHistoryDialog,
-        ),
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Image.asset(
-            'assets/icons/edit.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () async {
-            final updatedOrder = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderEditScreen(order: order),
-              ),
-            );
-            if (updatedOrder != null) {
-              context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
-            }
-          },
-        ),
       ],
     );
   }
@@ -330,8 +419,83 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    if (label == AppLocalizations.of(context)!.translate('order_address') ||
-        label == AppLocalizations.of(context)!.translate('comment_client')) {
+    final String clientLabel = AppLocalizations.of(context)!.translate('client');
+    final String phoneLabel = AppLocalizations.of(context)!.translate('client_phone');
+    final String addressLabel = AppLocalizations.of(context)!.translate('order_address');
+    final String commentLabel = AppLocalizations.of(context)!.translate('comment_client');
+
+    if (label == clientLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          if (widget.order.lead?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: widget.order.lead!.id.toString(),
+                  leadName: value,
+                  leadStatus: "",
+                  statusId: 0,
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.translate('lead_not_found'))),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == phoneLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () => _makePhoneCall(value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == addressLabel || label == commentLabel) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty &&
@@ -367,6 +531,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       );
     }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

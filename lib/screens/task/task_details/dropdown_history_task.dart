@@ -230,14 +230,14 @@ Widget _buildActionItem(String item) {
 
     // Форматирование дат
     String formatDate(String? dateString) {
-      if (dateString == null || dateString == AppLocalizations.of(context)!.translate('not_specified')) {
-        return AppLocalizations.of(context)!.translate('not_specified');
+      if (dateString == null || dateString == AppLocalizations.of(context)!.translate('')) {
+        return AppLocalizations.of(context)!.translate('');
       }
       try {
         DateTime date = DateTime.parse(dateString);
         return DateFormat('dd/MM/yyyy').format(date);
       } catch (e) {
-        return AppLocalizations.of(context)!.translate('not_specified');
+        return AppLocalizations.of(context)!.translate('');
       }
     }
 
@@ -246,19 +246,19 @@ Widget _buildActionItem(String item) {
       // Статус задачи
       if (changes.taskStatusNewValue != null || changes.taskStatusPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('status_task')}${changes.taskStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.taskStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('status_task')}${changes.taskStatusPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.taskStatusNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Название
       if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Завершающий этап
       if (changes.isFinishedNewValue != null || changes.isFinishedPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('final_stage')}${changes.isFinishedPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.isFinishedNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('final_stage')}${changes.isFinishedPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.isFinishedNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // // Дата начала
@@ -276,19 +276,19 @@ Widget _buildActionItem(String item) {
       // Проект
       if (changes.projectNewValue != null || changes.projectPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('project')}${changes.projectPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.projectNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('project')}${changes.projectPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.projectNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Пользователи
       if (changes.usersNewValue != null || changes.usersPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('users')}${changes.usersPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.usersNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('users')}${changes.usersPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.usersNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Описание
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
     }
 

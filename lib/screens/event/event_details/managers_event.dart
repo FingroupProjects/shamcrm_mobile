@@ -38,6 +38,16 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
     }).toList();
   }
 
+  void _toggleSelectAll(List<ManagerData> managers) {
+    List<int> newSelection = List.from(widget.selectedManagers);
+    if (newSelection.length == managers.length) {
+      newSelection.clear();
+    } else {
+      newSelection = managers.map((manager) => manager.id).toList();
+    }
+    widget.onSelectManagers(newSelection);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -173,6 +183,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
                     builder: (context, state) {
                       if (state is GetAllManagerLoading) {
+                        return Center(child: CircularProgressIndicator());
                       } else if (state is GetAllManagerError) {
                         return Center(
                           child: Padding(
@@ -189,12 +200,70 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       } else if (state is GetAllManagerSuccess) {
                         final managers = state.dataManager.result ?? [];
                         final filteredManagers = filterManagers(managers);
+                        final allSelected = managers.isNotEmpty &&
+                            widget.selectedManagers.length == managers.length;
 
                         return ListView.builder(
                           shrinkWrap: true,
-                          itemCount: filteredManagers.length,
+                          itemCount: filteredManagers.length + 1, 
                           itemBuilder: (context, index) {
-                            final manager = filteredManagers[index];
+                            if (index == 0) {
+                              return InkWell(
+                                onTap: () {
+                                  _toggleSelectAll(managers);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Color(0xFFEEEEEE),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        margin: EdgeInsets.only(right: 12),
+                                        decoration: BoxDecoration(
+                                          color: allSelected
+                                              ? Color(0xFF4339F2)
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: allSelected
+                                                ? Color(0xFF4339F2)
+                                                : Color(0xFFCCCCCC),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: allSelected
+                                            ? Icon(Icons.check,
+                                                size: 18, color: Colors.white)
+                                            : null,
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('select_all'),
+                                          style: TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 14,
+                                            color: Color(0xFF1E2E52),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final manager = filteredManagers[index - 1];
                             final isSelected =
                                 widget.selectedManagers.contains(manager.id);
 
@@ -246,9 +315,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '${manager.name} ${manager.lastname ?? ''}' ??
-                                            AppLocalizations.of(context)!
-                                                .translate('no_name'),
+                                        '${manager.name} ${manager.lastname ?? ''}' ?? AppLocalizations.of(context)!.translate('no_name'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 14,

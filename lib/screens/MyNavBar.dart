@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:crm_task_manager/widgets/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -47,20 +46,20 @@ class _MyNavBarState extends State<MyNavBar> {
     fontSize: 14,
   );
 
-@override
-void initState() {
-  super.initState();
-  currentIndexGroup1 = widget.currentIndexGroup1;
-  currentIndexGroup2 = widget.currentIndexGroup2;
-  
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (widget.currentIndexGroup2 != -1) {
-      _pageController.jumpToPage(1);
-    } else {
-      _pageController.jumpToPage(0);
-    }
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    currentIndexGroup1 = widget.currentIndexGroup1;
+    currentIndexGroup2 = widget.currentIndexGroup2;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.navBarTitlesGroup2.isNotEmpty && widget.currentIndexGroup2 != -1) {
+        _pageController.jumpToPage(1);
+      } else {
+        _pageController.jumpToPage(0);
+      }
+    });
+  }
 
   BottomNavyBarItem _buildNavBarItem(
       int index, String title, String activeIconPath, String inactiveIconPath, bool isActive) {
@@ -85,90 +84,106 @@ void initState() {
       inactiveColor: Colors.grey,
     );
   }
-@override
-Widget build(BuildContext context) {
-  return Container(
-    height: _navBarHeight,
-    child: Column(
-      children: [
-        Expanded(
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (page) {
-              setState(() {
-                if (page == 0) {
-                  currentIndexGroup1 = widget.currentIndexGroup1 != -1 
-                      ? widget.currentIndexGroup1 
-                      : 0;
-                  currentIndexGroup2 = -1;
-                  widget.onItemSelectedGroup1(currentIndexGroup1);
-                } else {
-                  currentIndexGroup1 = -1;
-                  currentIndexGroup2 = widget.currentIndexGroup2 != -1 
-                      ? widget.currentIndexGroup2 
-                      : 0;
-                  widget.onItemSelectedGroup2(currentIndexGroup2);
-                }
-              });
-            },
-            children: [
-              BottomNavyBar(
-                backgroundColor: Color(0xffF4F7FD),
-                selectedIndex: currentIndexGroup1 == -1 ? -1 : currentIndexGroup1,
-                onItemSelected: (index) {
-                  setState(() {
-                    currentIndexGroup1 = index;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget navBarContent = Container(
+      height: _navBarHeight,
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              // Disable scrolling if group 2 is empty
+              physics: widget.navBarTitlesGroup2.isEmpty
+                  ? NeverScrollableScrollPhysics()
+                  : AlwaysScrollableScrollPhysics(),
+              onPageChanged: (page) {
+                setState(() {
+                  if (page == 0) {
+                    currentIndexGroup1 = widget.currentIndexGroup1 != -1
+                        ? widget.currentIndexGroup1
+                        : 0;
                     currentIndexGroup2 = -1;
-                    _pageController.jumpToPage(0);
-                  });
-                  widget.onItemSelectedGroup1(index);
-                },
-                items: List.generate(
-                  widget.navBarTitlesGroup1.length,
-                  (index) => _buildNavBarItem(
-                    index,
-                    widget.navBarTitlesGroup1[index],
-                    widget.activeIconsGroup1[index],
-                    widget.inactiveIconsGroup1[index],
-                    currentIndexGroup1 == index,
-                  ),
-                ),
-                iconSize: _iconSize,
-                containerHeight: _navBarHeight,
-                curve: Curves.ease,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-              ),
-              BottomNavyBar(
-                backgroundColor: Color(0xffF4F7FD),
-                selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
-                onItemSelected: (index) {
-                  setState(() {
-                    currentIndexGroup2 = index;
+                    widget.onItemSelectedGroup1(currentIndexGroup1);
+                  } else {
                     currentIndexGroup1 = -1;
-                    _pageController.jumpToPage(1);
-                  });
-                  widget.onItemSelectedGroup2(index);
-                },
-                items: List.generate(
-                  widget.navBarTitlesGroup2.length,
-                  (index) => _buildNavBarItem(
-                    index,
-                    widget.navBarTitlesGroup2[index],
-                    widget.activeIconsGroup2[index],
-                    widget.inactiveIconsGroup2[index],
-                    currentIndexGroup2 == index,
+                    currentIndexGroup2 = widget.currentIndexGroup2 != -1
+                        ? widget.currentIndexGroup2
+                        : 0;
+                    widget.onItemSelectedGroup2(currentIndexGroup2);
+                  }
+                });
+              },
+              children: [
+                BottomNavyBar(
+                  backgroundColor: Color(0xffF4F7FD),
+                  selectedIndex: currentIndexGroup1 == -1 ? -1 : currentIndexGroup1,
+                  onItemSelected: (index) {
+                    setState(() {
+                      currentIndexGroup1 = index;
+                      currentIndexGroup2 = -1;
+                      _pageController.jumpToPage(0);
+                    });
+                    widget.onItemSelectedGroup1(index);
+                  },
+                  items: List.generate(
+                    widget.navBarTitlesGroup1.length,
+                    (index) => _buildNavBarItem(
+                      index,
+                      widget.navBarTitlesGroup1[index],
+                      widget.activeIconsGroup1[index],
+                      widget.inactiveIconsGroup1[index],
+                      currentIndexGroup1 == index,
+                    ),
                   ),
+                  iconSize: _iconSize,
+                  containerHeight: _navBarHeight,
+                  curve: Curves.ease,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                 ),
-                iconSize: _iconSize,
-                containerHeight: _navBarHeight,
-                curve: Curves.ease,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-              ),
-            ],
+                // Only include group 2 if it has items
+                if (widget.navBarTitlesGroup2.isNotEmpty)
+                  BottomNavyBar(
+                    backgroundColor: Color(0xffF4F7FD),
+                    selectedIndex: currentIndexGroup2 == -1 ? -1 : currentIndexGroup2,
+                    onItemSelected: (index) {
+                      setState(() {
+                        currentIndexGroup2 = index;
+                        currentIndexGroup1 = -1;
+                        _pageController.jumpToPage(1);
+                      });
+                      widget.onItemSelectedGroup2(index);
+                    },
+                    items: List.generate(
+                      widget.navBarTitlesGroup2.length,
+                      (index) => _buildNavBarItem(
+                        index,
+                        widget.navBarTitlesGroup2[index],
+                        widget.activeIconsGroup2[index],
+                        widget.inactiveIconsGroup2[index],
+                        currentIndexGroup2 == index,
+                      ),
+                    ),
+                    iconSize: _iconSize,
+                    containerHeight: _navBarHeight,
+                    curve: Curves.ease,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+
+    if (Platform.isAndroid) {
+      return SafeArea(
+        top: false,
+        child: navBarContent,
+      );
+    }
+
+    return navBarContent;
+  }
 }

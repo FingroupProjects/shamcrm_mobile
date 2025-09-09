@@ -4,7 +4,7 @@ class SubCategoryAttributesData {
   final String? image;
   final String? displayType;
   final bool hasPriceCharacteristics;
-  final ParentCategory parent;
+  final ParentCategory? parent; // Make parent nullable
   final List<Attribute> attributes;
 
   SubCategoryAttributesData({
@@ -13,7 +13,7 @@ class SubCategoryAttributesData {
     this.image,
     this.displayType,
     required this.hasPriceCharacteristics,
-    required this.parent,
+    this.parent, // Update constructor to allow null
     required this.attributes,
   });
 
@@ -24,8 +24,10 @@ class SubCategoryAttributesData {
       image: json['image'] as String?,
       displayType: json['display_type'] as String?,
       hasPriceCharacteristics: json['has_price_characteristics'] as bool,
-      parent: ParentCategory.fromJson(json['parent'] as Map<String, dynamic>),
-      attributes: (json['attributes'] as List)
+      parent: json['parent'] != null
+          ? ParentCategory.fromJson(json['parent'] as Map<String, dynamic>)
+          : null, // Handle null parent
+      attributes: (json['attributes'] as List? ?? [])
           .map((attribute) => Attribute.fromJson(attribute as Map<String, dynamic>))
           .toList(),
     );
@@ -41,7 +43,6 @@ class SubCategoryAttributesData {
   @override
   int get hashCode => id.hashCode;
 }
-
 class ParentCategory {
   final int id;
   final String name;

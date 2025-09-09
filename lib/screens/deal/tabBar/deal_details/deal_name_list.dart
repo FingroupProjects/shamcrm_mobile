@@ -9,11 +9,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class DealNameSelectionWidget extends StatefulWidget {
   final String? selectedDealName;
   final Function(String) onSelectDealName;
+  final bool hasError;
 
   DealNameSelectionWidget({
     Key? key,
     this.selectedDealName,
     required this.onSelectDealName,
+    this.hasError = false,
   }) : super(key: key);
 
   @override
@@ -143,8 +145,8 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
             color: Color(0xffF4F7FD),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
+              color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+              width: 1.5,
             ),
           ),
           child: Row(
@@ -169,8 +171,7 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                       color: Color(0xff1E2E52),
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                   ),
                   onChanged: (value) {
                     widget.onSelectDealName(value);
@@ -178,7 +179,11 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.arrow_drop_down),
+                icon: Transform.rotate(
+                  angle: 90 * 3.1415926535 / 180,
+                  child: Image.asset('assets/icons/arrow_down.png',
+                      width: 10, height: 10),
+                ),
                 onPressed: () {
                   setState(() {
                     _isDropdownVisible = !_isDropdownVisible;
@@ -192,6 +197,16 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
             ],
           ),
         ),
+        if (widget.hasError) 
+          Padding(
+            padding: const EdgeInsets.only(),
+            child: Text(
+               ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
+              style: TextStyle(
+                color: const Color.fromARGB(255, 253, 38, 23),
+              ),
+            ),
+          ),
         if (_isDropdownVisible)
           Container(
             margin: EdgeInsets.only(top: 4),
@@ -208,13 +223,12 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8),
                   child: TextField(
                     controller: _searchController,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!
-                          .translate('search'),
+                      hintText: AppLocalizations.of(context)!.translate('search'),
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -228,8 +242,20 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Color(0xffF4F7FD)),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1,
+                        ),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color.fromARGB(255, 245, 90, 79),
+                          width: 1,
+                        ),
+                      ),
                     ),
                     onChanged: (value) {
                       filterSearchResults(value);

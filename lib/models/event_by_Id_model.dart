@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/event_model.dart';
-import 'package:crm_task_manager/models/user.dart';
 
 class Notice {
   final int id;
@@ -15,6 +14,7 @@ class Notice {
   final bool canFinish;
   final String? conclusion;
   final Call? call;
+  final List<NoticeFiles>? files; // Новое поле для файлов
 
   Notice({
     required this.id,
@@ -29,7 +29,8 @@ class Notice {
     required this.createdAt,
     required this.canFinish,
     this.conclusion,
-    this.call, // Добавляем в конструктор
+    this.call,
+    this.files, // Добавляем в конструктор
   });
 
   factory Notice.fromJson(Map<String, dynamic> json) {
@@ -48,6 +49,12 @@ class Notice {
     }
 
     try {
+      final files = (json['files'] as List<dynamic>?)
+              ?.map((item) => NoticeFiles.fromJson(item))
+              .toList() ??
+          []; // Парсим файлы
+      //print('Notice: Parsed files: $files');
+
       return Notice(
         id: json['id'] as int? ?? 0,
         isFinished: json['is_finished'] as bool? ?? false,
@@ -69,10 +76,11 @@ class Notice {
         conclusion: json['conclusion'] as String?,
         call: json['call'] != null
             ? Call.fromJson(json['call'] as Map<String, dynamic>)
-            : null, // Парсим call
+            : null,
+        files: files, // Добавляем файлы
       );
     } catch (e) {
-      print('Error parsing Notice: $e');
+      //print('Error parsing Notice: $e');
       rethrow;
     }
   }
@@ -85,7 +93,8 @@ class Call {
   final String trunk;
   final int organizationId;
   final int leadId;
-  final String callRecordPath;
+  final String callRecordPath; // Оставляем для обратной совместимости
+  final String? callRecordUrl; // Новое поле
   final int? userId;
   final String? internalNumber;
   final int? callDuration;
@@ -103,6 +112,7 @@ class Call {
     required this.organizationId,
     required this.leadId,
     required this.callRecordPath,
+    this.callRecordUrl, // Добавляем как опциональное
     this.userId,
     this.internalNumber,
     this.callDuration,
@@ -113,27 +123,27 @@ class Call {
     required this.updatedAt,
   });
 
- factory Call.fromJson(Map<String, dynamic> json) {
-  return Call(
-    id: json['id'] as int? ?? 0,
-    linkedId: json['linked_id'] as String? ?? '',
-    caller: json['caller'] as String? ?? '',
-    trunk: json['trunk'] as String? ?? '',
-    organizationId: json['organization_id'] as int? ?? 0,
-    leadId: json['lead_id'] as int? ?? 0,
-    callRecordPath: json['call_record_path'] as String? ?? '',
-    userId: json['user_id'] as int?,
-    internalNumber: json['internal_number']?.toString(), // Convert int to String safely
-    callDuration: json['call_duration'] as int?,
-    callRingingDuration: json['call_ringing_duration'] as int?,
-    missed: json['missed'] as bool? ?? false,
-    incoming: json['incoming'] as bool? ?? false,
-    createdAt: DateTime.parse(json['created_at'].toString()),
-    updatedAt: DateTime.parse(json['updated_at'].toString()),
-  );
+  factory Call.fromJson(Map<String, dynamic> json) {
+    return Call(
+      id: json['id'] as int? ?? 0,
+      linkedId: json['linked_id'] as String? ?? '',
+      caller: json['caller'] as String? ?? '',
+      trunk: json['trunk'] as String? ?? '',
+      organizationId: json['organization_id'] as int? ?? 0,
+      leadId: json['lead_id'] as int? ?? 0,
+      callRecordPath: json['call_record_path'] as String? ?? '',
+      callRecordUrl: json['call_record_url'] as String?, // Парсим новое поле
+      userId: json['user_id'] as int?,
+      internalNumber: json['internal_number']?.toString(),
+      callDuration: json['call_duration'] as int?,
+      callRingingDuration: json['call_ringing_duration'] as int?,
+      missed: json['missed'] as bool? ?? false,
+      incoming: json['incoming'] as bool? ?? false,
+      createdAt: DateTime.parse(json['created_at'].toString()),
+      updatedAt: DateTime.parse(json['updated_at'].toString()),
+    );
+  }
 }
-}
-
 class UserEvent {
   final int id;
   final String name;
@@ -184,5 +194,27 @@ class UserEvent {
       online: json['online'],
       fullName: json['full_name'],
     );
+  }
+}
+class NoticeFiles {
+  final int id;
+  final String name;
+  final String path;
+
+  NoticeFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory NoticeFiles.fromJson(Map<String, dynamic> json) {
+    //print('NoticeFiles: Parsing JSON for file ID: ${json['id']}');
+    final file = NoticeFiles(
+      id: json['id'] is int ? json['id'] : 0,
+      name: json['name'] is String ? json['name'] : '',
+      path: json['path'] is String ? json['path'] : '',
+    );
+    //print('NoticeFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
+    return file;
   }
 }

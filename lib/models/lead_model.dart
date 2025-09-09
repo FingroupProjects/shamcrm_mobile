@@ -13,11 +13,13 @@ class Lead {
   final LeadStatus? leadStatus;
   final Organization? organization;
   final String? phone;
-  final int? inProgressDealsCount;
-  final int? successefullyDealsCount;
-  final int? failedDealsCount;
+  final int? inProgressDealsCount; // Оставляем для обратной совместимости
+  final int? successefullyDealsCount; // Оставляем для обратной совместимости
+  final int? failedDealsCount; // Оставляем для обратной совместимости
   final int? lastUpdate;
-  final String? messageStatus; // Новое поле для messageStatus
+  final String? messageStatus;
+  final List<Map<String, dynamic>>? chats;
+  final List<MainPageDeal>? mainPageDeals; // Новое поле
 
   Lead({
     required this.id,
@@ -35,6 +37,8 @@ class Lead {
     this.failedDealsCount,
     this.lastUpdate,
     this.messageStatus,
+    this.chats,
+    this.mainPageDeals,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -56,11 +60,27 @@ class Lead {
           ? LeadStatus.fromJson(json['leadStatus'])
           : null,
       phone: json['phone']?.toString() ?? '',
-      inProgressDealsCount: json['in_progress_deals_count'],
-      successefullyDealsCount: json['successful_deals_count'],
-      failedDealsCount: json['failed_deals_count'],
+      inProgressDealsCount: json['in_progress_deals_count'] != null
+          ? int.tryParse(json['in_progress_deals_count'].toString())
+          : null,
+      successefullyDealsCount: json['successful_deals_count'] != null
+          ? int.tryParse(json['successful_deals_count'].toString())
+          : null,
+      failedDealsCount: json['failed_deals_count'] != null
+          ? int.tryParse(json['failed_deals_count'].toString())
+          : null,
       lastUpdate: json['last_update'],
-      messageStatus: json['messageStatus']?.toString(), // Парсим messageStatus как строку
+      messageStatus: json['messageStatus']?.toString(),
+      chats: json['chats'] != null
+          ? (json['chats'] as List<dynamic>)
+              .map((chat) => chat as Map<String, dynamic>)
+              .toList()
+          : null,
+      mainPageDeals: json['main_page_deals'] != null
+          ? (json['main_page_deals'] as List<dynamic>)
+              .map((deal) => MainPageDeal.fromJson(deal))
+              .toList()
+          : null,
     );
   }
 
@@ -81,9 +101,45 @@ class Lead {
       'failed_deals_count': failedDealsCount,
       'last_update': lastUpdate,
       'messageStatus': messageStatus,
+      'chats': chats,
+      'main_page_deals': mainPageDeals?.map((deal) => deal.toJson()).toList(),
     };
   }
 }
+
+// Новая модель для main_page_deals
+class MainPageDeal {
+  final int statusId;
+  final String statusTitle;
+  final String statusColor;
+  final int count;
+
+  MainPageDeal({
+    required this.statusId,
+    required this.statusTitle,
+    required this.statusColor,
+    required this.count,
+  });
+
+  factory MainPageDeal.fromJson(Map<String, dynamic> json) {
+    return MainPageDeal(
+      statusId: json['status_id'] ?? 0,
+      statusTitle: json['status_title'] ?? '',
+      statusColor: json['status_color'] ?? '#000000',
+      count: json['count'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status_id': statusId,
+      'status_title': statusTitle,
+      'status_color': statusColor,
+      'count': count,
+    };
+  }
+}
+
 class Author {
   final int id;
   final String name;
@@ -163,6 +219,7 @@ class LeadStatus {
   final bool isSuccess;
   final int position;
   final bool isFailure;
+
   LeadStatus({
     required this.id,
     required this.title,
@@ -175,22 +232,22 @@ class LeadStatus {
     required this.isFailure,
   });
 
-  factory LeadStatus.fromJson(Map<String, dynamic> json) {
-    return LeadStatus(
-      id: json['id'],
-      title: json['title'] ?? json['name'] ?? '',
-      color: json['color'],
-      lead_status_id: json['lead_status_id'] ?? null,
-      leadsCount: json['leads_count'] ?? 0,
-      isSuccess: json['is_success'] == true || json['is_success'] == 1,
-      position: json['position'] ?? 0,
-      isFailure: json['isx`_failure'] == true || json['is_failure'] == 1,
-      leads: (json['leads'] as List<dynamic>?)
-              ?.map((lead) => Lead.fromJson(lead, json['id']))
-              .toList() ??
-          [],
-    );
-  }
+factory LeadStatus.fromJson(Map<String, dynamic> json) {
+  return LeadStatus(
+    id: json['id'],
+    title: json['title'] ?? json['name'] ?? '',
+    color: json['color'],
+    lead_status_id: json['lead_status_id'] ?? null,
+    leadsCount: json['leads_count'] ?? 0, // Убедимся, что leads_count читается
+    isSuccess: json['is_success'] == true || json['is_success'] == 1,
+    position: json['position'] ?? 0,
+    isFailure: json['is_failure'] == true || json['is_failure'] == 1,
+    leads: (json['leads'] as List<dynamic>?)
+            ?.map((lead) => Lead.fromJson(lead, json['id']))
+            .toList() ??
+        [],
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {
@@ -224,6 +281,7 @@ class LeadCustomField {
       value: json['value'] ?? '',
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

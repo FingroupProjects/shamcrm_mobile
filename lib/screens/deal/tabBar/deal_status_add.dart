@@ -1,10 +1,13 @@
+
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateStatusDialog extends StatefulWidget {
   CreateStatusDialog({Key? key}) : super(key: key);
@@ -16,224 +19,417 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _dayController = TextEditingController();
+  final TextEditingController _notificationMessageController = TextEditingController();
   String? _errorMessage;
   String? _dayErrorMessage;
   bool _isTextExpanded = false;
+  bool _isExpandedMessage = false;
+  bool _showOnMainPage = false;
+  bool _isSuccess = false;
+  bool _isFailure = false;
+
+  Widget _buildTextFieldWithLabel({
+    required String label,
+    required TextEditingController controller,
+    bool isRequired = true,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? formatters,
+    String? hintText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: controller,
+          hintText: hintText ?? '',
+          label: label,
+          validator: isRequired
+              ? (value) => value!.isEmpty ? 'Поле обязательно' : null
+              : null,
+          keyboardType: keyboardType ?? TextInputType.text,
+          inputFormatters: formatters,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+    return Row(
+      children: [
+        Transform.scale(
+          scale: 0.9,
+          child: Checkbox(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xff1E2E52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ),
+        Text(label, style: _textStyle()),
+      ],
+    );
+  }
+
+  TextStyle _textStyle() => const TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color.fromARGB(255, 0, 0, 0),
+        overflow: TextOverflow.ellipsis,
+      );
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Text(
-        AppLocalizations.of(context)!.translate('add_status'),
-        style: TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xfff1E2E52),
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('name_list'),
+    final localizations = AppLocalizations.of(context)!;
+    return BlocListener<DealBloc, DealState>(
+      listener: (context, state) {
+        if (state is DealSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizations.translate('status_created_successfully'),
                 style: TextStyle(
+                  fontFamily: 'Gilroy',
                   fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xfff1E2E52),
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
-            ],
-          ),
-          TextFormField(
-            controller: _controller,
-            decoration: InputDecoration(
-              hintText:  AppLocalizations.of(context)!.translate('enter_title'),
-              hintStyle: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xfff1E2E52),
-              ),
-              border: OutlineInputBorder(
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
               ),
-              filled: true,
-              fillColor: Color(0xffF4F7FD),
-              contentPadding:
-                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
-          ),
-          if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                _errorMessage!,
+          );
+          Navigator.of(context).pop(true);
+        } else if (state is DealError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
                 style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 14,
                   fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
-          SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _isTextExpanded = !_isTextExpanded;
-                    });
-                  },
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('how_many_days_in_status'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xfff1E2E52),
+          );
+        }
+      },
+      child: Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        insetPadding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: 400,
+          height: 600,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Заголовок
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      localizations.translate('add_status'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black.withOpacity(0.8),
+                      ),
                     ),
-                    overflow: _isTextExpanded
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    maxLines: _isTextExpanded ? null : 1,
+                    IconButton(
+                      icon: Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Основной контент
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTextFieldWithLabel(
+                          label: localizations.translate('event_name'),
+                          controller: _controller,
+                          isRequired: true,
+                          hintText: localizations.translate('enter_title'),
+                        ),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isTextExpanded = !_isTextExpanded;
+                            });
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                localizations.translate('how_many_days_in_status'),
+                                style: _textStyle(),
+                                overflow: _isTextExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                maxLines: _isTextExpanded ? null : 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 0),
+                        _buildTextFieldWithLabel(
+                          label: '',
+                          controller: _dayController,
+                          isRequired: false,
+                          keyboardType: TextInputType.number,
+                          formatters: [FilteringTextInputFormatter.digitsOnly],
+                          hintText: localizations.translate('enter_number_day'),
+                        ),
+                        if (_dayErrorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              _dayErrorMessage!,
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                       
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isExpandedMessage = !_isExpandedMessage;
+                            });
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                localizations.translate('notification_message_label'),
+                                style: _textStyle(),
+                                overflow: _isExpandedMessage ? TextOverflow.visible : TextOverflow.ellipsis,
+                                maxLines: _isExpandedMessage ? null : 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 0),
+                        _buildTextFieldWithLabel(
+                          label: '',
+                          controller: _notificationMessageController,
+                          isRequired: false,
+                          hintText: localizations.translate('enter_notification_message'),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                if (_notificationMessageController.text.isNotEmpty) {
+                                  setState(() {
+                                    _notificationMessageController.text += ' %deal_number%';
+                                  });
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff1E2E52),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: Text(
+                                localizations.translate('deal_number'),
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (_notificationMessageController.text.isNotEmpty) {
+                                  setState(() {
+                                    _notificationMessageController.text += ' %sum%';
+                                  });
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff1E2E52),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: Text(
+                                localizations.translate('sum'),
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                         Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildCheckbox(
+                                localizations.translate('successful'),
+                                _isSuccess,
+                                (v) {
+                                  if (v != null) {
+                                    setState(() {
+                                      _isSuccess = v;
+                                      if (_isSuccess) _isFailure = false;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: _buildCheckbox(
+                                localizations.translate('unsuccessful'),
+                                _isFailure,
+                                (v) {
+                                  if (v != null) {
+                                    setState(() {
+                                      _isFailure = v;
+                                      if (_isFailure) _isSuccess = false;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildCheckbox(
+                          localizations.translate('show_on_main_page'),
+                          _showOnMainPage,
+                          (v) {
+                            if (v != null) {
+                              setState(() {
+                                _showOnMainPage = v;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          TextFormField(
-            controller: _dayController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.translate('enter_number_day'),
-              hintStyle: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xfff1E2E52),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Color(0xffF4F7FD),
-              contentPadding:
-                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-          if (_dayErrorMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                _dayErrorMessage!,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-        ],
-      ),
-      actions: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
-              ),
-            ),
-            SizedBox(width: 8),
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('add'),
-                onPressed: () {
-                  final title = _controller.text;
-                  final dayString = _dayController.text;
-                  final color = '#000';
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xff1E2E52),
+                        ),
+                        child: TextButton(
+                          onPressed: () {
+                            final title = _controller.text;
+                            final dayString = _dayController.text;
 
-                  if (title.isNotEmpty) {
-                    setState(() {
-                      _errorMessage = null;
-                      _dayErrorMessage = null;
-                    });
+                            if (title.isNotEmpty) {
+                              setState(() {
+                                _errorMessage = null;
+                                _dayErrorMessage = null;
+                              });
 
-                    final day =
-                        dayString.isNotEmpty ? int.tryParse(dayString) : null;
+                              final day = dayString.isNotEmpty ? int.tryParse(dayString) : null;
 
-                    if (dayString.isNotEmpty && day == null) {
-                      setState(() {
-                        _dayErrorMessage = AppLocalizations.of(context)!.translate('enter_valid_number_day');
-                      });
-                      return;
-                    }
-                    final localizations = AppLocalizations.of(context)!;
-                    context.read<DealBloc>().add(
-                          CreateDealStatus(
-                            title: title,
-                            color: color,
-                            day: day, 
-                            localizations: localizations,
+                              if (dayString.isNotEmpty && day == null) {
+                                setState(() {
+                                  _dayErrorMessage = localizations.translate('enter_valid_number_day');
+                                });
+                                return;
+                              }
+
+                              context.read<DealBloc>().add(
+                                    CreateDealStatus(
+                                      title: title,
+                                      color: '#000',
+                                      day: day,
+                                      notificationMessage: _notificationMessageController.text,
+                                      showOnMainPage: _showOnMainPage,
+                                      isSuccess: _isSuccess,
+                                      isFailure: _isFailure,
+                                      localizations: localizations,
+                                    ),
+                                  );
+                            } else {
+                              setState(() {
+                                _errorMessage = localizations.translate('enter_textfield');
+                              });
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                           ),
-                        );
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!.translate('status_created_successfully'),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                          child: Text(
+                            localizations.translate('add'),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.green,
-                        elevation: 3,
-                        padding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
                       ),
-                    );
-                    Navigator.of(context).pop(true);
-                  } else {
-                    setState(() {
-                      if (title.isEmpty) {
-                        _errorMessage = AppLocalizations.of(context)!.translate('enter_textfield');
-                      }
-                    });
-                  }
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
-              ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

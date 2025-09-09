@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 
 abstract class CategoryState {}
 
@@ -38,6 +39,7 @@ class CategorySuccess extends CategoryState {
   
   CategorySuccess(this.message);
 }
+
 class CatgeoryUpdatedEdit extends CategoryState {
   final String message;
 
@@ -48,4 +50,10 @@ class CategoryDeleted extends CategoryState {
   final String message;
 
   CategoryDeleted(this.message);
+}
+
+class SubCategoryByIdLoaded extends CategoryState {
+  final CategoryDataById category;
+
+  SubCategoryByIdLoaded(this.category);
 }

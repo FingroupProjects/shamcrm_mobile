@@ -83,7 +83,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       } else {
         BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
-        print("Инициализация: отправлен запрос на получение статусов лидов");
+        //print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
   }
@@ -110,7 +110,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         });
       }
     } catch (e) {
-      print('Error loading user roles!');
+      //print('Error loading user roles!');
       if (mounted) {
         setState(() {
           userRoles = ['Error loading roles'];
@@ -535,7 +535,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         // Если нет оставшихся статусов, очищаем кэш
         await MyTaskCache.clearAllMyTasks(); // Очищаем задачи из кэша
         await MyTaskCache.clearCache(); // Очищаем статусы из кэша
-        print('Кэш полностью очищен, так как все статусы удалены.');
+        //print('Кэш полностью очищен, так как все статусы удалены.');
       } else if (_tabTitles.length == 1) {
         // Если остался только один статус, удаляем его из кэша
         final remainingStatusId = _tabTitles.first['id'];
@@ -543,7 +543,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             .clearMyTaskStatuses(); // Удаляем все связанные статусы
         await MyTaskCache.cacheMyTaskStatuses(
             _tabTitles); // Перезаписываем оставшийся статус
-        print('Кэш обновлён: один статус остался после удаления.');
+        //print('Кэш обновлён: один статус остался после удаления.');
       }
 
       // Обновляем данные через Bloc
@@ -655,7 +655,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       },
       child: BlocBuilder<MyTaskBloc, MyTaskState>(
         builder: (context, state) {
-          // print('state: ${state.runtimeType}');
+          // //print('state: ${state.runtimeType}');
           if (state is MyTaskDataLoaded) {
             final List<MyTask> tasks = state.tasks;
             return searchWidget(tasks);
@@ -681,7 +681,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                   name: title,
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
+                    //print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 

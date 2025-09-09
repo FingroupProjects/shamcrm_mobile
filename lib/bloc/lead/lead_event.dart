@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class LeadEvent {}
@@ -19,10 +20,13 @@ class FetchLeads extends LeadEvent {
   final bool? hasNotices;
   final bool? hasContact;
   final bool? hasChat;
-  final bool? hasNoReplies; // Новый параметр
-  final bool? hasUnreadMessages; // Новый параметр
+  final bool? hasNoReplies;
+  final bool? hasUnreadMessages;
   final bool? hasDeal;
   final int? daysWithoutActivity;
+  final List<Map<String, dynamic>>? directoryValues;
+  final int? salesFunnelId;
+  final bool ignoreCache; // Новый параметр
 
   FetchLeads(
     this.statusId, {
@@ -39,10 +43,13 @@ class FetchLeads extends LeadEvent {
     this.hasNotices,
     this.hasContact,
     this.hasChat,
-    this.hasNoReplies, // Новый параметр
-    this.hasUnreadMessages, // Новый параметр
+    this.hasNoReplies,
+    this.hasUnreadMessages,
     this.hasDeal,
     this.daysWithoutActivity,
+    this.directoryValues,
+    this.salesFunnelId,
+    this.ignoreCache = false, // По умолчанию кэш используется
   });
 }
 
@@ -97,7 +104,9 @@ class CreateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<Map<String, int>>? directoryValues;
+  final List<String>? filePaths;
   final AppLocalizations localizations;
   final bool isSystemManager;
 
@@ -116,11 +125,21 @@ class CreateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    this.directoryValues,
+    this.filePaths,
     this.isSystemManager = false,
     required this.localizations,
   });
 }
 
+// Новое событие для обновления статуса лида
+class UpdateLeadStatus extends LeadEvent {
+  final int leadId;
+  final int oldStatusId;
+  final int newStatusId;
+
+  UpdateLeadStatus(this.leadId, this.oldStatusId, this.newStatusId);
+}
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -136,9 +155,16 @@ class UpdateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields; // Изменён тип
+  final List<Map<String, int>>? directoryValues;
+  final List<String>? filePaths;
   final bool isSystemManager;
   final AppLocalizations localizations;
+  final List<LeadFiles> existingFiles;
+  final String? priceTypeId; // Новое поле
+    final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
+    final String? duplicate; // Новое поле
+
 
   UpdateLead({
     required this.leadId,
@@ -156,10 +182,18 @@ class UpdateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    this.directoryValues,
+    this.filePaths,
     required this.localizations,
     this.isSystemManager = false,
+    required this.existingFiles,
+    this.priceTypeId,
+        this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
+    this.duplicate, // Новое поле]  
+
   });
 }
+
 
 class DeleteLead extends LeadEvent {
   final int leadId;
@@ -196,3 +230,9 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.localizations,
   );
 }
+class UpdateLeadStatusCount extends LeadEvent {
+  final int oldStatusId;
+  final int newStatusId;
+  UpdateLeadStatusCount(this.oldStatusId, this.newStatusId);
+}
+class RestoreCountsFromCache extends LeadEvent {}

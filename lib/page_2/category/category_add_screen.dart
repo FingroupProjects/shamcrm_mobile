@@ -51,7 +51,7 @@ class CategoryAddBottomSheet {
                 context: context,
                 builder: (BuildContext context) {
                   return AddCustomCharacterFieldDialog(
-                    onAddField: (fieldName, isIndividual) { // Обновляем обработчик
+                    onAddField: (fieldName, isIndividual) {
                       setState(() {
                         customFields.add(CustomField(name: fieldName, isIndividual: isIndividual));
                       });
@@ -182,15 +182,15 @@ class CategoryAddBottomSheet {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              if (!isActive) ...[
-                                SubCategoryDropdownWidget(
-                                  subSelectedCategory: subSelectedCategory,
-                                  onSelectCategory: (category) {
-                                    setState(() {
-                                      subSelectedCategory = category;
-                                    });
-                                  },
-                                ),
+                              SubCategoryDropdownWidget(
+                                subSelectedCategory: subSelectedCategory,
+                                onSelectCategory: (category) {
+                                  setState(() {
+                                    subSelectedCategory = category;
+                                  });
+                                },
+                              ),
+                              if (!isActive) ...[ // Скрываем все элементы ниже, если isActive = true
                                 const SizedBox(height: 8),
                                 PriceAffectSwitcher(
                                   isActive: isAffectingPrice,
@@ -198,6 +198,7 @@ class CategoryAddBottomSheet {
                                     setState(() {
                                       isAffectingPrice = value;
                                       if (isAffectingPrice) {
+                                        selectedType = 'b'; // Автоматически выбираем Характеристику
                                         customFields = [];
                                       }
                                     });
@@ -208,166 +209,169 @@ class CategoryAddBottomSheet {
                                   selectedType: selectedType,
                                   onTypeChanged: (type) {
                                     setState(() {
-                                      selectedType = type;
+                                      if (!isAffectingPrice || type == 'b') {
+                                        // Разрешаем изменение только если isAffectingPrice = false или выбирается Характеристика
+                                        selectedType = type;
+                                      }
                                     });
                                   },
+                                  isAffectingPrice: isAffectingPrice,
                                 ),
-                              ],
-                              const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!.translate('image_message'),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                const SizedBox(height: 8),
+                                Text(
+                                  AppLocalizations.of(context)!.translate('image_message'),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  await _pickImage();
-                                  setState(() {});
-                                },
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xffF4F7FD),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
-                                          width: 1.5,
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: () async {
+                                    await _pickImage();
+                                    setState(() {});
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: double.infinity,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF4F7FD),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
+                                            width: 1.5,
+                                          ),
                                         ),
-                                      ),
-                                      child: _image == null
-                                          ? Center(
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.camera_alt,
-                                                    color: Color(0xff99A4BA),
-                                                    size: 24,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    AppLocalizations.of(context)!.translate('pick_image'),
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
+                                        child: _image == null
+                                            ? Center(
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.camera_alt,
                                                       color: Color(0xff99A4BA),
+                                                      size: 24,
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                                              child: Row(
-                                                children: [
-                                                  Container(
-                                                    width: 54,
-                                                    height: 54,
-                                                    decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      image: DecorationImage(
-                                                        image: FileImage(_image!),
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      _image!.path.split('/').last,
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      AppLocalizations.of(context)!.translate('pick_image'),
                                                       style: const TextStyle(
                                                         fontSize: 14,
                                                         fontWeight: FontWeight.w500,
                                                         fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
+                                                        color: Color(0xff99A4BA),
                                                       ),
-                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _image = null;
-                                                      });
-                                                    },
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
+                                              )
+                                            : Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 54,
+                                                      height: 54,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        image: DecorationImage(
+                                                          image: FileImage(_image!),
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        _image!.path.split('/').last,
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.w500,
+                                                          fontFamily: 'Gilroy',
+                                                          color: Color(0xff1E2E52),
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _image = null;
+                                                        });
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
+                                      ),
+                                      if (!_isImageSelected)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Text(
+                                            AppLocalizations.of(context)!.translate('required_image'),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.w400,
                                             ),
-                                    ),
-                                    if (!_isImageSelected)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Text(
-                                          AppLocalizations.of(context)!.translate('required_image'),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              if (!isActive)
+                                const SizedBox(height: 10),
                                 CustomButton(
                                   buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
                                   buttonColor: const Color(0xff1E2E52),
                                   textColor: Colors.white,
                                   onPressed: _showAddCharacterCustomFieldDialog,
                                 ),
-                              const SizedBox(height: 5),
-                              Column(
-                                children: customFields.map((field) {
-                                  return Card(
-                                    color: const Color(0xffF4F7FD),
-                                    margin: const EdgeInsets.symmetric(vertical: 4),
-                                    child: ListTile(
-                                      contentPadding: const EdgeInsets.only(left: 16, right: 16),
-                                      title: Text(
-                                        field.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Gilroy',
+                                const SizedBox(height: 5),
+                                Column(
+                                  children: customFields.map((field) {
+                                    return Card(
+                                      color: const Color(0xffF4F7FD),
+                                      margin: const EdgeInsets.symmetric(vertical: 4),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.only(left: 16, right: 16), // Исправлено: emberi16 -> 16
+                                        title: Text(
+                                          field.name,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Gilroy',
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          field.isIndividual
+                                              ? AppLocalizations.of(context)!.translate('individual')
+                                              : AppLocalizations.of(context)!.translate('common'),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                            fontFamily: 'Gilroy',
+                                            color: Color(0x991E2E52),
+                                          ),
+                                        ),
+                                        trailing: IconButton(
+                                          icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                          onPressed: () {
+                                            setState(() {
+                                              customFields.remove(field);
+                                            });
+                                          },
                                         ),
                                       ),
-                                      subtitle: Text(
-                                        field.isIndividual
-                                            ? AppLocalizations.of(context)!.translate('individual')
-                                            : AppLocalizations.of(context)!.translate('common'),
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w400,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0x991E2E52),
-                                        ),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
-                                        onPressed: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -391,7 +395,21 @@ class CategoryAddBottomSheet {
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() && _image != null) {
+                              if (formKey.currentState!.validate()) {
+                                if (!isActive && subSelectedCategory == null) {
+                                  showCustomSnackBar(
+                                    context: context,
+                                    message: AppLocalizations.of(context)!.translate('field_required'),
+                                    isSuccess: false,
+                                  );
+                                  return;
+                                }
+                                if (!isActive && _image == null) {
+                                  setState(() {
+                                    _isImageSelected = false;
+                                  });
+                                  return;
+                                }
                                 _createCategory(
                                   categoryNameController.text,
                                   subSelectedCategory,
@@ -402,17 +420,13 @@ class CategoryAddBottomSheet {
                                   selectedType,
                                   isAffectingPrice,
                                 );
-                              } else {
-                                setState(() {
-                                  _isImageSelected = _image != null;
-                                });
                               }
                             },
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height:10),
                   ],
                 ),
               ),
@@ -432,6 +446,7 @@ class CategoryAddBottomSheet {
     List<CustomField> customFields,
     String selectedType,
     bool isAffectingPrice,
+
   ) async {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
@@ -446,14 +461,14 @@ class CategoryAddBottomSheet {
 
       Navigator.pop(context);
 
-
       categoryBloc.add(CreateCategory(
         name: name,
         parentId: isActive ? 0 : (subcategory != null ? int.tryParse(subcategory) ?? 0 : 0),
-        attributes: attributes, 
-        image: image,
+        attributes: attributes,
+        image: isActive ? null : image, // Передаем null для изображения, если isActive = true
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
+        isParent: isActive, // Передаём isActive как isParent
       ));
     } catch (e) {
       showCustomSnackBar(
@@ -467,7 +482,7 @@ class CategoryAddBottomSheet {
 
 class CustomField {
   final String name;
-  final bool isIndividual; // Добавляем поле isIndividual
+  final bool isIndividual;
 
   CustomField({
     required this.name,

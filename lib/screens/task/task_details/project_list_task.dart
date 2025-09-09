@@ -1,13 +1,13 @@
-  import 'package:animated_custom_dropdown/custom_dropdown.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
-  import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
-  import 'package:crm_task_manager/models/project_task_model.dart';
-  import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-  import 'package:flutter/material.dart';
-  import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
- class ProjectTaskGroupWidget extends StatefulWidget {
+class ProjectTaskGroupWidget extends StatefulWidget {
   final String? selectedProject;
   final Function(ProjectTask) onSelectProject;
 
@@ -24,6 +24,7 @@
 class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   List<ProjectTask> projectsList = [];
   ProjectTask? selectedProjectData;
+  bool _hasAutoSelected = false;
 
   final TextStyle projectTextStyle = const TextStyle(
     fontSize: 16,
@@ -36,6 +37,56 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   void initState() {
     super.initState();
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
+  }
+
+  void _handleProjectSelection(List<ProjectTask> projects) {
+    // Избегаем повторного автоматического выбора
+    if (_hasAutoSelected) return;
+
+    // Автоматический выбор, если только один проект
+    if (projects.length == 1 && selectedProjectData == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedProjectData = projects.first;
+          _hasAutoSelected = true;
+        });
+        widget.onSelectProject(projects.first);
+      });
+    } else if (widget.selectedProject != null && projects.isNotEmpty) {
+      try {
+        final foundProject = projects.firstWhere(
+          (projectTask) => projectTask.id.toString() == widget.selectedProject,
+        );
+        if (selectedProjectData != foundProject) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedProjectData = foundProject;
+            });
+          });
+        }
+      } catch (e) {
+        if (selectedProjectData != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedProjectData = null;
+            });
+          });
+        }
+      }
+    }
+  }
+
+  // Метод для проверки, содержится ли selectedProjectData в текущем списке
+  ProjectTask? _getValidInitialItem(List<ProjectTask> projects) {
+    if (selectedProjectData == null) return null;
+    
+    // Проверяем, содержится ли selectedProjectData в текущем списке проектов
+    try {
+      return projects.firstWhere((project) => project.id == selectedProjectData!.id);
+    } catch (e) {
+      // Если не найден, возвращаем null
+      return null;
+    }
   }
 
   @override
@@ -55,55 +106,25 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
               AppLocalizations.of(context)!.translate('projects'),
               style: projectTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
-                fontSize: 14,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError 
-                      ? Colors.red 
-                      :  Colors.white,
+                  color: field.hasError ? Colors.red : Colors.white,
                 ),
               ),
               child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-                    if (widget.selectedProject != null && projectsList.isNotEmpty) {
-                      try {
-                        selectedProjectData = projectsList.firstWhere(
-                          (projectTask) =>
-                              projectTask.id.toString() == widget.selectedProject,
-                        );
-                      } catch (e) {
-                        selectedProjectData = null;
-                      }
-                    }
-                  // } else if (state is GetTaskProjectError) {
-                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-                  //     ScaffoldMessenger.of(context).showSnackBar(
-                  //       SnackBar(
-                  //         content: Text(
-                  //           AppLocalizations.of(context)!.translate(state.message),
-                  //           style: projectTextStyle.copyWith(color: Colors.white),
-                  //         ),
-                  //         behavior: SnackBarBehavior.floating,
-                  //         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  //         shape: RoundedRectangleBorder(
-                  //           borderRadius: BorderRadius.circular(12),
-                  //         ),
-                  //         backgroundColor: Colors.red,
-                  //         elevation: 3,
-                  //         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  //         duration: const Duration(seconds: 2),
-                  //       ),
-                  //     );
-                  //   });
+                    
+                    // Обрабатываем выбор проекта после завершения build
+                    _handleProjectSelection(projectsList);
                   }
 
                   return CustomDropdown<ProjectTask>.search(
@@ -139,7 +160,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     },
                     headerBuilder: (context, selectedItem, enabled) {
                       return Text(
-                        selectedItem?.name ?? 
+                        selectedItem?.name ??
                             AppLocalizations.of(context)!.translate('select_project'),
                         style: projectTextStyle,
                       );
@@ -148,11 +169,11 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       AppLocalizations.of(context)!.translate('select_project'),
                       style: projectTextStyle.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF6B7280),
+                        color: const Color(0xFF1E2E52),
                       ),
                     ),
                     excludeSelected: false,
-                    initialItem: selectedProjectData,
+                    initialItem: _getValidInitialItem(projectsList),
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectProject(value);

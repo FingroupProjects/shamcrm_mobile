@@ -44,20 +44,32 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   Future<void> _initializeBaseUrl() async {
     try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
       setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+        baseUrl = staticBaseUrl;
       });
     } catch (error) {
       setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
+        baseUrl = 'https://info1fingrouptj-back.shamcrm.com'; // Обновляем fallback URL
       });
+      debugPrint('Error fetching baseUrl: $error');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String? fullUrl = baseUrl != null ? '$baseUrl${widget.filePath}' : null;
+    // Исправление: Добавляем /storage к пути, если его нет в filePath
+    final String normalizedFilePath = widget.filePath.startsWith('storage/') 
+        ? widget.filePath 
+        : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
+    
+    // Формируем полный URL с помощью Uri для корректной обработки слешей
+    final String? fullUrl = baseUrl != null 
+        ? Uri.parse(baseUrl!).resolve(normalizedFilePath).toString() 
+        : null;
+
+    // Отладка: Логируем URL
+    debugPrint('ImageMessageBubble: baseUrl=$baseUrl, filePath=${widget.filePath}, fullUrl=$fullUrl');
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -124,6 +136,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                               height: 200,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
+                                debugPrint('Error loading image: $error, StackTrace: $stackTrace');
                                 return Container(
                                   width: 200,
                                   height: 200,

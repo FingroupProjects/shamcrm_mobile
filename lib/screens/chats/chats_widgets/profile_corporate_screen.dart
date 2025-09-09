@@ -57,7 +57,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
   Future<void> _fetchChatData() async {
     // Для support чата не нужно загружать данные
-    if (widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png') {
+    if (widget.chatItem.avatar == 'assets/icons/Profile/image.png') {
       setState(() {
         isLoading = false;
       });
@@ -105,9 +105,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   Widget build(BuildContext context) {
     // Проверяем, является ли чат типом support
     bool isSupportChat =
-        widget.chatItem.avatar == 'assets/icons/Profile/chat_support.png';
-    print(
-        'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
+        widget.chatItem.avatar == 'assets/icons/Profile/image.png';
+    // print(
+    //     'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
 
     if (isLoading) {
       return Scaffold(
@@ -122,6 +122,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
             ),
+              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: Colors.white,
           leading: IconButton(
@@ -160,7 +162,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/icons/Profile/chat_support.png',
+                'assets/icons/Profile/image.png',
                 width: 80,
                 height: 80,
               ),
@@ -173,6 +175,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   fontWeight: FontWeight.w600,
                   color: Color(0xff1E2E52),
                 ),
+                  maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -212,10 +216,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           children: [
             SizedBox(height: 10),
             Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 6),
-              ),
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   border: Border.all(color: Colors.black, width: 6),
+              // ),
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 backgroundImage: isGroupChat
@@ -286,6 +290,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               fontFamily: 'Gilroy',
                               color: Colors.white,
                             ),
+                              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -430,6 +436,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Colors.black,
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (isOwner)
@@ -442,6 +450,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Color(0xff1E2E52),
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 )
                               else if (isCurrentUser)
                                 Text(

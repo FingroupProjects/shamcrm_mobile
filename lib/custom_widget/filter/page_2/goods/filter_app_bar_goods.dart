@@ -1,11 +1,14 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/labels_multi_select_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/status.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -15,13 +18,17 @@ class GoodsFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final List<int>? initialCategoryIds;
   final double? initialDiscountPercent;
+  final List<String>? initialLabels; // Оставляем List<String> для label_id
+  final bool? initialIsActive;
 
-  GoodsFilterScreen({
+  const GoodsFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialCategoryIds,
     this.initialDiscountPercent,
+    this.initialLabels,
+    this.initialIsActive,
   }) : super(key: key);
 
   @override
@@ -29,10 +36,11 @@ class GoodsFilterScreen extends StatefulWidget {
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
-  final TextEditingController discountPercentController =
-      TextEditingController();
+  final TextEditingController discountPercentController = TextEditingController();
   List<SubCategoryAttributesData> selectedCategories = [];
+  List<String> selectedLabels = []; // Храним label_id как строки
   bool isCategoryValid = true;
+  bool? isActive;
 
   @override
   void initState() {
@@ -40,7 +48,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (kDebugMode) {
       print('GoodsFilterScreen: Инициализация экрана фильтров');
       print(
-          'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, discount_percent: ${widget.initialDiscountPercent}');
+          'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, '
+          'discount_percent: ${widget.initialDiscountPercent}, label_id: ${widget.initialLabels}, '
+          'is_active: ${widget.initialIsActive}');
     }
 
     if (widget.initialDiscountPercent != null &&
@@ -50,6 +60,20 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       if (kDebugMode) {
         print(
             'GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
+      }
+    }
+
+    if (widget.initialLabels != null) {
+      selectedLabels = List.from(widget.initialLabels!);
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
+      }
+    }
+
+    if (widget.initialIsActive != null) {
+      isActive = widget.initialIsActive;
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
       }
     }
 
@@ -63,6 +87,15 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       print('GoodsFilterScreen: Очистка ресурсов');
     }
     super.dispose();
+  }
+
+  void _handleStatusChanged(bool? status) {
+    setState(() {
+      isActive = status;
+      if (kDebugMode) {
+        print('GoodsFilterScreen: Изменено значение is_active: $isActive');
+      }
+    });
   }
 
   @override
@@ -92,8 +125,10 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 }
                 widget.onResetFilters?.call();
                 selectedCategories = [];
+                selectedLabels = [];
                 discountPercentController.clear();
                 isCategoryValid = true;
+                isActive = null;
               });
             },
             style: TextButton.styleFrom(
@@ -124,10 +159,16 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 'organization_id': '2',
                 'category_id': selectedCategories.isNotEmpty
                     ? selectedCategories
-                        .map((category) => category.parent.id.toString())
+                        .map((category) => category.id.toString())
                         .toList()
                     : [],
+                'label_id': selectedLabels.isNotEmpty ? selectedLabels : [], // Изменено на label_id
               };
+
+              if (isActive != null) {
+                filters['is_active'] = isActive;
+              }
+
               if (discountPercentController.text.isNotEmpty) {
                 final discount =
                     double.tryParse(discountPercentController.text);
@@ -147,7 +188,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               }
 
               if (filters['category_id'].isNotEmpty ||
-                  filters.containsKey('discount_percent')) {
+                  filters.containsKey('discount_percent') ||
+                  filters['label_id'].isNotEmpty ||
+                  filters.containsKey('is_active')) {
                 widget.onSelectedDataFilter?.call(filters);
               } else {
                 if (kDebugMode) {
@@ -188,11 +231,11 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               setState(() {
                 selectedCategories = state.subCategories
                     .where((subCategory) => widget.initialCategoryIds!
-                        .contains(subCategory.parent.id))
+                        .contains(subCategory.parent?.id))
                     .toList();
                 if (kDebugMode) {
                   print(
-                      'GoodsFilterScreen: Установлены начальные подкатегории: ${selectedCategories.map((c) => c.name).toList()}, category_ids: ${selectedCategories.map((c) => c.parent.id).toList()}');
+                      'GoodsFilterScreen: Установлены начальные подкатегории: ${selectedCategories.map((c) => c.name).toList()}, category_ids: ${selectedCategories.map((c) => c.parent?.id).toList()}');
                 }
               });
             } else {
@@ -210,7 +253,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               print(
                   'GoodsFilterScreen: Подкатегории из GoodsBloc: ${subCategories.length}');
               print(
-                  'GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent.id).toList()}');
+                  'GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent?.id).toList()}');
             }
           } else if (state is GoodsLoading) {
             if (kDebugMode) {
@@ -247,11 +290,6 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
             );
           }
 
-          if (kDebugMode) {
-            print(
-                'GoodsFilterScreen: Отрисовка с подкатегориями: ${subCategories.length}');
-          }
-
           return Padding(
             padding:
                 const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
@@ -276,11 +314,32 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   isCategoryValid = true;
                                   if (kDebugMode) {
                                     print(
-                                        'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent.id).toList()}');
+                                        'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent?.id).toList()}');
                                   }
                                 });
                               },
                               isValid: isCategoryValid,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: LabelsMultiSelectWidget(
+                              selectedLabels: selectedLabels,
+                              onSelectLabels: (labelIds) { // Изменено на labelIds
+                                setState(() {
+                                  selectedLabels = labelIds;
+                                  if (kDebugMode) {
+                                    print(
+                                        'GoodsFilterScreen: Выбраны label_id: $labelIds');
+                                  }
+                                });
+                              },
                             ),
                           ),
                         ),
@@ -304,7 +363,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   keyboardType: TextInputType.number,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return null; // Allow empty discount
+                                      return null;
                                     }
                                     final number = double.tryParse(value);
                                     if (number == null || number < 0) {
@@ -321,6 +380,33 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('active_status'),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                StatusSelector(onStatusChanged: _handleStatusChanged),
                               ],
                             ),
                           ),

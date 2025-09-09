@@ -1,8 +1,10 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatItem {
   final String name;
@@ -28,29 +30,24 @@ class ChatItem {
 
 class ChatListItem extends StatelessWidget {
   final ChatItem chatItem;
+  final String endPointInTab;
 
-  const ChatListItem({super.key, required this.chatItem});
+  const ChatListItem({
+    super.key,
+    required this.chatItem,
+    required this.endPointInTab,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Проверяем, является ли аватарка чатом поддержки
-    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/chat_support.png';
+    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/image.png';
+    bool isLeadsSection = endPointInTab == 'lead';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
           Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              // Убираем обводку для support, оставляем для остальных
-              border: isSupportAvatar
-                  ? null
-                  : Border.all(
-                      color: Colors.black,
-                      width: 2,
-                    ),
-            ),
             child: _buildAvatar(chatItem.avatar),
           ),
           const SizedBox(width: 12),
@@ -60,16 +57,12 @@ class ChatListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      chatItem.icon,
-                      width: 20,
-                      height: 20,
-                    ),
-                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty
-                            ? chatItem.name
+                            ? (chatItem.name == 'support'
+                                ? AppLocalizations.of(context)!.translate('support_chat_name')
+                                : chatItem.name)
                             : AppLocalizations.of(context)!.translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
@@ -87,9 +80,14 @@ class ChatListItem extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        chatItem.message,
-                        style: AppStyles.chatMessageStyle,
+                      child: RichText(
+                        text: TextSpan(
+                          children: parseHtmlToTextSpans(
+                            chatItem.message,
+                            AppStyles.chatMessageStyle,
+                          ),
+                        ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -111,8 +109,8 @@ class ChatListItem extends StatelessWidget {
                                     : '+9',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                   fontFamily: 'Gilroy',
                                 ),
                               ),
@@ -130,9 +128,61 @@ class ChatListItem extends StatelessWidget {
   }
 
   Widget _buildAvatar(String avatar) {
-    print('Avatar path: $avatar'); // Отладочный вывод для проверки пути
+    bool isLeadsSection = endPointInTab == 'lead';
+    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+    bool isTaskSection = endPointInTab == 'task';
 
-    // Проверяем, является ли строка SVG
+    if (isTaskSection && !avatar.contains('<svg')) {
+      return CircleAvatar(
+        backgroundImage: const AssetImage('assets/images/AvatarTask.png'),
+        radius: 24,
+        backgroundColor: Colors.white,
+        onBackgroundImageError: (exception, stackTrace) {
+          // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+        },
+      );
+    }
+
+    if (isLeadsSection && (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
+      return CircleAvatar(
+        backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
+        radius: 24,
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        onBackgroundImageError: (exception, stackTrace) {
+          // print('Error loading asset image: assets/images/AvatarChat.png, $exception');
+        },
+      );
+    }
+
+    if (isLeadsSection && chatItem.icon.isNotEmpty && chatItem.icon != 'assets/icons/leads/default.png') {
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.grey[100],
+          border: Border.all(
+            color: Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Image.asset(
+            chatItem.icon,
+            width: 52,
+            height: 52,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.person,
+                size: 32,
+                color: Colors.grey[600],
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     if (avatar.contains('<svg')) {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
@@ -166,11 +216,13 @@ class ChatListItem extends StatelessWidget {
             child: Center(
               child: Text(
                 text,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -180,30 +232,27 @@ class ChatListItem extends StatelessWidget {
             avatar,
             width: 52,
             height: 52,
-            placeholderBuilder: (context) => CircularProgressIndicator(),
+            placeholderBuilder: (context) => const CircularProgressIndicator(),
           );
         }
       }
     }
 
-    // Проверяем, является ли это аватарка чата поддержки
-    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-
     try {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
         radius: 24,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white, // Черный фон для support
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
         onBackgroundImageError: (exception, stackTrace) {
-          print('Error loading asset image: $avatar, $exception');
+          // print('Error loading asset image: $avatar, $exception');
         },
       );
     } catch (e) {
-      print('Fallback avatar due to error: $e');
+      // print('Fallback avatar due to error: $e');
       return CircleAvatar(
-        backgroundImage: AssetImage('assets/images/AvatarChat.png'),
+        backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
         radius: 24,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white, // Черный фон для support
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       );
     }
   }
@@ -217,7 +266,7 @@ class ChatListItem extends StatelessWidget {
       DateTime parsedTime = DateTime.parse(time);
       return DateFormat('dd.MM.yyyy').format(parsedTime);
     } catch (e) {
-      print("Ошибка парсинга даты: $e");
+      // print("Ошибка парсинга даты: $e");
       return '';
     }
   }
@@ -246,5 +295,76 @@ class ChatListItem extends StatelessWidget {
       }
     }
     return null;
+  }
+
+  List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
+    final RegExp htmlRegExp = RegExp(
+      r'<(strong|em|s|a href="([^"]*)"[^>]*)(.*?)>(.*?)</\1>',
+      multiLine: true,
+      caseSensitive: false,
+    );
+
+    List<TextSpan> spans = [];
+    int lastEnd = 0;
+
+    for (final match in htmlRegExp.allMatches(html)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: html.substring(lastEnd, match.start),
+          style: baseStyle,
+        ));
+      }
+
+      String tag = match.group(1)!.toLowerCase();
+      String content = match.group(4)!;
+      String? href = tag.startsWith('a href') ? match.group(2) : null;
+
+      if (tag == 'strong') {
+        spans.add(TextSpan(
+          text: content,
+          style: baseStyle.copyWith(fontWeight: FontWeight.bold),
+        ));
+      } else if (tag == 'em') {
+        spans.add(TextSpan(
+          text: content,
+          style: baseStyle.copyWith(fontStyle: FontStyle.italic),
+        ));
+      } else if (tag == 's') {
+        spans.add(TextSpan(
+          text: content,
+          style: baseStyle.copyWith(decoration: TextDecoration.lineThrough),
+        ));
+      } else if (tag.startsWith('a') && href != null) {
+        spans.add(TextSpan(
+          text: content,
+          style: baseStyle.copyWith(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () async {
+              final url = Uri.parse(href);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+        ));
+      }
+
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < html.length) {
+      spans.add(TextSpan(
+        text: html.substring(lastEnd),
+        style: baseStyle,
+      ));
+    }
+
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: html, style: baseStyle));
+    }
+
+    return spans;
   }
 }
