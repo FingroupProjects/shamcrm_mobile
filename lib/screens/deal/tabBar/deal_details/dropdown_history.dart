@@ -278,6 +278,4 @@ Widget _buildActionItem(String item) {
     return actionDetail;
   }).toList();
 }
-
-
 }

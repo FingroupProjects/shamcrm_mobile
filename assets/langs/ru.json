@@ -1170,7 +1170,39 @@
   "goods_not_found": "Товар не найден",
 "show_all": "Показать все",
 "appbar_warehouse": "Учет",
-"appbar_online_store": "Магазин"
+"appbar_online_store": "Магазин",
+"appbar_incoming":"Приход",
+"view_document": "Документ",
+  "document_number": "Номер документа",
+  "storage": "Склад",
+  "supplier": "Поставщик",
+  "supplier_phone": "Телефон поставщика",
+  "supplier_inn": "ИНН поставщика",
+ 
+  "total_quantity": "Общее количество",
+  "total_sum": "Общая сумма",
+  "approve_document": "Провести",
+  "document_approved": "Документ проведен",
+  "error_approving_document": "Ошибка при проведении документа",
+  "error_loading_document": "Ошибка загрузки документа",
+  "document_data_unavailable": "Данные документа недоступны",
+  "quantity": "Количество",
+
+"no_incoming": "Нет приходов",
+"no_supplier": "Нет поставщика",
+"unapprove_document": "Отменить проведение",
+"document_unapproved": "Проведение документа отменено",
+"error_unapproving_document": "Ошибка при отмене проведения документа",
+"warehouse_accounting": "Учет склада",
+"warehouse_documents": "Документы склада",
+"select_document_type": "Выберите тип документа для работы со складом",
+"transfer": "Перемещение",
+"write_off": "Списание",
+"client_sale": "Реализация клиент",
+"client_return": "Возврат от клиента",
+"supplier_return": "Возврат поставщику",
+"navigate_to_document": "Переход к документу: {document}",
+"incoming_document" : "Приход"
 
  
 

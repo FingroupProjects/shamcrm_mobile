@@ -1161,7 +1161,43 @@
 "deal_number": "Deal number",
 "show_on_main_page": "Show on lead card",
 "goods_not_found": "Goods not found",
-"show_all": "Show all"
+"show_all": "Show all",
+"appbar_incoming": "Incoming",
+"no_incoming": "No incoming documents",
+"no_supplier": "No supplier",
+"approve_document": "Approve",
+"unapprove_document": "Unapprove",
+"document_approved": "Document approved",
+"document_unapproved": "Document unapproved",
+"error_approving_document": "Error approving document",
+"error_unapproving_document": "Error unapproving document",
+"document_history": "Document history",
+"error_loading_document": "Error loading document",
+"document_data_unavailable": "Document data unavailable",
+"error_no_good_id": "Error: Could not determine product ID",
+"document_number": "Document number",
+"storage": "Warehouse",
+"supplier": "Supplier",
+"supplier_phone": "Supplier phone",
+"supplier_inn": "Supplier TIN",
+
+"total_quantity": "Total quantity",
+"total_sum": "Total sum",
+
+"quantity": "Quantity",
+
+"view_document": "View document",
+"warehouse_accounting": "Warehouse accounting",
+"warehouse_documents": "Warehouse documents",
+"select_document_type": "Select document type for warehouse operations",
+"transfer": "Transfer",
+"write_off": "Write-off",
+"client_sale": "Client sale",
+"client_return": "Client return",
+"supplier_return": "Supplier return",
+"navigate_to_document": "Navigate to document: {document}",
+"incoming_document": "Incoming"
+
 
 
 

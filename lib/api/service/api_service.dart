@@ -57,6 +57,8 @@ import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
+import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
@@ -9954,4 +9956,166 @@ Future<OperatorList> getOperators() async {
 }
 
 //________________________________  END_______API_SCREEN__CALLS____________________________________________//
+//________________________________  START_______API_SCREEN__DOCUMENTS____________________________________________//
+
+
+Future<IncomingResponse> getIncomingDocuments({
+  int page = 1,
+  int perPage = 20,
+  String? query,
+  DateTime? fromDate,
+  DateTime? toDate,
+  int? approved, // Для будущего фильтра по статусу
+}) async {
+  String url = '/income-documents'; // Предполагаемый endpoint; подкорректируй если нужно
+  url += '?page=$page&per_page=$perPage';
+  if (query != null && query.isNotEmpty) {
+    url += '&search=$query';
+  }
+  if (fromDate != null) {
+    url += '&from=${fromDate.toIso8601String()}';
+  }
+  if (toDate != null) {
+    url += '&to=${toDate.toIso8601String()}';
+  }
+  if (approved != null) {
+    url += '&approved=$approved';
+  }
+
+  final path = await _appendQueryParams(url);
+  if (kDebugMode) {
+    print('ApiService: getIncomingDocuments - Generated path: $path');
+  }
+
+  try {
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body)['result']; // Как в JSON
+      return IncomingResponse.fromJson(rawData);
+    } else {
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Ошибка получения данных прихода: $e');
+  }
+}
+
+ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
+    String url = '/income-documents/$documentId';
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getIncomingDocumentById - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingDocument.fromJson(rawData);
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных документа: $e');
+    }
+  }
+
+Future<void> approveIncomingDocument(int documentId) async {
+    const String url = '/income-documents/approve';
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: approveIncomingDocument - Generated path: $path');
+    }
+
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
+
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'ids': [documentId]
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          print('ApiService: approveIncomingDocument - Document $documentId approved successfully');
+        }
+      } else {
+        final jsonResponse = jsonDecode(response.body);
+        throw Exception(jsonResponse['message'] ?? 'Ошибка при проведении документа');
+      }
+    } catch (e) {
+      throw Exception('Ошибка проведения документа: $e');
+    }
+  }
+ Future<IncomingDocumentHistoryResponse> getIncomingDocumentHistory(int documentId) async {
+    String url = '/income-documents/history/$documentId';
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getIncomingDocumentHistory - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingDocumentHistoryResponse.fromJson(rawData);
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения истории документа: $e');
+    }
+  }
+  Future<void> unApproveIncomingDocument(int documentId) async {
+  const String url = '/income-documents/unApprove';
+
+  final path = await _appendQueryParams(url);
+  if (kDebugMode) {
+    print('ApiService: unApproveIncomingDocument - Generated path: $path');
+  }
+
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'ids': [documentId]
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (kDebugMode) {
+        print('ApiService: unApproveIncomingDocument - Document $documentId unapproved successfully');
+      }
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при отмене проведения документа');
+    }
+  } catch (e) {
+    throw Exception('Ошибка отмены проведения документа: $e');
+  }
+}
+  
 }

@@ -70,7 +70,9 @@ dependencies:
   audio_service: ^0.18.18
   audio_metadata_reader: ^1.4.2
   flutter_slidable: ^4.0.1
-
+  json_annotation: ^4.9.0
+  json_serializable: ^6.11.1
+  build_runner: ^2.8.0
 
 
   

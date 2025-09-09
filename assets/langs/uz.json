@@ -1182,7 +1182,42 @@
 "deal_number": "Bitim raqami",
 "show_on_main_page": "Lid kartasida koʻrsatish",
 "goods_not_found": "Mahsulotlar topilmadi",
-"show_all": "Hammasini ko‘rsatish"
+"show_all": "Hammasini ko‘rsatish",
+"appbar_incoming": "Kirimlar",
+"no_incoming": "Kirimlar yo‘q",
+"no_supplier": "Ta’minotchi yo‘q",
+"approve_document": "O‘tkazish",
+"unapprove_document": "O‘tkazishni bekor qilish",
+"document_approved": "Hujjat o‘tkazildi",
+"document_unapproved": "Hujjat o‘tkazilishi bekor qilindi",
+"error_approving_document": "Hujjatni o‘tkazishda xato",
+"error_unapproving_document": "Hujjatni bekor qilishda xato",
+"document_history": "Hujjat tarixi",
+"error_loading_document": "Hujjatni yuklashda xato",
+"document_data_unavailable": "Hujjat ma’lumotlari mavjud emas",
+"error_no_good_id": "Xato: Mahsulot ID aniqlanmadi",
+"document_number": "Hujjat raqami",
+"storage": "Ombor",
+"supplier": "Ta’minotchi",
+"supplier_phone": "Ta’minotchi telefoni",
+"supplier_inn": "Ta’minotchi STIR",
+"total_quantity": "Umumiy miqdor",
+"total_sum": "Umumiy summa",
+"quantity": "Miqdor",
+"view_document": "Hujjatni ko‘rish",
+"warehouse_accounting": "Ombor hisobi",
+"warehouse_documents": "Ombor hujjatlari",
+"select_document_type": "Ombor uchun hujjat turini tanlang",
+"transfer": "Ko‘chirish",
+"write_off": "Chiqim qilish",
+"client_sale": "Mijozga realizatsiya",
+"client_return": "Mijozdan qaytarish",
+"supplier_return": "Ta’minotchiga qaytarish",
+"navigate_to_document": "Hujjatga o‘tish: {document}",
+"incoming_document": "Kirish"
+
+
+
 
 
 
