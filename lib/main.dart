@@ -66,6 +66,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -118,7 +119,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final apiService = ApiService(); 
+  final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
@@ -137,7 +138,7 @@ void main() async {
   await getFCMTokens(apiService);
 
   FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications(); 
+  await firebaseApi.initNotifications();
   RemoteMessage? initialMessage = firebaseApi.getInitialMessage();
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -228,7 +229,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllLeadMultiBloc()),
         BlocProvider(create: (context) => DealBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskBloc(widget.apiService)),
-        BlocProvider(create: (context) => MyTaskBloc(widget.apiService)), 
+        BlocProvider(create: (context) => MyTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => GetTaskProjectBloc()),
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
@@ -236,53 +237,74 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
-        BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskStatusNameBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
-        BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) =>
+                GetAllClientBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) =>
+                GetAllAuthorBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
-        BlocProvider(create: (context) => ChatsBloc(ApiService()),),
+        BlocProvider(
+          create: (context) => ChatsBloc(ApiService()),
+        ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider(create: (context) => ChatsBloc(ApiService()), ),
+        BlocProvider(
+          create: (context) => ChatsBloc(ApiService()),
+        ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
-        BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => ProcessSpeedBlocManager(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
         BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
-        BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => LeadToCBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => Data1CBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => ProfileBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => TaskCompletionBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
         BlocProvider(create: (context) => EventBloc(widget.apiService)),
         BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllSubjectBloc()),
@@ -292,8 +314,9 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => OrderBloc(widget.apiService)),
         BlocProvider(create: (context) => GoodsBloc(widget.apiService)),
         BlocProvider(create: (context) => GoodsByIdBloc(widget.apiService)),
-        BlocProvider(create: (context) => BranchBloc(widget.apiService)),      
-        BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
+        BlocProvider(create: (context) => BranchBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => DeliveryAddressBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
@@ -302,16 +325,19 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
-        BlocProvider(create: (context) => CallCenterBloc(ApiService()),),
+        BlocProvider(
+          create: (context) => CallCenterBloc(ApiService()),
+        ),
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
         BlocProvider(create: (context) => TemplateBloc(ApiService())),
-        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-        BlocProvider<StorageBloc>(create: (context) => StorageBloc(widget.apiService),
-        
-),
-        
+        BlocProvider(create: (context) => ClientSaleBloc(widget.apiService)),
+        BlocProvider<StorageBloc>(
+          create: (context) => StorageBloc(widget.apiService),
+        ),
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
@@ -365,7 +391,6 @@ class _MyAppState extends State<MyApp> {
           // '/phone_verification': (context) => PhoneVerificationScreen(),
           // '/phone_call': (context) => PhoneCallScreen(),
           '/profile': (context) => ProfileScreen(),
-
         },
       ),
     );

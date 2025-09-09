@@ -1214,7 +1214,8 @@
 "client_return": "Mijozdan qaytarish",
 "supplier_return": "Ta’minotchiga qaytarish",
 "navigate_to_document": "Hujjatga o‘tish: {document}",
-"incoming_document": "Kirish"
+"incoming_document": "Kirish",
+"appbar_client_sales": "Mijozga realizatsiya"
 
 
 
