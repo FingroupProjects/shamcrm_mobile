@@ -1203,7 +1203,8 @@
 "supplier_return": "Возврат поставщику",
 "navigate_to_document": "Переход к документу: {document}",
 "incoming_document" : "Приход",
-"appbar_client_sales": "Реализация клиент"
+"appbar_client_sales": "Реализация клиент",
+"create_client_sale": "Создать реализацию клиент"
 
  
 

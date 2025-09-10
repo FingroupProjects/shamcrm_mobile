@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_state.dart';
+import 'package:flutter/foundation.dart';
 
 class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
   final ApiService apiService;
@@ -13,16 +14,20 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
     on<FetchSupplier>(_fetchSupplier);
   }
 
-  Future<void> _fetchSupplier(FetchSupplier event, Emitter<SupplierState> emit) async {
+  Future<void> _fetchSupplier(
+      FetchSupplier event, Emitter<SupplierState> emit) async {
     emit(SupplierLoading());
 
     if (await _checkInternetConnection()) {
       try {
-        final supplierList = await apiService.getSupplier(); 
+        final supplierList = await apiService.getSupplier();
         allSupplierFetched = supplierList.isEmpty;
-        emit(SupplierLoaded(supplierList)); 
+        emit(SupplierLoaded(supplierList));
       } catch (e) {
         //print('Ошибка при загрузке поставщиков!'); // For debugging
+        if (kDebugMode) {
+          print(e);
+        }
         emit(SupplierError('Не удалось загрузить список поставщиков!'));
       }
     } else {

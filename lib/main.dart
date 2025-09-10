@@ -335,12 +335,16 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(
             create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-        BlocProvider<StorageBloc>(create: (context) => StorageBloc(widget.apiService),
 
-),
-        BlocProvider<SupplierBloc>(create: (context) => SupplierBloc(widget.apiService),
-),
-        
+        BlocProvider<StorageBloc>(
+          create: (context) => StorageBloc(widget.apiService),
+        ),
+        BlocProvider<SupplierBloc>(
+          create: (context) => SupplierBloc(widget.apiService),
+        ),
+        BlocProvider<ClientSaleBloc>(
+          create: (context) => ClientSaleBloc(widget.apiService),
+        ),
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -94,9 +94,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             AppLocalizations.of(context)!.translate('client_sale') ||
         document.title == 'Реализация клиент') {
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => ClientSaleScreen(
-            
-          )));
+          context, MaterialPageRoute(builder: (context) => ClientSaleScreen()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

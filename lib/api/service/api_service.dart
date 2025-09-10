@@ -10300,60 +10300,101 @@ class ApiService {
 
     final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    ////print('Полученные данные поставщиков: $data');
-    
-    // Извлекаем массив из поля "result"
-    final List<dynamic> resultList = data['result'] ?? [];
-    
-    return resultList
-        .map((supplier) => Supplier.fromJson(supplier))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки поставщиков');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      ////print('Полученные данные поставщиков: $data');
+
+      // Извлекаем массив из поля "result"
+      final List<dynamic> resultList = data['result'] ?? [];
+
+      return resultList.map((supplier) => Supplier.fromJson(supplier)).toList();
+    } else {
+      throw Exception('Ошибка загрузки поставщиков');
+    }
   }
-}
 
-Future<void> createIncomingDocument({
-  required String date,
-  required int storageId,
-  required String comment,
-  required int counterpartyId,
-  required List<Map<String, dynamic>> documentGoods,
-  required int organizationId,
-  required int salesFunnelId,
-}) async {
-  final token = await getToken();
-  if (token == null) throw Exception('Токен не найден');
+  Future<void> createIncomingDocument({
+    required String date,
+    required int storageId,
+    required String comment,
+    required int counterpartyId,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+  }) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
 
-  final path = await _appendQueryParams('/income-documents');
-  final uri = Uri.parse('$baseUrl$path'); // Исправлено здесь
-  final body = jsonEncode({
-    'date': date,
-    'storage_id': storageId,
-    'comment': comment,
-    'counterparty_id': counterpartyId,
-    'document_goods': documentGoods,
-    'organization_id': organizationId,
-    'sales_funnel_id': salesFunnelId,
-  });
+    final path = await _appendQueryParams('/income-documents');
+    final uri = Uri.parse('$baseUrl$path'); // Исправлено здесь
+    final body = jsonEncode({
+      'date': date,
+      'storage_id': storageId,
+      'comment': comment,
+      'counterparty_id': counterpartyId,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    });
 
-  final response = await http.post(
-    uri,
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Device': 'mobile',
-    },
-    body: body,
-  );
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return;
-  } else {
-    throw Exception('Ошибка создания документа: ${response.body}');
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    } else {
+      throw Exception('Ошибка создания документа: ${response.body}');
+    }
   }
-}
+
+  //createClientSaleDocument
+  Future<void> createClientSaleDocument({
+    required String date,
+    required int storageId,
+    required String comment,
+    required int counterpartyId,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+  }) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final path = await _appendQueryParams('/expense-documents');
+    final uri = Uri.parse('$baseUrl$path'); // Исправлено здесь
+    final body = jsonEncode({
+      'date': date,
+      'storage_id': storageId,
+      'comment': comment,
+      'counterparty_id': counterpartyId,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    });
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    } else {
+      throw Exception('Ошибка создания документа: ${response.body}');
+    }
+  }
 }

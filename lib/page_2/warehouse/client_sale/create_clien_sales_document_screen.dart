@@ -1,6 +1,4 @@
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -14,18 +12,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class IncomingDocumentCreateScreen extends StatefulWidget {
+class CreateClienSalesDocumentScreen extends StatefulWidget {
   final int? organizationId;
 
-  const IncomingDocumentCreateScreen({this.organizationId, super.key});
+  const CreateClienSalesDocumentScreen({this.organizationId, super.key});
 
   @override
-  _IncomingDocumentCreateScreenState createState() =>
-      _IncomingDocumentCreateScreenState();
+  CreateClienSalesDocumentScreenState createState() =>
+      CreateClienSalesDocumentScreenState();
 }
 
-class _IncomingDocumentCreateScreenState
-    extends State<IncomingDocumentCreateScreen> {
+class CreateClienSalesDocumentScreenState
+    extends State<CreateClienSalesDocumentScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -76,8 +74,8 @@ class _IncomingDocumentCreateScreenState
         String isoDate =
             DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
-        final bloc = context.read<IncomingBloc>();
-        bloc.add(CreateIncoming(
+        final bloc = context.read<ClientSaleBloc>();
+        bloc.add(CreateClientSalesDocument(
           date: isoDate,
           storageId: int.parse(_selectedStorage!),
           comment: _commentController.text,
@@ -135,8 +133,7 @@ class _IncomingDocumentCreateScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          localizations.translate('create_incoming_document') ??
-              'Создать приход',
+          localizations.translate('create_client_sale') ?? 'Создать приход',
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -145,9 +142,9 @@ class _IncomingDocumentCreateScreenState
           ),
         ),
       ),
-      body: BlocListener<IncomingBloc, IncomingState>(
+      body: BlocListener<ClientSaleBloc, ClientSaleState>(
         listener: (context, state) {
-          if (state is IncomingCreateSuccess && mounted) {
+          if (state is ClientSaleCreateSuccess && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -168,7 +165,7 @@ class _IncomingDocumentCreateScreenState
               ),
             );
             Navigator.pop(context);
-          } else if (state is IncomingCreateError && mounted) {
+          } else if (state is ClientSaleCreateError && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

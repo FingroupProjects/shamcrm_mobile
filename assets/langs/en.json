@@ -1197,7 +1197,9 @@
 "supplier_return": "Supplier return",
 "navigate_to_document": "Navigate to document: {document}",
 "incoming_document": "Incoming",
-"appbar_client_sales": "Client sales"
+"appbar_client_sales": "Client sales",
+"create_client_sale": "Create client sale"
+
 
 
 

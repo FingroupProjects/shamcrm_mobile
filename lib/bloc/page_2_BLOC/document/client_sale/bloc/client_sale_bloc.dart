@@ -57,4 +57,23 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       emit(ClientSaleError(e.toString()));
     }
   }
+
+  _onCreateClientSalesDocument(
+      CreateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+    emit(ClientSaleCreateLoading());
+    try {
+      final response = await apiService.createClientSaleDocument(
+        date: event.date,
+        storageId: event.storageId,
+        comment: event.comment,
+        counterpartyId: event.counterpartyId,
+        documentGoods: event.documentGoods,
+        organizationId: event.organizationId,
+        salesFunnelId: event.salesFunnelId,
+      );
+      emit(ClientSaleCreateSuccess('Документ успешно создан'));
+    } catch (e) {
+      emit(ClientSaleError(e.toString()));
+    }
+  }
 }

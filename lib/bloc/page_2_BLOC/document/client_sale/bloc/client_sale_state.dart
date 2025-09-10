@@ -34,3 +34,21 @@ final class ClientSaleError extends ClientSaleState {
   @override
   List<Object> get props => [message];
 }
+
+final class ClientSaleCreateLoading extends ClientSaleState {}
+
+final class ClientSaleCreateSuccess extends ClientSaleState {
+  final String message;
+
+  const ClientSaleCreateSuccess(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+final class ClientSaleCreateError extends ClientSaleState {
+  final String message;
+
+  const ClientSaleCreateError(this.message);
+  @override
+  List<Object> get props => [message];
+}

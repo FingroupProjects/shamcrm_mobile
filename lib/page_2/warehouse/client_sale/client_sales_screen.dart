@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_eve
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/create_clien_sales_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +93,17 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateClienSalesDocumentScreen(
+                      organizationId: widget.organizationId),
+                ),
+              ).then((_) {
+                _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
+              });
+            }
           },
           backgroundColor: const Color(0xff1E2E52),
           child: const Icon(Icons.add, color: Colors.white),
