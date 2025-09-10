@@ -90,6 +90,13 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
     return BlocProvider.value(
       value: _clientSaleBloc,
       child: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            
+          },
+          backgroundColor: const Color(0xff1E2E52),
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
         backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
