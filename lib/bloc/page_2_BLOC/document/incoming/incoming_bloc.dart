@@ -13,6 +13,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
 
   IncomingBloc(this.apiService) : super(IncomingInitial()) {
     on<FetchIncoming>(_onFetchIncoming);
+    on<CreateIncoming>(_onCreateIncoming);
   }
 
   Future<void> _onFetchIncoming(FetchIncoming event, Emitter<IncomingState> emit) async {
@@ -52,4 +53,25 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingError(e.toString()));
     }
   }
+
+   Future<void> _onCreateIncoming(CreateIncoming event, Emitter<IncomingState> emit) async {
+    emit(IncomingCreateLoading());
+    try {
+      final response = await apiService.createIncomingDocument(
+        date: event.date,
+        storageId: event.storageId,
+        comment: event.comment,
+        counterpartyId: event.counterpartyId,
+        documentGoods: event.documentGoods,
+        organizationId: event.organizationId,
+        salesFunnelId: event.salesFunnelId,
+      );
+      emit(IncomingCreateSuccess('Документ успешно создан'));
+      add(const FetchIncoming(forceRefresh: true)); // Обновляем список после создания
+    } catch (e) {
+      emit(IncomingCreateError(e.toString()));
+    }
+  }
+
+
 }

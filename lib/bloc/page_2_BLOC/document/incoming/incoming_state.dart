@@ -35,3 +35,16 @@ class IncomingError extends IncomingState {
   @override
   List<Object> get props => [message];
 }
+class IncomingCreateLoading extends IncomingState {}
+
+class IncomingCreateSuccess extends IncomingState {
+  final String message;
+
+  IncomingCreateSuccess(this.message);
+}
+
+class IncomingCreateError extends IncomingState {
+  final String message;
+
+  IncomingCreateError(this.message);
+}

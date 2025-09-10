@@ -12,9 +12,9 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
-  final Order order;
+  final Order? order;
 
-  const ProductSelectionSheetAdd({required this.order, super.key});
+  const ProductSelectionSheetAdd({ this.order, super.key});
 
   @override
   State<ProductSelectionSheetAdd> createState() =>
