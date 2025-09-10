@@ -21,3 +21,23 @@ class FetchIncoming extends IncomingEvent {
   @override
   List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
 }
+
+class CreateIncoming extends IncomingEvent {
+  final String date;
+  final int storageId;
+  final String comment;
+  final int counterpartyId;
+  final List<Map<String, dynamic>> documentGoods;
+  final int organizationId;
+  final int salesFunnelId;
+
+  CreateIncoming({
+    required this.date,
+    required this.storageId,
+    required this.comment,
+    required this.counterpartyId,
+    required this.documentGoods,
+    required this.organizationId,
+    required this.salesFunnelId,
+  });
+}

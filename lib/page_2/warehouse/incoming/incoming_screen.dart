@@ -9,6 +9,8 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
+import 'incoming_document_create_screen.dart';
 
 class IncomingScreen extends StatefulWidget {
   final int? organizationId;
@@ -144,6 +146,44 @@ class _IncomingScreenState extends State<IncomingScreen> {
                   duration: const Duration(seconds: 3),
                 ),
               );
+            } else if (state is IncomingCreateSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            } else if (state is IncomingCreateError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
             }
           },
           child: BlocBuilder<IncomingBloc, IncomingState>(
@@ -208,6 +248,23 @@ class _IncomingScreenState extends State<IncomingScreen> {
               );
             },
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          key: const Key('create_incoming_button'),
+          onPressed: () {
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IncomingDocumentCreateScreen(organizationId: widget.organizationId),
+                ),
+              ).then((_) {
+                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              });
+            }
+          },
+          backgroundColor: const Color(0xff1E2E52),
+          child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
     );
