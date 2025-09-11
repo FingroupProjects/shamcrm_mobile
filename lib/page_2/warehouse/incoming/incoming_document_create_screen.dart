@@ -32,8 +32,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   final TextEditingController _commentController = TextEditingController();
   String? _selectedStorage;
   String? _selectedSupplier;
-  List<Map<String, dynamic>> _selectedItems = [];
   List<Map<String, dynamic>> _items = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,19 +42,44 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
-  void _addSelectedItems() {
-    if (_selectedItems.isNotEmpty && mounted) {
+  void _handleGoodsSelection(Goods goods) {
+    if (mounted) {
       setState(() {
-        _items.addAll(_selectedItems);
-        _selectedItems.clear();
+        // Проверяем, есть ли уже такой товар в списке
+        final existingIndex = _items.indexWhere((item) => item['id'] == goods.id);
+        
+        if (existingIndex != -1) {
+          // Если товар уже есть, увеличиваем количество
+          _items[existingIndex]['quantity'] = (_items[existingIndex]['quantity'] ?? 1) + 1;
+          _items[existingIndex]['total'] = _items[existingIndex]['quantity'] * _items[existingIndex]['price'];
+        } else {
+          // Если товара нет, добавляем новый
+          _items.add({
+            'id': goods.id,
+            'name': goods.name,
+            'quantity': 1,
+            'price': goods.discountedPrice ?? goods.discountPrice ?? 0.0,
+            'total': goods.discountedPrice ?? goods.discountPrice ?? 0.0,
+          });
+        }
       });
     }
   }
 
   void _updateQuantity(int index, int newQuantity) {
+    if (mounted && newQuantity > 0) {
+      setState(() {
+        _items[index]['quantity'] = newQuantity;
+        _items[index]['total'] = newQuantity * (_items[index]['price'] ?? 0.0);
+      });
+    }
+  }
+
+  void _updatePrice(int index, double newPrice) {
     if (mounted) {
       setState(() {
-        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
+        _items[index]['price'] = newPrice;
+        _items[index]['total'] = (_items[index]['quantity'] ?? 1) * newPrice;
       });
     }
   }
@@ -65,52 +90,77 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     }
   }
 
-  void _createDocument() {
-    if (_formKey.currentState!.validate() && _items.isNotEmpty && _selectedStorage != null && _selectedSupplier != null) {
-      DateTime? parsedDate;
-      try {
-        parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-        String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
-        
-        final bloc = context.read<IncomingBloc>();
-        bloc.add(CreateIncoming(
-          date: isoDate,
-          storageId: int.parse(_selectedStorage!),
-          comment: _commentController.text,
-          counterpartyId: int.parse(_selectedSupplier!),
-          documentGoods: _items.map((item) => {
-            'good_id': item['id'],
-            'quantity': item['quantity'].toString(),
-            'price': item['price'].toString(),
-          }).toList(),
-          organizationId: widget.organizationId ?? 1,
-          salesFunnelId: 1,
-        ));
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-        return;
-      }
+  void _createDocument() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    if (_items.isEmpty) {
+      _showSnackBar('Добавьте хотя бы один товар', false);
+      return;
     }
+    
+    if (_selectedStorage == null) {
+      _showSnackBar('Выберите склад', false);
+      return;
+    }
+    
+    if (_selectedSupplier == null) {
+      _showSnackBar('Выберите поставщика', false);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      
+      final bloc = context.read<IncomingBloc>();
+      bloc.add(CreateIncoming(
+        date: isoDate,
+        storageId: int.parse(_selectedStorage!),
+        comment: _commentController.text.trim(),
+        counterpartyId: int.parse(_selectedSupplier!),
+        documentGoods: _items.map((item) => {
+          'good_id': item['id'],
+          'quantity': item['quantity'].toString(),
+          'price': item['price'].toString(),
+        }).toList(),
+        organizationId: widget.organizationId ?? 1,
+        salesFunnelId: 1,
+      ));
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 
+        'Введите корректную дату и время',
+        false
+      );
+    }
+  }
+
+  void _showSnackBar(String message, bool isSuccess) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -119,215 +169,160 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          localizations.translate('create_incoming_document') ?? 'Создать приход',
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      ),
+      appBar: _buildAppBar(localizations),
       body: BlocListener<IncomingBloc, IncomingState>(
         listener: (context, state) {
+          setState(() => _isLoading = false);
+          
           if (state is IncomingCreateSuccess && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                duration: const Duration(seconds: 3),
-              ),
-            );
-            Navigator.pop(context);
+            _showSnackBar(state.message, true);
+            Navigator.pop(context, true); // Возвращаем результат для обновления списка
           } else if (state is IncomingCreateError && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            _showSnackBar(state.message, false);
           }
         },
-        // ИСПРАВЛЕНИЕ: Убираем LayoutBuilder и ConstrainedBox, используем простой SingleChildScrollView
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  CustomTextFieldDate(
-                    controller: _dateController,
-                    label: localizations.translate('date') ?? 'Дата',
-                    withTime: true,
-                    onDateSelected: (date) {
-                      if (mounted) {
-                        setState(() {
-                          _dateController.text = date;
-                        });
-                      }
-                    },
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      _buildDateField(localizations),
+                      const SizedBox(height: 16),
+                      SupplierWidget(
+                        selectedSupplier: _selectedSupplier,
+                        onChanged: (value) => setState(() => _selectedSupplier = value),
+                      ),
+                      const SizedBox(height: 16),
+                      StorageWidget(
+                        selectedStorage: _selectedStorage,
+                        onChanged: (value) => setState(() => _selectedStorage = value),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildCommentField(localizations),
+                      const SizedBox(height: 16),
+                      _buildGoodsSection(localizations),
+                      const SizedBox(height: 16),
+                      if (_items.isNotEmpty) _buildSelectedItemsList(),
+                      const SizedBox(height: 100), // Отступ для кнопок
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  SupplierWidget(
-                    selectedSupplier: _selectedSupplier,
-                    onChanged: (value) => setState(() => _selectedSupplier = value),
-                  ),
-                  const SizedBox(height: 16),
-                  StorageWidget(
-                    selectedStorage: _selectedStorage,
-                    onChanged: (value) => setState(() => _selectedStorage = value),
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _commentController,
-                    label: localizations.translate('comment') ?? 'Примечание',
-                    hintText: localizations.translate('enter_comment') ?? 'Введите примечание',
-                    maxLines: 5,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildItemsSection(),
-                  const SizedBox(height: 16),
-                  _buildActionButtons(),
-                  // Добавляем отступ снизу для удобства прокрутки
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
-            ),
+              _buildActionButtons(localizations),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildItemsSection() {
-    final localizations = AppLocalizations.of(context)!;
+  AppBar _buildAppBar(AppLocalizations localizations) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        localizations.translate('create_incoming_document') ?? 'Создать приход',
+        style: const TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: Color(0xff1E2E52),
+        ),
+      ),
+      centerTitle: false,
+    );
+  }
+
+  Widget _buildDateField(AppLocalizations localizations) {
+    return CustomTextFieldDate(
+      controller: _dateController,
+      label: localizations.translate('date') ?? 'Дата',
+      withTime: true,
+      onDateSelected: (date) {
+        if (mounted) {
+          setState(() {
+            _dateController.text = date;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildCommentField(AppLocalizations localizations) {
+    return CustomTextField(
+      controller: _commentController,
+      label: localizations.translate('comment') ?? 'Примечание',
+      hintText: localizations.translate('enter_comment') ?? 'Введите примечание',
+      maxLines: 3,
+      keyboardType: TextInputType.multiline,
+    );
+  }
+
+  Widget _buildGoodsSection(AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              localizations.translate('goods') ?? 'Товары',
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            if (_selectedItems.isNotEmpty)
-              GestureDetector(
-                onTap: _addSelectedItems,
-                child: Row(
-                  children: [
-                    const Icon(Icons.add, color: Color(0xff4759FF), size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      localizations.translate('add_selected') ?? 'Добавить выбранное',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff4759FF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+        // Text(
+        //   localizations.translate('goods') ?? 'Товары',
+        //   style: const TextStyle(
+        //     fontSize: 16,
+        //     fontFamily: 'Gilroy',
+        //     fontWeight: FontWeight.w500,
+        //     color: Color(0xff1E2E52),
+        //   ),
+        // ),
         const SizedBox(height: 8),
-        // ИСПРАВЛЕНИЕ: Обертываем GoodsListWidget в контейнер с фиксированной высотой
-        SizedBox(
-          height: 350, // Фиксированная высота для списка товаров
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xffF4F7FD)),
+          ),
           child: GoodsListWidget(
-            // enableSelection: true,
-            onGoodsSelected: (goods) {
-              if (mounted) {
-                _handleGoodsSelection(goods);
-              }
-            },
+            onGoodsSelected: _handleGoodsSelection,
             searchHint: localizations.translate('search_goods') ?? 'Поиск товаров',
-            padding: EdgeInsets.zero, // Убираем внутренние отступы
+            padding: EdgeInsets.zero,
           ),
         ),
-        if (_selectedItems.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(
-            'Выбранные товары:',
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...List.generate(
-            _selectedItems.length,
-            (index) => _buildSelectedItemCard(index, _selectedItems[index]),
-          ),
-        ],
       ],
     );
   }
 
-  void _handleGoodsSelection(Goods goods) {
-    if (mounted) {
-      setState(() {
-        // Проверяем, есть ли уже такой товар в списке выбранных
-        final existingIndex = _selectedItems.indexWhere((item) => item['id'] == goods.id);
-        
-        if (existingIndex != -1) {
-          // Если товар уже выбран, удаляем его
-          _selectedItems.removeAt(existingIndex);
-        } else {
-          // Если товара нет, добавляем
-          _selectedItems.add({
-            'id': goods.id,
-            'name': goods.name,
-            'quantity': 1,
-            'price': goods.discountedPrice ?? goods.discountPrice ?? 0.0,
-            'total': (goods.discountedPrice ?? goods.discountPrice ?? 0.0) * 1,
-          });
-        }
-      });
-    }
+  Widget _buildSelectedItemsList() {
+    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Выбранные товары:',
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...List.generate(
+          _items.length,
+          (index) => _buildSelectedItemCard(index, _items[index]),
+        ),
+        const SizedBox(height: 16),
+        _buildTotalCard(total),
+      ],
+    );
   }
 
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item) {
@@ -381,7 +376,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Color(0xff99A4BA), size: 20),
-                onPressed: () => setState(() => _items.removeAt(index)),
+                onPressed: () => _removeItem(index),
               ),
             ],
           ),
@@ -392,20 +387,32 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                 child: TextFormField(
                   initialValue: item['quantity'].toString(),
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: 'Количество',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      color: Color(0xff99A4BA),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    color: Color(0xff1E2E52),
+                  ),
                   onChanged: (value) {
-                    if (mounted) {
-                      final newQuantity = int.tryParse(value) ?? 1;
-                      if (newQuantity > 0) {
-                        setState(() {
-                          item['quantity'] = newQuantity;
-                          item['total'] = newQuantity * (item['price'] ?? 0.0);
-                        });
-                      }
+                    final newQuantity = int.tryParse(value) ?? 1;
+                    if (newQuantity > 0) {
+                      _updateQuantity(index, newQuantity);
                     }
                   },
                 ),
@@ -415,34 +422,60 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                 child: TextFormField(
                   initialValue: item['price'].toString(),
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: 'Цена',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      color: Color(0xff99A4BA),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    color: Color(0xff1E2E52),
+                  ),
                   onChanged: (value) {
-                    if (mounted) {
-                      final newPrice = double.tryParse(value) ?? 0.0;
-                      setState(() {
-                        item['price'] = newPrice;
-                        item['total'] = (item['quantity'] ?? 1) * newPrice;
-                      });
-                    }
+                    final newPrice = double.tryParse(value) ?? 0.0;
+                    _updatePrice(index, newPrice);
                   },
                 ),
               ),
               const SizedBox(width: 12),
               SizedBox(
                 width: 80,
-                child: Text(
-                  '${item['total'].toStringAsFixed(2)} ₽',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                  textAlign: TextAlign.end,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Сумма',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                    Text(
+                      '${(item['total'] ?? 0.0).toStringAsFixed(2)} ₽',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      textAlign: TextAlign.end,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -452,7 +485,40 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildTotalCard(double total) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xffF4F7FD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Общая сумма:',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          Text(
+            '${total.toStringAsFixed(2)} ₽',
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff4759FF),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -470,16 +536,17 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
               ),
               child: Text(
-                AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+                localizations.translate('cancel') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -492,23 +559,33 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _createDocument,
+              onPressed: _isLoading ? null : _createDocument,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
               ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('create') ?? 'Создать',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      localizations.translate('create') ?? 'Создать',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ],

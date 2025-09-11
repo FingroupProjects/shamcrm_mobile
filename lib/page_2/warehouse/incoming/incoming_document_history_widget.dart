@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -30,48 +29,55 @@ class _IncomingDocumentHistoryWidgetState extends State<IncomingDocumentHistoryW
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
-      builder: (context, state) {
+    return BlocListener<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
+      listener: (context, state) {
         if (state is IncomingDocumentHistoryLoaded) {
-          history = state.history;
+          setState(() {
+            history = state.history;
+          });
         } else if (state is IncomingDocumentHistoryError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 3),
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+            );
+          });
         }
-
-        // Всегда показываем контейнер с заголовком, даже при загрузке
-        return _buildExpandableHistoryContainer(
-          AppLocalizations.of(context)!.translate('document_history') ?? 'История документа',
-          _buildHistoryItems(history),
-          isHistoryExpanded,
-          () {
-            setState(() {
-              isHistoryExpanded = !isHistoryExpanded;
-            });
-          },
-          isLoading: state is IncomingDocumentHistoryLoading,
-        );
       },
+      child: BlocBuilder<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
+        builder: (context, state) {
+          bool isLoading = state is IncomingDocumentHistoryLoading;
+          return _buildExpandableHistoryContainer(
+            AppLocalizations.of(context)!.translate('document_history') ?? 'История документа',
+            _buildHistoryItems(history),
+            isHistoryExpanded,
+            () {
+              setState(() {
+                isHistoryExpanded = !isHistoryExpanded;
+              });
+            },
+            isLoading: isLoading,
+          );
+        },
+      ),
     );
   }
 
@@ -224,19 +230,47 @@ class _IncomingDocumentHistoryWidgetState extends State<IncomingDocumentHistoryW
     );
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД для работы с новой структурой моделей
   List<String> _buildHistoryItems(List<IncomingDocumentHistory> history) {
     return history.map((entry) {
       final formattedDate = entry.date != null
           ? DateFormat('dd.MM.yyyy HH:mm').format(entry.date!.toLocal())
           : AppLocalizations.of(context)!.translate('') ?? '';
+      
       String historyDetail = '${entry.status ?? ''}\n${entry.user?.fullName ?? 'Unknown'} $formattedDate';
 
       if (entry.changes != null && entry.changes!.isNotEmpty) {
         for (var change in entry.changes!) {
-          if (change.body?.approvedNewValue != null || change.body?.approvedPreviousValue != null) {
-            String previous = change.body!.approvedPreviousValue == 1 ? 'Проведен' : 'Не проведен';
-            String newValue = change.body!.approvedNewValue == true ? 'Проведен' : 'Не проведен';
-            historyDetail += '\n${AppLocalizations.of(context)!.translate('status_history') ?? 'Статус'}: $previous > $newValue';
+          if (change.body != null) {
+            final body = change.body!;
+            
+            // Обработка изменений даты
+            if (body.dateChange != null) {
+              final newDate = body.dateChange!.newValue ?? '';
+              final prevDate = body.dateChange!.previousValue ?? '';
+              historyDetail += '\nДата: $prevDate > $newDate';
+            }
+            
+            // Обработка изменений статуса утверждения
+            if (body.approvedChange != null) {
+              String previous = body.approvedChange!.previousValue == 1 ? 'Проведен' : 'Не проведен';
+              String newValue = body.approvedChange!.newValue == true ? 'Проведен' : 'Не проведен';
+              historyDetail += '\n${AppLocalizations.of(context)!.translate('status_history') ?? 'Статус'}: $previous > $newValue';
+            }
+            
+            // Обработка изменений товаров
+            if (body.documentGoodsChange != null) {
+              final prevCount = body.documentGoodsChange!.previousValue?.length ?? 0;
+              final newCount = body.documentGoodsChange!.newValue?.length ?? 0;
+              historyDetail += '\nТовары: $prevCount позиций > $newCount позиций';
+              
+              // Можно добавить более детальную информацию о товарах
+              if (body.documentGoodsChange!.newValue != null) {
+                for (var good in body.documentGoodsChange!.newValue!) {
+                  historyDetail += '\n  ${good.goodName ?? 'Товар'}: ${good.quantity ?? 0} шт.';
+                }
+              }
+            }
           }
         }
       }

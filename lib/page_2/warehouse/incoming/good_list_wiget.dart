@@ -34,6 +34,22 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
+  // Метод для получения правильной цены товара
+  double _getGoodsPrice(Goods goods) {
+    // Если есть цена со скидкой, используем её
+    if (goods.discountedPrice != null) {
+      return goods.discountedPrice!;
+    }
+    
+    // Иначе используем обычную цену
+    if (goods.discountPrice != null) {
+      return goods.discountPrice!;
+    }
+    
+    // Или парсим из строки
+    return double.tryParse(goods.price ?? '0') ?? 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<GoodsBloc, GoodsState>(
@@ -98,7 +114,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                 Container(
                   child: CustomDropdown<Goods>.search(
                     closeDropDownOnClearFilterSearch: true,
-                    items: state is GoodsDataLoaded ? state.goods : [],
+                    items: state is GoodsDataLoaded ? state.goods.where((goods) => goods.isActive == true).toList() : [],
                     searchHintText: widget.searchHint ?? AppLocalizations.of(context)!.translate('search_goods') ?? 'Поиск товаров',
                     overlayHeight: 400,
                     enabled: true,
@@ -117,6 +133,9 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      final price = _getGoodsPrice(item);
+                      final hasDiscount = item.discount != null && item.discount!.isNotEmpty && item.discountedPrice != null;
+                      
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Row(
@@ -180,14 +199,30 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const Spacer(),
-                                      Text(
-                                        '${item.discountedPrice?.toStringAsFixed(0) ?? item.discountPrice?.toStringAsFixed(0) ?? '0'} ₽',
-                                        style: const TextStyle(
-                                          color: Color(0xff1E2E52),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Gilroy',
-                                        ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          if (hasDiscount && item.price != null)
+                                            Text(
+                                              '${double.tryParse(item.price!) ?? 0} ₽',
+                                              style: const TextStyle(
+                                                color: Color(0xff99A4BA),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w400,
+                                                fontFamily: 'Gilroy',
+                                                decoration: TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                          Text(
+                                            '${price.toStringAsFixed(0)} ₽',
+                                            style: TextStyle(
+                                              color: hasDiscount ? const Color(0xffFF2929) : const Color(0xff1E2E52),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Gilroy',
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),

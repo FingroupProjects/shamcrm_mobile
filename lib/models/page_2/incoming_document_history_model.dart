@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class IncomingDocumentHistoryResponse {
   final int? id;
@@ -45,12 +45,10 @@ class IncomingDocumentHistory {
       id: json['id'],
       user: json['user'] != null ? HistoryUser.fromJson(json['user']) : null,
       changes: json['changes'] != null
-          ? (json['changes'] as List)
-              .map((i) => HistoryChange.fromJson(i))
-              .toList()
+          ? (json['changes'] as List).map((i) => HistoryChange.fromJson(i)).toList()
           : null,
       status: json['status'],
-      date: json['date'] != null ? DateTime.parse(json['date']) : null,
+      date: _parseDate(json['date']),
     );
   }
 
@@ -62,6 +60,20 @@ class IncomingDocumentHistory {
       'status': status,
       'date': date?.toIso8601String(),
     };
+  }
+
+  static DateTime? _parseDate(dynamic dateStr) {
+    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
+    try {
+      return DateTime.parse(dateStr); // Попытка парсинга ISO 8601
+    } catch (e) {
+      try {
+        return DateFormat('dd/MM/yyyy HH:mm').parse(dateStr); // Альтернативный формат
+      } catch (e) {
+        print('Error parsing date $dateStr: $e');
+        return null;
+      }
+    }
   }
 }
 
@@ -162,28 +174,158 @@ class HistoryChange {
   }
 }
 
+// Исправленная модель для обработки всех типов изменений
 class HistoryChangeBody {
-  final bool? approvedNewValue;
-  final int? approvedPreviousValue;
+  // Изменения даты
+  final DateChange? dateChange;
+  
+  // Изменения статуса утверждения
+  final ApprovedChange? approvedChange;
+  
+  // Изменения товаров
+  final DocumentGoodsChange? documentGoodsChange;
 
   HistoryChangeBody({
-    this.approvedNewValue,
-    this.approvedPreviousValue,
+    this.dateChange,
+    this.approvedChange,
+    this.documentGoodsChange,
   });
 
   factory HistoryChangeBody.fromJson(Map<String, dynamic> json) {
     return HistoryChangeBody(
-      approvedNewValue: json['approved']?['new_value'],
-      approvedPreviousValue: json['approved']?['previous_value'],
+      dateChange: json['date'] != null ? DateChange.fromJson(json['date']) : null,
+      approvedChange: json['approved'] != null ? ApprovedChange.fromJson(json['approved']) : null,
+      documentGoodsChange: json['document_goods'] != null 
+          ? DocumentGoodsChange.fromJson(json['document_goods']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> result = {};
+    
+    if (dateChange != null) {
+      result['date'] = dateChange!.toJson();
+    }
+    
+    if (approvedChange != null) {
+      result['approved'] = approvedChange!.toJson();
+    }
+    
+    if (documentGoodsChange != null) {
+      result['document_goods'] = documentGoodsChange!.toJson();
+    }
+    
+    return result;
+  }
+}
+
+// Модель для изменения даты
+class DateChange {
+  final String? newValue;
+  final String? previousValue;
+
+  DateChange({this.newValue, this.previousValue});
+
+  factory DateChange.fromJson(Map<String, dynamic> json) {
+    return DateChange(
+      newValue: json['new_value'],
+      previousValue: json['previous_value'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'approved': {
-        'new_value': approvedNewValue,
-        'previous_value': approvedPreviousValue,
-      },
+      'new_value': newValue,
+      'previous_value': previousValue,
+    };
+  }
+}
+
+// Модель для изменения статуса утверждения
+class ApprovedChange {
+  final bool? newValue;
+  final int? previousValue;
+
+  ApprovedChange({this.newValue, this.previousValue});
+
+  factory ApprovedChange.fromJson(Map<String, dynamic> json) {
+    return ApprovedChange(
+      newValue: json['new_value'],
+      previousValue: json['previous_value'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'new_value': newValue,
+      'previous_value': previousValue,
+    };
+  }
+}
+
+// Модель для изменения товаров в документе
+class DocumentGoodsChange {
+  final List<DocumentGoodItem>? newValue;
+  final List<DocumentGoodItem>? previousValue;
+
+  DocumentGoodsChange({this.newValue, this.previousValue});
+
+  factory DocumentGoodsChange.fromJson(Map<String, dynamic> json) {
+    return DocumentGoodsChange(
+      newValue: json['new_value'] != null
+          ? (json['new_value'] as List)
+              .map((i) => DocumentGoodItem.fromJson(i))
+              .toList()
+          : null,
+      previousValue: json['previous_value'] != null
+          ? (json['previous_value'] as List)
+              .map((i) => DocumentGoodItem.fromJson(i))
+              .toList()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'new_value': newValue?.map((e) => e.toJson()).toList(),
+      'previous_value': previousValue?.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+// Модель для элемента товара в истории изменений
+class DocumentGoodItem {
+  final double? price;
+  final double? total;
+  final int? quantity;
+  final String? goodName;
+  final int? goodVariantId;
+
+  DocumentGoodItem({
+    this.price,
+    this.total,
+    this.quantity,
+    this.goodName,
+    this.goodVariantId,
+  });
+
+  factory DocumentGoodItem.fromJson(Map<String, dynamic> json) {
+    return DocumentGoodItem(
+      price: json['price']?.toDouble(),
+      total: json['total']?.toDouble(),
+      quantity: json['quantity'],
+      goodName: json['good_name'],
+      goodVariantId: json['good_variant_id'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'price': price,
+      'total': total,
+      'quantity': quantity,
+      'good_name': goodName,
+      'good_variant_id': goodVariantId,
     };
   }
 }

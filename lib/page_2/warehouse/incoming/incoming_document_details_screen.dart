@@ -648,15 +648,40 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
+                        // Исправленная часть для отображения цены товара
+Text(
+  '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
+  style: const TextStyle(
+    fontSize: 18,
+    fontFamily: 'Gilroy',
+    fontWeight: FontWeight.w700,
+    color: Color(0xff1E2E52),
+  ),
+),
+const SizedBox(height: 4),
+Row(
+  children: [
+    Text(
+      AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
+      style: const TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xff1E2E52),
+      ),
+    ),
+    const SizedBox(width: 8),
+    Text(
+      '${((good.quantity ?? 0) * double.parse(good.price?.toString() ?? '0')).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+      style: const TextStyle(
+        fontSize: 18,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w700,
+        color: Color(0xff4CAF50),
+      ),
+    ),
+  ],
+),
                         ],
                       ),
                     ],
