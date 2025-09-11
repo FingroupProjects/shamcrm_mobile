@@ -8,8 +8,18 @@ class SupplierCreen extends StatefulWidget {
 }
 
 class _SupplierCreenState extends State<SupplierCreen> {
+
+
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Supplier Screen'),
+      ),
+      body: const Center(
+        child: Text('This is the Supplier Screen'),
+      ),
+    );
   }
 }

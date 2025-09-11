@@ -10310,6 +10310,39 @@ class ApiService {
     }
   }
 
+  //createSupplier
+  Future<List<Supplier>> createSupplier(
+      Supplier supplier, String organizationId, String salesFunnelId) async {
+    final path = await _appendQueryParams(
+        '/suppliers?organization_id=$organizationId&sales_funnel_id=$salesFunnelId');
+    if (kDebugMode) {
+      //print('ApiService: createSupplier - Generated path: $path');
+    }
+    final body = {
+      'name': supplier.name,
+      'phone': supplier.phone,
+      "note": supplier.note,
+      "inn": supplier.inn,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return (json.decode(response.body)['result'] as List)
+            .map((supplier) => Supplier.fromJson(supplier))
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+  //getSupplier
   Future<List<Supplier>> getSupplier() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/suppliers');
@@ -10331,6 +10364,9 @@ class ApiService {
       throw Exception('Ошибка загрузки поставщиков');
     }
   }
+
+  //updateSupplier
+  // Future<List<Supplier>> updateSupplier(){};
 
   Future<void> createIncomingDocument({
     required String date,
