@@ -60,7 +60,7 @@ class _StorageWidgetState extends State<StorageWidget> {
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<Storage> storageList = state.storageList;
-            
+
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
@@ -90,7 +90,8 @@ class _StorageWidgetState extends State<StorageWidget> {
                 child: CustomDropdown<Storage>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is StorageLoaded ? state.storageList : [],
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true, // Всегда enabled
                   decoration: CustomDropdownDecoration(
@@ -133,7 +134,8 @@ class _StorageWidgetState extends State<StorageWidget> {
                           //   ),
                           // ),
                           Text(
-                            AppLocalizations.of(context)!.translate('select_storage'),
+                            AppLocalizations.of(context)!
+                                .translate('select_storage'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -145,7 +147,9 @@ class _StorageWidgetState extends State<StorageWidget> {
                       );
                     }
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_storage'),
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_storage'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -164,7 +168,8 @@ class _StorageWidgetState extends State<StorageWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: (state is StorageLoaded && state.storageList.contains(selectedStorageData))
+                  initialItem: (state is StorageLoaded &&
+                          state.storageList.contains(selectedStorageData))
                       ? selectedStorageData
                       : null,
                   // validator: (value) {

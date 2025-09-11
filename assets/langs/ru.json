@@ -1202,7 +1202,11 @@
 "client_return": "Возврат от клиента",
 "supplier_return": "Возврат поставщику",
 "navigate_to_document": "Переход к документу: {document}",
-"incoming_document" : "Приход"
+"incoming_document" : "Приход",
+"appbar_client_sales": "Реализация клиент",
+"create_client_sale": "Создать реализацию клиент",
+"delete_document": "Удалить документ",
+"confirm_delete_document": "Вы уверены, что хотите удалить этот документ?"
 
  
 

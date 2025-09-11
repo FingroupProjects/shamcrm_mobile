@@ -1214,7 +1214,11 @@
 "client_return": "Mijozdan qaytarish",
 "supplier_return": "Ta’minotchiga qaytarish",
 "navigate_to_document": "Hujjatga o‘tish: {document}",
-"incoming_document": "Kirish"
+"incoming_document": "Kirish",
+"appbar_client_sales": "Mijozga realizatsiya",
+"create_client_sale": "Mijozga realizatsiya yaratish",
+"delete_document": "Hujjatni o‘chirish",
+"confirm_delete_document": "Ushbu hujjatni o‘chirishni xohlaysizmi?"
 
 
 

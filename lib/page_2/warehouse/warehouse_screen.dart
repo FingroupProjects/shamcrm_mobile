@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -9,7 +10,8 @@ import 'package:flutter/material.dart';
 // WarehouseAccountingScreen - страница учета склада с документами
 class WarehouseAccountingScreen extends StatefulWidget {
   @override
-  _WarehouseAccountingScreenState createState() => _WarehouseAccountingScreenState();
+  _WarehouseAccountingScreenState createState() =>
+      _WarehouseAccountingScreenState();
 }
 
 class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
@@ -38,32 +40,38 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
 
     _documents = [
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('incoming_document') ?? 'Приход',
+        title: AppLocalizations.of(context)!.translate('incoming_document') ??
+            'Приход',
         icon: Icons.add_box_outlined,
         color: docColor,
       ),
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('transfer') ?? 'Перемещение',
+        title: AppLocalizations.of(context)!.translate('transfer') ??
+            'Перемещение',
         icon: Icons.swap_horiz,
         color: docColor,
       ),
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('write_off') ?? 'Списание',
+        title:
+            AppLocalizations.of(context)!.translate('write_off') ?? 'Списание',
         icon: Icons.remove_circle_outline,
         color: docColor,
       ),
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Реализация клиент',
+        title: AppLocalizations.of(context)!.translate('client_sale') ??
+            'Реализация клиент',
         icon: Icons.shopping_cart_outlined,
         color: docColor,
       ),
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента',
+        title: AppLocalizations.of(context)!.translate('client_return') ??
+            'Возврат от клиента',
         icon: Icons.keyboard_return,
         color: docColor,
       ),
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('supplier_return') ?? 'Возврат поставщику',
+        title: AppLocalizations.of(context)!.translate('supplier_return') ??
+            'Возврат поставщику',
         icon: Icons.undo,
         color: docColor,
       ),
@@ -73,18 +81,27 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _isLoading = false;
     });
   }
-  
+
   void _navigateToDocument(WarehouseDocument document) {
-    if (document.title == AppLocalizations.of(context)!.translate('incoming') || document.title == 'Приход') {
+    if (document.title ==
+            AppLocalizations.of(context)!.translate('incoming_document') ||
+        document.title == 'Приход') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomingScreen()),
       );
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('client_sale') ||
+        document.title == 'Реализация клиент') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => ClientSaleScreen()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('navigate_to_document')?.replaceAll('{document}', document.title) ??
+            AppLocalizations.of(context)!
+                    .translate('navigate_to_document')
+                    ?.replaceAll('{document}', document.title) ??
                 'Переход к документу: ${document.title}',
             style: const TextStyle(
               fontFamily: 'Gilroy',
@@ -96,7 +113,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           backgroundColor: document.color,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -171,7 +189,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations.translate('appbar_settings') ?? 'Настройки'
-              : localizations.translate('warehouse_accounting') ?? 'Учет склада',
+              : localizations.translate('warehouse_accounting') ??
+                  'Учет склада',
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -205,7 +224,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                     children: [
                       // Заголовок секции
                       Text(
-                        localizations.translate('warehouse_documents') ?? 'Документы склада',
+                        localizations.translate('warehouse_documents') ??
+                            'Документы склада',
                         style: const TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
@@ -229,7 +249,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                       Expanded(
                         child: GridView.builder(
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 1.2,
                             crossAxisSpacing: 12,
