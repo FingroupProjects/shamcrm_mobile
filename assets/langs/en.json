@@ -1200,7 +1200,15 @@
 "appbar_client_sales": "Client sales",
 "create_client_sale": "Create client sale",
 "delete_document": "Delete document",
-"delete_document_confirm": "Are you sure you want to delete this document?"
+"delete_document_confirm": "Are you sure you want to delete this document?",
+"references": "References",
+"reference_data": "Reference data",
+"select_reference_type": "Select reference type to work with data",
+"warehouse": "Warehouse",
+"units_of_measurement": "Units of measurement",
+"product": "Product",
+"discounts": "Discounts",
+"navigate_to_reference": "Navigate to reference: {reference}"
 
 
 

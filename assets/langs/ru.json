@@ -1206,7 +1206,15 @@
 "appbar_client_sales": "Реализация клиент",
 "create_client_sale": "Создать реализацию клиент",
 "delete_document": "Удалить документ",
-"confirm_delete_document": "Вы уверены, что хотите удалить этот документ?"
+"confirm_delete_document": "Вы уверены, что хотите удалить этот документ?",
+"references": "Справочники",
+"reference_data": "Справочные данные",
+"select_reference_type": "Выберите тип справочника для работы с данными",
+"warehouse": "Склад",
+"units_of_measurement": "Единицы измерения",
+
+"discounts": "Скидки",
+"navigate_to_reference": "Переход к справочнику: {reference}"
 
  
 

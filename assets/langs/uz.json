@@ -1218,7 +1218,15 @@
 "appbar_client_sales": "Mijozga realizatsiya",
 "create_client_sale": "Mijozga realizatsiya yaratish",
 "delete_document": "Hujjatni o‘chirish",
-"confirm_delete_document": "Ushbu hujjatni o‘chirishni xohlaysizmi?"
+"confirm_delete_document": "Ushbu hujjatni o‘chirishni xohlaysizmi?",
+"references": "Ma’lumotnomalar",
+"reference_data": "Ma’lumotnoma ma’lumotlari",
+"select_reference_type": "Ma’lumotlar bilan ishlash uchun ma’lumotnoma turini tanlang",
+"warehouse": "Ombor",
+"units_of_measurement": "O‘lchov birliklari",
+"product": "Mahsulot",
+"discounts": "Chegirmalar",
+"navigate_to_reference": "Ma’lumotnomaga o‘tish: {reference}"
 
 
 

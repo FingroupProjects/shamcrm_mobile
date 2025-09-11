@@ -61,7 +61,7 @@ class IncomingDocument {
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
     return IncomingDocument(
       id: json['id'],
-      date: json['date'] != null ? DateTime.parse(json['date']) : null,
+      date: _parseDate(json['date']),
       modelType: json['model_type'],
       modelId: json['model_id'],
       counterpartyAgreementId: json['counterparty_agreement_id'],
@@ -73,8 +73,8 @@ class IncomingDocument {
           ? (json['document_goods'] as List).map((i) => DocumentGood.fromJson(i)).toList()
           : null,
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
       docNumber: json['doc_number'],
       approved: json['approved'],
     );
@@ -117,8 +117,18 @@ class IncomingDocument {
   Color get statusColor {
     return approved == 1 ? Colors.green : Colors.orange;
   }
-}
 
+  // Вспомогательная функция для безопасного парсинга даты
+  static DateTime? _parseDate(dynamic dateStr) {
+    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
+    try {
+      return DateTime.parse(dateStr);
+    } catch (e) {
+      print('Error parsing date $dateStr: $e');
+      return null; // Возвращаем null в случае ошибки
+    }
+  }
+}
 class Storage {
   final int? id;
   final String? name;
@@ -221,8 +231,8 @@ class DocumentGood {
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
       quantity: json['quantity'],
       price: json['price'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: IncomingDocument._parseDate(json['created_at']),
+      updatedAt: IncomingDocument._parseDate(json['updated_at']),
       attributes: json['attributes'] != null
           ? (json['attributes'] as List).map((i) => Attribute.fromJson(i)).toList()
           : null,
