@@ -10311,10 +10311,9 @@ class ApiService {
   }
 
   //createSupplier
-  Future<List<Supplier>> createSupplier(
+  Future<Supplier> createSupplier(
       Supplier supplier, String organizationId, String salesFunnelId) async {
-    final path = await _appendQueryParams(
-        '/suppliers?organization_id=$organizationId&sales_funnel_id=$salesFunnelId');
+    final path = await _appendQueryParams('/suppliers');
     if (kDebugMode) {
       //print('ApiService: createSupplier - Generated path: $path');
     }
@@ -10331,7 +10330,78 @@ class ApiService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return (json.decode(response.body)['result'] as List)
+        return Supplier.fromJson(json.decode(response.body)['result']);
+      } else {
+        throw Exception('Ошибка создания поставщика: ${response.body}');
+      }
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+  //updateSupplier
+  Future<Supplier> updateSupplier(
+      {required Supplier supplier, required int id}) async {
+    final path = await _appendQueryParams('/suppliers/$id');
+    if (kDebugMode) {
+      //print('ApiService: updateSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': supplier.name,
+      'phone': supplier.phone,
+      if (supplier.note != null) 'note': supplier.note,
+      if (supplier.inn != null) 'inn': supplier.inn,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _patchRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return Supplier.fromJson(json.decode(response.body)['result']);
+      } else {
+        throw Exception('Ошибка обновления поставщика: ${response.body}');
+      }
+    } else {
+      throw Exception('Ошибка обновления поставщика: ${response.body}');
+    }
+  }
+
+  //deleteSupplier
+  Future<void> deleteSupplier(int supplierId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/suppliers/$supplierId');
+    if (kDebugMode) {
+      //print('ApiService: deleteSupplier - Generated path: $path');
+    }
+
+    final response = await _deleteRequestWithBody(path,
+        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else {
+      throw Exception('Ошибка удаления поставщика: ${response.body}');
+    }
+  }
+
+  //getSuppliers
+  Future<List<Supplier>> getSuppliers() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/suppliers');
+    if (kDebugMode) {
+      //print('ApiService: getSuppliers - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return (json.decode(response.body)['result']["data"] as List)
             .map((supplier) => Supplier.fromJson(supplier))
             .toList();
       } else {
@@ -10357,7 +10427,7 @@ class ApiService {
       ////print('Полученные данные поставщиков: $data');
 
       // Извлекаем массив из поля "result"
-      final List<dynamic> resultList = data['result'] ?? [];
+      final List<dynamic> resultList = data['result']["data"] ?? [];
 
       return resultList.map((supplier) => Supplier.fromJson(supplier)).toList();
     } else {
