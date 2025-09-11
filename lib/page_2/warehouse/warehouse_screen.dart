@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -121,6 +122,14 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     }
   }
 
+  void _navigateToReferences() {
+    // Переход к странице справочников
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ReferencesScreen()),
+    );
+  }
+
   Widget _buildDocumentCard(WarehouseDocument document) {
     return Material(
       color: Colors.transparent,
@@ -172,6 +181,72 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                   color: Color(0xff1E2E52),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReferencesButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _navigateToReferences,
+        child: Container(
+          width: double.infinity,
+          height: 72,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: const Color(0xffE5E9F2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 20),
+              // Иконка
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xff1E2E52).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.library_books_outlined,
+                  size: 28,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Название
+              Text(
+                AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Color(0xff99A4BA),
+              ),
+              const SizedBox(width: 20),
             ],
           ),
         ),
@@ -245,23 +320,25 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Сетка 2x3 для всех документов
-                      Expanded(
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                          itemCount: _documents.length,
-                          itemBuilder: (context, index) {
-                            return _buildDocumentCard(_documents[index]);
-                          },
+                      // Сетка 2x3 для документов
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
                         ),
+                        itemCount: _documents.length,
+                        itemBuilder: (context, index) {
+                          return _buildDocumentCard(_documents[index]);
+                        },
                       ),
+                      const SizedBox(height: 16),
+                      // Длинная кнопка "Справочники"
+                      _buildReferencesButton(),
                     ],
                   ),
                 ),
