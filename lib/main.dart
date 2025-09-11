@@ -67,6 +67,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_document_history/bloc/client_sale_document_history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_bloc.dart';
@@ -335,7 +336,6 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(
             create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-
         BlocProvider<StorageBloc>(
           create: (context) => StorageBloc(widget.apiService),
         ),
@@ -344,6 +344,9 @@ class _MyAppState extends State<MyApp> {
         ),
         BlocProvider<ClientSaleBloc>(
           create: (context) => ClientSaleBloc(widget.apiService),
+        ),
+        BlocProvider<ClientSaleDocumentHistoryBloc>(
+          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
         ),
       ],
       child: MaterialApp(

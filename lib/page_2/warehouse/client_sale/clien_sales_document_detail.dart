@@ -1,9 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_document_history/bloc/client_sale_document_history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart'; // Импорт PlayStoreImageLoading
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/client_sale_delete_document.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_history_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -159,6 +161,15 @@ class _ClientSalesDocumentDetailsScreenState
         'value': document.statusText,
       },
     ];
+  }
+
+  //delete document
+  Future<void> _deleteDocument(String documentId) async {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          ClientSaleDeleteDocumentDialog(documentId: widget.documentId),
+    );
   }
 
   Future<void> _approveDocument() async {
@@ -340,9 +351,9 @@ class _ClientSalesDocumentDetailsScreenState
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<IncomingDocumentHistoryBloc>(
+        BlocProvider<ClientSaleDocumentHistoryBloc>(
           create: (context) =>
-              IncomingDocumentHistoryBloc(context.read<ApiService>()),
+              ClientSaleDocumentHistoryBloc(context.read<ApiService>()),
         ),
       ],
       child: PopScope(
@@ -507,17 +518,18 @@ class _ClientSalesDocumentDetailsScreenState
                 height: 24,
               ),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Удаление документа пока не реализовано'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
+                _deleteDocument(widget.documentId.toString());
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(
+                //     content: Text('Удаление документа пока не реализовано'),
+                //     backgroundColor: Colors.orange,
+                //     behavior: SnackBarBehavior.floating,
+                //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                //     shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(12)),
+                //     duration: Duration(seconds: 3),
+                //   ),
+                // );
               },
             ),
           ],

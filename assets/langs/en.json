@@ -1198,7 +1198,9 @@
 "navigate_to_document": "Navigate to document: {document}",
 "incoming_document": "Incoming",
 "appbar_client_sales": "Client sales",
-"create_client_sale": "Create client sale"
+"create_client_sale": "Create client sale",
+"delete_document": "Delete document",
+"delete_document_confirm": "Are you sure you want to delete this document?"
 
 
 

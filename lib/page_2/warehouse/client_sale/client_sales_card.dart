@@ -61,7 +61,11 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
               onDocumentUpdated: widget.onUpdate,
             ),
           ),
-        );
+        ).then((_) {
+          if (widget.onUpdate != null) {
+            widget.onUpdate!();
+          }
+        });
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),

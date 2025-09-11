@@ -16,6 +16,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
   ClientSaleBloc(this.apiService) : super(ClientSaleInitial()) {
     on<FetchClientSales>(_onFetchData);
+    on<CreateClientSalesDocument>(_onCreateClientSalesDocument);
+    on<DeleteClientSalesDocument>(_delete);
   }
 
   _onFetchData(FetchClientSales event, Emitter<ClientSaleState> emit) async {
@@ -71,7 +73,19 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
       );
+
       emit(ClientSaleCreateSuccess('Документ успешно создан'));
+    } catch (e) {
+      emit(ClientSaleError(e.toString()));
+    }
+  }
+
+  _delete(
+      DeleteClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+    try {
+      await apiService.deleteClientSaleDocument(event.documentId);
+      // emit(ClientSaleDeleteSuccess('Документ успешно удален'));
+      add(FetchClientSales(forceRefresh: true, filters: _filters));
     } catch (e) {
       emit(ClientSaleError(e.toString()));
     }

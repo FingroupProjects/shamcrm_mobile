@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/firebase_options.dart';
+// import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
@@ -536,6 +536,25 @@ class ApiService {
         'Device': 'mobile'
       },
     );
+    return _handleResponse(response);
+  }
+
+  //delete with body
+  Future<http.Response> _deleteRequestWithBody(
+      String path, Map<String, dynamic> body) async {
+    final token = await getToken();
+    final updatedPath = await _appendQueryParams(path);
+    final request = http.Request('DELETE', Uri.parse('$baseUrl$updatedPath'));
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
+    request.body = json.encode(body);
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
     return _handleResponse(response);
   }
 
@@ -10369,8 +10388,7 @@ class ApiService {
     if (token == null) throw Exception('Токен не найден');
 
     final path = await _appendQueryParams('/expense-documents');
-    final uri = Uri.parse('$baseUrl$path'); // Исправлено здесь
-    final body = jsonEncode({
+    final response = await _postRequest(path, {
       'date': date,
       'storage_id': storageId,
       'comment': comment,
@@ -10380,21 +10398,27 @@ class ApiService {
       'sales_funnel_id': salesFunnelId,
     });
 
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
       throw Exception('Ошибка создания документа: ${response.body}');
+    }
+  }
+
+  //deleteClientSaleDocument
+  Future<void> deleteClientSaleDocument(int documentId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+    final body = {
+      'ids': [documentId]
+    };
+    final path = await _appendQueryParams('/expense-documents/$documentId');
+    print('Удаление документа по пути: $path');
+    final response = await _deleteRequestWithBody(path, body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    } else {
+      throw Exception('Ошибка удаления документа: ${response.body}');
     }
   }
 }

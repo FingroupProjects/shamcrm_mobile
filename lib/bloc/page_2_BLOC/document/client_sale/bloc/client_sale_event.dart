@@ -22,6 +22,15 @@ class FetchClientSales extends ClientSaleEvent {
   List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
 }
 
+class DeleteClientSalesDocument extends ClientSaleEvent {
+  final int documentId;
+
+  const DeleteClientSalesDocument(this.documentId);
+
+  @override
+  List<Object> get props => [documentId];
+}
+
 class CreateClientSalesDocument extends ClientSaleEvent {
   final String date;
   final int storageId;
