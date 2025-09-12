@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -42,12 +44,15 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         color: refColor,
       ),
       ReferenceItem(
-        title: AppLocalizations.of(context)!.translate('units_of_measurement') ?? 'Единицы измерения',
+        title:
+            AppLocalizations.of(context)!.translate('units_of_measurement') ??
+                'Единицы измерения',
         icon: Icons.straighten_outlined,
         color: refColor,
       ),
       ReferenceItem(
-        title: AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+        title:
+            AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
         icon: Icons.business_outlined,
         color: refColor,
       ),
@@ -62,7 +67,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         color: refColor,
       ),
       ReferenceItem(
-        title: AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены',
+        title:
+            AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены',
         icon: Icons.price_change_outlined,
         color: refColor,
       ),
@@ -75,27 +81,44 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
 
   void _navigateToReference(ReferenceItem reference) {
     // Навигация к конкретному справочнику
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!
-                  .translate('navigate_to_reference')
-                  ?.replaceAll('{reference}', reference.title) ??
-              'Переход к справочнику: ${reference.title}',
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: reference.color,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Text(
+    //       AppLocalizations.of(context)!
+    //               .translate('navigate_to_reference')
+    //               ?.replaceAll('{reference}', reference.title) ??
+    //           'Переход к справочнику: ${reference.title}',
+    //       style: const TextStyle(
+    //         fontFamily: 'Gilroy',
+    //         fontSize: 16,
+    //         fontWeight: FontWeight.w500,
+    //         color: Colors.white,
+    //       ),
+    //     ),
+    //     backgroundColor: reference.color,
+    //     behavior: SnackBarBehavior.floating,
+    //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    //     duration: const Duration(seconds: 2),
+    //   ),
+    // );
+
+    if (reference.title ==
+        (AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SupplierCreen()),
+      );
+    }
+
+    if (reference.title ==
+        (AppLocalizations.of(context)!.translate('units_of_measurement') ??
+            'Единицы измерения')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MeasureUnitsScreen()),
+      );
+    }
   }
 
   Widget _buildReferenceCard(ReferenceItem reference) {
@@ -205,7 +228,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                     children: [
                       // Заголовок секции
                       Text(
-                        localizations.translate('reference_data') ?? 'Справочные данные',
+                        localizations.translate('reference_data') ??
+                            'Справочные данные',
                         style: const TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
@@ -215,7 +239,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        localizations.translate('select_reference_type') ?? 'Выберите тип справочника для работы с данными',
+                        localizations.translate('select_reference_type') ??
+                            'Выберите тип справочника для работы с данными',
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',

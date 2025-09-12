@@ -70,7 +70,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/clie
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_document_history/bloc/client_sale_document_history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_bloc.dart';
@@ -348,6 +349,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<ClientSaleDocumentHistoryBloc>(
           create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
         ),
+        BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
+        BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

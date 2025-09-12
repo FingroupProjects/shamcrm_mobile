@@ -1,7 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/supplier_bloc/supplier_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
