@@ -288,6 +288,9 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                                   context.read<MeasureUnitsBloc>().add(
                                       EditMeasureUnitEvent(
                                           measureUnit, widget.measureUnit.id));
+                                  context
+                                      .read<MeasureUnitsBloc>()
+                                      .add(FetchMeasureUnits());
                                   Navigator.pop(context);
                                 }
                               },

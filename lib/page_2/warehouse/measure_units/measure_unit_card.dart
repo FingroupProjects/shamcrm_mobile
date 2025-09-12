@@ -52,7 +52,9 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
               builder: (context) =>
                   EditMeasureUnitScreen(measureUnit: widget.supplier),
             ),
-          ).then((_) {});
+          ).then((_) {
+            context.read<MeasureUnitsBloc>().add(FetchMeasureUnits());
+          });
         }
       },
       child: Container(
