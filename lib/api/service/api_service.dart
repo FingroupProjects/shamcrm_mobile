@@ -62,6 +62,7 @@ import 'package:crm_task_manager/models/page_2/incoming_document_history_model.d
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
+import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -10310,6 +10311,104 @@ class ApiService {
     }
   }
 
+  //get measure units
+
+  Future<List<MeasureUnitModel>> getMeasureUnits() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/unit');
+    if (kDebugMode) {
+      //print('ApiService: getSuppliers - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return (json.decode(response.body)['result'] as List)
+            .map((unit) => MeasureUnitModel.fromJson(unit))
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+  //create measure units
+  Future<void> createMeasureUnit(
+    MeasureUnitModel unit,
+  ) async {
+    final path = await _appendQueryParams('/unit');
+    if (kDebugMode) {
+      //print('ApiService: createSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': unit.name,
+      'short_name': unit.shortName,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+  //delete measure units
+  Future<void> deleteMeasureUnit(int supplierId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/unit/$supplierId');
+    if (kDebugMode) {
+      //print('ApiService: deleteSupplier - Generated path: $path');
+    }
+
+    final response = await _deleteRequestWithBody(path,
+        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else {
+      throw Exception('Ошибка удаления поставщика: ${response.body}');
+    }
+  }
+
+  //update measure units
+  Future<Supplier> updateUnit(
+      {required MeasureUnitModel supplier, required int id}) async {
+    final path = await _appendQueryParams('/unit/$id');
+    if (kDebugMode) {
+      //print('ApiService: updateSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': supplier.name,
+      'short_name': supplier.shortName,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _patchRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return Supplier.fromJson(json.decode(response.body)['result']);
+      } else {
+        throw Exception('Ошибка обновления поставщика: ${response.body}');
+      }
+    } else {
+      throw Exception('Ошибка обновления поставщика: ${response.body}');
+    }
+  }
+
   //createSupplier
   Future<Supplier> createSupplier(
       Supplier supplier, String organizationId, String salesFunnelId) async {
@@ -10317,6 +10416,7 @@ class ApiService {
     if (kDebugMode) {
       //print('ApiService: createSupplier - Generated path: $path');
     }
+
     final body = {
       'name': supplier.name,
       'phone': supplier.phone,
