@@ -13,7 +13,7 @@ class IncomingInitial extends IncomingState {}
 class IncomingLoading extends IncomingState {}
 
 class IncomingLoaded extends IncomingState {
-  final List<IncomingDocument> data; // Единый список документов
+  final List<IncomingDocument> data;
   final Pagination? pagination;
   final bool hasReachedMax;
 
@@ -35,16 +35,23 @@ class IncomingError extends IncomingState {
   @override
   List<Object> get props => [message];
 }
+
 class IncomingCreateLoading extends IncomingState {}
 
 class IncomingCreateSuccess extends IncomingState {
   final String message;
 
-  IncomingCreateSuccess(this.message);
+  const IncomingCreateSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
 }
 
 class IncomingCreateError extends IncomingState {
   final String message;
 
-  IncomingCreateError(this.message);
+  const IncomingCreateError(this.message);
+
+  @override
+  List<Object> get props => [message];
 }

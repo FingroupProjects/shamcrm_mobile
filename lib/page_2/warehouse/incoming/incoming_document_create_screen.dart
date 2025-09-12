@@ -4,7 +4,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_eve
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
@@ -34,6 +33,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   String? _selectedSupplier;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   @override
   void initState() {
@@ -42,67 +42,69 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
-  void _handleGoodsSelection(Goods goods) {
+  void _handleGoodsSelection(List<Map<String, dynamic>> items) {
     if (mounted) {
+      final newItems = items.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        return {
+          'id': item['id'],
+          'name': item['name'],
+          'quantity': item['quantity'],
+          'price': item['price'],
+          'total': item['total'],
+        };
+      }).toList();
+
       setState(() {
-        // Проверяем, есть ли уже такой товар в списке
-        final existingIndex = _items.indexWhere((item) => item['id'] == goods.id);
-        
-        if (existingIndex != -1) {
-          // Если товар уже есть, увеличиваем количество
-          _items[existingIndex]['quantity'] = (_items[existingIndex]['quantity'] ?? 1) + 1;
-          _items[existingIndex]['total'] = _items[existingIndex]['quantity'] * _items[existingIndex]['price'];
-        } else {
-          // Если товара нет, добавляем новый
-          _items.add({
-            'id': goods.id,
-            'name': goods.name,
-            'quantity': 1,
-            'price': goods.discountedPrice ?? goods.discountPrice ?? 0.0,
-            'total': goods.discountedPrice ?? goods.discountPrice ?? 0.0,
-          });
+        final oldLength = _items.length;
+        _items = newItems;
+        final newLength = _items.length;
+
+        if (newLength > oldLength) {
+          for (int i = oldLength; i < newLength; i++) {
+            _listKey.currentState?.insertItem(i, duration: const Duration(milliseconds: 300));
+          }
+        } else if (newLength < oldLength) {
+          for (int i = oldLength - 1; i >= newLength; i--) {
+            _listKey.currentState?.removeItem(
+              i,
+              (context, animation) => _buildSelectedItemCard(i, _items[i], animation),
+              duration: const Duration(milliseconds: 300),
+            );
+          }
         }
-      });
-    }
-  }
-
-  void _updateQuantity(int index, int newQuantity) {
-    if (mounted && newQuantity > 0) {
-      setState(() {
-        _items[index]['quantity'] = newQuantity;
-        _items[index]['total'] = newQuantity * (_items[index]['price'] ?? 0.0);
-      });
-    }
-  }
-
-  void _updatePrice(int index, double newPrice) {
-    if (mounted) {
-      setState(() {
-        _items[index]['price'] = newPrice;
-        _items[index]['total'] = (_items[index]['quantity'] ?? 1) * newPrice;
       });
     }
   }
 
   void _removeItem(int index) {
     if (mounted) {
-      setState(() => _items.removeAt(index));
+      final removedItem = _items[index];
+      setState(() {
+        _items.removeAt(index);
+        _listKey.currentState?.removeItem(
+          index,
+          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+          duration: const Duration(milliseconds: 300),
+        );
+      });
     }
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_items.isEmpty) {
       _showSnackBar('Добавьте хотя бы один товар', false);
       return;
     }
-    
+
     if (_selectedStorage == null) {
       _showSnackBar('Выберите склад', false);
       return;
     }
-    
+
     if (_selectedSupplier == null) {
       _showSnackBar('Выберите поставщика', false);
       return;
@@ -113,7 +115,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     try {
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
-      
+
       final bloc = context.read<IncomingBloc>();
       bloc.add(CreateIncoming(
         date: isoDate,
@@ -121,26 +123,25 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         comment: _commentController.text.trim(),
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) => {
-          'good_id': item['id'],
-          'quantity': item['quantity'].toString(),
-          'price': item['price'].toString(),
-        }).toList(),
+              'good_id': item['id'],
+              'quantity': item['quantity'].toString(),
+              'price': item['price'].toString(),
+            }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 
-        'Введите корректную дату и время',
-        false
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        false,
       );
     }
   }
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -173,10 +174,9 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       body: BlocListener<IncomingBloc, IncomingState>(
         listener: (context, state) {
           setState(() => _isLoading = false);
-          
+
           if (state is IncomingCreateSuccess && mounted) {
-            _showSnackBar(state.message, true);
-            Navigator.pop(context, true); // Возвращаем результат для обновления списка
+            Navigator.pop(context, true); // Закрываем экран создания
           } else if (state is IncomingCreateError && mounted) {
             _showSnackBar(state.message, false);
           }
@@ -194,6 +194,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
+                      _buildGoodsSection(localizations),
+                      const SizedBox(height: 16),
                       SupplierWidget(
                         selectedSupplier: _selectedSupplier,
                         onChanged: (value) => setState(() => _selectedSupplier = value),
@@ -206,10 +208,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
                       const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                      const SizedBox(height: 16),
-                      if (_items.isNotEmpty) _buildSelectedItemsList(),
-                      const SizedBox(height: 100), // Отступ для кнопок
                     ],
                   ),
                 ),
@@ -273,21 +271,19 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   localizations.translate('goods') ?? 'Товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w500,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         Container(
-          height: 300,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xffF4F7FD)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: GoodsListWidget(
             onGoodsSelected: _handleGoodsSelection,
@@ -295,29 +291,36 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
             padding: EdgeInsets.zero,
           ),
         ),
+        const SizedBox(height: 16),
+        if (_items.isNotEmpty) _buildSelectedItemsList(),
       ],
     );
   }
 
   Widget _buildSelectedItemsList() {
     final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Выбранные товары:',
+          AppLocalizations.of(context)!.translate('selected_goods') ?? 'Выбранные товары',
           style: const TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
-        ...List.generate(
-          _items.length,
-          (index) => _buildSelectedItemCard(index, _items[index]),
+        AnimatedList(
+          key: _listKey,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          initialItemCount: _items.length,
+          itemBuilder: (context, index, animation) {
+            return _buildSelectedItemCard(index, _items[index], animation);
+          },
         ),
         const SizedBox(height: 16),
         _buildTotalCard(total),
@@ -325,162 +328,148 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffF4F7FD)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Colors.grey,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item['name'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Color(0xff99A4BA), size: 20),
-                onPressed: () => _removeItem(index),
+  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: SizeTransition(
+        sizeFactor: animation,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xffF4F7FD)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: item['quantity'].toString(),
-                  decoration: InputDecoration(
-                    labelText: 'Количество',
-                    border: OutlineInputBorder(
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    labelStyle: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      color: Color(0xff99A4BA),
+                    child: const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Color(0xff4759FF),
+                      size: 24,
                     ),
                   ),
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    color: Color(0xff1E2E52),
-                  ),
-                  onChanged: (value) {
-                    final newQuantity = int.tryParse(value) ?? 1;
-                    if (newQuantity > 0) {
-                      _updateQuantity(index, newQuantity);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  initialValue: item['price'].toString(),
-                  decoration: InputDecoration(
-                    labelText: 'Цена',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xffF4F7FD)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    labelStyle: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    color: Color(0xff1E2E52),
-                  ),
-                  onChanged: (value) {
-                    final newPrice = double.tryParse(value) ?? 0.0;
-                    _updatePrice(index, newPrice);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 80,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Сумма',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    Text(
-                      '${(item['total'] ?? 0.0).toStringAsFixed(2)} ₽',
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item['name'] ?? '',
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
                       ),
-                      textAlign: TextAlign.end,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        Text(
+                          item['quantity'].toString(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        Text(
+                          item['price'].toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 100,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        Text(
+                          (item['total'] ?? 0.0).toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff4759FF),
+                          ),
+                          textAlign: TextAlign.end,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -489,28 +478,40 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        gradient: const LinearGradient(
+          colors: [Color(0xff4759FF), Color(0xff6B7BFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Общая сумма:',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.translate('total_amount') ?? 'Общая сумма',
+            style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: Colors.white,
             ),
           ),
           Text(
-            '${total.toStringAsFixed(2)} ₽',
+            total.toStringAsFixed(2),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff4759FF),
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
         ],

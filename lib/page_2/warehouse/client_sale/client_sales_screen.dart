@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/create_clien_sales_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_create_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,7 +98,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateClienSalesDocumentScreen(
+                  builder: (context) => IncomingDocumentCreateScreen(
                       organizationId: widget.organizationId),
                 ),
               ).then((_) {

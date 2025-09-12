@@ -1,281 +1,281 @@
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+// import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
+// import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
+// import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:intl/intl.dart';
 
-class IncomingDocumentHistoryWidget extends StatefulWidget {
-  final int documentId;
+// class IncomingDocumentHistoryWidget extends StatefulWidget {
+//   final int documentId;
 
-  const IncomingDocumentHistoryWidget({
-    Key? key,
-    required this.documentId,
-  }) : super(key: key);
+//   const IncomingDocumentHistoryWidget({
+//     Key? key,
+//     required this.documentId,
+//   }) : super(key: key);
 
-  @override
-  _IncomingDocumentHistoryWidgetState createState() => _IncomingDocumentHistoryWidgetState();
-}
+//   @override
+//   _IncomingDocumentHistoryWidgetState createState() => _IncomingDocumentHistoryWidgetState();
+// }
 
-class _IncomingDocumentHistoryWidgetState extends State<IncomingDocumentHistoryWidget> {
-  bool isHistoryExpanded = false;
-  List<IncomingDocumentHistory> history = [];
+// class _IncomingDocumentHistoryWidgetState extends State<IncomingDocumentHistoryWidget> {
+//   bool isHistoryExpanded = false;
+//   List<IncomingDocumentHistory> history = [];
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<IncomingDocumentHistoryBloc>().add(FetchIncomingDocumentHistory(widget.documentId));
-  }
+//   @override
+//   void initState() {
+//     super.initState();
+//     context.read<IncomingDocumentHistoryBloc>().add(FetchIncomingDocumentHistory(widget.documentId));
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
-      listener: (context, state) {
-        if (state is IncomingDocumentHistoryLoaded) {
-          setState(() {
-            history = state.history;
-          });
-        } else if (state is IncomingDocumentHistoryError) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          });
-        }
-      },
-      child: BlocBuilder<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
-        builder: (context, state) {
-          bool isLoading = state is IncomingDocumentHistoryLoading;
-          return _buildExpandableHistoryContainer(
-            AppLocalizations.of(context)!.translate('document_history') ?? 'История документа',
-            _buildHistoryItems(history),
-            isHistoryExpanded,
-            () {
-              setState(() {
-                isHistoryExpanded = !isHistoryExpanded;
-              });
-            },
-            isLoading: isLoading,
-          );
-        },
-      ),
-    );
-  }
+//   @override
+//   Widget build(BuildContext context) {
+//     return BlocListener<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
+//       listener: (context, state) {
+//         if (state is IncomingDocumentHistoryLoaded) {
+//           setState(() {
+//             history = state.history;
+//           });
+//         } else if (state is IncomingDocumentHistoryError) {
+//           WidgetsBinding.instance.addPostFrameCallback((_) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(
+//                 content: Text(
+//                   state.message,
+//                   style: const TextStyle(
+//                     fontFamily: 'Gilroy',
+//                     fontSize: 16,
+//                     fontWeight: FontWeight.w500,
+//                     color: Colors.white,
+//                   ),
+//                 ),
+//                 behavior: SnackBarBehavior.floating,
+//                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//                 shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                 ),
+//                 backgroundColor: Colors.red,
+//                 elevation: 3,
+//                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+//                 duration: const Duration(seconds: 3),
+//               ),
+//             );
+//           });
+//         }
+//       },
+//       child: BlocBuilder<IncomingDocumentHistoryBloc, IncomingDocumentHistoryState>(
+//         builder: (context, state) {
+//           bool isLoading = state is IncomingDocumentHistoryLoading;
+//           return _buildExpandableHistoryContainer(
+//             AppLocalizations.of(context)!.translate('document_history') ?? 'История документа',
+//             _buildHistoryItems(history),
+//             isHistoryExpanded,
+//             () {
+//               setState(() {
+//                 isHistoryExpanded = !isHistoryExpanded;
+//               });
+//             },
+//             isLoading: isLoading,
+//           );
+//         },
+//       ),
+//     );
+//   }
 
-  Widget _buildExpandableHistoryContainer(
-    String title,
-    List<String> items,
-    bool isExpanded,
-    VoidCallback onTap, {
-    bool isLoading = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTitleRow(title),
-            const SizedBox(height: 8),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              child: isExpanded
-                  ? SizedBox(
-                      height: 250,
-                      child: SingleChildScrollView(
-                        child: isLoading
-                            ? const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
-                            : _buildItemList(items),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+//   Widget _buildExpandableHistoryContainer(
+//     String title,
+//     List<String> items,
+//     bool isExpanded,
+//     VoidCallback onTap, {
+//     bool isLoading = false,
+//   }) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       child: Container(
+//         padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
+//         decoration: BoxDecoration(
+//           color: const Color(0xFFF4F7FD),
+//           borderRadius: BorderRadius.circular(8),
+//         ),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             _buildTitleRow(title),
+//             const SizedBox(height: 8),
+//             AnimatedSize(
+//               duration: const Duration(milliseconds: 200),
+//               child: isExpanded
+//                   ? SizedBox(
+//                       height: 250,
+//                       child: SingleChildScrollView(
+//                         child: isLoading
+//                             ? const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+//                             : _buildItemList(items),
+//                       ),
+//                     )
+//                   : const SizedBox.shrink(),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
-  Row _buildTitleRow(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
-        ),
-      ],
-    );
-  }
+//   Row _buildTitleRow(String title) {
+//     return Row(
+//       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//       children: [
+//         Text(
+//           title,
+//           style: const TextStyle(
+//             fontSize: 16,
+//             fontFamily: 'Gilroy',
+//             fontWeight: FontWeight.w500,
+//             color: Color(0xff1E2E52),
+//           ),
+//         ),
+//         Image.asset(
+//           'assets/icons/tabBar/dropdown.png',
+//           width: 16,
+//           height: 16,
+//         ),
+//       ],
+//     );
+//   }
 
-  Column _buildItemList(List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
-        return _buildHistoryItem(item);
-      }).toList(),
-    );
-  }
+//   Column _buildItemList(List<String> items) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: items.map((item) {
+//         return _buildHistoryItem(item);
+//       }).toList(),
+//     );
+//   }
 
-  Widget _buildHistoryItem(String item) {
-    final parts = item.split('\n');
-    final status = parts[0];
-    final userName = parts.length > 1 ? parts[1] : '';
-    final additionalDetails = parts.sublist(2);
+//   Widget _buildHistoryItem(String item) {
+//     final parts = item.split('\n');
+//     final status = parts[0];
+//     final userName = parts.length > 1 ? parts[1] : '';
+//     final additionalDetails = parts.sublist(2);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusRow(status, userName),
-          const SizedBox(height: 10),
-          if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
-        ],
-      ),
-    );
-  }
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 6),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           _buildStatusRow(status, userName),
+//           const SizedBox(height: 10),
+//           if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
+//         ],
+//       ),
+//     );
+//   }
 
-  Row _buildStatusRow(String status, String userName) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            status,
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            userName,
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+//   Row _buildStatusRow(String status, String userName) {
+//     return Row(
+//       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//       children: [
+//         Expanded(
+//           child: Text(
+//             status,
+//             style: const TextStyle(
+//               fontSize: 14,
+//               fontFamily: 'Gilroy',
+//               fontWeight: FontWeight.w600,
+//               color: Color(0xff1E2E52),
+//             ),
+//             overflow: TextOverflow.ellipsis,
+//           ),
+//         ),
+//         const SizedBox(width: 8),
+//         Flexible(
+//           child: Text(
+//             userName,
+//             style: const TextStyle(
+//               fontSize: 14,
+//               fontFamily: 'Gilroy',
+//               fontWeight: FontWeight.w600,
+//               color: Color(0xff1E2E52),
+//             ),
+//             maxLines: 3,
+//             overflow: TextOverflow.ellipsis,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
 
-  Column _buildAdditionalDetails(List<String> details) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: details.where((detail) => detail.isNotEmpty).map((detail) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                detail,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
-  }
+//   Column _buildAdditionalDetails(List<String> details) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: details.where((detail) => detail.isNotEmpty).map((detail) {
+//         return Row(
+//           mainAxisAlignment: MainAxisAlignment.start,
+//           children: [
+//             Expanded(
+//               child: Text(
+//                 detail,
+//                 style: const TextStyle(
+//                   fontSize: 14,
+//                   fontFamily: 'Gilroy',
+//                   fontWeight: FontWeight.w400,
+//                   color: Color(0xff1E2E52),
+//                 ),
+//                 maxLines: 3,
+//                 overflow: TextOverflow.ellipsis,
+//               ),
+//             ),
+//           ],
+//         );
+//       }).toList(),
+//     );
+//   }
 
-  // ИСПРАВЛЕННЫЙ МЕТОД для работы с новой структурой моделей
-  List<String> _buildHistoryItems(List<IncomingDocumentHistory> history) {
-    return history.map((entry) {
-      final formattedDate = entry.date != null
-          ? DateFormat('dd.MM.yyyy HH:mm').format(entry.date!.toLocal())
-          : AppLocalizations.of(context)!.translate('') ?? '';
+//   // ИСПРАВЛЕННЫЙ МЕТОД для работы с новой структурой моделей
+//   List<String> _buildHistoryItems(List<IncomingDocumentHistory> history) {
+//     return history.map((entry) {
+//       final formattedDate = entry.date != null
+//           ? DateFormat('dd.MM.yyyy HH:mm').format(entry.date!.toLocal())
+//           : AppLocalizations.of(context)!.translate('') ?? '';
       
-      String historyDetail = '${entry.status ?? ''}\n${entry.user?.fullName ?? 'Unknown'} $formattedDate';
+//       String historyDetail = '${entry.status ?? ''}\n${entry.user?.fullName ?? 'Unknown'} $formattedDate';
 
-      if (entry.changes != null && entry.changes!.isNotEmpty) {
-        for (var change in entry.changes!) {
-          if (change.body != null) {
-            final body = change.body!;
+//       if (entry.changes != null && entry.changes!.isNotEmpty) {
+//         for (var change in entry.changes!) {
+//           if (change.body != null) {
+//             final body = change.body!;
             
-            // Обработка изменений даты
-            if (body.dateChange != null) {
-              final newDate = body.dateChange!.newValue ?? '';
-              final prevDate = body.dateChange!.previousValue ?? '';
-              historyDetail += '\nДата: $prevDate > $newDate';
-            }
+//             // Обработка изменений даты
+//             if (body.dateChange != null) {
+//               final newDate = body.dateChange!.newValue ?? '';
+//               final prevDate = body.dateChange!.previousValue ?? '';
+//               historyDetail += '\nДата: $prevDate > $newDate';
+//             }
             
-            // Обработка изменений статуса утверждения
-            if (body.approvedChange != null) {
-              String previous = body.approvedChange!.previousValue == 1 ? 'Проведен' : 'Не проведен';
-              String newValue = body.approvedChange!.newValue == true ? 'Проведен' : 'Не проведен';
-              historyDetail += '\n${AppLocalizations.of(context)!.translate('status_history') ?? 'Статус'}: $previous > $newValue';
-            }
+//             // Обработка изменений статуса утверждения
+//             if (body.approvedChange != null) {
+//               String previous = body.approvedChange!.previousValue == 1 ? 'Проведен' : 'Не проведен';
+//               String newValue = body.approvedChange!.newValue == true ? 'Проведен' : 'Не проведен';
+//               historyDetail += '\n${AppLocalizations.of(context)!.translate('status_history') ?? 'Статус'}: $previous > $newValue';
+//             }
             
-            // Обработка изменений товаров
-            if (body.documentGoodsChange != null) {
-              final prevCount = body.documentGoodsChange!.previousValue?.length ?? 0;
-              final newCount = body.documentGoodsChange!.newValue?.length ?? 0;
-              historyDetail += '\nТовары: $prevCount позиций > $newCount позиций';
+//             // Обработка изменений товаров
+//             if (body.documentGoodsChange != null) {
+//               final prevCount = body.documentGoodsChange!.previousValue?.length ?? 0;
+//               final newCount = body.documentGoodsChange!.newValue?.length ?? 0;
+//               historyDetail += '\nТовары: $prevCount позиций > $newCount позиций';
               
-              // Можно добавить более детальную информацию о товарах
-              if (body.documentGoodsChange!.newValue != null) {
-                for (var good in body.documentGoodsChange!.newValue!) {
-                  historyDetail += '\n  ${good.goodName ?? 'Товар'}: ${good.quantity ?? 0} шт.';
-                }
-              }
-            }
-          }
-        }
-      }
+//               // Можно добавить более детальную информацию о товарах
+//               if (body.documentGoodsChange!.newValue != null) {
+//                 for (var good in body.documentGoodsChange!.newValue!) {
+//                   historyDetail += '\n  ${good.goodName ?? 'Товар'}: ${good.quantity ?? 0} шт.';
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
 
-      return historyDetail;
-    }).toList();
-  }
-}
+//       return historyDetail;
+//     }).toList();
+//   }
+// }
