@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -119,6 +120,14 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         MaterialPageRoute(builder: (context) => const MeasureUnitsScreen()),
       );
     }
+      // ✅ Обработка для "Товар"
+  if (reference.title ==
+      (AppLocalizations.of(context)!.translate('product') ?? 'Товар')) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => GoodsScreen()),
+    );
+  }
   }
 
   Widget _buildReferenceCard(ReferenceItem reference) {

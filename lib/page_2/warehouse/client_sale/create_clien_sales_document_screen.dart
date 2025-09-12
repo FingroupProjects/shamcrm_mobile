@@ -286,20 +286,20 @@ class CreateClienSalesDocumentScreenState
         ),
         const SizedBox(height: 8),
         // ИСПРАВЛЕНИЕ: Обертываем GoodsListWidget в контейнер с фиксированной высотой
-        SizedBox(
-          height: 350, // Фиксированная высота для списка товаров
-          child: GoodsListWidget(
-            // enableSelection: true,
-            onGoodsSelected: (goods) {
-              if (mounted) {
-                _handleGoodsSelection(goods);
-              }
-            },
-            searchHint:
-                localizations.translate('search_goods') ?? 'Поиск товаров',
-            padding: EdgeInsets.zero, // Убираем внутренние отступы
-          ),
-        ),
+        // SizedBox(
+        //   height: 350, // Фиксированная высота для списка товаров
+        //   child: GoodsListWidget(
+        //     // enableSelection: true,
+        //     onGoodsSelected: (goods) {
+        //       if (mounted) {
+        //         _handleGoodsSelection(goods);
+        //       }
+        //     },
+        //     searchHint:
+        //         localizations.translate('search_goods') ?? 'Поиск товаров',
+        //     padding: EdgeInsets.zero, // Убираем внутренние отступы
+        //   ),
+        // ),
         if (_selectedItems.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(

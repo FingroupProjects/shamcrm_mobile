@@ -385,7 +385,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                             ),
                           _buildDetailsList(),
                           const SizedBox(height: 16),
-                          IncomingDocumentHistoryWidget(documentId: widget.documentId),
+                          // IncomingDocumentHistoryWidget(documentId: widget.documentId),
                           const SizedBox(height: 16),
                           if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
                             _buildGoodsList(currentDocument!.documentGoods!),
@@ -436,48 +436,48 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                   SnackBar(
-                    content: Text('Редактирование документа пока не реализовано'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
-            ),
-            IconButton(
-              padding: const EdgeInsets.only(right: 8),
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                   SnackBar(
-                    content: Text('Удаление документа пока не реализовано'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
-            ),
+            // IconButton(
+            //   padding: EdgeInsets.zero,
+            //   constraints: const BoxConstraints(),
+            //   icon: Image.asset(
+            //     'assets/icons/edit.png',
+            //     width: 24,
+            //     height: 24,
+            //   ),
+            //   onPressed: () {
+            //     ScaffoldMessenger.of(context).showSnackBar(
+            //        SnackBar(
+            //         content: Text('Редактирование документа пока не реализовано'),
+            //         backgroundColor: Colors.orange,
+            //         behavior: SnackBarBehavior.floating,
+            //         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            //         duration: Duration(seconds: 3),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // IconButton(
+            //   padding: const EdgeInsets.only(right: 8),
+            //   constraints: const BoxConstraints(),
+            //   icon: Image.asset(
+            //     'assets/icons/delete.png',
+            //     width: 24,
+            //     height: 24,
+            //   ),
+            //   onPressed: () {
+            //     ScaffoldMessenger.of(context).showSnackBar(
+            //        SnackBar(
+            //         content: Text('Удаление документа пока не реализовано'),
+            //         backgroundColor: Colors.orange,
+            //         behavior: SnackBarBehavior.floating,
+            //         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            //         duration: Duration(seconds: 3),
+            //       ),
+            //     );
+            //   },
+            // ),
           ],
         ),
       ],

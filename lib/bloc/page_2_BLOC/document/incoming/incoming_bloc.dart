@@ -23,7 +23,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       _filters = event.filters ?? {};
       emit(IncomingLoading());
     } else if (state is IncomingLoaded && (state as IncomingLoaded).hasReachedMax) {
-      return; // Не делаем запрос, если достигнут конец
+      return;
     }
 
     try {
@@ -54,10 +54,10 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
     }
   }
 
-   Future<void> _onCreateIncoming(CreateIncoming event, Emitter<IncomingState> emit) async {
+  Future<void> _onCreateIncoming(CreateIncoming event, Emitter<IncomingState> emit) async {
     emit(IncomingCreateLoading());
     try {
-      final response = await apiService.createIncomingDocument(
+      await apiService.createIncomingDocument(
         date: event.date,
         storageId: event.storageId,
         comment: event.comment,
@@ -66,12 +66,11 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
       );
+
+      await Future.delayed(const Duration(milliseconds: 100));
       emit(IncomingCreateSuccess('Документ успешно создан'));
-      add(const FetchIncoming(forceRefresh: true)); // Обновляем список после создания
     } catch (e) {
       emit(IncomingCreateError(e.toString()));
     }
   }
-
-
 }

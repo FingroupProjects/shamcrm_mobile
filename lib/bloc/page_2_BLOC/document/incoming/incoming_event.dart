@@ -10,7 +10,7 @@ abstract class IncomingEvent extends Equatable {
 class FetchIncoming extends IncomingEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
-  final int? status; // 0 или 1 для таба
+  final int? status;
 
   const FetchIncoming({
     this.forceRefresh = false,
@@ -40,4 +40,15 @@ class CreateIncoming extends IncomingEvent {
     required this.organizationId,
     required this.salesFunnelId,
   });
+
+  @override
+  List<Object> get props => [
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+      ];
 }

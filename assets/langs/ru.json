@@ -1214,7 +1214,39 @@
 "units_of_measurement": "Единицы измерения",
 
 "discounts": "Скидки",
-"navigate_to_reference": "Переход к справочнику: {reference}"
+"navigate_to_reference": "Переход к справочнику: {reference}",
+"create_incoming_document": "Создать приход",
+
+"enter_comment": "Введите примечание",
+"search_goods": "Поиск товаров",
+"selected_goods": "Выбранные товары",
+"goods": "Товары",
+"select_goods": "Выберите товары",
+"search_goods": "Поиск товаров",
+"field_required_goods": "Выберите хотя бы один товар",
+"invalid_quantity": "Укажите корректное количество",
+"invalid_price": "Укажите корректную цену",
+
+  "select_storage": "Выберите склад",
+  "select_supplier": "Выберите поставщика",
+  "inn": "ИНН",
+  "enter_inn": "Введите ИНН",
+  "note": "Примечание",
+  "enter_note": "Введите примечание",
+  "enter_supplier_name": "Введите название поставщика",
+  "add_supplier": "Добавить поставщика",
+  "edit_supplier": "Редактировать поставщика",
+  "delete_supplier": "Удалить поставщика",
+  "add_measure_unit": "Добавить единицу измерения",
+  "enter_measure_unit_name": "Введите название единицы измерения",
+  "short_name": "Краткое наименование",
+  "enter_short_name": "Введите краткое наименование",
+  "edit_measure_unit": "Редактировать единицу измерения",
+    "create_at": "Создано",
+  "startName": "Начальное имя"
+
+
+
 
  
 
