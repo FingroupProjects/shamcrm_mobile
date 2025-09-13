@@ -80,7 +80,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
           ),
         ),
       ),
-      body: BlocListener<PriceTypeBloc, PriceTypeState>(
+      body: BlocListener<PriceTypeScreenBloc, PriceTypeState>(
         listener: (context, state) {
           if (state is PriceTypeError) {
             _showErrorSnackBar(
@@ -171,7 +171,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: BlocBuilder<PriceTypeBloc, PriceTypeState>(
+                      child: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
                         builder: (context, state) {
                           if (state is PriceTypeLoading) {
                             return const Center(
@@ -197,7 +197,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                                     organizationId: 0, oneCId: null,
                                   );
                                   context
-                                      .read<PriceTypeBloc>()
+                                      .read<PriceTypeScreenBloc>()
                                       .add(AddPriceType(supplier));
                                 }
                               },
