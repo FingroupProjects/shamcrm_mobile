@@ -37,7 +37,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
 
   @override
   initState() {
-    _supplierBloc = PriceTypeBloc(_apiService)..add(FetchPriceType());
+    _supplierBloc = context.read<PriceTypeBloc>()..add(FetchPriceType());
     super.initState();
     getSupliers();
   }
