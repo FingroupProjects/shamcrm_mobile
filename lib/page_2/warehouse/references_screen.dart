@@ -139,7 +139,6 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
-    // ✅ Обработка для "Товар"
     if (reference.title ==
         (AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены')) {
       Navigator.push(

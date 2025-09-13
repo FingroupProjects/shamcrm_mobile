@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
 
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
+import 'package:crm_task_manager/page_2/warehouse/price_type/add_pricetype_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/add_supplier_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supllier_card.dart';
@@ -27,7 +29,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   List<PriceTypeModel> suppliers = [];
 
   final ApiService _apiService = ApiService();
-  late SupplierBloc _supplierBloc;
+  late PriceTypeBloc _supplierBloc;
   getSupliers() async {
     suppliers = await _apiService.getPriceTypes();
     setState(() {});
@@ -35,7 +37,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
 
   @override
   initState() {
-    _supplierBloc = SupplierBloc(_apiService)..add(FetchSupplier());
+    _supplierBloc = PriceTypeBloc(_apiService)..add(FetchPriceType());
     super.initState();
     getSupliers();
   }
@@ -44,13 +46,13 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return BlocProvider.value(
-      value: _supplierBloc,
+      value: PriceTypeBloc(ApiService()),
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
             forceMaterialTransparency: true,
             title: CustomAppBarPage2(
-              title: 'Поставщики',
+              title: 'Price Types',
               showSearchIcon: true,
               showFilterIcon: false,
               onChangedSearchInput: (String value) {
@@ -82,10 +84,10 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AddSupplierScreen(),
+                    builder: (context) => AddPriceTypeScreen(),
                   ),
                 ).then((_) {
-                  _supplierBloc.add(FetchSupplier());
+                  _supplierBloc.add(FetchPriceType());
                 });
               }
             },
@@ -105,7 +107,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                 final suppliers = state.priceTypes;
                 return RefreshIndicator(
                   onRefresh: () {
-                    _supplierBloc.add(FetchSupplier());
+                    _supplierBloc.add(FetchPriceType());
                     return Future.value();
                   },
                   child: ListView.builder(
@@ -115,7 +117,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       return PriceTypeCard(
                         supplier: supplier,
                         onDelete: () {
-                          _supplierBloc.add(DeleteSupplier(supplier.id));
+                          _supplierBloc.add(DeletePriceType(supplier.id));
                           ;
                         },
                       );
