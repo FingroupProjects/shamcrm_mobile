@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 
-
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -71,8 +70,8 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
           },
         ),
         title: Text(
-          AppLocalizations.of(context)!.translate('add_supplier') ??
-              'Добавить поставщика',
+          AppLocalizations.of(context)!.translate('Add Price Types') ??
+              'Add Price Types',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
