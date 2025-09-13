@@ -2,7 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +18,7 @@ class StorageWidget extends StatefulWidget {
 }
 
 class _StorageWidgetState extends State<StorageWidget> {
-  Storage? selectedStorageData;
+  WareHouse? selectedStorageData;
 
   @override
   void initState() {
@@ -59,7 +59,7 @@ class _StorageWidgetState extends State<StorageWidget> {
         builder: (context, state) {
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
-            List<Storage> storageList = state.storageList;
+            List<WareHouse> storageList = state.storageList;
 
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
@@ -87,7 +87,7 @@ class _StorageWidgetState extends State<StorageWidget> {
               ),
               const SizedBox(height: 4),
               Container(
-                child: CustomDropdown<Storage>.search(
+                child: CustomDropdown<WareHouse>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is StorageLoaded ? state.storageList : [],
                   searchHintText:

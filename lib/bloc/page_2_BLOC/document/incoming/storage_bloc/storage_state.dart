@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/page_2/storage_model.dart';
 
 abstract class StorageState {}
 
@@ -7,7 +7,7 @@ class StorageInitial extends StorageState {}
 class StorageLoading extends StorageState {}
 
 class StorageLoaded extends StorageState {
-  final List<Storage> storageList;
+  final List<WareHouse> storageList;
 
   StorageLoaded(this.storageList);
 }

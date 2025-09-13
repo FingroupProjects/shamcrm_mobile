@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:flutter/material.dart';
 
 class IncomingResponse {
@@ -9,9 +10,13 @@ class IncomingResponse {
   factory IncomingResponse.fromJson(Map<String, dynamic> json) {
     return IncomingResponse(
       data: json['data'] != null
-          ? (json['data'] as List).map((i) => IncomingDocument.fromJson(i)).toList()
+          ? (json['data'] as List)
+              .map((i) => IncomingDocument.fromJson(i))
+              .toList()
           : null,
-      pagination: json['pagination'] != null ? Pagination.fromJson(json['pagination']) : null,
+      pagination: json['pagination'] != null
+          ? Pagination.fromJson(json['pagination'])
+          : null,
     );
   }
 
@@ -30,7 +35,7 @@ class IncomingDocument {
   final int? modelId;
   final int? counterpartyAgreementId;
   final int? organizationId;
-  final Storage? storage;
+  final WareHouse? storage;
   final String? comment;
   final Currency? currency;
   final List<DocumentGood>? documentGoods;
@@ -68,11 +73,15 @@ class IncomingDocument {
       modelId: json['model_id'],
       counterpartyAgreementId: json['counterparty_agreement_id'],
       organizationId: json['organization_id'],
-      storage: json['storage'] != null ? Storage.fromJson(json['storage']) : null,
+      storage:
+          json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
       comment: json['comment'],
-      currency: json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      currency:
+          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       documentGoods: json['document_goods'] != null
-          ? (json['document_goods'] as List).map((i) => DocumentGood.fromJson(i)).toList()
+          ? (json['document_goods'] as List)
+              .map((i) => DocumentGood.fromJson(i))
+              .toList()
           : null,
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
       createdAt: _parseDate(json['created_at']),
@@ -106,7 +115,11 @@ class IncomingDocument {
 
   double get totalSum {
     if (documentGoods == null || documentGoods!.isEmpty) return 0.0;
-    return documentGoods!.fold(0.0, (sum, good) => sum + (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0));
+    return documentGoods!.fold(
+        0.0,
+        (sum, good) =>
+            sum +
+            (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0));
   }
 
   int get totalQuantity {
@@ -213,6 +226,7 @@ class Storage {
   }
 }
 
+
 class Currency {
   final int? id;
   final String? name;
@@ -239,8 +253,12 @@ class Currency {
       digitalCode: json['digital_code'],
       symbolCode: json['symbol_code'],
       organizationId: json['organization_id'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -291,7 +309,9 @@ class DocumentGood {
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
       attributes: json['attributes'] != null
-          ? (json['attributes'] as List).map((i) => Attribute.fromJson(i)).toList()
+          ? (json['attributes'] as List)
+              .map((i) => Attribute.fromJson(i))
+              .toList()
           : null,
     );
   }
@@ -362,9 +382,15 @@ class Good {
       price: json['price'],
       unitId: json['unit_id'],
       quantity: json['quantity'],
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at']) : null,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
       isActive: json['is_active'],
       article: json['article'],
       labelId: json['label_id'],
@@ -421,8 +447,12 @@ class GoodFile {
       id: json['id'],
       path: json['path'],
       type: json['type'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -466,8 +496,12 @@ class Attribute {
       categoryAttributeId: json['category_attribute_id'],
       value: json['value'],
       unitId: json['unit_id'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
       variantAttributeId: json['variant_attribute_id'],
       variantId: json['variant_id'],
       categoryAttribute: json['category_attribute'] != null
@@ -517,11 +551,17 @@ class CategoryAttribute {
       id: json['id'],
       categoryId: json['category_id'],
       attributeId: json['attribute_id'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
       isIndividual: json['is_individual'],
       showToSite: json['show_to_site'],
-      attribute: json['attribute'] != null ? AttributeModel.fromJson(json['attribute']) : null,
+      attribute: json['attribute'] != null
+          ? AttributeModel.fromJson(json['attribute'])
+          : null,
     );
   }
 
@@ -551,8 +591,12 @@ class AttributeModel {
     return AttributeModel(
       id: json['id'],
       name: json['name'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -592,8 +636,12 @@ class Model {
       phone: json['phone'],
       inn: json['inn'],
       note: json['note'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -617,7 +665,12 @@ class Pagination {
   final int? currentPage;
   final int? totalPages;
 
-  Pagination({this.total, this.count, this.perPage, this.currentPage, this.totalPages});
+  Pagination(
+      {this.total,
+      this.count,
+      this.perPage,
+      this.currentPage,
+      this.totalPages});
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(

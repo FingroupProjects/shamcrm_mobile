@@ -68,6 +68,8 @@ import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/models/page_2/price_type_model.dart';
+import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
@@ -10327,7 +10329,11 @@ class ApiService {
       throw Exception('Ошибка получения истории документа: $e');
     }
   }
-  Future<List<Storage>> getStorage() async {
+
+//----------------------------------------------STORAGE----------------------------------------
+
+  //get storage
+  Future<List<WareHouse>> getStorage() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
@@ -10343,14 +10349,115 @@ class ApiService {
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result'] ?? [];
 
-      return resultList.map((storage) => Storage.fromJson(storage)).toList();
+      return resultList.map((storage) => WareHouse.fromJson(storage)).toList();
     } else {
       throw Exception('Ошибка загрузки складов');
     }
   }
 
-  //get measure units
+  //get storage
+  Future<List<WareHouse>> getWareHouses() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/storage');
+    if (kDebugMode) {
+      //print('ApiService: getStorage - Generated path: $path');
+    }
 
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      ////print('Полученные данные складов: $data');
+
+      // Извлекаем массив из поля "result"
+      final List<dynamic> resultList = data['result'] ?? [];
+
+      return resultList.map((storage) => WareHouse.fromJson(storage)).toList();
+    } else {
+      throw Exception('Ошибка загрузки складов');
+    }
+  }
+
+  //create storage
+  Future<bool> createStorage(
+    WareHouse unit,
+    List<int> userIds,
+  ) async {
+    final path = await _appendQueryParams('/storage');
+    if (kDebugMode) {
+      //print('ApiService: createSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': unit.name,
+      "users": userIds,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+  //updateStorage
+  Future<PriceTypeModel> updateStorage(
+      {required WareHouse storage,
+      required int id,
+      required List<int> ids}) async {
+    final path = await _appendQueryParams('/storage/$id');
+    if (kDebugMode) {
+      //print('ApiService: updateSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': storage.name,
+      'ids': ids,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _patchRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+      } else {
+        throw Exception('Ошибка обновления поставщика: ${response.body}');
+      }
+    } else {
+      throw Exception('Ошибка обновления поставщика: ${response.body}');
+    }
+  }
+
+  //delete storage
+  Future<void> deleteStorage(int storageId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/storage/$storageId');
+    if (kDebugMode) {
+      //print('ApiService: deleteSupplier - Generated path: $path');
+    }
+
+    final response = await _deleteRequestWithBody(path,
+        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else {
+      throw Exception('Ошибка удаления поставщика: ${response.body}');
+    }
+  }
+
+//--------------------------------MEASURE UNITS-------------------------------------------------
+
+  //get measure units
   Future<List<MeasureUnitModel>> getMeasureUnits() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/unit');
@@ -10419,7 +10526,7 @@ class ApiService {
   }
 
   //update measure units
-  Future<Supplier> updateUnit(
+  Future<PriceTypeModel> updateUnit(
       {required MeasureUnitModel supplier, required int id}) async {
     final path = await _appendQueryParams('/unit/$id');
     if (kDebugMode) {
@@ -10438,7 +10545,7 @@ class ApiService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return Supplier.fromJson(json.decode(response.body)['result']);
+        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
       } else {
         throw Exception('Ошибка обновления поставщика: ${response.body}');
       }
@@ -10447,9 +10554,107 @@ class ApiService {
     }
   }
 
+//--------------------------PRICE TYPE---------------------------------------------
+
+  Future<List<PriceTypeModel>> getPriceTypes() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/priceType');
+    if (kDebugMode) {
+      //print('ApiService: getSuppliers - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return (json.decode(response.body)['result']['data'] as List)
+            .map((unit) => PriceTypeModel.fromJson(unit))
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+
+  Future<void> createPriceType(
+    PriceTypeModel unit,
+  ) async {
+    final path = await _appendQueryParams('/priceType');
+    if (kDebugMode) {
+      //print('ApiService: createSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': unit.name,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    } else {
+      throw Exception('Ошибка создания поставщика: ${response.body}');
+    }
+  }
+
+
+  Future<void> deletePriceType(int supplierId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/priceType/$supplierId');
+    if (kDebugMode) {
+      //print('ApiService: deleteSupplier - Generated path: $path');
+    }
+
+    final response = await _deleteRequestWithBody(path,
+        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else {
+      throw Exception('Ошибка удаления поставщика: ${response.body}');
+    }
+  }
+
+
+  Future<PriceTypeModel> updatePriceType(
+      {required PriceTypeModel supplier, required int id}) async {
+    final path = await _appendQueryParams('/priceType/$id');
+    if (kDebugMode) {
+      //print('ApiService: updateSupplier - Generated path: $path');
+    }
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final body = {
+      'name': supplier.name,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _patchRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+      } else {
+        throw Exception('Ошибка обновления поставщика: ${response.body}');
+      }
+    } else {
+      throw Exception('Ошибка обновления поставщика: ${response.body}');
+    }
+  }
+
+//----------------------------------------------SUPPLIER----------------------------------
   //createSupplier
   Future<Supplier> createSupplier(
-      Supplier supplier, String organizationId, String salesFunnelId) async {
+      Supplier supplier,
+      String organizationId, String salesFunnelId) async {
     final path = await _appendQueryParams('/suppliers');
     if (kDebugMode) {
       //print('ApiService: createSupplier - Generated path: $path');
@@ -10478,7 +10683,7 @@ class ApiService {
   }
 
   //updateSupplier
-  Future<Supplier> updateSupplier(
+  Future<PriceTypeModel> updateSupplier(
       {required Supplier supplier, required int id}) async {
     final path = await _appendQueryParams('/suppliers/$id');
     if (kDebugMode) {
@@ -10499,7 +10704,7 @@ class ApiService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return Supplier.fromJson(json.decode(response.body)['result']);
+        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
       } else {
         throw Exception('Ошибка обновления поставщика: ${response.body}');
       }
@@ -10567,7 +10772,9 @@ class ApiService {
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result']["data"] ?? [];
 
-      return resultList.map((supplier) => Supplier.fromJson(supplier)).toList();
+      return resultList
+          .map((supplier) => Supplier.fromJson(supplier))
+          .toList();
     } else {
       throw Exception('Ошибка загрузки поставщиков');
     }
