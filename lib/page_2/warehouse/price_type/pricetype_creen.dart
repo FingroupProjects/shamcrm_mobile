@@ -46,7 +46,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return BlocProvider.value(
-      value: PriceTypeBloc(ApiService()),
+      value: PriceTypeBloc(ApiService())..add(FetchPriceType()),
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
