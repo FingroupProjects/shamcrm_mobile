@@ -14,7 +14,26 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   IncomingBloc(this.apiService) : super(IncomingInitial()) {
     on<FetchIncoming>(_onFetchIncoming);
     on<CreateIncoming>(_onCreateIncoming);
+    on<UpdateIncoming>(_onUpdateIncoming);
+      on<DeleteIncoming>(_onDeleteIncoming);  // Добавьте эту строку
+        on<RestoreIncoming>(_onRestoreIncoming); // Добавить эту строку
+
+
   }
+Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> emit) async {
+  emit(IncomingRestoreLoading());
+  try {
+    final result = await apiService.restoreIncomingDocument(event.documentId);
+    if (result['result'] == 'Success') {
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(IncomingRestoreSuccess('Документ успешно восстановлен'));
+    } else {
+      emit(IncomingRestoreError('Не удалось восстановить документ'));
+    }
+  } catch (e) {
+    emit(IncomingRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+  }
+}
 
   Future<void> _onFetchIncoming(FetchIncoming event, Emitter<IncomingState> emit) async {
     if (event.forceRefresh) {
@@ -73,4 +92,39 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingCreateError(e.toString()));
     }
   }
+  Future<void> _onUpdateIncoming(UpdateIncoming event, Emitter<IncomingState> emit) async {
+    emit(IncomingUpdateLoading());
+    try {
+      await apiService.updateIncomingDocument(
+        documentId: event.documentId,
+        date: event.date,
+        storageId: event.storageId,
+        comment: event.comment,
+        counterpartyId: event.counterpartyId,
+        documentGoods: event.documentGoods,
+        organizationId: event.organizationId,
+        salesFunnelId: event.salesFunnelId,
+      );
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(IncomingUpdateSuccess('Документ успешно обновлен'));
+    } catch (e) {
+      emit(IncomingUpdateError(e.toString()));
+    }
+  }
+
+Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
+  emit(IncomingDeleteLoading()); // Эта строка должна быть!
+  try {
+    final result = await apiService.deleteIncomingDocument(event.documentId);
+    if (result['result'] == 'Success') {
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(IncomingDeleteSuccess('Документ успешно удален'));
+    } else {
+      emit(IncomingDeleteError('Не удалось удалить документ'));
+    }
+  } catch (e) {
+    emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+  }
+}
 }

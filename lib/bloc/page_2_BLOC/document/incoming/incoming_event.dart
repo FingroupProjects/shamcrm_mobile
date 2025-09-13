@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class IncomingEvent extends Equatable {
@@ -51,4 +52,57 @@ class CreateIncoming extends IncomingEvent {
         organizationId,
         salesFunnelId,
       ];
+}
+
+class UpdateIncoming extends IncomingEvent {
+  final int documentId;
+  final String date;
+  final int storageId;
+  final String comment;
+  final int counterpartyId;
+  final List<Map<String, dynamic>> documentGoods;
+  final int organizationId;
+  final int salesFunnelId;
+
+  const UpdateIncoming({
+    required this.documentId,
+    required this.date,
+    required this.storageId,
+    required this.comment,
+    required this.counterpartyId,
+    required this.documentGoods,
+    required this.organizationId,
+    required this.salesFunnelId,
+  });
+
+  @override
+  List<Object> get props => [
+        documentId,
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+      ];
+}
+class DeleteIncoming extends IncomingEvent {
+  final int documentId;
+  final AppLocalizations localizations;
+
+  const DeleteIncoming(this.documentId, this.localizations);
+
+  @override
+  List<Object> get props => [documentId, localizations];
+}
+
+class RestoreIncoming extends IncomingEvent {
+  final int documentId;
+  final AppLocalizations localizations;
+
+  const RestoreIncoming(this.documentId, this.localizations);
+
+  @override
+  List<Object> get props => [documentId, localizations];
 }

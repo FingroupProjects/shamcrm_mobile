@@ -1243,7 +1243,16 @@
   "enter_short_name": "Введите краткое наименование",
   "edit_measure_unit": "Редактировать единицу измерения",
     "create_at": "Создано",
-  "startName": "Начальное имя"
+  "startName": "Начальное имя",
+  "deleted_incoming": "Удален",
+  "approved_incoming": "Проведен",
+  "not_approved_incoming": "Не проведен",
+  "approved": "Проведен",
+  "not_approved": "Не проведен",
+  "deleted_at": "Дата удаления",
+  "restore_document": "Восстановить",
+  "deleting": "Удаление...",
+  "edit_incoming_document": "Редактирование"
 
 
 

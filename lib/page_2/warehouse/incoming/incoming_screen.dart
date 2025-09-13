@@ -139,26 +139,38 @@ class _IncomingScreenState extends State<IncomingScreen> {
           ),
         ),
         body: BlocListener<IncomingBloc, IncomingState>(
-          listener: (context, state) {
-            if (!mounted) return;
-            if (state is IncomingLoaded) {
-              setState(() {
-                _hasReachedMax = state.hasReachedMax;
-                _isInitialLoad = false;
-                _isLoadingMore = false;
-              });
-            } else if (state is IncomingError) {
-              setState(() {
-                _isInitialLoad = false;
-                _isLoadingMore = false;
-              });
-              _showSnackBar(state.message, false);
-            } else if (state is IncomingCreateSuccess) {
-              _showSnackBar(state.message, true);
-            } else if (state is IncomingCreateError) {
-              _showSnackBar(state.message, false);
-            }
-          },
+  listener: (context, state) {
+    if (!mounted) return;
+    
+    if (state is IncomingLoaded) {
+      setState(() {
+        _hasReachedMax = state.hasReachedMax;
+        _isInitialLoad = false;
+        _isLoadingMore = false;
+      });
+    } else if (state is IncomingError) {
+      setState(() {
+        _isInitialLoad = false;
+        _isLoadingMore = false;
+      });
+      _showSnackBar(state.message, false);
+    } else if (state is IncomingCreateSuccess) {
+      _showSnackBar(state.message, true);
+    } else if (state is IncomingCreateError) {
+      _showSnackBar(state.message, false);
+    } else if (state is IncomingUpdateSuccess) {
+      _showSnackBar(state.message, true);
+    } else if (state is IncomingUpdateError) {
+      _showSnackBar(state.message, false);
+    } else if (state is IncomingDeleteSuccess) {
+      // Показываем SnackBar только если мы находимся на IncomingScreen
+      // (т.е. если диалог уже закрыт и мы вернулись сюда)
+      _showSnackBar(state.message, true);
+      
+      // Обновляем список после успешного удаления
+      _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+    }
+  },
           child: BlocBuilder<IncomingBloc, IncomingState>(
             builder: (context, state) {
               if (state is IncomingLoading) {

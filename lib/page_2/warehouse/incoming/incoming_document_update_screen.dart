@@ -16,16 +16,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class IncomingDocumentCreateScreen extends StatefulWidget {
-  final int? organizationId;
+class IncomingDocumentEditScreen extends StatefulWidget {
+  final IncomingDocument document;
 
-  const IncomingDocumentCreateScreen({this.organizationId, super.key});
+  const IncomingDocumentEditScreen({
+    required this.document,
+    super.key,
+  });
 
   @override
-  _IncomingDocumentCreateScreenState createState() => _IncomingDocumentCreateScreenState();
+  _IncomingDocumentEditScreenState createState() => _IncomingDocumentEditScreenState();
 }
 
-class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScreen> {
+class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -38,44 +41,66 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _initializeFormData();
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
-  void _handleGoodsSelection(List<Map<String, dynamic>> items) {
-    if (mounted) {
-      final newItems = items.asMap().entries.map((entry) {
-        final index = entry.key;
-        final item = entry.value;
-        return {
-          'id': item['id'],
-          'name': item['name'],
-          'quantity': item['quantity'],
-          'price': item['price'],
-          'total': item['total'],
-        };
+  void _initializeFormData() {
+    // Заполняем поля данными из документа
+    _dateController.text = widget.document.date != null 
+        ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
+        : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    
+    _commentController.text = widget.document.comment ?? '';
+    _selectedStorage = widget.document.storage?.id?.toString();
+    _selectedSupplier = widget.document.model?.id?.toString();
+    
+    // Преобразуем существующие товары в формат для редактирования
+    if (widget.document.documentGoods != null) {
+      _items = widget.document.documentGoods!.map((good) => {
+        'id': good.good?.id ?? 0,
+        'name': good.good?.name ?? '',
+        'quantity': good.quantity ?? 0,
+        'price': double.tryParse(good.price ?? '0') ?? 0.0,
+        'total': (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0.0),
       }).toList();
-
-      setState(() {
-        final oldLength = _items.length;
-        _items = newItems;
-        final newLength = _items.length;
-
-        if (newLength > oldLength) {
-          for (int i = oldLength; i < newLength; i++) {
-            _listKey.currentState?.insertItem(i, duration: const Duration(milliseconds: 300));
-          }
-        } else if (newLength < oldLength) {
-          for (int i = oldLength - 1; i >= newLength; i--) {
-            _listKey.currentState?.removeItem(
-              i,
-              (context, animation) => _buildSelectedItemCard(i, _items[i], animation),
-              duration: const Duration(milliseconds: 300),
-            );
-          }
-        }
-      });
     }
+  }
+
+  void _handleGoodsSelection(List<Map<String, dynamic>> items) {
+    if (!mounted) return; // Добавляем проверку mounted
+    
+    final newItems = items.asMap().entries.map((entry) {
+      final index = entry.key;
+      final item = entry.value;
+      return {
+        'id': item['id'],
+        'name': item['name'],
+        'quantity': item['quantity'],
+        'price': item['price'],
+        'total': item['total'],
+      };
+    }).toList();
+
+    setState(() {
+      final oldLength = _items.length;
+      _items = newItems;
+      final newLength = _items.length;
+
+      if (newLength > oldLength) {
+        for (int i = oldLength; i < newLength; i++) {
+          _listKey.currentState?.insertItem(i, duration: const Duration(milliseconds: 300));
+        }
+      } else if (newLength < oldLength) {
+        for (int i = oldLength - 1; i >= newLength; i--) {
+          _listKey.currentState?.removeItem(
+            i,
+            (context, animation) => _buildSelectedItemCard(i, _items.length > i ? _items[i] : {}, animation),
+            duration: const Duration(milliseconds: 300),
+          );
+        }
+      }
+    });
   }
 
   void _removeItem(int index) {
@@ -92,7 +117,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     }
   }
 
-  void _createDocument() async {
+  void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_items.isEmpty) {
@@ -117,7 +142,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<IncomingBloc>();
-      bloc.add(CreateIncoming(
+      bloc.add(UpdateIncoming(
+        documentId: widget.document.id!,
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
@@ -127,7 +153,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               'quantity': item['quantity'].toString(),
               'price': item['price'].toString(),
             }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
       ));
     } catch (e) {
@@ -175,9 +201,9 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         listener: (context, state) {
           setState(() => _isLoading = false);
 
-          if (state is IncomingCreateSuccess && mounted) {
-            Navigator.pop(context, true); // Закрываем экран создания
-          } else if (state is IncomingCreateError && mounted) {
+          if (state is IncomingUpdateSuccess && mounted) {
+            Navigator.pop(context, true); // Закрываем экран редактирования
+          } else if (state is IncomingUpdateError && mounted) {
             _showSnackBar(state.message, false);
           }
         },
@@ -230,7 +256,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_incoming_document') ?? 'Создать приход',
+        '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -560,7 +586,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _createDocument,
+              onPressed: _isLoading ? null : _updateDocument,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
                 shape: RoundedRectangleBorder(
@@ -579,7 +605,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                       ),
                     )
                   : Text(
-                      localizations.translate('create') ?? 'Создать',
+                      localizations.translate('update') ?? 'Обновить',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
