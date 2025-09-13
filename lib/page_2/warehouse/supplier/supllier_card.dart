@@ -99,7 +99,7 @@ class _SupplierCardState extends State<SupplierCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localization.translate('created_at') ?? 'Дата создания'}: ${_formatDate(widget.supplier.createdAt)}',
+              '${localization.translate('created_at_details') ?? 'Дата создания'}: ${_formatDate(widget.supplier.createdAt)}',
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',

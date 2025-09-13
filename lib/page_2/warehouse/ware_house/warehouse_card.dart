@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_event.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/edit_storage_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/warehaouse_deletion.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -37,18 +38,24 @@ class _WareHouseCardState extends State<WareHouseCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
-
+    
     return GestureDetector(
       onTap: () {
         if (mounted) {
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => EditStorageScreen(storage: widget.storage),
-          //   ),
-          // ).then((_) {
-          //   context.read<StorageBloc>().add(FetchStorages());
-          // });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditWarehouseScreen(
+                warehouse: widget.warehouse,
+                userIds: widget.warehouse.userIds ?? [], // Get userIds from warehouse or empty list
+              ),
+            ),
+          ).then((result) {
+            // Если результат true, обновляем список
+            if (result == true) {
+              context.read<WareHouseBloc>().add(FetchWareHouse());
+            }
+          });
         }
       },
       child: Container(
@@ -102,7 +109,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localization.translate('created_at') ?? 'Дата создания'}: ${_formatDate(widget.warehouse.createdAt.toString())}',
+              '${localization.translate('created_at_details') ?? 'Дата создания'}: ${_formatDate(widget.warehouse.createdAt.toString())}',
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',

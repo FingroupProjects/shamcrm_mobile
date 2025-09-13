@@ -38,7 +38,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
           appBar: AppBar(
             forceMaterialTransparency: true,
             title: CustomAppBarPage2(
-              title: 'Price Types',
+              title:  AppLocalizations.of(context)!.translate('price_type') ?? 'Типы цен',
               showSearchIcon: true,
               showFilterIcon: false,
               onChangedSearchInput: (String value) {

@@ -1252,7 +1252,9 @@
   "deleted_at": "Дата удаления",
   "restore_document": "Восстановить",
   "deleting": "Удаление...",
-  "edit_incoming_document": "Редактирование"
+  "edit_incoming_document": "Редактирование",
+  "edit_pricetype": "Редактирование типа цены",
+  "edit_warehouse": "Редактирование склада"
 
 
 

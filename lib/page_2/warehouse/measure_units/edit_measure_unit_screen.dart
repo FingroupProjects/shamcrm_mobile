@@ -86,76 +86,76 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
             color: Color(0xff1E2E52),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Image.asset(
-              'assets/icons/delete.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(
-                    AppLocalizations.of(context)!
-                            .translate('delete_measure_unit') ??
-                        'Удалить единицу измерения',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                  content: Text(
-                    AppLocalizations.of(context)!
-                            .translate('confirm_delete_measure_unit') ??
-                        'Вы уверены, что хотите удалить эту единицу измерения?',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('cancel') ??
-                            'Отмена',
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff4759FF),
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context
-                            .read<MeasureUnitsBloc>()
-                            .add(DeleteMeasureUnitEvent(widget.measureUnit.id));
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('delete') ??
-                            'Удалить',
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Image.asset(
+        //       'assets/icons/delete.png',
+        //       width: 24,
+        //       height: 24,
+        //     ),
+        //     onPressed: () {
+        //       showDialog(
+        //         context: context,
+        //         builder: (context) => AlertDialog(
+        //           title: Text(
+        //             AppLocalizations.of(context)!
+        //                     .translate('delete_measure_unit') ??
+        //                 'Удалить единицу измерения',
+        //             style: const TextStyle(
+        //               fontFamily: 'Gilroy',
+        //               fontWeight: FontWeight.w600,
+        //               color: Color(0xff1E2E52),
+        //             ),
+        //           ),
+        //           content: Text(
+        //             AppLocalizations.of(context)!
+        //                     .translate('confirm_delete_measure_unit') ??
+        //                 'Вы уверены, что хотите удалить эту единицу измерения?',
+        //             style: const TextStyle(
+        //               fontFamily: 'Gilroy',
+        //               fontWeight: FontWeight.w400,
+        //               color: Color(0xff99A4BA),
+        //             ),
+        //           ),
+        //           actions: [
+        //             TextButton(
+        //               onPressed: () {
+        //                 Navigator.pop(context);
+        //               },
+        //               child: Text(
+        //                 AppLocalizations.of(context)!.translate('cancel') ??
+        //                     'Отмена',
+        //                 style: const TextStyle(
+        //                   fontFamily: 'Gilroy',
+        //                   fontWeight: FontWeight.w500,
+        //                   color: Color(0xff4759FF),
+        //                 ),
+        //               ),
+        //             ),
+        //             TextButton(
+        //               onPressed: () {
+        //                 context
+        //                     .read<MeasureUnitsBloc>()
+        //                     .add(DeleteMeasureUnitEvent(widget.measureUnit.id));
+        //                 Navigator.pop(context);
+        //                 Navigator.pop(context);
+        //               },
+        //               child: Text(
+        //                 AppLocalizations.of(context)!.translate('delete') ??
+        //                     'Удалить',
+        //                 style: const TextStyle(
+        //                   fontFamily: 'Gilroy',
+        //                   fontWeight: FontWeight.w500,
+        //                   color: Colors.red,
+        //                 ),
+        //               ),
+        //             ),
+        //           ],
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ],
       ),
       body: BlocListener<MeasureUnitsBloc, MeasureUnitsState>(
         listener: (context, state) {
