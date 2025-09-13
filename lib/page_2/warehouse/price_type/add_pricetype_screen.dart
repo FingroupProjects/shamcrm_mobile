@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AddPriceTypeScreen extends StatefulWidget {
-  const AddPriceTypeScreen({Key? key}) : super(key: key);
+  const AddPriceTypeScreen({super.key});
 
   @override
   _AddPriceTypeScreenState createState() => _AddPriceTypeScreenState();

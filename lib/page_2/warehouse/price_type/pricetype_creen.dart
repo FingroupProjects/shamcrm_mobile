@@ -26,27 +26,20 @@ class PriceTypeScreen extends StatefulWidget {
 }
 
 class _PriceTypeScreenState extends State<PriceTypeScreen> {
-  List<PriceTypeModel> suppliers = [];
-
   final ApiService _apiService = ApiService();
   late PriceTypeBloc _supplierBloc;
-  getSupliers() async {
-    suppliers = await _apiService.getPriceTypes();
-    setState(() {});
-  }
 
   @override
   initState() {
-    _supplierBloc = context.read<PriceTypeBloc>()..add(FetchPriceType());
+    _supplierBloc = PriceTypeBloc(_apiService)..add(FetchPriceType());
     super.initState();
-    getSupliers();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return BlocProvider.value(
-      value: PriceTypeBloc(ApiService())..add(FetchPriceType()),
+      value: _supplierBloc,
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
