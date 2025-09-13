@@ -60,11 +60,12 @@ class _SupplierWidgetState extends State<SupplierWidget> {
           // Обновляем данные при успешной загрузке
           if (state is SupplierLoaded) {
             List<Supplier> supplierList = state.supplierList;
-            
+
             if (widget.selectedSupplier != null && supplierList.isNotEmpty) {
               try {
                 selectedSupplierData = supplierList.firstWhere(
-                  (supplier) => supplier.id.toString() == widget.selectedSupplier,
+                  (supplier) =>
+                      supplier.id.toString() == widget.selectedSupplier,
                 );
               } catch (e) {
                 selectedSupplierData = null;
@@ -90,7 +91,8 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                 child: CustomDropdown<Supplier>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SupplierLoaded ? state.supplierList : [],
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true, // Всегда enabled
                   decoration: CustomDropdownDecoration(
@@ -149,7 +151,8 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           //   ),
                           // ),
                           Text(
-                            AppLocalizations.of(context)!.translate('select_supplier'),
+                            AppLocalizations.of(context)!
+                                .translate('select_supplier'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -161,7 +164,9 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                       );
                     }
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_supplier'),
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_supplier'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -180,7 +185,8 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: (state is SupplierLoaded && state.supplierList.contains(selectedSupplierData))
+                  initialItem: (state is SupplierLoaded &&
+                          state.supplierList.contains(selectedSupplierData))
                       ? selectedSupplierData
                       : null,
                   // validator: (value) {

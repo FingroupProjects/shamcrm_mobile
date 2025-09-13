@@ -22,7 +22,8 @@ class UserMultiSelectWidget extends StatefulWidget {
 class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
-  List<UserData> displayUsersList = []; // Список для отображения, включая "Выбрать всех"
+  List<UserData> displayUsersList =
+      []; // Список для отображения, включая "Выбрать всех"
 
   final TextStyle userTextStyle = const TextStyle(
     fontSize: 16,
@@ -61,7 +62,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedUsersData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -94,7 +96,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     displayUsersList = [selectAllItem, ...usersList];
                     if (widget.selectedUsers != null && usersList.isNotEmpty) {
                       selectedUsersData = usersList
-                          .where((user) => widget.selectedUsers!.contains(user.id.toString()))
+                          .where((user) => widget.selectedUsers!
+                              .contains(user.id.toString()))
                           .toList();
                     }
                   }
@@ -102,7 +105,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   return CustomDropdown<UserData>.multiSelectSearch(
                     items: displayUsersList,
                     initialItems: selectedUsersData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: const Color(0xffF4F7FD),
@@ -121,7 +125,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Проверяем, является ли элемент "Выбрать всех"
                       final isSelectAll = item.id == -1;
-                      final allSelected = selectedUsersData.length == usersList.length;
+                      final allSelected =
+                          selectedUsersData.length == usersList.length;
 
                       return ListTile(
                         onTap: () {
@@ -147,19 +152,27 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                 width: 18,
                                 height: 18,
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                                  border: Border.all(
+                                      color: const Color(0xff1E2E52), width: 1),
                                   color: isSelectAll
-                                      ? (allSelected ? const Color(0xff1E2E52) : Colors.transparent)
-                                      : (isSelected ? const Color(0xff1E2E52) : Colors.transparent),
+                                      ? (allSelected
+                                          ? const Color(0xff1E2E52)
+                                          : Colors.transparent)
+                                      : (isSelected
+                                          ? const Color(0xff1E2E52)
+                                          : Colors.transparent),
                                 ),
-                                child: (isSelectAll && allSelected) || (!isSelectAll && isSelected)
-                                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                child: (isSelectAll && allSelected) ||
+                                        (!isSelectAll && isSelected)
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white, size: 16)
                                     : null,
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 isSelectAll
-                                    ? AppLocalizations.of(context)!.translate('select_all')
+                                    ? AppLocalizations.of(context)!
+                                        .translate('select_all')
                                     : '${item.name} ${item.lastname ?? ''}',
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -175,7 +188,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedUsersNames = selectedUsersData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_assignees_list')
+                          ? AppLocalizations.of(context)!
+                              .translate('select_assignees_list')
                           : selectedUsersData
                               .map((e) => '${e.name} ${e.lastname ?? ''}')
                               .join(', ');
@@ -188,7 +202,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_assignees_list'),
+                      AppLocalizations.of(context)!
+                          .translate('select_assignees_list'),
                       style: userTextStyle.copyWith(
                         fontSize: 14,
                         color: const Color(0xFF6B7280),
@@ -196,7 +211,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     ),
                     onListChanged: (values) {
                       // Фильтруем фиктивный элемент "Выбрать всех" из выбранных
-                      final filteredValues = values.where((user) => user.id != -1).toList();
+                      final filteredValues =
+                          values.where((user) => user.id != -1).toList();
                       widget.onSelectUsers(filteredValues);
                       setState(() {
                         selectedUsersData = filteredValues;
