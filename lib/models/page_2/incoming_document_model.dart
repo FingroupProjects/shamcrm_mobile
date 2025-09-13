@@ -42,6 +42,7 @@ class IncomingDocument {
   final Model? model;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
   final String? docNumber;
   final int? approved;
 
@@ -59,6 +60,7 @@ class IncomingDocument {
     this.model,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
     this.docNumber,
     this.approved,
   });
@@ -84,6 +86,7 @@ class IncomingDocument {
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
+      deletedAt: _parseDate(json['deleted_at']),
       docNumber: json['doc_number'],
       approved: json['approved'],
     );
@@ -104,6 +107,7 @@ class IncomingDocument {
       'model': model?.toJson(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
       'doc_number': docNumber,
       'approved': approved,
     };
@@ -123,12 +127,64 @@ class IncomingDocument {
     return documentGoods!.fold(0, (sum, good) => sum + (good.quantity ?? 0));
   }
 
+  // Обновленная логика определения статуса
   String get statusText {
+    // Приоритет: сначала проверяем deleted_at
+    if (deletedAt != null) {
+      return 'Удален';
+    }
+    // Затем проверяем approved
     return approved == 1 ? 'Проведен' : 'Не проведен';
   }
 
+  // Обновленная логика определения цвета статуса
   Color get statusColor {
+    // Приоритет: сначала проверяем deleted_at
+    if (deletedAt != null) {
+      return Colors.red; // Красный цвет для удаленных документов
+    }
+    // Затем проверяем approved
     return approved == 1 ? Colors.green : Colors.orange;
+  }
+
+  // Метод copyWith для создания копии с измененными полями
+  IncomingDocument copyWith({
+    int? id,
+    DateTime? date,
+    String? modelType,
+    int? modelId,
+    int? counterpartyAgreementId,
+    int? organizationId,
+    Storage? storage,
+    String? comment,
+    Currency? currency,
+    List<DocumentGood>? documentGoods,
+    Model? model,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? docNumber,
+    int? approved,
+    bool clearDeletedAt = false, // Специальный флаг для очистки deletedAt
+  }) {
+    return IncomingDocument(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      modelType: modelType ?? this.modelType,
+      modelId: modelId ?? this.modelId,
+      counterpartyAgreementId: counterpartyAgreementId ?? this.counterpartyAgreementId,
+      organizationId: organizationId ?? this.organizationId,
+      storage: storage ?? this.storage,
+      comment: comment ?? this.comment,
+      currency: currency ?? this.currency,
+      documentGoods: documentGoods ?? this.documentGoods,
+      model: model ?? this.model,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+      docNumber: docNumber ?? this.docNumber,
+      approved: approved ?? this.approved,
+    );
   }
 
   // Вспомогательная функция для безопасного парсинга даты
@@ -142,6 +198,34 @@ class IncomingDocument {
     }
   }
 }
+
+class Storage {
+  final int? id;
+  final String? name;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  Storage({this.id, this.name, this.createdAt, this.updatedAt});
+
+  factory Storage.fromJson(Map<String, dynamic> json) {
+    return Storage(
+      id: json['id'],
+      name: json['name'],
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+}
+
 
 class Currency {
   final int? id;

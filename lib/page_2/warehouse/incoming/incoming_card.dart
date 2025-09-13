@@ -45,9 +45,40 @@ class _IncomingCardState extends State<IncomingCard> {
     return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
+  String _getLocalizedStatus() {
+    final localizations = AppLocalizations.of(context)!;
+    final doc = widget.document;
+    
+    // Приоритет: сначала проверяем deleted_at
+    if (doc.deletedAt != null) {
+      return localizations.translate('deleted_incoming') ?? 'Удален';
+    }
+    
+    // Затем проверяем approved
+    if (doc.approved == 1) {
+      return localizations.translate('approved_incoming') ?? 'Проведен';
+    } else {
+      return localizations.translate('not_approved_incoming') ?? 'Не проведен';
+    }
+  }
+
+  Color _getStatusColor() {
+    final doc = widget.document;
+    
+    // Приоритет: сначала проверяем deleted_at
+    if (doc.deletedAt != null) {
+      return Colors.red; // Красный цвет для удаленных документов
+    }
+    
+    // Затем проверяем approved
+    return doc.approved == 1 ? Colors.green : Colors.orange;
+  }
+
   @override
   Widget build(BuildContext context) {
     final doc = widget.document;
+    final localizations = AppLocalizations.of(context)!;
+    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -77,7 +108,7 @@ class _IncomingCardState extends State<IncomingCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${AppLocalizations.of(context)!.translate('incoming') ?? 'Приход'} №${doc.docNumber ?? 'N/A'}',
+                    '${localizations.translate('incoming') ?? 'Приход'} №${doc.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -89,13 +120,13 @@ class _IncomingCardState extends State<IncomingCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: doc.statusColor.withOpacity(0.1),
+                    color: _getStatusColor().withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    doc.statusText,
+                    _getLocalizedStatus(),
                     style: TextStyle(
-                      color: doc.statusColor,
+                      color: _getStatusColor(),
                       fontSize: 12,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -106,7 +137,7 @@ class _IncomingCardState extends State<IncomingCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
+              '${localizations.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
@@ -116,7 +147,7 @@ class _IncomingCardState extends State<IncomingCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}: ${doc.model?.name ?? 'N/A'}',
+              '${localizations.translate('supplier') ?? 'Поставщик'}: ${doc.model?.name ?? 'N/A'}',
               style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -126,7 +157,7 @@ class _IncomingCardState extends State<IncomingCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}: ${doc.storage?.name ?? 'N/A'}',
+              '${localizations.translate('storage') ?? 'Склад'}: ${doc.storage?.name ?? 'N/A'}',
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
@@ -138,7 +169,7 @@ class _IncomingCardState extends State<IncomingCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '${AppLocalizations.of(context)!.translate('comment') ?? 'Примечание'}: ${doc.comment}',
+                  '${localizations.translate('comment') ?? 'Примечание'}: ${doc.comment}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -147,6 +178,20 @@ class _IncomingCardState extends State<IncomingCard> {
                   ),
                 ),
               ),
+            // Показываем дату удаления для удаленных документов
+            // if (doc.deletedAt != null)
+            //   Padding(
+            //     padding: const EdgeInsets.only(top: 8),
+            //     child: Text(
+            //       '${localizations.translate('deleted_at') ?? 'Удален'}: ${_formatDate(doc.deletedAt)}',
+            //       style: const TextStyle(
+            //         fontSize: 14,
+            //         fontFamily: 'Gilroy',
+            //         fontWeight: FontWeight.w400,
+            //         color: Colors.red,
+            //       ),
+            //     ),
+            //   ),
           ],
         ),
       ),

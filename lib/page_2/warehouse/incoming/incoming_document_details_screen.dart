@@ -1,10 +1,15 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart'; // Импорт PlayStoreImageLoading
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_delete_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_history_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_update_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +39,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   bool _isLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
+  bool _isButtonLoading = false; // Для загрузки только кнопок
 
   @override
   void initState() {
@@ -70,187 +76,226 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('error_loading_document') ?? 'Ошибка загрузки документа: $e',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showSnackBar('Ошибка загрузки документа: $e', false);
     }
   }
 
-  void _updateDetails(IncomingDocument? document) {
-    if (document == null) {
-      details.clear();
-      return;
-    }
+ void _updateDetails(IncomingDocument? document) {
+  if (document == null) {
+    details.clear();
+    return;
+  }
 
-    details = [
+  details = [
+    {
+      'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
+      'value': document.docNumber ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
+      'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+      'value': document.storage?.name ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
+      'value': document.model?.name ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
+      'value': document.model?.phone ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
+      'value': document.model?.inn?.toString() ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
+      'value': document.comment ?? '',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+      'value': document.totalQuantity.toString(),
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
+      'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+    },
+    {
+      'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+      'value': _getLocalizedStatus(document),
+    },
+    if (document.deletedAt != null)
       {
-        'label': AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа',
-        'value': document.docNumber ?? '',
+        'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+        'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('date') ?? 'Дата',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('storage') ?? 'Склад',
-        'value': document.storage?.name ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
-        'value': document.model?.name ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика',
-        'value': document.model?.phone ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика',
-        'value': document.model?.inn?.toString() ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-        'value': document.comment ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('currency') ?? 'Валюта',
-        'value': '${document.currency?.name ?? ''} (${document.currency?.symbolCode ?? ''})',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество',
-        'value': document.totalQuantity.toString(),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма',
-        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('status') ?? 'Статус',
-        'value': document.statusText,
-      },
-    ];
+  ];
+}
+
+
+  String _getLocalizedStatus(IncomingDocument document) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    if (document.deletedAt != null) {
+      return localizations.translate('deleted_incoming') ?? 'Удален';
+    }
+    
+    if (document.approved == 1) {
+      return localizations.translate('approved') ?? 'Проведен';
+    } else {
+      return localizations.translate('not_approved') ?? 'Не проведен';
+    }
+  }
+
+  void _showSnackBar(String message, bool isSuccess) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Обновляем только статус без полной перезагрузки
+  void _updateStatusOnly() {
+    if (currentDocument != null) {
+      setState(() {
+        _updateDetails(currentDocument);
+      });
+    }
   }
 
   Future<void> _approveDocument() async {
     setState(() {
-      _isLoading = true;
+      _isButtonLoading = true;
     });
     try {
       await _apiService.approveIncomingDocument(widget.documentId);
+      // Обновляем статус в объекте
       setState(() {
+        currentDocument = currentDocument!.copyWith(approved: 1);
         _documentUpdated = true;
       });
-      await _fetchDocumentDetails();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('document_approved') ?? 'Документ проведен',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _updateStatusOnly();
+      _showSnackBar('Документ проведен', true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('error_approving_document') ?? 'Ошибка при проведении документа: $e',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showSnackBar('Ошибка при проведении документа: $e', false);
     } finally {
       setState(() {
-        _isLoading = false;
+        _isButtonLoading = false;
       });
     }
   }
 
   Future<void> _unApproveDocument() async {
     setState(() {
-      _isLoading = true;
+      _isButtonLoading = true;
     });
     try {
       await _apiService.unApproveIncomingDocument(widget.documentId);
       setState(() {
+        currentDocument = currentDocument!.copyWith(approved: 0);
         _documentUpdated = true;
       });
-      await _fetchDocumentDetails();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('document_unapproved') ?? 'Проведение документа отменено',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _updateStatusOnly();
+      _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа: $e',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showSnackBar('Ошибка при отмене проведения документа: $e', false);
     } finally {
       setState(() {
-        _isLoading = false;
+        _isButtonLoading = false;
       });
     }
+  }
+
+  Future<void> _restoreDocument() async {
+    setState(() {
+      _isButtonLoading = true;
+    });
+    try {
+      await _apiService.restoreIncomingDocument(widget.documentId);
+      setState(() {
+        currentDocument = currentDocument!.copyWith(clearDeletedAt: true);
+        _documentUpdated = true;
+      });
+      _updateStatusOnly();
+      _showSnackBar('Документ восстановлен', true);
+    } catch (e) {
+      _showSnackBar('Ошибка при восстановлении документа: $e', false);
+    } finally {
+      setState(() {
+        _isButtonLoading = false;
+      });
+    }
+  }
+
+  Widget _buildActionButton() {
+    if (_isButtonLoading) {
+      return Container(
+        height: 48,
+        width: 200,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 255, 255, 255),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: const Color(0xff1E2E52),
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (currentDocument == null) return const SizedBox.shrink();
+
+    // Если документ удален - показываем кнопку восстановления
+    if (currentDocument!.deletedAt != null) {
+      return StyledActionButton(
+        text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
+        icon: Icons.restore,
+        color: const Color(0xFF2196F3),
+        onPressed: _restoreDocument,
+      );
+    }
+
+    // Если не проведен - показываем кнопку проведения
+    if (currentDocument!.approved == 0) {
+      return StyledActionButton(
+        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
+        icon: Icons.check_circle_outline,
+        color: const Color(0xFF4CAF50),
+        onPressed: _approveDocument,
+      );
+    }
+
+    // Если проведен - показываем кнопку отмены проведения
+    return StyledActionButton(
+      text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      icon: Icons.cancel_outlined,
+      color: const Color(0xFFFFA500),
+      onPressed: _unApproveDocument,
+    );
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -349,43 +394,12 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       child: ListView(
                         children: [
-                          if (currentDocument!.approved == 0)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Center(
-                                child: _isLoading
-                                    ? PlayStoreImageLoading(
-                                        size: 80.0,
-                                        duration: Duration(milliseconds: 1000),
-                                      )
-                                    : StyledActionButton(
-                                        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
-                                        icon: Icons.check_circle_outline,
-                                        color: const Color(0xFF4CAF50),
-                                        onPressed: _approveDocument,
-                                      ),
-                              ),
-                            )
-                          else if (currentDocument!.approved == 1)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Center(
-                                child: _isLoading
-                                    ? PlayStoreImageLoading(
-                                        size: 80.0,
-                                        duration: Duration(milliseconds: 1000),
-                                      )
-                                    : StyledActionButton(
-                                        text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-                                        icon: Icons.cancel_outlined,
-                                        color: const Color(0xFFFFA500),
-                                        onPressed: _unApproveDocument,
-                                      ),
-                              ),
-                            ),
+                          // Кнопка действия (Провести/Отменить/Восстановить)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(child: _buildActionButton()),
+                          ),
                           _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          // IncomingDocumentHistoryWidget(documentId: widget.documentId),
                           const SizedBox(height: 16),
                           if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
                             _buildGoodsList(currentDocument!.documentGoods!),
@@ -400,6 +414,9 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    // Скрываем иконки редактирования и удаления для удаленных документов
+    final showActions = currentDocument?.deletedAt == null;
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -432,58 +449,62 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
           ),
         ),
       ),
-      actions: [
+      actions: showActions ? [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // IconButton(
-            //   padding: EdgeInsets.zero,
-            //   constraints: const BoxConstraints(),
-            //   icon: Image.asset(
-            //     'assets/icons/edit.png',
-            //     width: 24,
-            //     height: 24,
-            //   ),
-            //   onPressed: () {
-            //     ScaffoldMessenger.of(context).showSnackBar(
-            //        SnackBar(
-            //         content: Text('Редактирование документа пока не реализовано'),
-            //         backgroundColor: Colors.orange,
-            //         behavior: SnackBarBehavior.floating,
-            //         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            //         duration: Duration(seconds: 3),
-            //       ),
-            //     );
-            //   },
-            // ),
-            // IconButton(
-            //   padding: const EdgeInsets.only(right: 8),
-            //   constraints: const BoxConstraints(),
-            //   icon: Image.asset(
-            //     'assets/icons/delete.png',
-            //     width: 24,
-            //     height: 24,
-            //   ),
-            //   onPressed: () {
-            //     ScaffoldMessenger.of(context).showSnackBar(
-            //        SnackBar(
-            //         content: Text('Удаление документа пока не реализовано'),
-            //         backgroundColor: Colors.orange,
-            //         behavior: SnackBarBehavior.floating,
-            //         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            //         duration: Duration(seconds: 3),
-            //       ),
-            //     );
-            //   },
-            // ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => IncomingDocumentEditScreen(
+                      document: currentDocument!,
+                    ),
+                  ),
+                );
+                
+                if (result == true) {
+                  _fetchDocumentDetails();
+                  if (widget.onDocumentUpdated != null) {
+                    widget.onDocumentUpdated!();
+                  }
+                }
+              },
+            ),
+            IconButton(
+              padding: const EdgeInsets.only(right: 8),
+              constraints: const BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/delete.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return BlocProvider.value(
+                      value: BlocProvider.of<IncomingBloc>(context),
+                      child: DeleteDocumentDialog(documentId: widget.documentId),
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
-      ],
+      ] : [],
     );
   }
-
+  
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -648,40 +669,39 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                             ),
                           ),
                           const SizedBox(width: 8),
-                        // Исправленная часть для отображения цены товара
-Text(
-  '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
-  style: const TextStyle(
-    fontSize: 18,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w700,
-    color: Color(0xff1E2E52),
-  ),
-),
-const SizedBox(height: 4),
-Row(
-  children: [
-    Text(
-      AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-      style: const TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
-      ),
-    ),
-    const SizedBox(width: 8),
-    Text(
-      '${((good.quantity ?? 0) * double.parse(good.price?.toString() ?? '0')).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
-      style: const TextStyle(
-        fontSize: 18,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w700,
-        color: Color(0xff4CAF50),
-      ),
-    ),
-  ],
-),
+                          Text(
+                            '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${((good.quantity ?? 0) * double.parse(good.price?.toString() ?? '0')).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff4CAF50),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -737,24 +757,7 @@ Row(
   void _navigateToGoodsDetails(DocumentGood good) {
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showSnackBar('Ошибка: Не удалось определить ID товара', false);
       return;
     }
 

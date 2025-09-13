@@ -6260,8 +6260,8 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = prefs.getString('selectedOrganization');
     if (kDebugMode) {
-      print(
-          'ApiService: getSelectedOrganization - Retrieved organization_id: $organizationId');
+      // print(
+      //     'ApiService: getSelectedOrganization - Retrieved organization_id: $organizationId');
     }
     return organizationId;
   }
@@ -6450,10 +6450,10 @@ class ApiService {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
 
-    print('ApiService: _appendQueryParams called for path: $path');
-    print(
-        'ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
-    print('ApiService: Excluded endpoints: $_excludedEndpoints');
+    // print('ApiService: _appendQueryParams called for path: $path');
+    // print(
+    //     'ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
+    // print('ApiService: Excluded endpoints: $_excludedEndpoints');
 
     final uri = Uri.parse(path);
     final basePath = uri.path;
@@ -6467,7 +6467,7 @@ class ApiService {
     if (organizationId != null &&
         !newQueryParams.containsKey('organization_id')) {
       newQueryParams['organization_id'] = [organizationId];
-      print('ApiService: Added organization_id=$organizationId');
+      // print('ApiService: Added organization_id=$organizationId');
     }
 
     bool isExcluded =
@@ -6476,7 +6476,7 @@ class ApiService {
         salesFunnelId != null &&
         !newQueryParams.containsKey('sales_funnel_id')) {
       newQueryParams['sales_funnel_id'] = [salesFunnelId];
-      print('ApiService: Added sales_funnel_id=$salesFunnelId');
+      // print('ApiService: Added sales_funnel_id=$salesFunnelId');
     }
 
     final queryString = newQueryParams.entries
@@ -6487,8 +6487,8 @@ class ApiService {
         .join('&');
 
     final finalPath = queryString.isEmpty ? basePath : '$basePath?$queryString';
-    print('ApiService: Generated queryString: $queryString');
-    print('ApiService: Final path: $finalPath');
+    // print('ApiService: Generated queryString: $queryString');
+    // print('ApiService: Final path: $finalPath');
     return finalPath;
   }
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
@@ -10228,27 +10228,7 @@ class ApiService {
     }
   }
 
-  Future<IncomingDocumentHistoryResponse> getIncomingDocumentHistory(
-      int documentId) async {
-    String url = '/income-documents/history/$documentId';
 
-    final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getIncomingDocumentHistory - Generated path: $path');
-    }
-
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body)['result'];
-        return IncomingDocumentHistoryResponse.fromJson(rawData);
-      } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Ошибка получения истории документа: $e');
-    }
-  }
 
   Future<void> unApproveIncomingDocument(int documentId) async {
     const String url = '/income-documents/unApprove';
@@ -10288,6 +10268,65 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Ошибка отмены проведения документа: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> restoreIncomingDocument(int documentId) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+  
+  final pathWithParams = await _appendQueryParams('/income-documents/restore');
+  final uri = Uri.parse('$baseUrl$pathWithParams');
+  
+  final body = jsonEncode({
+    'ids': [documentId],
+  });
+
+  if (kDebugMode) {
+    print('ApiService: restoreIncomingDocument - Request body: $body');
+  }
+
+  final response = await http.post(
+    uri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    if (kDebugMode) {
+      print('ApiService: restoreIncomingDocument - Document $documentId restored successfully');
+    }
+    return {'result': 'Success'};
+  } else {
+    final jsonResponse = jsonDecode(response.body);
+    throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+  }
+}
+
+  Future<IncomingDocumentHistoryResponse> getIncomingDocumentHistory(
+      int documentId) async {
+    String url = '/income-documents/history/$documentId';
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getIncomingDocumentHistory - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingDocumentHistoryResponse.fromJson(rawData);
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения истории документа: $e');
     }
   }
 
@@ -10786,6 +10825,90 @@ class ApiService {
     }
   }
 
+Future<void> updateIncomingDocument({
+  required int documentId,
+  required String date,
+  required int storageId,
+  required String comment,
+  required int counterpartyId,
+  required List<Map<String, dynamic>> documentGoods,
+  required int organizationId,
+  required int salesFunnelId,
+}) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+
+  final path = await _appendQueryParams('/income-documents/$documentId');
+  final uri = Uri.parse('$baseUrl$path');
+  final body = jsonEncode({
+    'date': date,
+    'storage_id': storageId,
+    'comment': comment,
+    'counterparty_id': counterpartyId,
+    'document_goods': documentGoods,
+    'organization_id': organizationId,
+    'sales_funnel_id': salesFunnelId,
+  });
+
+  final response = await http.put( // Используем PATCH для обновления
+    uri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return;
+  } else {
+    throw Exception('Ошибка обновления документа: ${response.body}');
+  }
+}
+Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+
+  // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+  final pathWithParams = await _appendQueryParams('/income-documents');
+  final uri = Uri.parse('$baseUrl$pathWithParams');
+  
+  // Извлекаем organization_id и sales_funnel_id из query параметров
+  final organizationId = uri.queryParameters['organization_id'];
+  final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+  // Создаем чистый URI без параметров для DELETE запроса
+  final cleanUri = Uri.parse('$baseUrl/income-documents');
+  
+  final body = jsonEncode({
+    'ids': [documentId],
+    'organization_id': organizationId ?? '1',
+    'sales_funnel_id': salesFunnelId ?? '1',
+  });
+
+  if (kDebugMode) {
+    print('ApiService: deleteIncomingDocument - Request body: $body');
+  }
+
+  final response = await http.delete(
+    cleanUri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 204) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete incoming document: ${response.body}');
+  }
+}
   //createClientSaleDocument
   Future<void> createClientSaleDocument({
     required String date,
