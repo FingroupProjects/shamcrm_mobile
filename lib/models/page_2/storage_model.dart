@@ -1,18 +1,18 @@
-class Storage {
+class WareHouse {
   final int id;
   final String name;
   final String createdAt;
   final String updatedAt;
 
-  Storage({
+  WareHouse({
     required this.id,
     required this.name,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory Storage.fromJson(Map<String, dynamic> json) {
-    return Storage(
+  factory WareHouse.fromJson(Map<String, dynamic> json) {
+    return WareHouse(
       id: json['id'],
       name: json['name'],
       createdAt: json['created_at'],
@@ -37,7 +37,7 @@ class Storage {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Storage && other.id == id;
+    return other is WareHouse && other.id == id;
   }
 
   @override

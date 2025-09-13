@@ -3,6 +3,8 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_creen.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -111,6 +113,13 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         MaterialPageRoute(builder: (context) => const SupplierCreen()),
       );
     }
+    if (reference.title ==
+        (AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => WareHouseScreen()),
+      );
+    }
 
     if (reference.title ==
         (AppLocalizations.of(context)!.translate('units_of_measurement') ??
@@ -120,14 +129,24 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         MaterialPageRoute(builder: (context) => const MeasureUnitsScreen()),
       );
     }
-      // ✅ Обработка для "Товар"
-  if (reference.title ==
-      (AppLocalizations.of(context)!.translate('product') ?? 'Товар')) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => GoodsScreen()),
-    );
-  }
+
+    // ✅ Обработка для "Товар"
+    if (reference.title ==
+        (AppLocalizations.of(context)!.translate('product') ?? 'Товар')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => GoodsScreen()),
+      );
+    }
+
+    // ✅ Обработка для "Товар"
+    if (reference.title ==
+        (AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => PriceTypeScreen()),
+      );
+    }
   }
 
   Widget _buildReferenceCard(ReferenceItem reference) {

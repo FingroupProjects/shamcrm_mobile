@@ -17,3 +17,9 @@ class PriceTypeError extends PriceTypeState {
 
   PriceTypeError(this.message);
 }
+
+class PriceTypeSuccess extends PriceTypeState {
+  final String message;
+
+  PriceTypeSuccess(this.message);
+}

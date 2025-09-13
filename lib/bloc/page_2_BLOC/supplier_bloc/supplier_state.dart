@@ -23,4 +23,3 @@ class SupplierSuccess extends SupplierState {
 
   SupplierSuccess(this.message);
 }
-
