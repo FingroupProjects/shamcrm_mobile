@@ -4,11 +4,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
 
-
-class PriceTypeBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
+class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
   final ApiService apiService;
 
-  PriceTypeBloc(this.apiService) : super(PriceTypeInitial()) {
+  PriceTypeScreenBloc(this.apiService) : super(PriceTypeInitial()) {
     on<FetchPriceType>(_onFetch);
     on<RefreshPriceType>(_onRefresh);
     on<AddPriceType>(_onAddMeasureUnit);

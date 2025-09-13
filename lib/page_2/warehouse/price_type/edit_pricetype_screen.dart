@@ -139,7 +139,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                     TextButton(
                       onPressed: () {
                         context
-                            .read<PriceTypeBloc>()
+                            .read<PriceTypeScreenBloc>()
                             .add(DeletePriceType(widget.supplier.id));
                         Navigator.pop(context);
                         Navigator.pop(context);
@@ -161,7 +161,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
           ),
         ],
       ),
-      body: BlocListener<PriceTypeBloc, PriceTypeState>(
+      body: BlocListener<PriceTypeScreenBloc, PriceTypeState>(
         listener: (context, state) {
           if (state is PriceTypeError) {
             _showErrorSnackBar(
@@ -277,7 +277,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                                     organizationId: 0,
                                     oneCId: null,
                                   );
-                                  context.read<PriceTypeBloc>().add(
+                                  context.read<PriceTypeScreenBloc>().add(
                                       EditPriceTypeEvent(
                                           supplier, supplier.id));
 

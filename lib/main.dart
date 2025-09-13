@@ -71,6 +71,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/clie
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -353,7 +354,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
-        BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
+        BlocProvider(create: (context) => PriceTypeScreenBloc(widget.apiService)),
       ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

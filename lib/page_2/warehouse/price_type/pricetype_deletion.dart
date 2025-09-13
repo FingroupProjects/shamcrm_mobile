@@ -16,7 +16,7 @@ class PriceTypesDeleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<PriceTypeBloc, PriceTypeState>(
+    return BlocListener<PriceTypeScreenBloc, PriceTypeState>(
       listener: (context, state) {
         if (state is PriceTypeError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +85,7 @@ class PriceTypesDeleteDialog extends StatelessWidget {
                   buttonText: AppLocalizations.of(context)!.translate('delete'),
                   onPressed: () {
                     context
-                        .read<PriceTypeBloc>()
+                        .read<PriceTypeScreenBloc>()
                         .add(DeletePriceType(documentId));
                     context.read<SupplierBloc>().add(FetchSupplier());
                     Navigator.of(context).pop(true);

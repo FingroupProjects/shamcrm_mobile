@@ -92,12 +92,12 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                   onTap: () {
                     showDialog(
                         context: context,
-                        builder: (context) => PriceTypesDeleteDialog(
-                            documentId: widget.supplier.id)).then(
-                      (value) {
-                        context.read<PriceTypeBloc>().add(FetchPriceType());
-                      },
-                    );
+                        builder: (_) => BlocProvider.value(
+                              value: context.read<
+                                  PriceTypeScreenBloc>(), // reuse the same instance
+                              child: PriceTypesDeleteDialog(
+                                  documentId: widget.supplier.id),
+                            ));
                   },
                 ),
               ],
