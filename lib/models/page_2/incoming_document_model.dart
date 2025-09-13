@@ -155,7 +155,7 @@ class IncomingDocument {
     int? modelId,
     int? counterpartyAgreementId,
     int? organizationId,
-    Storage? storage,
+    WareHouse? storage,
     String? comment,
     Currency? currency,
     List<DocumentGood>? documentGoods,

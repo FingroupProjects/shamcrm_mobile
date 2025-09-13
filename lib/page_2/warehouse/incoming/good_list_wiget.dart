@@ -255,7 +255,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Text(
-                                              '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'}: ${(goodsDetails[goods.id]?['total'] ?? 0.0).toStringAsFixed(2)}',
+                                              '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(goodsDetails[goods.id]?['total'] ?? 0.0).toStringAsFixed(2)}',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,

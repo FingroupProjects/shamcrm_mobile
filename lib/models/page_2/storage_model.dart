@@ -3,12 +3,15 @@ class WareHouse {
   final String name;
   final String createdAt;
   final String updatedAt;
+    final List<int>? userIds;
+
 
   WareHouse({
     required this.id,
     required this.name,
     required this.createdAt,
     required this.updatedAt,
+    this.userIds,
   });
 
   factory WareHouse.fromJson(Map<String, dynamic> json) {
@@ -17,6 +20,9 @@ class WareHouse {
       name: json['name'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
+      userIds: json['user_ids'] != null
+          ? List<int>.from(json['user_ids'])
+          : null,
     );
   }
 
@@ -26,6 +32,7 @@ class WareHouse {
       'name': name,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'user_ids': userIds,
     };
   }
 

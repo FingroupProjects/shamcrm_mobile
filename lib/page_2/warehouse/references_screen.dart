@@ -21,8 +21,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool isClickAvatarIcon = false;
   bool _isLoading = true;
 
-  // Список справочников
+  // Список справочников (убрали "Скидки")
   List<ReferenceItem> _references = [];
+  ReferenceItem? _warehouseReference;
 
   @override
   void initState() {
@@ -40,12 +41,15 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     // Единый цвет для всех справочников
     final Color refColor = const Color(0xff1E2E52);
 
+    // Выделяем "Склад" в отдельную переменную
+    _warehouseReference = ReferenceItem(
+      title: AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад',
+      icon: Icons.warehouse_outlined,
+      color: refColor,
+    );
+
+    // Остальные справочники (убрали "Скидки")
     _references = [
-      ReferenceItem(
-        title: AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад',
-        icon: Icons.warehouse_outlined,
-        color: refColor,
-      ),
       ReferenceItem(
         title:
             AppLocalizations.of(context)!.translate('units_of_measurement') ??
@@ -65,11 +69,6 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         color: refColor,
       ),
       ReferenceItem(
-        title: AppLocalizations.of(context)!.translate('discounts') ?? 'Скидки',
-        icon: Icons.percent_outlined,
-        color: refColor,
-      ),
-      ReferenceItem(
         title:
             AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены',
         icon: Icons.price_change_outlined,
@@ -83,29 +82,6 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   }
 
   void _navigateToReference(ReferenceItem reference) {
-    // Навигация к конкретному справочнику
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(
-    //     content: Text(
-    //       AppLocalizations.of(context)!
-    //               .translate('navigate_to_reference')
-    //               ?.replaceAll('{reference}', reference.title) ??
-    //           'Переход к справочнику: ${reference.title}',
-    //       style: const TextStyle(
-    //         fontFamily: 'Gilroy',
-    //         fontSize: 16,
-    //         fontWeight: FontWeight.w500,
-    //         color: Colors.white,
-    //       ),
-    //     ),
-    //     backgroundColor: reference.color,
-    //     behavior: SnackBarBehavior.floating,
-    //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    //     duration: const Duration(seconds: 2),
-    //   ),
-    // );
-
     if (reference.title ==
         (AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик')) {
       Navigator.push(
@@ -130,7 +106,6 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
-    // ✅ Обработка для "Товар"
     if (reference.title ==
         (AppLocalizations.of(context)!.translate('product') ?? 'Товар')) {
       Navigator.push(
@@ -148,13 +123,14 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     }
   }
 
-  Widget _buildReferenceCard(ReferenceItem reference) {
+  Widget _buildReferenceCard(ReferenceItem reference, {bool isWide = false}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _navigateToReference(reference),
         child: Container(
+          height: isWide ? 100 : 120, // Немного разная высота для широкой карточки
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -170,44 +146,103 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
               width: 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Иконка
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: reference.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+          child: isWide
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Иконка
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: reference.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        reference.icon,
+                        size: 28,
+                        color: reference.color,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Название
+                    Text(
+                      reference.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Иконка
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: reference.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        reference.icon,
+                        size: 28,
+                        color: reference.color,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Название справочника
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        reference.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  reference.icon,
-                  size: 28,
-                  color: reference.color,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Название справочника
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  reference.title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildReferencesLayout() {
+    return Column(
+      children: [
+        // Широкая карточка "Склад" на всю ширину
+        if (_warehouseReference != null)
+          _buildReferenceCard(_warehouseReference!, isWide: true),
+        
+        const SizedBox(height: 12),
+        
+        // Остальные справочники в сетке 2x2
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 1.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _references.length,
+          itemBuilder: (context, index) {
+            return _buildReferenceCard(_references[index]);
+          },
+        ),
+      ],
     );
   }
 
@@ -276,22 +311,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Сетка 2x3 для справочников
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _references.length,
-                        itemBuilder: (context, index) {
-                          return _buildReferenceCard(_references[index]);
-                        },
-                      ),
+                      // Новый компактный layout
+                      _buildReferencesLayout(),
                     ],
                   ),
                 ),
