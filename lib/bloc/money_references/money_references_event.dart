@@ -10,3 +10,12 @@ class FetchCashRegisters extends MoneyReferencesEvent {
   @override
   List<Object?> get props => [];
 }
+
+class DeleteMoneyReference extends MoneyReferencesEvent {
+  final int id;
+
+  const DeleteMoneyReference(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
