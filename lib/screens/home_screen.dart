@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_screen.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
@@ -139,6 +140,14 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
       hasAvailableScreens = true;
     }
+
+    // "Деньги"
+    widgetsGroup2.add(MoneyScreen());
+    titleKeysGroup2.add('dengi');
+    navBarTitleKeysGroup2.add('dengi');
+    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Добавьте иконку в assets
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+
 
     // Удаляем старые отдельные экраны (они теперь доступны через OnlineStoreScreen):
     /*
