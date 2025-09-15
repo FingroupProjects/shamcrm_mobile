@@ -567,48 +567,46 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     );
   }
 
-  Widget _buildGoodsList(List<DocumentGood> goods) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
-        const SizedBox(height: 8),
-        if (goods.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                    textAlign: TextAlign.center,
+Widget _buildGoodsList(List<DocumentGood> goods) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+      const SizedBox(height: 8),
+      if (goods.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            decoration: TaskCardStyles.taskCardDecoration,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-          )
-        else
-          SizedBox(
-            height: 550,
-            child: ListView.builder(
-              itemCount: goods.length,
-              itemBuilder: (context, index) {
-                return _buildGoodsItem(goods[index]);
-              },
-            ),
           ),
-      ],
-    );
-  }
-
+        )
+      else
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: goods.length,
+          itemBuilder: (context, index) {
+            return _buildGoodsItem(goods[index]);
+          },
+        ),
+    ],
+  );
+}
   Widget _buildGoodsItem(DocumentGood good) {
     return GestureDetector(
       onTap: () {
@@ -767,6 +765,8 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         builder: (context) => GoodsDetailsScreen(
           id: goodId,
           isFromOrder: false,
+                  showEditButton: false, // Скрываем кнопку редактирования
+
         ),
       ),
     );

@@ -18,6 +18,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     on<FetchClientSales>(_onFetchData);
     on<CreateClientSalesDocument>(_onCreateClientSalesDocument);
     on<DeleteClientSalesDocument>(_delete);
+    on<UpdateClientSalesDocument>(_onUpdateClientSalesDocument);
+
   }
 
   _onFetchData(FetchClientSales event, Emitter<ClientSaleState> emit) async {
@@ -90,4 +92,23 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       emit(ClientSaleError(e.toString()));
     }
   }
+  _onUpdateClientSalesDocument(
+  UpdateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+  emit(ClientSaleCreateLoading());
+  try {
+    await apiService.updateClientSaleDocument(
+      documentId: event.documentId,
+      date: event.date,
+      storageId: event.storageId,
+      comment: event.comment,
+      counterpartyId: event.counterpartyId,
+      documentGoods: event.documentGoods,
+      organizationId: event.organizationId,
+      salesFunnelId: event.salesFunnelId,
+    );
+    emit(ClientSaleUpdateSuccess('Документ успешно обновлен'));
+  } catch (e) {
+    emit(ClientSaleUpdateError(e.toString()));
+  }
+}
 }
