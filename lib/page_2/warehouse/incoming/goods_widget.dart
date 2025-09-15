@@ -1,146 +1,304 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
-class GoodsSelectionWidget extends StatefulWidget {
-  final Function(Goods) onGoodsSelected;
-  final String? searchHint;
-  final EdgeInsets? padding;
+class GoodsSelectionBottomSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> existingItems;
 
-  const GoodsSelectionWidget({
+  const GoodsSelectionBottomSheet({
     Key? key,
-    required this.onGoodsSelected,
-    this.searchHint,
-    this.padding,
+    required this.existingItems,
   }) : super(key: key);
 
   @override
-  _GoodsSelectionWidgetState createState() => _GoodsSelectionWidgetState();
+  _GoodsSelectionBottomSheetState createState() => _GoodsSelectionBottomSheetState();
 }
 
-class _GoodsSelectionWidgetState extends State<GoodsSelectionWidget> {
+class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
-  List<Goods> _filteredGoods = [];
-  List<Goods> _allGoods = [];
-  String? _baseUrl;
+  List<Goods> selectedGoods = [];
+  Map<int, Map<String, dynamic>> goodsDetails = {};
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadBaseUrl();
     context.read<GoodsBloc>().add(FetchGoods());
   }
 
-  Future<void> _loadBaseUrl() async {
-    // Здесь должна быть загрузка baseUrl из вашего API сервиса
-    // Пример: final apiService = context.read<ApiService>();
-    // _baseUrl = await apiService.getStaticBaseUrl();
-    setState(() {
-      _baseUrl = 'https://shamcrm.com/storage'; // Замените на ваш базовый URL
-    });
+  bool _isGoodsAlreadyAdded(int goodsId) {
+    return widget.existingItems.any((item) => item['id'] == goodsId);
   }
 
-  void _filterGoods(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredGoods = _allGoods;
-      } else {
-        _filteredGoods = _allGoods
-            .where((goods) =>
-                goods.name.toLowerCase().contains(query.toLowerCase()) ||
-                goods.category.name.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
-  }
+  void _returnSelectedProducts() {
+    // Фильтруем только товары с заполненными данными
+    final selectedProducts = selectedGoods
+        .where((goods) => 
+            goodsDetails.containsKey(goods.id) && 
+            goodsDetails[goods.id]!['quantity'] != null &&
+            goodsDetails[goods.id]!['quantity'] > 0 &&
+            (_isGoodsAlreadyAdded(goods.id) || 
+             (goodsDetails[goods.id]!['price'] != null && 
+              goodsDetails[goods.id]!['price'] >= 0)))
+        .map((goods) => {
+              'id': goods.id,
+              'name': goods.name,
+              'quantity': goodsDetails[goods.id]!['quantity'],
+              'price': goodsDetails[goods.id]!['price'] ?? 0.0,
+              'total': goodsDetails[goods.id]!['total'] ?? 0.0,
+            })
+        .toList();
 
-
-  double _getGoodsPrice(Goods goods) {
-    // Определяем цену с учетом скидки
-    if (goods.discount != null && goods.discount!.isNotEmpty) {
-      final now = DateTime.now();
-      for (var discount in goods.discount!) {
-        final from = DateTime.parse(discount.from);
-        final to = DateTime.parse(discount.to);
-        if (now.isAfter(from) && now.isBefore(to)) {
-          final originalPrice = double.tryParse(goods.price ?? '0') ?? 0;
-          final discountPercent = discount.percent;
-          return originalPrice * (1 - discountPercent / 100);
-        }
-      }
+    if (selectedProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('please_fill_all_fields') ?? 'Заполните количество для выбранных товаров',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
     }
-    return double.tryParse(goods.price ?? '0') ?? 0;
+
+    Navigator.pop(context, selectedProducts);
   }
 
-  Widget _buildGoodsItem(Goods goods) {
-    final price = _getGoodsPrice(goods);
-    final hasDiscount = goods.discount != null && goods.discount!.isNotEmpty;
+  void _toggleGoodsSelection(Goods goods) {
+    setState(() {
+      if (selectedGoods.contains(goods)) {
+        selectedGoods.remove(goods);
+        goodsDetails.remove(goods.id);
+      } else {
+        selectedGoods.add(goods);
+        goodsDetails[goods.id] = {
+          'quantity': null,
+          'price': _isGoodsAlreadyAdded(goods.id) ? null : null,
+          'total': 0.0,
+        };
+      }
+    });
+  }
+
+  void _updateGoodsDetails(int goodsId, String field, dynamic value) {
+    if (goodsDetails.containsKey(goodsId)) {
+      setState(() {
+        goodsDetails[goodsId]![field] = value;
+        
+        // Пересчитываем общую сумму
+        final quantity = goodsDetails[goodsId]!['quantity'];
+        final price = goodsDetails[goodsId]!['price'];
+        
+        if (quantity != null && price != null && quantity > 0 && price >= 0) {
+          goodsDetails[goodsId]!['total'] = quantity * price;
+        } else if (_isGoodsAlreadyAdded(goodsId) && quantity != null && quantity > 0) {
+          // Для уже добавленных товаров используем цену из существующего списка
+          final existingItem = widget.existingItems.firstWhere((item) => item['id'] == goodsId);
+          final existingPrice = existingItem['price'] ?? 0.0;
+          goodsDetails[goodsId]!['price'] = existingPrice;
+          goodsDetails[goodsId]!['total'] = quantity * existingPrice;
+        } else {
+          goodsDetails[goodsId]!['total'] = 0.0;
+        }
+      });
+    }
+  }
+
+  List<Goods> _getFilteredGoods(List<Goods> allGoods) {
+    final activeGoods = allGoods.where((g) => g.isActive == true).toList();
     
+    if (_searchController.text.isEmpty) {
+      return activeGoods;
+    }
+    
+    return activeGoods.where((goods) =>
+        goods.name.toLowerCase().contains(_searchController.text.toLowerCase())
+    ).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        children: [
+          _buildHeader(),
+          _buildSearchField(),
+          const SizedBox(height: 12),
+          Expanded(
+            child: BlocBuilder<GoodsBloc, GoodsState>(
+              builder: (context, state) {
+                if (state is GoodsLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is GoodsDataLoaded) {
+                  final filteredGoods = _getFilteredGoods(state.goods);
+                  
+                  if (filteredGoods.isEmpty) {
+                    return Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('no_products_found') ?? 'Товары не найдены',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xff99A4BA),
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  return _buildGoodsList(filteredGoods);
+                } else if (state is GoodsError) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  );
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            ),
+          ),
+          _buildAddButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('select_goods') ?? 'Выбрать товары',
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Color(0xff1E2E52), size: 24),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() {}),
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context)!.translate('search_goods') ?? 'Поиск товаров',
+          hintStyle: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            color: Color(0xff99A4BA),
+          ),
+          prefixIcon: const Icon(Icons.search, color: Color(0xff99A4BA)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xffE0E7FF)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xff4759FF)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xffE0E7FF)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoodsList(List<Goods> goods) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: goods.length,
+      itemBuilder: (context, index) {
+        final goodsItem = goods[index];
+        final isSelected = selectedGoods.contains(goodsItem);
+        final isAlreadyAdded = _isGoodsAlreadyAdded(goodsItem.id);
+        
+        return Column(
+          children: [
+            _buildGoodsListItem(goodsItem, isSelected, isAlreadyAdded),
+            if (isSelected) _buildGoodsDetailsForm(goodsItem, isAlreadyAdded),
+            if (index < goods.length - 1)
+              const Divider(height: 20, color: Color(0xFFE5E7EB)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGoodsListItem(Goods goods, bool isSelected, bool isAlreadyAdded) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFFF4F7FD) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => widget.onGoodsSelected(goods),
-          borderRadius: BorderRadius.circular(12),
+          onTap: () => _toggleGoodsSelection(goods),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xffF4F7FD)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.05),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 18,
+                  height: 18,
                   decoration: BoxDecoration(
-                    color: const Color(0xffF4F7FD),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xff1E2E52),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                    color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
                   ),
-                  child: goods.files.isNotEmpty && _baseUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            '$_baseUrl/${goods.files.first.path}',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.inventory_2_outlined,
-                                color: Color(0xff99A4BA),
-                                size: 24,
-                              );
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                                ),
-                              );
-                            },
-                          ),
+                  child: isSelected
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
                         )
-                      : const Icon(
-                          Icons.inventory_2_outlined,
-                          color: Color(0xff99A4BA),
-                          size: 24,
-                        ),
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -153,86 +311,43 @@ class _GoodsSelectionWidgetState extends State<GoodsSelectionWidget> {
                             child: Text(
                               goods.name,
                               style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
+                                fontSize: 16,
                                 fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
                                 color: Color(0xff1E2E52),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (hasDiscount)
+                          if (isAlreadyAdded)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xffFF2929),
-                                borderRadius: BorderRadius.circular(4),
+                                color: const Color(0xff4759FF).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                '-${goods.discount!.first.percent}%',
+                                'Добавлен',
                                 style: const TextStyle(
                                   fontSize: 10,
+                                  fontWeight: FontWeight.w500,
                                   fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: Color(0xff4759FF),
                                 ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              goods.category.name,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              if (hasDiscount && double.tryParse(goods.price ?? '0') != null)
-                                Text(
-                                  '${double.parse(goods.price!).toStringAsFixed(0)} ₽',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
-                              Text(
-                                '${price.toStringAsFixed(0)} ₽',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: hasDiscount ? const Color(0xffFF2929) : const Color(0xff1E2E52),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      Text(
+                        goods.category.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff99A4BA),
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Gilroy',
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.add_circle_outline,
-                  color: Color(0xff4759FF),
-                  size: 24,
                 ),
               ],
             ),
@@ -242,150 +357,71 @@ class _GoodsSelectionWidgetState extends State<GoodsSelectionWidget> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
+  Widget _buildGoodsDetailsForm(Goods goods, bool isAlreadyAdded) {
     return Padding(
-      padding: widget.padding ?? EdgeInsets.zero,
-      child: BlocListener<GoodsBloc, GoodsState>(
-        listener: (context, state) {
-          if (state is GoodsError && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  localizations.translate(state.message) ?? state.message,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+      padding: const EdgeInsets.only(top: 8, left: 30),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7FD),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFE5E7EB),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    decoration: _inputDecoration(
+                      AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      final newQuantity = int.tryParse(value) ?? 0;
+                      if (newQuantity > 0) {
+                        _updateGoodsDetails(goods.id, 'quantity', newQuantity);
+                      } else {
+                        _updateGoodsDetails(goods.id, 'quantity', null);
+                      }
+                    },
                   ),
                 ),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-          }
-          
-          if (state is GoodsDataLoaded && mounted) {
-            setState(() {
-              _allGoods = state.goods.where((goods) => goods.isActive ?? false).toList();
-              _filteredGoods = _allGoods;
-            });
-          }
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CustomTextField(
-              controller: _searchController,
-              label: localizations.translate('search_goods') ?? 'Поиск товаров',
-              hintText: widget.searchHint ?? 'Введите название товара...',
-              prefixIcon: const Icon(
-                Icons.search,
-                color: Color(0xff99A4BA),
-                size: 20,
-              ),
-              onChanged: _filterGoods,
+                if (!isAlreadyAdded) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      decoration: _inputDecoration(
+                        AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        final newPrice = double.tryParse(value) ?? 0.0;
+                        if (newPrice >= 0) {
+                          _updateGoodsDetails(goods.id, 'price', newPrice);
+                        } else {
+                          _updateGoodsDetails(goods.id, 'price', null);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: BlocBuilder<GoodsBloc, GoodsState>(
-                builder: (context, state) {
-                  if (state is GoodsLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                      ),
-                    );
-                  }
-
-                  if (state is GoodsError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: Color(0xff99A4BA),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            localizations.translate('failed_to_load_goods') ?? 'Ошибка загрузки товаров',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<GoodsBloc>().add(FetchGoods());
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff4759FF),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              localizations.translate('retry') ?? 'Повторить',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  if (_filteredGoods.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.inventory_2_outlined,
-                            color: Color(0xff99A4BA),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _searchController.text.isNotEmpty
-                                ? (localizations.translate('no_goods_found') ?? 'Товары не найдены')
-                                : (localizations.translate('no_goods_available') ?? 'Нет доступных товаров'),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: _filteredGoods.length,
-                    itemBuilder: (context, index) {
-                      return _buildGoodsItem(_filteredGoods[index]);
-                    },
-                  );
-                },
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(goodsDetails[goods.id]?['total'] ?? 0.0).toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff4759FF),
+                ),
               ),
             ),
           ],
@@ -394,9 +430,72 @@ class _GoodsSelectionWidgetState extends State<GoodsSelectionWidget> {
     );
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      hintText: label,
+      hintStyle: const TextStyle(
+        fontFamily: 'Gilroy',
+        fontSize: 12,
+        color: Color(0xff99A4BA),
+      ),
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xff4759FF),
+          width: 1,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      filled: true,
+      fillColor: Colors.white,
+    );
+  }
+
+  Widget _buildAddButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: ElevatedButton(
+        onPressed: _returnSelectedProducts,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xff4759FF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        child: Center(
+          child: Text(
+            AppLocalizations.of(context)!.translate('add') ?? 'Добавить',
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }

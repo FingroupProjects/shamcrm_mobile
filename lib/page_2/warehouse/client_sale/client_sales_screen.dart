@@ -98,7 +98,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => IncomingDocumentCreateScreen(
+                  builder: (context) => CreateClienSalesDocumentScreen(
                       organizationId: widget.organizationId),
                 ),
               ).then((_) {
@@ -117,6 +117,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                 'Реализация клиент',
             showSearchIcon: true,
             showFilterIcon: false,
+            showFilterOrderIcon: false,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
