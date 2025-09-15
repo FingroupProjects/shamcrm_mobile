@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/cash_register_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -10954,6 +10955,28 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       return;
     } else {
       throw Exception('Ошибка удаления документа: ${response.body}');
+    }
+  }
+
+  Future<List<CashRegisterModel>> getCashRegister() async {
+    debugPrint("ApiService: getCashRegister - Start fetching cash registers");
+    final response = await _getRequest('/cashRegister');
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      if (data['result'] != null && data['result']['data'] != null) {
+        debugPrint("ApiService: getCashRegister - Response data: $data");
+        return (data['result']['data'] as List).map((item) => CashRegisterModel.fromJson(item)).toList();
+      } else if (data['error'] != null) {
+        throw Exception(data['error']['message'] ?? 'Ошибка данных по кассе');
+      } else {
+        throw Exception('Нет данных по кассе');
+      }
+    } else {
+      if (data['error'] != null) {
+        throw Exception(data['error']['message'] ?? 'Ошибка загрузки кассы');
+      } else {
+        throw Exception('Ошибка загрузки кассы: ${response.body}');
+      }
     }
   }
 }

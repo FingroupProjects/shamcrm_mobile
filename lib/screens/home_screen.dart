@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_screen.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
@@ -14,6 +13,7 @@ import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
+import '../page_2/money/money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
