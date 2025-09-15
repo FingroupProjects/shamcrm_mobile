@@ -121,6 +121,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
             title: localizations!.translate('appbar_incoming') ?? 'Приходы',
             showSearchIcon: true,
             showFilterIcon: false,
+            showFilterOrderIcon: false,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,

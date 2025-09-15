@@ -50,3 +50,31 @@ class CreateClientSalesDocument extends ClientSaleEvent {
     required this.salesFunnelId,
   });
 }
+
+class UpdateClientSalesDocument extends ClientSaleEvent {
+  final int documentId;
+  final String date;
+  final int storageId;
+  final String comment;
+  final int counterpartyId;
+  final List<Map<String, dynamic>> documentGoods;
+  final int organizationId;
+  final int salesFunnelId;
+
+  const UpdateClientSalesDocument({
+    required this.documentId,
+    required this.date,
+    required this.storageId,
+    required this.comment,
+    required this.counterpartyId,
+    required this.documentGoods,
+    required this.organizationId,
+    required this.salesFunnelId,
+  });
+
+  @override
+  List<Object> get props => [
+    documentId, date, storageId, comment, counterpartyId,
+    documentGoods, organizationId, salesFunnelId
+  ];
+}

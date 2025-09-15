@@ -10947,7 +10947,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     final body = {
       'ids': [documentId]
     };
-    final path = await _appendQueryParams('/expense-documents/$documentId');
+    final path = await _appendQueryParams('/expense-documents');
     print('Удаление документа по пути: $path');
     final response = await _deleteRequestWithBody(path, body);
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -10956,4 +10956,146 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       throw Exception('Ошибка удаления документа: ${response.body}');
     }
   }
+Future<void> updateClientSaleDocument({
+  required int documentId,
+  required String date,
+  required int storageId,
+  required String comment,
+  required int counterpartyId,
+  required List<Map<String, dynamic>> documentGoods,
+  required int organizationId,
+  required int salesFunnelId,
+}) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+  
+  final path = await _appendQueryParams('/expense-documents/$documentId');
+  final uri = Uri.parse('$baseUrl$path');
+  
+  final body = jsonEncode({
+    'date': date,
+    'storage_id': storageId,
+    'comment': comment,
+    'counterparty_id': counterpartyId,
+    'document_goods': documentGoods,
+    'organization_id': organizationId,
+    'sales_funnel_id': salesFunnelId,
+  });
+
+  final response = await http.put(
+    uri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return;
+  } else {
+    throw Exception('Ошибка обновления документа: ${response.body}');
+  }
+}
+
+// Проведение документа реализации
+Future<void> approveClientSaleDocument(int documentId) async {
+  const String url = '/expense-documents/approve';
+  final path = await _appendQueryParams(url);
+  
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+    
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'ids': [documentId]
+      }),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Успешно проведен
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при проведении документа');
+    }
+  } catch (e) {
+    throw Exception('Ошибка проведения документа: $e');
+  }
+}
+
+// Отмена проведения документа реализации
+Future<void> unApproveClientSaleDocument(int documentId) async {
+  const String url = '/expense-documents/unApprove';
+  final path = await _appendQueryParams(url);
+  
+  try {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+    
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: jsonEncode({
+        'ids': [documentId]
+      }),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Успешно отменено
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(jsonResponse['message'] ?? 'Ошибка при отмене проведения документа');
+    }
+  } catch (e) {
+    throw Exception('Ошибка отмены проведения документа: $e');
+  }
+}
+
+// Восстановление документа реализации
+Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+  
+  final pathWithParams = await _appendQueryParams('/expense-documents/restore');
+  final uri = Uri.parse('$baseUrl$pathWithParams');
+  
+  final body = jsonEncode({
+    'ids': [documentId],
+  });
+  
+  final response = await http.post(
+    uri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
+  
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'result': 'Success'};
+  } else {
+    final jsonResponse = jsonDecode(response.body);
+    throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+  }
+}
 }

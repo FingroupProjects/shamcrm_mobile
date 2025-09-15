@@ -52,3 +52,17 @@ final class ClientSaleCreateError extends ClientSaleState {
   @override
   List<Object> get props => [message];
 }
+
+final class ClientSaleUpdateSuccess extends ClientSaleState {
+  final String message;
+  const ClientSaleUpdateSuccess(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+final class ClientSaleUpdateError extends ClientSaleState {
+  final String message;
+  const ClientSaleUpdateError(this.message);
+  @override
+  List<Object> get props => [message];
+}

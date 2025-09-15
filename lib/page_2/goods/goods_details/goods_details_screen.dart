@@ -16,13 +16,17 @@ class GoodsDetailsScreen extends StatefulWidget {
   final int id;
   final bool showActions;
   final bool isFromOrder;
-  final bool isFromBarcodeSearch;  // Новый параметр
+  final bool isFromBarcodeSearch; // Новый параметр
+  final bool
+      showEditButton; // Новый параметр для контроля кнопки редактирования
 
   const GoodsDetailsScreen({
     required this.id,
     this.showActions = true,
     this.isFromOrder = false,
-    this.isFromBarcodeSearch = false,  // По умолчанию false
+    this.isFromBarcodeSearch = false, // По умолчанию false
+    this.showEditButton = true, // По умолчанию показываем кнопку
+
     super.key,
   });
 
@@ -44,28 +48,31 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   void initState() {
     super.initState();
     // Загружаем данные о товаре по ID
-    context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
+    context
+        .read<GoodsByIdBloc>()
+        .add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
     _checkPermissions();
   }
 
   Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   Future<void> _checkPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
+      final bool integrationWith1C =
+          prefs.getBool('integration_with_1C') ?? false;
       final bool canUpdate = await _apiService.hasPermission('product.update');
       setState(() {
         _canUpdateProduct = canUpdate && !integrationWith1C;
@@ -160,7 +167,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(),
                 ),
               );
             },
@@ -194,97 +202,112 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      centerTitle: false,
-      leadingWidth: 40,
-      leading: Padding(
-  padding: const EdgeInsets.only(left: 0),
-  child: Transform.translate(
-    offset: const Offset(0, -2),
-    child: IconButton(
-      icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
-      onPressed: () {
-        Navigator.pop(context);
-        // Если пришли из поиска по штрихкоду, дополнительно обновляем список
-        if (widget.isFromBarcodeSearch) {
-          // Это обработается в GoodsScreen через .then()
-        }
-      },
-    ),
-  ),
-),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
+AppBar _buildAppBar(BuildContext context, String title) {
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    centerTitle: false,
+    leadingWidth: 40,
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 0),
+      child: Transform.translate(
+        offset: const Offset(0, -2),
+        child: IconButton(
+          icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+          onPressed: () {
+            Navigator.pop(context);
+            if (widget.isFromBarcodeSearch) {
+              // Это обработается в GoodsScreen через .then()
+            }
+          },
         ),
       ),
-      actions: widget.showActions && _canUpdateProduct
-          ? [
-              BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
-                builder: (context, state) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
-                        onPressed: state is GoodsByIdLoaded
-                            ? () async {
-                                final sortedFiles = List<GoodsFile>.from(state.goods.files);
-                                final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
-                                if (mainImageIndex != -1) {
-                                  final mainImage = sortedFiles.removeAt(mainImageIndex);
-                                  sortedFiles.insert(0, mainImage);
-                                }
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => GoodsEditScreen(
-                                      goods: state.goods,
-                                      sortedFiles: sortedFiles,
-                                      initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
-                                    ),
-                                  ),
-                                );
-                                if (result == true) {
-                                  context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
-                                }
+    ),
+    title: Transform.translate(
+      offset: const Offset(-10, 0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: Color(0xff1E2E52),
+        ),
+      ),
+    ),
+    actions: widget.showActions && _canUpdateProduct && widget.showEditButton // Добавляем проверку showEditButton
+        ? [
+            BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
+              builder: (context, state) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
+                      onPressed: state is GoodsByIdLoaded
+                          ? () async {
+                              final sortedFiles = List<GoodsFile>.from(state.goods.files);
+                              final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
+                              if (mainImageIndex != -1) {
+                                final mainImage = sortedFiles.removeAt(mainImageIndex);
+                                sortedFiles.insert(0, mainImage);
                               }
-                            : null,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ]
-          : null,
-    );
-  }
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => GoodsEditScreen(
+                                    goods: state.goods,
+                                    sortedFiles: sortedFiles,
+                                    initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
+                                  ),
+                                ),
+                              );
+                              if (result == true) {
+                                context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+                              }
+                            }
+                          : null,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ]
+        : null,
+  );
+}
+
 
   Widget _buildDetailsList(Goods goods) {
     List<String> labels = [];
-    if (goods.isPopular) labels.add(AppLocalizations.of(context)!.translate('hit'));
-    if (goods.isSale) labels.add(AppLocalizations.of(context)!.translate('promotion'));
+    if (goods.isPopular)
+      labels.add(AppLocalizations.of(context)!.translate('hit'));
+    if (goods.isSale)
+      labels.add(AppLocalizations.of(context)!.translate('promotion'));
     if (goods.isNew) labels.add(AppLocalizations.of(context)!.translate('new'));
     String labelsValue = labels.isNotEmpty ? labels.join(', ') : '';
 
     details = [
-      {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': goods.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': goods.description ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': goods.category.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('label'), 'value': goods.label?.name ?? ''},
+      {
+        'label': AppLocalizations.of(context)!.translate('goods_name_details'),
+        'value': goods.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!
+            .translate('goods_description_details'),
+        'value': goods.description ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('category_details'),
+        'value': goods.category.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('label'),
+        'value': goods.label?.name ?? ''
+      },
       {
         'label': AppLocalizations.of(context)!.translate('branch_details'),
         'value': goods.branches != null && goods.branches!.isNotEmpty
@@ -292,11 +315,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             : '',
       },
       if (goods.discountPrice != null && goods.discountPrice != 0)
-        {'label': AppLocalizations.of(context)!.translate('discount_price_details'), 'value': goods.discountPrice.toString()},
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('discount_price_details'),
+          'value': goods.discountPrice.toString()
+        },
       if (goods.discountPercent != null && goods.discountPercent != 0)
-        {'label': AppLocalizations.of(context)!.translate('discount_percent'), 'value': '${goods.discountPercent}%'},
+        {
+          'label': AppLocalizations.of(context)!.translate('discount_percent'),
+          'value': '${goods.discountPercent}%'
+        },
       ...goods.attributes
-          .where((attr) => attr.name.isNotEmpty && attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
+          .where((attr) =>
+              attr.name.isNotEmpty &&
+              attr.name !=
+                  AppLocalizations.of(context)!
+                      .translate('unknown_characteristic'))
           .map((attr) => {'label': attr.name, 'value': attr.value}),
       {
         'label': AppLocalizations.of(context)!.translate('goods_finished'),
@@ -305,7 +339,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             : AppLocalizations.of(context)!.translate('inactive_swtich'),
       },
       if (goods.comments != null && goods.comments!.isNotEmpty)
-        {'label': AppLocalizations.of(context)!.translate('client_comments'), 'value': goods.comments!},
+        {
+          'label': AppLocalizations.of(context)!.translate('client_comments'),
+          'value': goods.comments!
+        },
     ];
 
     return Column(
@@ -328,20 +365,27 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLabel(AppLocalizations.of(context)!.translate('price_details')),
+                _buildLabel(
+                    AppLocalizations.of(context)!.translate('price_details')),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        goods.discountedPrice != null ? goods.discountPrice.toString() : goods.discountPrice.toString(),
+                        goods.discountedPrice != null
+                            ? goods.discountPrice.toString()
+                            : goods.discountPrice.toString(),
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: goods.discountedPrice != null ? Colors.grey : const Color(0xFF1E2E52),
-                          decoration: goods.discountedPrice != null ? TextDecoration.lineThrough : TextDecoration.none,
+                          color: goods.discountedPrice != null
+                              ? Colors.grey
+                              : const Color(0xFF1E2E52),
+                          decoration: goods.discountedPrice != null
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
                         ),
                       ),
                       if (goods.discountedPrice != null)
@@ -360,7 +404,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               ],
             ),
           ),
-        if (goods.variants != null && goods.variants!.isNotEmpty) _buildVariantsSection(goods),
+        if (goods.variants != null && goods.variants!.isNotEmpty)
+          _buildVariantsSection(goods),
       ],
     );
   }
@@ -397,7 +442,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
-        final attrName = attrValue.categoryAttribute?.attribute?.name ?? AppLocalizations.of(context)!.translate('unknown_characteristic');
+        final attrName = attrValue.categoryAttribute?.attribute?.name ??
+            AppLocalizations.of(context)!.translate('unknown_characteristic');
         final value = attrValue.value.isNotEmpty ? attrValue.value : '';
         uniqueAttributes.add({'name': attrName, 'value': value});
       }
@@ -420,7 +466,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => VariantDetailsScreen(variant: variant)),
+          MaterialPageRoute(
+              builder: (context) => VariantDetailsScreen(variant: variant)),
         );
       },
       child: Card(
@@ -433,7 +480,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(width: 120, height: 120, child: _buildVariantImage(imageUrl)),
+              SizedBox(
+                  width: 120, height: 120, child: _buildVariantImage(imageUrl)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -512,7 +560,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     if (imageUrl == null) {
       return Container(
         color: Colors.grey[200],
-        child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+        child: const Center(
+            child: Icon(Icons.image, size: 50, color: Colors.grey)),
       );
     }
     return ClipRRect(
@@ -522,7 +571,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => Container(
           color: Colors.grey[200],
-          child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+          child: const Center(
+              child: Icon(Icons.image, size: 50, color: Colors.grey)),
         ),
       ),
     );
@@ -537,7 +587,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     ];
 
     bool isExpandable = expandableFields.contains(label) ||
-        details.any((detail) => detail['label'] == label && detail['value'] == value && !expandableFields.contains(label));
+        details.any((detail) =>
+            detail['label'] == label &&
+            detail['value'] == value &&
+            !expandableFields.contains(label));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +600,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         Expanded(
           child: isExpandable
               ? GestureDetector(
-                  onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+                  onTap: () =>
+                      _showFullTextDialog(label.replaceAll(':', ''), value),
                   child: _buildValue(value, label, maxLines: 1),
                 )
               : _buildValue(value, label, maxLines: 1),
@@ -569,7 +623,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
-    if (label == AppLocalizations.of(context)!.translate('goods_description_details') && value == 'null') {
+    if (label ==
+            AppLocalizations.of(context)!
+                .translate('goods_description_details') &&
+        value == 'null') {
       return const Text(
         '',
         style: TextStyle(
@@ -591,7 +648,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: const Color(0xFF1E2E52),
-        decoration: label == AppLocalizations.of(context)!.translate('goods_description_details')
+        decoration: label ==
+                AppLocalizations.of(context)!
+                    .translate('goods_description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
       ),
@@ -661,45 +720,77 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_goods')),
+      appBar: _buildAppBar(
+          context, AppLocalizations.of(context)!.translate('view_goods')),
       backgroundColor: Colors.white,
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.message)));
           } else if (state is GoodsByIdDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context)!.translate('product_deleted'))),
+              SnackBar(
+                  content: Text(AppLocalizations.of(context)!
+                      .translate('product_deleted'))),
             );
             Navigator.pop(context);
           }
         },
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
             details = [
-              {'label': AppLocalizations.of(context)!.translate('goods_name_details'), 'value': goods.name ?? ''},
-              {'label': AppLocalizations.of(context)!.translate('goods_description_details'), 'value': goods.description ?? ''},
-              if (goods.discountPrice != null && goods.discountPrice != 0)
-                {'label': AppLocalizations.of(context)!.translate('discount_price_details'), 'value': goods.discountPrice.toString()},
-              {'label': AppLocalizations.of(context)!.translate('stock_quantity_details'), 'value': goods.quantity?.toString() ?? '0'},
-              {'label': AppLocalizations.of(context)!.translate('category_details'), 'value': goods.category.name ?? ''},
               {
-                'label': AppLocalizations.of(context)!.translate('branch_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('goods_name_details'),
+                'value': goods.name ?? ''
+              },
+              {
+                'label': AppLocalizations.of(context)!
+                    .translate('goods_description_details'),
+                'value': goods.description ?? ''
+              },
+              if (goods.discountPrice != null && goods.discountPrice != 0)
+                {
+                  'label': AppLocalizations.of(context)!
+                      .translate('discount_price_details'),
+                  'value': goods.discountPrice.toString()
+                },
+              {
+                'label': AppLocalizations.of(context)!
+                    .translate('stock_quantity_details'),
+                'value': goods.quantity?.toString() ?? '0'
+              },
+              {
+                'label':
+                    AppLocalizations.of(context)!.translate('category_details'),
+                'value': goods.category.name ?? ''
+              },
+              {
+                'label':
+                    AppLocalizations.of(context)!.translate('branch_details'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
                     : '',
               },
               ...goods.attributes
-                  .where((attr) => attr.name.isNotEmpty && attr.name != AppLocalizations.of(context)!.translate('unknown_characteristic'))
+                  .where((attr) =>
+                      attr.name.isNotEmpty &&
+                      attr.name !=
+                          AppLocalizations.of(context)!
+                              .translate('unknown_characteristic'))
                   .map((attr) => {'label': attr.name, 'value': attr.value}),
               {
-                'label': AppLocalizations.of(context)!.translate('goods_finished'),
+                'label':
+                    AppLocalizations.of(context)!.translate('goods_finished'),
                 'value': goods.isActive ?? false
                     ? AppLocalizations.of(context)!.translate('active_swtich')
-                    : AppLocalizations.of(context)!.translate('inactive_swtich'),
+                    : AppLocalizations.of(context)!
+                        .translate('inactive_swtich'),
               },
             ];
 
@@ -707,17 +798,21 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
                 children: [
-                  if (goods.files != null && goods.files.isNotEmpty) _buildImageSlider(goods.files),
+                  if (goods.files != null && goods.files.isNotEmpty)
+                    _buildImageSlider(goods.files),
                   _buildDetailsList(goods),
                 ],
               ),
             );
           } else if (state is GoodsByIdEmpty) {
-            return Center(child: Text(AppLocalizations.of(context)!.translate('product_not_found')));
+            return Center(
+                child: Text(AppLocalizations.of(context)!
+                    .translate('product_not_found')));
           } else if (state is GoodsByIdError) {
             return Center(child: Text(state.message));
           }
-          return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
+          return Center(
+              child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );
