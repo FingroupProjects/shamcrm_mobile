@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/money/add_money_reference_model.dart';
+import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -10956,6 +10958,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       throw Exception('Ошибка удаления документа: ${response.body}');
     }
   }
+
 Future<void> updateClientSaleDocument({
   required int documentId,
   required String date,
@@ -11098,4 +11101,68 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
   }
 }
+
+  
+  Future<List<CashRegisterModel>> getCashRegister() async {
+    final response = await _getRequest('/cashRegister');
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List).map((item) => CashRegisterModel.fromJson(item)).toList();
+      } else if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка данных по кассе');
+      } else {
+        throw Exception('Нет данных по кассе');
+      }
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['error']['message'] ?? 'Ошибка загрузки кассы');
+      } else {
+        throw Exception('Ошибка загрузки кассы: ${response.body}');
+      }
+    }
+  }
+
+  Future<CashRegisterModel> postCashRegister(AddMoneyReferenceModel value) async {
+    final response = await _postRequest('/cashRegister', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return CashRegisterModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка добавления в кассу');
+      } else {
+        throw Exception('Ошибка добавления в кассу: ${response.body}');
+      }
+    }
+  }
+
+  Future<bool> deleteCashRegister(int id) async {
+    final response = await _deleteRequest('/cashRegister/$id');
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      return data['result']['deleted'] as bool;
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка удаления кассы');
+      } else {
+        throw Exception('Ошибка удаления кассы: ${response.body}');
+      }
+    }
+  }
+
+  Future<CashRegisterModel> patchCashRegister(int id, AddMoneyReferenceModel value) async {
+    final response = await _patchRequest('/cashRegister/$id', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return CashRegisterModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка добавления в кассу');
+      } else {
+        throw Exception('Ошибка добавления в кассу: ${response.body}');
+      }
+    }
+  }
 }

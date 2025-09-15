@@ -13,6 +13,7 @@ import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
+import '../page_2/money/money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -139,6 +140,14 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
       hasAvailableScreens = true;
     }
+
+    // "Деньги"
+    widgetsGroup2.add(MoneyScreen());
+    titleKeysGroup2.add('dengi');
+    navBarTitleKeysGroup2.add('dengi');
+    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Добавьте иконку в assets
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+
 
     // Удаляем старые отдельные экраны (они теперь доступны через OnlineStoreScreen):
     /*
