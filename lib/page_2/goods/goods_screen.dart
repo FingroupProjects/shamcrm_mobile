@@ -47,7 +47,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     });
     _checkPermissions();
   }
-
+//shared_preferences
   Future<void> _checkPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
