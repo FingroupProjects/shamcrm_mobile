@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +97,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         document.title == 'Реализация клиент') {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) => ClientSaleScreen()));
-    } else {
+    } 
+    else if (document.title ==
+        AppLocalizations.of(context)!.translate('supplier_return') ||
+    document.title == 'Возврат поставщику') {
+  // Добавляем навигацию к экрану возврата поставщику
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
+  );
+}
+else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -120,6 +131,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         ),
       );
     }
+    
   }
 
   void _navigateToReferences() {

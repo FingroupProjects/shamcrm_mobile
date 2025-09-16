@@ -1229,7 +1229,29 @@
 "add_income_money": "Add income money",
 "expense": "Expense",
 "add_expense_money": "Add expense money",
-"list_references": "List of references"
+"list_references": "List of references",
+"SUPPLIER_RETURN_SCREEN": "Supplier return screen",
+    "appbar_supplier_return": "Supplier return",
+    "create_supplier_return_document": "Create supplier return",
+    "edit_supplier_return_document": "Edit supplier return",
+    "view_supplier_return_document": "View supplier return",
+    "delete_supplier_return_document": "Delete supplier return document",
+    "confirm_delete_supplier_return_document": "Are you sure you want to delete this supplier return document?",
+    "no_supplier_return": "No supplier returns",
+    "deleted_supplier_return": "Deleted",
+    "approved_supplier_return": "Approved",
+    "not_approved_supplier_return": "Not approved",
+    "supplier_return_created": "Supplier return document created",
+    "supplier_return_updated": "Supplier return document updated",
+    "supplier_return_deleted": "Supplier return document deleted",
+    "supplier_return_restored": "Supplier return document restored",
+    "supplier_return_approved": "Supplier return document approved",
+    "supplier_return_unapproved": "Supplier return document approval cancelled",
+    "create_supplier_return": "Create return",
+    "edit_supplier_return": "Edit return",
+    "supplier_return_details": "Supplier return details",
+    "supplier_return_history": "Supplier return history",
+    "add_supplier_return": "Add supplier return"
 
 
 
