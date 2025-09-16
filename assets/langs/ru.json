@@ -1254,10 +1254,16 @@
   "deleting": "Удаление...",
   "edit_incoming_document": "Редактирование",
   "edit_pricetype": "Редактирование типа цены",
-  "edit_warehouse": "Редактирование склада"
+  "edit_warehouse": "Редактирование склада",
 
-
-
+  "MONEY_SCREEN": "Строки для экрана денег",
+  "money": "Деньги",
+  "sections": "Разделы",
+  "income": "Приход",
+  "add_income_money": "Добавить приход денег",
+  "expense": "Расход",
+  "add_expense_money": "Добавить расход денег",
+  "list_references": "Список справочников"
 
  
 
