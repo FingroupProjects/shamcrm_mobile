@@ -10371,14 +10371,14 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
   // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
   final pathWithParams = await _appendQueryParams('/income-documents');
   final uri = Uri.parse('$baseUrl$pathWithParams');
-  
+
   // Извлекаем organization_id и sales_funnel_id из query параметров
   final organizationId = uri.queryParameters['organization_id'];
   final salesFunnelId = uri.queryParameters['sales_funnel_id'];
 
   // Создаем чистый URI без параметров для DELETE запроса
   final cleanUri = Uri.parse('$baseUrl/income-documents');
-  
+
   final body = jsonEncode({
     'ids': [documentId],
     'organization_id': organizationId ?? '1',
@@ -10453,7 +10453,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     }
   }
 
-  
+
 
   Future<IncomingDocument> getClienSalesById(int documentId) async {
     String url = '/expense-documents/$documentId';
@@ -10535,10 +10535,10 @@ Future<void> updateClientSaleDocument({
 }) async {
   final token = await getToken();
   if (token == null) throw Exception('Токен не найден');
-  
+
   final path = await _appendQueryParams('/expense-documents/$documentId');
   final uri = Uri.parse('$baseUrl$path');
-  
+
   final body = jsonEncode({
     'date': date,
     'storage_id': storageId,
@@ -10571,11 +10571,11 @@ Future<void> updateClientSaleDocument({
 Future<void> approveClientSaleDocument(int documentId) async {
   const String url = '/expense-documents/approve';
   final path = await _appendQueryParams(url);
-  
+
   try {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
-    
+
     final uri = Uri.parse('$baseUrl$path');
     final response = await http.post(
       uri,
@@ -10589,7 +10589,7 @@ Future<void> approveClientSaleDocument(int documentId) async {
         'ids': [documentId]
       }),
     );
-    
+
     if (response.statusCode == 200 || response.statusCode == 201) {
       // Успешно проведен
     } else {
@@ -10605,11 +10605,11 @@ Future<void> approveClientSaleDocument(int documentId) async {
 Future<void> unApproveClientSaleDocument(int documentId) async {
   const String url = '/expense-documents/unApprove';
   final path = await _appendQueryParams(url);
-  
+
   try {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
-    
+
     final uri = Uri.parse('$baseUrl$path');
     final response = await http.post(
       uri,
@@ -10623,7 +10623,7 @@ Future<void> unApproveClientSaleDocument(int documentId) async {
         'ids': [documentId]
       }),
     );
-    
+
     if (response.statusCode == 200 || response.statusCode == 201) {
       // Успешно отменено
     } else {
@@ -10639,14 +10639,14 @@ Future<void> unApproveClientSaleDocument(int documentId) async {
 Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   final token = await getToken();
   if (token == null) throw Exception('Токен не найден');
-  
+
   final pathWithParams = await _appendQueryParams('/expense-documents/restore');
   final uri = Uri.parse('$baseUrl$pathWithParams');
-  
+
   final body = jsonEncode({
     'ids': [documentId],
   });
-  
+
   final response = await http.post(
     uri,
     headers: {
@@ -10657,7 +10657,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     },
     body: body,
   );
-  
+
   if (response.statusCode == 200 || response.statusCode == 201) {
     return {'result': 'Success'};
   } else {
@@ -11122,9 +11122,12 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   //updateSupplier
   // Future<List<Supplier>> updateSupplier(){};
 
-  
-  
-  
+
+
+
+
+
+
   Future<List<CashRegisterModel>> getCashRegister() async {
     final response = await _getRequest('/cashRegister');
     final data = json.decode(response.body);
@@ -11340,10 +11343,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<Map<String, dynamic>> restoreSupplierReturnDocument(int documentId) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
-    
+
     final pathWithParams = await _appendQueryParams('/supplier-return-documents/restore');
     final uri = Uri.parse('$baseUrl$pathWithParams');
-    
+
     final body = jsonEncode({
       'ids': [documentId],
     });
@@ -11373,84 +11376,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
     }
   }
-
-Future<void> updateIncomingDocument({
-  required int documentId,
-  required String date,
-  required int storageId,
-  required String comment,
-  required int counterpartyId,
-  required List<Map<String, dynamic>> documentGoods,
-  required int organizationId,
-  required int salesFunnelId,
-}) async {
-  final token = await getToken();
-  if (token == null) throw Exception('Токен не найден');
-
-  final path = await _appendQueryParams('/income-documents/$documentId');
-  final uri = Uri.parse('$baseUrl$path');
-  final body = jsonEncode({
-    'date': date,
-    'storage_id': storageId,
-    'comment': comment,
-    'counterparty_id': counterpartyId,
-    'document_goods': documentGoods,
-    'organization_id': organizationId,
-    'sales_funnel_id': salesFunnelId,
-  });
-
-  final response = await http.put( // Используем PATCH для обновления
-    uri,
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Device': 'mobile',
-    },
-    body: body,
-  );
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return;
-  } else {
-    throw Exception('Ошибка обновления документа: ${response.body}');
-  }
-}
-Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
-  final token = await getToken();
-  if (token == null) throw Exception('Токен не найден');
-
-  // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
-  final pathWithParams = await _appendQueryParams('/income-documents');
-  final uri = Uri.parse('$baseUrl$pathWithParams');
-
-  // Извлекаем organization_id и sales_funnel_id из query параметров
-  final organizationId = uri.queryParameters['organization_id'];
-  final salesFunnelId = uri.queryParameters['sales_funnel_id'];
-
-  // Создаем чистый URI без параметров для DELETE запроса
-  final cleanUri = Uri.parse('$baseUrl/income-documents');
-
-  final body = jsonEncode({
-    'ids': [documentId],
-    'organization_id': organizationId ?? '1',
-    'sales_funnel_id': salesFunnelId ?? '1',
-  });
-
-  if (kDebugMode) {
-    print('ApiService: deleteIncomingDocument - Request body: $body');
-  }
-
-  final response = await http.delete(
-    cleanUri,
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Device': 'mobile',
-    },
-    body: body,
-  );
 
   Future<IncomingDocumentHistoryResponse> getSupplierReturnDocumentHistory(
       int documentId) async {
@@ -11566,14 +11491,14 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
     final pathWithParams = await _appendQueryParams('/supplier-return-documents');
     final uri = Uri.parse('$baseUrl$pathWithParams');
-    
+
     // Извлекаем organization_id и sales_funnel_id из query параметров
     final organizationId = uri.queryParameters['organization_id'];
     final salesFunnelId = uri.queryParameters['sales_funnel_id'];
 
     // Создаем чистый URI без параметров для DELETE запроса
     final cleanUri = Uri.parse('$baseUrl/supplier-return-documents');
-    
+
     final body = jsonEncode({
       'ids': [documentId],
       'organization_id': organizationId ?? '1',
@@ -11602,18 +11527,28 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     }
   }
 
-  Future<CashRegisterModel> patchCashRegister(int id, AddMoneyReferenceModel value) async {
-    final response = await _patchRequest('/cashRegister/$id', value.toJson());
-    final data = json.decode(response.body);
+//______________________________end supplier return documents____________________________//
+
+  //Метод для получения cash register
+  Future<CashRegistersDataResponse> getAllCashRegisters() async {
+    final path = await _appendQueryParams('/cashRegister');
+
+    final response = await _getRequest(path);
+
+    late CashRegistersDataResponse cashRegistersData;
+
     if (response.statusCode == 200) {
-      return CashRegisterModel.fromJson(data['result']);
-    } else {
-      if (data['errors'] != null) {
-        throw Exception(data['errors'] ?? 'Ошибка добавления в кассу');
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        cashRegistersData = CashRegistersDataResponse.fromJson(data);
       } else {
-        throw Exception('Ошибка добавления в кассу: ${response.body}');
+        throw Exception('Результат отсутствует в ответе');
       }
+    } else {
+      throw Exception('Ошибка при получении данных!');
     }
+
+    return cashRegistersData;
   }
 
   //Метод для получения suppliers
@@ -11638,38 +11573,14 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     return cashRegistersData;
   }
 
-//______________________________end supplier return documents____________________________//
-  
-   //Метод для получения cash register
-  Future<CashRegistersDataResponse> getAllCashRegisters() async {
-    final path = await _appendQueryParams('/cashRegister');
-
-    final response = await _getRequest(path);
-
-    late CashRegistersDataResponse cashRegistersData;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        cashRegistersData = CashRegistersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-
-    return cashRegistersData;
-  }
-  
   Future<void> createMoneyIncomeDocument({required String date,
-        required num amount,
-        required String operationType,
-        required String movementType,
-        int? leadId,
-        String? senderCashRegisterId,
-        String? comment,
-     }) async {
+    required num amount,
+    required String operationType,
+    required String movementType,
+    int? leadId,
+    String? senderCashRegisterId,
+    String? comment,
+  }) async {
 
     final path = await _appendQueryParams('/checking-account');
 
@@ -11775,7 +11686,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (token == null) throw Exception('Токен не найден');
 
     final pathWithParams =
-        await _appendQueryParams('/checking-account/restore');
+    await _appendQueryParams('/checking-account/restore');
     final uri = Uri.parse('$baseUrl$pathWithParams');
 
     final body = jsonEncode({
@@ -11804,13 +11715,13 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 
   Future<void> updateMoneyIncomeDocument(
       {required int documentId,
-      required DateTime date,
-      int? storageId,
-      String? comment,
-      int? counterpartyId,
-      required List<Map<String, dynamic>> documentGoods,
-      int? organizationId,
-      int? salesFunnelId,
-      required double amount,
-      String? description}) async {}
+        required DateTime date,
+        int? storageId,
+        String? comment,
+        int? counterpartyId,
+        required List<Map<String, dynamic>> documentGoods,
+        int? organizationId,
+        int? salesFunnelId,
+        required double amount,
+        String? description}) async {}
 }
