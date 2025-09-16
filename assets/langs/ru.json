@@ -1263,7 +1263,29 @@
   "add_income_money": "Добавить приход денег",
   "expense": "Расход",
   "add_expense_money": "Добавить расход денег",
-  "list_references": "Список справочников"
+  "list_references": "Список справочников",
+  "SUPPLIER_RETURN_SCREEN": "Экран возврата поставщику",
+  "appbar_supplier_return": "Возврат поставщику",
+  "create_supplier_return_document": "Создать возврат поставщику",
+  "edit_supplier_return_document": "Редактировать возврат поставщику",
+  "view_supplier_return_document": "Просмотр возврата поставщику",
+  "delete_supplier_return_document": "Удалить документ возврата поставщику",
+  "confirm_delete_supplier_return_document": "Вы уверены, что хотите удалить этот документ возврата поставщику?",
+  "no_supplier_return": "Нет возвратов поставщику",
+  "deleted_supplier_return": "Удален",
+  "approved_supplier_return": "Проведен",
+  "not_approved_supplier_return": "Не проведен",
+  "supplier_return_created": "Документ возврата поставщику создан",
+  "supplier_return_updated": "Документ возврата поставщику обновлен",
+  "supplier_return_deleted": "Документ возврата поставщику удален",
+  "supplier_return_restored": "Документ возврата поставщику восстановлен",
+  "supplier_return_approved": "Документ возврата поставщику проведен",
+  "supplier_return_unapproved": "Проведение документа возврата поставщику отменено",
+  "create_supplier_return": "Создать возврат",
+  "edit_supplier_return": "Редактировать возврат",
+  "supplier_return_details": "Детали возврата поставщику",
+  "supplier_return_history": "История возврата поставщику",
+  "add_supplier_return": "Добавить возврат поставщику"
 
  
 

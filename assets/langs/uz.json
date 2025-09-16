@@ -1236,7 +1236,29 @@
   "add_income_money": "Daromad qo‘shish",
   "expense": "Xarajat",
   "add_expense_money": "Xarajat qo‘shish",
-  "list_references": "Ma'lumotnomalar ro‘yxati"
+  "list_references": "Ma'lumotnomalar ro‘yxati",
+  "SUPPLIER_RETURN_SCREEN": "Ta'minotchiga qaytarish ekrani",
+  "appbar_supplier_return": "Ta'minotchiga qaytarish",
+  "create_supplier_return_document": "Ta'minotchiga qaytarish yaratish",
+  "edit_supplier_return_document": "Ta'minotchiga qaytarishni tahrirlash",
+  "view_supplier_return_document": "Ta'minotchiga qaytarishni ko'rish",
+  "delete_supplier_return_document": "Ta'minotchiga qaytarish hujjatini o'chirish",
+  "confirm_delete_supplier_return_document": "Siz ushbu ta'minotchiga qaytarish hujjatini o'chirishga ishonchingiz komilmi?",
+  "no_supplier_return": "Ta'minotchiga qaytarishlar yo'q",
+  "deleted_supplier_return": "O'chirilgan",
+  "approved_supplier_return": "Tasdiqlangan",
+  "not_approved_supplier_return": "Tasdiqlanmagan",
+  "supplier_return_created": "Ta'minotchiga qaytarish hujjati yaratildi",
+  "supplier_return_updated": "Ta'minotchiga qaytarish hujjati yangilandi",
+  "supplier_return_deleted": "Ta'minotchiga qaytarish hujjati o'chirildi",
+  "supplier_return_restored": "Ta'minotchiga qaytarish hujjati tiklandi",
+  "supplier_return_approved": "Ta'minotchiga qaytarish hujjati tasdiqlandi",
+  "supplier_return_unapproved": "Ta'minotchiga qaytarish hujjati tasdiqlanishi bekor qilindi",
+  "create_supplier_return": "Qaytarishni yaratish",
+  "edit_supplier_return": "Qaytarishni tahrirlash",
+  "supplier_return_details": "Ta'minotchiga qaytarish tafsilotlari",
+  "supplier_return_history": "Ta'minotchiga qaytarish tarixi",
+  "add_supplier_return": "Ta'minotchiga qaytarish qo'shish"
 
 
 
