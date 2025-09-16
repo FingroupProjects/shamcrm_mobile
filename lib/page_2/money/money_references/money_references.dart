@@ -219,7 +219,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              AppLocalizations.of(context)!.translate('delete_supplier'),
+              'Удалить справочник',
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -229,9 +229,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
             ),
           ),
           content: Text(
-            AppLocalizations.of(context)
-                    ?.translate('delete_supplier_confirm') ??
-                'Вы уверены, что хотите удалить этот документ?',
+                'Вы уверены, что хотите удалить справочник',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

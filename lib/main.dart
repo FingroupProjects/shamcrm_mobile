@@ -116,6 +116,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'bloc/cash_register_list/cash_register_list_bloc.dart';
+import 'bloc/supplier_list/supplier_list_bloc.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -230,6 +232,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
         BlocProvider(create: (context) => GetAllLeadBloc()),
+        BlocProvider(create: (context) => GetAllCashRegisterBloc()),
+        BlocProvider(create: (context) => GetAllSupplierBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => GetAllLeadMultiBloc()),
         BlocProvider(create: (context) => DealBloc(widget.apiService)),
