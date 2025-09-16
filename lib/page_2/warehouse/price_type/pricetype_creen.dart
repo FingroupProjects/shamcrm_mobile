@@ -30,7 +30,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context)!;
     return BlocProvider.value(
       value: priceType,
       child: Scaffold(
@@ -38,9 +38,10 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
           appBar: AppBar(
             forceMaterialTransparency: true,
             title: CustomAppBarPage2(
-              title:  AppLocalizations.of(context)!.translate('price_type') ?? 'Типы цен',
+              title:  localizations.translate('price_type') ?? 'Типы цен',
               showSearchIcon: true,
               showFilterIcon: false,
+              showFilterOrderIcon: false,
               onChangedSearchInput: (String value) {
                 if (value.isNotEmpty) {
                   // _isSearching = true;

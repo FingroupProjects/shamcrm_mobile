@@ -1,8 +1,10 @@
 import 'package:crm_task_manager/bloc/money_references/money_references_bloc.dart';
+import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/money_references.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 
+import '../../bloc/money_income/money_income_bloc.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 
 class MoneyScreen extends StatefulWidget {
@@ -21,7 +23,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
           icon: Icons.arrow_downward,
           color: const Color(0xff4CAF50),
           background: const Color(0xffEAF7F0),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider(
+                  create: (context) => MoneyIncomeBloc(),
+                  child: const MoneyIncomeScreen(),
+                ),
+              ),
+            );
+          },
         ),
         _MoneySection(
           title: AppLocalizations.of(context)!.translate('expense'),
