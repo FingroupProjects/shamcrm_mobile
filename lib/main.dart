@@ -263,24 +263,17 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => ListenSenderTextCubit()),
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider( create: (context) => ChatsBloc(ApiService()),),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()),),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
