@@ -1226,7 +1226,24 @@
 "units_of_measurement": "O‘lchov birliklari",
 "product": "Mahsulot",
 "discounts": "Chegirmalar",
-"navigate_to_reference": "Ma’lumotnomaga o‘tish: {reference}"
+"navigate_to_reference": "Ma’lumotnomaga o‘tish: {reference}",
+
+
+  "MONEY_SCREEN": "Строки для экрана денег",
+  "money": "Pul",
+  "sections": "Bo‘limlar",
+  "income": "Daromad",
+  "add_income_money": "Daromad qo‘shish",
+  "expense": "Xarajat",
+  "add_expense_money": "Xarajat qo‘shish",
+  "list_references": "Ma'lumotnomalar ro‘yxati"
+
+
+
+
+
+
+
 
 
 

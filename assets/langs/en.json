@@ -1208,7 +1208,16 @@
 "units_of_measurement": "Units of measurement",
 "product": "Product",
 "discounts": "Discounts",
-"navigate_to_reference": "Navigate to reference: {reference}"
+"navigate_to_reference": "Navigate to reference: {reference}",
+
+"MONEY_SCREEN": "Строки для экрана денег",
+"money": "Money",
+"sections": "Sections",
+"income": "Income",
+"add_income_money": "Add income money",
+"expense": "Expense",
+"add_expense_money": "Add expense money",
+"list_references": "List of references"
 
 
 
