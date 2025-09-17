@@ -296,7 +296,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       const Icon(
                         Icons.person,
                         color: Color(0xff1E2E52),
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -320,7 +320,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       const Icon(
                         Icons.swap_horiz,
                         color: Color(0xff1E2E52),
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -344,7 +344,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       const Icon(
                         Icons.add_circle_outline,
                         color: Color(0xff1E2E52),
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -368,7 +368,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       const Icon(
                         Icons.keyboard_return,
                         color: Color(0xff1E2E52),
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(

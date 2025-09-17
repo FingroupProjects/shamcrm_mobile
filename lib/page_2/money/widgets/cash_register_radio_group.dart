@@ -11,10 +11,13 @@ class CashRegisterGroupWidget extends StatefulWidget {
   final String? selectedCashRegisterId;
   final Function(CashRegisterData) onSelectCashRegister;
 
+  final String? title;
+
   const CashRegisterGroupWidget({
     super.key,
     required this.onSelectCashRegister,
     this.selectedCashRegisterId,
+    this.title,
   });
 
   @override
@@ -63,7 +66,7 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('cash_register'),
+          widget.title ?? AppLocalizations.of(context)!.translate('cash_register'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -123,8 +126,7 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                   );
                 }
                 return Text(
-                  selectedItem?.name ??
-                      AppLocalizations.of(context)!.translate('select_cash_register'),
+                  selectedItem.name,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -148,8 +150,7 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                   : null,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!
-                      .translate('field_required_project');
+                  return AppLocalizations.of(context)!.translate('field_required_project');
                 }
                 return null;
               },

@@ -126,6 +126,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        title: localizations.translate('sender_cash_register') ?? 'Sender Cash Register',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
@@ -135,6 +136,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                       ),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        title: localizations.translate('receiver_cash_register') ?? 'Receiver Cash Register',
                         selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {

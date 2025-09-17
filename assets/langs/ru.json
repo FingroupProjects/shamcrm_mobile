@@ -1294,7 +1294,9 @@
   "edit_supplier_return": "Редактировать возврат",
   "supplier_return_details": "Детали возврата поставщику",
   "supplier_return_history": "История возврата поставщику",
-  "add_supplier_return": "Добавить возврат поставщику"
+  "add_supplier_return": "Добавить возврат поставщику",
+  "sender_cash_register": "Касса отправитель",
+  "receiver_cash_register": "Касса получатель"
 
  
 

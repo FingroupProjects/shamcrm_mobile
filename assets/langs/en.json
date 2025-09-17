@@ -1251,7 +1251,9 @@
     "edit_supplier_return": "Edit return",
     "supplier_return_details": "Supplier return details",
     "supplier_return_history": "Supplier return history",
-    "add_supplier_return": "Add supplier return"
+    "add_supplier_return": "Add supplier return",
+    "sender_cash_register": "Sender Cash Register",
+    "receiver_cash_register": "Receiver Cash Register"
 
 
 
