@@ -71,7 +71,13 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       );
     }
 
-
+    // initialize selected supplier from model field
+    if (widget.document.model != null) {
+      selectedSupplier = SupplierData(
+        id: widget.document.model!.id!,
+        name: widget.document.model!.name ?? '',
+      );
+    }
   }
 
   void _createDocument() async {

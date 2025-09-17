@@ -1313,7 +1313,7 @@
   "client_return_unapproved": "Проведение документа возврата от клиента отменено",
   "add_client_return": "Добавить возврат от клиента",
   "client_return_details": "Детали возврата от клиента",
-  "client_return_history": "История возврата от клиента"
+  "client_return_history": "История возврата от клиента",
   "sender_cash_register": "Касса отправитель",
   "receiver_cash_register": "Касса получатель",
   "delete_money_income": "Удалить денежный доход",
