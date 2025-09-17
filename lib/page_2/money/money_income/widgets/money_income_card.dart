@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/page_2/money/money_income/operation_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -17,11 +18,6 @@ class MoneyIncomeCard extends StatelessWidget {
     this.onUpdate,
     this.onDelete,
   }) : super(key: key);
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Нет даты';
-    return DateFormat('dd.MM.yyyy').format(date);
-  }
 
   String _formatAmount(dynamic amount) {
     if (amount == null) return '0.00';
@@ -111,32 +107,12 @@ class MoneyIncomeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localizations.translate('date') ?? 'Дата'}: ${_formatDate(DateTime.tryParse(document.date ?? ''))}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
               '${localizations.translate('amount') ?? 'Сумма'}: ${_formatAmount(document.amount)}',
               style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
                 color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${localizations.translate('organization') ?? 'Организация'}: ${document.organization?.name}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
               ),
             ),
             if (document.model != null && document.model!.name != null && document.model!.name!.isNotEmpty) ...[
@@ -151,29 +127,17 @@ class MoneyIncomeCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (document.cashRegister != null) ...[
+            if (document.operationType != null && document.operationType == OperationType.receive_another_cash_register.name) ...[
               const SizedBox(height: 8),
-              Text(
-                'Получение с другой кассы: ${document.cashRegister!.name}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
-            ],
-            if (document.comment != null && document.comment!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Примечание: ${document.comment}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
+                Text(
+                  'Получение с другой кассы: ${document.cashRegister!.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff99A4BA),
+                  ),
+                )
             ],
           ],
         ),
