@@ -131,16 +131,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
     switch (operationType) {
       case OperationType.client_payment:
-        targetScreen = const EditMoneyIncomeFromClient();
+        targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
       case OperationType.receive_another_cash_register:
-        targetScreen = const EditMoneyIncomeAnotherCashRegister();
+        targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
       case OperationType.other_incomes:
-        targetScreen = const EditMoneyIncomeOtherIncome();
+        targetScreen = EditMoneyIncomeOtherIncome(document: document);
         break;
       case OperationType.return_supplier:
-        targetScreen = const EditMoneyIncomeSupplierReturn();
+        targetScreen = EditMoneyIncomeSupplierReturn(document: document);
         break;
     }
 

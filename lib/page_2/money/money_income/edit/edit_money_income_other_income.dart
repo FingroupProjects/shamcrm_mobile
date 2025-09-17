@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -12,7 +13,12 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeOtherIncome extends StatefulWidget {
-  const EditMoneyIncomeOtherIncome({super.key});
+  final Document document;
+  
+  const EditMoneyIncomeOtherIncome({
+    super.key,
+    required this.document,
+  });
 
   @override
   _EditMoneyIncomeOtherIncomeState createState() => _EditMoneyIncomeOtherIncomeState();
@@ -31,7 +37,44 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _initializeFields();
+  }
+
+  void _initializeFields() {
+    // Initialize date
+    if (widget.document.date != null) {
+      try {
+        final date = DateTime.parse(widget.document.date!);
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(date);
+      } catch (e) {
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+      }
+    } else {
+      _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    }
+
+    // Initialize amount
+    if (widget.document.amount != null) {
+      _amountController.text = widget.document.amount.toString();
+    }
+
+    // Initialize comment
+    if (widget.document.comment != null) {
+      _commentController.text = widget.document.comment!;
+    }
+
+    // Initialize selected lead
+    if (widget.document.model?.id != null) {
+      selectedLead = widget.document.model!.id.toString();
+    }
+
+    // Initialize selected cash register
+    if (widget.document.cashRegister != null) {
+      selectedCashRegister = CashRegisterData(
+        id: widget.document.cashRegister!.id!,
+        name: widget.document.cashRegister!.name!,
+      );
+    }
   }
 
   void _createDocument() async {
@@ -71,12 +114,13 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     }
 
     final bloc = context.read<MoneyIncomeBloc>();
-    bloc.add(CreateMoneyIncome(
-      date: isoDate,
+    bloc.add(UpdateMoneyIncome(
+      date: isoDate!,
       amount: double.parse(_amountController.text.trim()),
-      leadId: int.parse(selectedLead!),
+      operationType: OperationType.other_incomes.name,
+      leadId: selectedLead != null ? int.parse(selectedLead!) : null,
       comment: _commentController.text.trim(),
-      operationType: OperationType.other_incomes.name
+      cashRegisterId: selectedCashRegister?.id.toString(),
     ));
   }
 
@@ -179,7 +223,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_incoming_document') ?? 'Create Income',
+        localizations.translate('edit_incoming_document') ?? 'Edit Income',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -296,7 +340,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                 ),
               )
                   : Text(
-                localizations.translate('create') ?? 'Create',
+                localizations.translate('update') ?? 'Update',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

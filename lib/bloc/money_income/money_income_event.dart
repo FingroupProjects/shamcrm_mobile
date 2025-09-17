@@ -18,42 +18,35 @@ class FetchMoneyIncome extends MoneyIncomeEvent {
 }
 
 class UpdateMoneyIncome extends MoneyIncomeEvent {
-  final int documentId;
-  final DateTime date;
-  final int? storageId;
-  final String? comment;
-  final int? counterpartyId;
-  final List<Map<String, dynamic>> documentGoods;
-  final int? organizationId;
-  final int? salesFunnelId;
-  final double amount;
-  final String? description;
+  final String date;
+  final num amount;
+  final String operationType;
+  final String movementType = "PKO";
+  int? leadId;
+  final String comment;
+  String? cashRegisterId;
+  String? senderCashRegisterId;
 
-  const UpdateMoneyIncome({
-    required this.documentId,
+  UpdateMoneyIncome({
     required this.date,
-    this.storageId,
-    this.comment,
-    this.counterpartyId,
-    required this.documentGoods,
-    this.organizationId,
-    this.salesFunnelId,
     required this.amount,
-    this.description,
+    this.leadId,
+    required this.comment,
+    required this.operationType,
+    this.cashRegisterId,
+    this.senderCashRegisterId,
   });
 
   @override
-  List<Object?> get props => [
-    documentId,
+  List<Object> get props => [
     date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId,
     amount,
-    description,
+    operationType,
+    movementType,
+    leadId ?? 0,
+    comment,
+    cashRegisterId ?? '',
+    senderCashRegisterId ?? '',
   ];
 }
 

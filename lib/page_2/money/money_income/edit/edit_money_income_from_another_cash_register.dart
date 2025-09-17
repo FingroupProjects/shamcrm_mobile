@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -12,7 +13,12 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeAnotherCashRegister extends StatefulWidget {
-  const EditMoneyIncomeAnotherCashRegister({super.key});
+  final Document document;
+  
+  const EditMoneyIncomeAnotherCashRegister({
+    super.key,
+    required this.document,
+  });
 
   @override
   _EditMoneyIncomeAnotherCashRegisterState createState() => _EditMoneyIncomeAnotherCashRegisterState();
@@ -30,7 +36,43 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _initializeFields();
+  }
+
+  void _initializeFields() {
+    if (widget.document.date != null) {
+      try {
+        final date = DateTime.parse(widget.document.date!);
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(date);
+      } catch (e) {
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+      }
+    } else {
+      _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    }
+
+    if (widget.document.amount != null) {
+      _amountController.text = widget.document.amount.toString();
+    }
+
+    if (widget.document.comment != null) {
+      _commentController.text = widget.document.comment!;
+    }
+
+    if (widget.document.cashRegister != null) {
+      selectedCashRegister = CashRegisterData(
+        id: widget.document.cashRegister!.id!,
+        name: widget.document.cashRegister!.name!,
+      );
+    }
+
+    // Initialize sender cash register
+    if (widget.document.senderCashregister != null) {
+      selectedSenderCashRegister = CashRegisterData(
+        id: widget.document.senderCashregister!.id!,
+        name: widget.document.senderCashregister!.name!,
+      );
+    }
   }
 
   void _createDocument() async {
@@ -62,12 +104,13 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
 
     final bloc = context.read<MoneyIncomeBloc>();
-    bloc.add(CreateMoneyIncome(
+    bloc.add(UpdateMoneyIncome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      leadId: selectedCashRegister!.id,
-      comment: _commentController.text.trim(),
       operationType: OperationType.receive_another_cash_register.name,
+      comment: _commentController.text.trim(),
+      cashRegisterId: selectedCashRegister?.id.toString(),
+      senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
     ));
   }
 
@@ -172,7 +215,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_incoming_document') ?? 'Create Income',
+        localizations.translate('edit_incoming_document') ?? 'Edit Income',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -289,7 +332,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                 ),
               )
                   : Text(
-                localizations.translate('create') ?? 'Create',
+                localizations.translate('update') ?? 'Update',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
