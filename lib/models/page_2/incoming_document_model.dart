@@ -65,14 +65,30 @@ class IncomingDocument {
     this.approved,
   });
 
+  // Безопасная функция для парсинга int из динамического значения
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        print('Error parsing int from string "$value": $e');
+        return null;
+      }
+    }
+    print('Unexpected type for int parsing: ${value.runtimeType}');
+    return null;
+  }
+
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
     return IncomingDocument(
-      id: json['id'],
+      id: _parseInt(json['id']),
       date: _parseDate(json['date']),
       modelType: json['model_type'],
-      modelId: json['model_id'],
-      counterpartyAgreementId: json['counterparty_agreement_id'],
-      organizationId: json['organization_id'],
+      modelId: _parseInt(json['model_id']),
+      counterpartyAgreementId: _parseInt(json['counterparty_agreement_id']),
+      organizationId: _parseInt(json['organization_id']), // Теперь безопасно обрабатывает и строки и числа
       storage:
           json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
       comment: json['comment'],
@@ -88,7 +104,7 @@ class IncomingDocument {
       updatedAt: _parseDate(json['updated_at']),
       deletedAt: _parseDate(json['deleted_at']),
       docNumber: json['doc_number'],
-      approved: json['approved'],
+      approved: _parseInt(json['approved']),
     );
   }
 
@@ -209,7 +225,7 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       name: json['name'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
@@ -225,7 +241,6 @@ class Storage {
     };
   }
 }
-
 
 class Currency {
   final int? id;
@@ -248,11 +263,11 @@ class Currency {
 
   factory Currency.fromJson(Map<String, dynamic> json) {
     return Currency(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       name: json['name'],
-      digitalCode: json['digital_code'],
+      digitalCode: IncomingDocument._parseInt(json['digital_code']),
       symbolCode: json['symbol_code'],
-      organizationId: json['organization_id'],
+      organizationId: IncomingDocument._parseInt(json['organization_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -300,11 +315,11 @@ class DocumentGood {
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
     return DocumentGood(
-      id: json['id'],
-      documentId: json['document_id'],
-      variantId: json['variant_id'],
+      id: IncomingDocument._parseInt(json['id']),
+      documentId: IncomingDocument._parseInt(json['document_id']),
+      variantId: IncomingDocument._parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: json['quantity'],
+      quantity: IncomingDocument._parseInt(json['quantity']),
       price: json['price'],
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
@@ -374,14 +389,14 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       oneCId: json['one_c_id'],
       name: json['name'],
-      categoryId: json['category_id'],
+      categoryId: IncomingDocument._parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: json['unit_id'],
-      quantity: json['quantity'],
+      unitId: IncomingDocument._parseInt(json['unit_id']),
+      quantity: IncomingDocument._parseInt(json['quantity']),
       deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'])
           : null,
@@ -393,7 +408,7 @@ class Good {
           : null,
       isActive: json['is_active'],
       article: json['article'],
-      labelId: json['label_id'],
+      labelId: IncomingDocument._parseInt(json['label_id']),
       getImage: json['get_image'],
       cip: json['cip'],
       packageCode: json['package_code'],
@@ -444,7 +459,7 @@ class GoodFile {
 
   factory GoodFile.fromJson(Map<String, dynamic> json) {
     return GoodFile(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       path: json['path'],
       type: json['type'],
       createdAt: json['created_at'] != null
@@ -492,18 +507,18 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'],
-      categoryAttributeId: json['category_attribute_id'],
+      id: IncomingDocument._parseInt(json['id']),
+      categoryAttributeId: IncomingDocument._parseInt(json['category_attribute_id']),
       value: json['value'],
-      unitId: json['unit_id'],
+      unitId: IncomingDocument._parseInt(json['unit_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-      variantAttributeId: json['variant_attribute_id'],
-      variantId: json['variant_id'],
+      variantAttributeId: IncomingDocument._parseInt(json['variant_attribute_id']),
+      variantId: IncomingDocument._parseInt(json['variant_id']),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(json['category_attribute'])
           : null,
@@ -548,9 +563,9 @@ class CategoryAttribute {
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
     return CategoryAttribute(
-      id: json['id'],
-      categoryId: json['category_id'],
-      attributeId: json['attribute_id'],
+      id: IncomingDocument._parseInt(json['id']),
+      categoryId: IncomingDocument._parseInt(json['category_id']),
+      attributeId: IncomingDocument._parseInt(json['attribute_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -589,7 +604,7 @@ class AttributeModel {
 
   factory AttributeModel.fromJson(Map<String, dynamic> json) {
     return AttributeModel(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       name: json['name'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -631,10 +646,10 @@ class Model {
 
   factory Model.fromJson(Map<String, dynamic> json) {
     return Model(
-      id: json['id'],
+      id: IncomingDocument._parseInt(json['id']),
       name: json['name'],
       phone: json['phone'],
-      inn: json['inn'],
+      inn: IncomingDocument._parseInt(json['inn']),
       note: json['note'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -674,11 +689,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'],
-      count: json['count'],
-      perPage: json['per_page'],
-      currentPage: json['current_page'],
-      totalPages: json['total_pages'],
+      total: IncomingDocument._parseInt(json['total']),
+      count: IncomingDocument._parseInt(json['count']),
+      perPage: IncomingDocument._parseInt(json['per_page']),
+      currentPage: IncomingDocument._parseInt(json['current_page']),
+      totalPages: IncomingDocument._parseInt(json['total_pages']),
     );
   }
 

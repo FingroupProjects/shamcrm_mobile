@@ -1,39 +1,36 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/page_2/widgets/dual_storage_widget.dart';
+import 'package:crm_task_manager/page_2/widgets/simple_goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class IncomingDocumentEditScreen extends StatefulWidget {
+class EditMovementDocumentScreen extends StatefulWidget {
   final IncomingDocument document;
 
-  const IncomingDocumentEditScreen({
+  const EditMovementDocumentScreen({
     required this.document,
     super.key,
   });
 
   @override
-  _IncomingDocumentEditScreenState createState() => _IncomingDocumentEditScreenState();
+  _EditMovementDocumentScreenState createState() => _EditMovementDocumentScreenState();
 }
 
-class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen> {
+class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
-  String? _selectedStorage;
-  String? _selectedSupplier;
+  String? _selectedSenderStorage;
+  String? _selectedRecipientStorage;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
 
@@ -41,7 +38,20 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<GoodsBloc>().add(FetchGoods());
+    
+    // Загружаем товары после рендеринга виджета
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<GoodsBloc>().add(FetchGoods());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    _commentController.dispose();
+    super.dispose();
   }
 
   void _initializeFormData() {
@@ -51,8 +61,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     
     _commentController.text = widget.document.comment ?? '';
-    _selectedStorage = widget.document.storage?.id?.toString();
-    _selectedSupplier = widget.document.model?.id?.toString();
+    _selectedSenderStorage = widget.document.storage?.id?.toString();
+    _selectedRecipientStorage = null; // Получатель будет выбран пользователем
     
     // Преобразуем существующие товары в формат для редактирования
     if (widget.document.documentGoods != null) {
@@ -61,8 +71,6 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           'id': good.good?.id ?? 0,
           'name': good.good?.name ?? '',
           'quantity': good.quantity ?? 0,
-          'price': double.tryParse(good.price ?? '0') ?? 0.0,
-          'total': (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0.0),
         };
       }).toList();
     }
@@ -73,36 +81,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     
     setState(() {
       for (var newItem in newItems) {
-        // Ищем, есть ли уже такой товар в списке
-        int existingIndex = -1;
-        for (int i = 0; i < _items.length; i++) {
-          if (_items[i]['id'] == newItem['id']) {
-            existingIndex = i;
-            break;
-          }
-        }
+        int existingIndex = _items.indexWhere((item) => item['id'] == newItem['id']);
         
         if (existingIndex != -1) {
           // Если товар уже есть, суммируем количество
-          int existingQuantity = _items[existingIndex]['quantity'] as int;
-          int newQuantity = newItem['quantity'] as int;
-          double price = _items[existingIndex]['price'] as double;
-          
-          _items[existingIndex] = <String, dynamic>{
-            'id': _items[existingIndex]['id'],
-            'name': _items[existingIndex]['name'],
-            'quantity': existingQuantity + newQuantity,
-            'price': price,
-            'total': (existingQuantity + newQuantity) * price,
-          };
+          _items[existingIndex]['quantity'] = (_items[existingIndex]['quantity'] as int) + (newItem['quantity'] as int);
         } else {
           // Если товара нет, добавляем новый
-          _items.add(<String, dynamic>{
+          _items.add({
             'id': newItem['id'],
             'name': newItem['name'],
             'quantity': newItem['quantity'],
-            'price': newItem['price'],
-            'total': newItem['total'],
           });
         }
       }
@@ -118,21 +107,31 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   void _openGoodsSelection() async {
-    final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GoodsSelectionBottomSheet(
-        existingItems: _items,
-      ),
-    );
+    if (!mounted) return;
+    
+    try {
+      final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => SimpleGoodsSelectionBottomSheet(
+          existingItems: _items,
+        ),
+      );
 
-    if (result != null && result.isNotEmpty) {
-      _handleGoodsSelection(result);
+      if (mounted && result != null && result.isNotEmpty) {
+        _handleGoodsSelection(result);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Ошибка при выборе товаров: $e', false);
+      }
     }
   }
 
   void _updateDocument() async {
+    if (!mounted) return;
+    
     if (!_formKey.currentState!.validate()) return;
 
     if (_items.isEmpty) {
@@ -140,48 +139,54 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       return;
     }
 
-    if (_selectedStorage == null) {
-      _showSnackBar('Выберите склад', false);
+    if (_selectedSenderStorage == null) {
+      _showSnackBar('Выберите склад отправитель', false);
       return;
     }
 
-    if (_selectedSupplier == null) {
-      _showSnackBar('Выберите поставщика', false);
+    if (_selectedRecipientStorage == null) {
+      _showSnackBar('Выберите склад получатель', false);
+      return;
+    }
+
+    if (_selectedSenderStorage == _selectedRecipientStorage) {
+      _showSnackBar('Склад отправитель и получатель не могут быть одинаковыми', false);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
-      final bloc = context.read<IncomingBloc>();
-      bloc.add(UpdateIncoming(
-        documentId: widget.document.id!,
-        date: isoDate,
-        storageId: int.parse(_selectedStorage!),
-        comment: _commentController.text.trim(),
-        counterpartyId: int.parse(_selectedSupplier!),
-        documentGoods: _items.map((item) => {
-              'good_id': item['id'],
-              'quantity': item['quantity'].toString(),
-              'price': item['price'].toString(),
-            }).toList(),
-        organizationId: widget.document.organizationId ?? 1,
-        salesFunnelId: 1,
-      ));
+      if (mounted) {
+        context.read<MovementBloc>().add(UpdateMovementDocument(
+          documentId: widget.document.id!,
+          date: isoDate,
+          senderStorageId: int.parse(_selectedSenderStorage!),
+          recipientStorageId: int.parse(_selectedRecipientStorage!),
+          comment: _commentController.text.trim(),
+          documentGoods: _items.map((item) => {
+                'good_id': item['id'],
+                'quantity': item['quantity'].toString(),
+              }).toList(),
+          organizationId: widget.document.organizationId ?? 1,
+        ));
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
-        false,
-      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnackBar(
+          AppLocalizations.of(context)?.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+          false,
+        );
+      }
     }
   }
 
   void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
+    if (!mounted || !context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -207,19 +212,32 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: BlocListener<IncomingBloc, IncomingState>(
+      body: BlocListener<MovementBloc, MovementState>(
         listener: (context, state) {
-          setState(() => _isLoading = false);
-
-          if (state is IncomingUpdateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is IncomingUpdateError && mounted) {
-            _showSnackBar(state.message, false);
+          if (!mounted) return;
+          
+          if (state is MovementUpdateLoading) {
+            setState(() => _isLoading = true);
+          } else if (state is MovementUpdateSuccess) {
+            setState(() => _isLoading = false);
+            if (mounted && context.mounted) {
+              Navigator.pop(context, true);
+            }
+          } else if (state is MovementUpdateError) {
+            setState(() => _isLoading = false);
+            if (mounted) {
+              _showSnackBar(state.message, false);
+            }
           }
         },
         child: Form(
@@ -237,14 +255,19 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       const SizedBox(height: 16),
                       _buildGoodsSection(localizations),
                       const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplier,
-                        onChanged: (value) => setState(() => _selectedSupplier = value),
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
+                      DualStorageWidget(
+                        selectedSenderStorage: _selectedSenderStorage,
+                        selectedRecipientStorage: _selectedRecipientStorage,
+                        onSenderChanged: (value) {
+                          if (mounted) {
+                            setState(() => _selectedSenderStorage = value);
+                          }
+                        },
+                        onRecipientChanged: (value) {
+                          if (mounted) {
+                            setState(() => _selectedRecipientStorage = value);
+                          }
+                        },
                       ),
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
@@ -268,10 +291,14 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
       ),
       title: Text(
-        '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
+        '${localizations.translate('edit_movement') ?? 'Редактировать перемещение'} №${widget.document.docNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -337,7 +364,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             child: Row(
               children: [
                 const Icon(
-                  Icons.add_shopping_cart_outlined,
+                  Icons.swap_horiz,
                   color: Color(0xff4759FF),
                   size: 24,
                 ),
@@ -365,19 +392,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           ),
         ),
         const SizedBox(height: 16),
-        if (_items.isNotEmpty) _buildSelectedItemsList(),
+        if (_items.isNotEmpty) _buildSelectedItemsList(localizations),
       ],
     );
   }
 
-  Widget _buildSelectedItemsList() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
-
+  Widget _buildSelectedItemsList(AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('selected_goods') ?? 'Выбранные товары',
+          localizations.translate('selected_goods') ?? 'Выбранные товары',
           style: const TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -391,16 +416,14 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _items.length,
           itemBuilder: (context, index) {
-            return _buildSelectedItemCard(index, _items[index]);
+            return _buildSelectedItemCard(index, _items[index], localizations);
           },
         ),
-        const SizedBox(height: 16),
-        _buildTotalCard(total),
       ],
     );
   }
 
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item) {
+  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, AppLocalizations localizations) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -430,7 +453,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
-                  Icons.shopping_cart_outlined,
+                  Icons.swap_horiz,
                   color: Color(0xff4759FF),
                   size: 24,
                 ),
@@ -463,7 +486,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                      localizations.translate('quantity') ?? 'Количество',
                       style: const TextStyle(
                         fontSize: 12,
                         fontFamily: 'Gilroy',
@@ -483,106 +506,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    Text(
-                      (item['price'] as double?)?.toStringAsFixed(2) ?? '0.00',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                    Text(
-                      (item['total'] as double?)?.toStringAsFixed(2) ?? '0.00',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff4759FF),
-                      ),
-                      textAlign: TextAlign.end,
-                    ),
-                  ],
-                ),
-              ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTotalCard(double total) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff4759FF), Color(0xff6B7BFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.translate('total_amount') ?? 'Общая сумма',
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            total.toStringAsFixed(2),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
           ),
         ],
       ),
@@ -607,7 +531,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () {
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(
@@ -662,12 +590,5 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _dateController.dispose();
-    _commentController.dispose();
-    super.dispose();
   }
 }

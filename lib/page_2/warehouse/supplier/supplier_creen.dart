@@ -49,6 +49,7 @@ class _SupplierCreenState extends State<SupplierCreen> {
               title: 'Поставщики',
               showSearchIcon: true,
               showFilterIcon: false,
+              showFilterOrderIcon: false,
               onChangedSearchInput: (String value) {
                 if (value.isNotEmpty) {
                   // _isSearching = true;
