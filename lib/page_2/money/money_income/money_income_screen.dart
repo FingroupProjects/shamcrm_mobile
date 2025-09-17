@@ -282,8 +282,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               );
 
               if (result == true && mounted) {
-                _moneyIncomeBloc
-                    .add(const FetchMoneyIncome(forceRefresh: true));
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               }
             },
             itemBuilder: (BuildContext context) {
@@ -296,8 +295,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.person,
-                        color: Color(0xff4759FF),
-                        size: 20,
+                        color: Color(0xff1E2E52),
+                        size: 24,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -320,8 +319,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.swap_horiz,
-                        color: Color(0xff4759FF),
-                        size: 20,
+                        color: Color(0xff1E2E52),
+                        size: 24,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -344,8 +343,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.add_circle_outline,
-                        color: Color(0xff4759FF),
-                        size: 20,
+                        color: Color(0xff1E2E52),
+                        size: 24,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -368,8 +367,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.keyboard_return,
-                        color: Color(0xff4759FF),
-                        size: 20,
+                        color: Color(0xff1E2E52),
+                        size: 24,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -388,12 +387,19 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 ),
               ];
             },
+            offset: const Offset(0, -220), // Positions the menu above the button
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+            elevation: 8,
+            shadowColor: Colors.black.withOpacity(0.1),
             child: Container(
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
                 color: Color(0xff1E2E52),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.all(Radius.circular(18))
               ),
               child: const Icon(
                 Icons.add,
@@ -401,13 +407,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 size: 24,
               ),
             ),
-            offset: const Offset(0, -60), // Positions the menu above the button
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: Colors.white,
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.1),
           )),
     );
   }
