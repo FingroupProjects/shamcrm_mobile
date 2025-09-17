@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -176,15 +177,9 @@ class _AddCashDeskState extends State<AddCashDesk> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
-                    ),
+                  child: PlayStoreImageLoading(
+                    size: 20.0,
+                    duration: Duration(milliseconds: 1000),
                   ),
                 ),
               )

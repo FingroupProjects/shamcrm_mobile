@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/cash_desk/add/add_cash_desk_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -63,7 +64,12 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
       body: BlocBuilder<CashDeskBloc, CashDeskState>(
         builder: (context, state) {
           if (state.status == CashDeskStatus.initialLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: const Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state.status == CashDeskStatus.initialError) {
             return Center(
               child: Column(
@@ -85,7 +91,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
           } else if (state.status == CashDeskStatus.initialLoaded ||
               state.status == CashDeskStatus.loadingMore) {
             final cashRegisters = state.cashRegisters;
-            if (cashRegisters == null || cashRegisters.isEmpty) {
+            if (cashRegisters.isEmpty) {
               return const Center(
                 child: Text(
                   'Нет данных',
@@ -115,7 +121,10 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     return Container(
                       padding: const EdgeInsets.all(16),
                       alignment: Alignment.center,
-                      child: const CircularProgressIndicator(),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
                     );
                   }
 

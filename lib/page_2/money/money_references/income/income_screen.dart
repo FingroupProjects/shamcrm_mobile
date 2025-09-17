@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/income/add/add_income_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/add_income_screen.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -63,7 +64,12 @@ class _IncomeScreenState extends State<IncomeScreen> {
       body: BlocBuilder<IncomeBloc, IncomeState>(
         builder: (context, state) {
           if (state.status == IncomeStatus.initialLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: const Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state.status == IncomeStatus.initialError) {
             return Center(
               child: Column(
@@ -115,7 +121,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     return Container(
                       padding: const EdgeInsets.all(16),
                       alignment: Alignment.center,
-                      child: const CircularProgressIndicator(),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
                     );
                   }
 
