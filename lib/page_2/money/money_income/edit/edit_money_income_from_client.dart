@@ -10,14 +10,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 
-class MoneyIncomeFromClient extends StatefulWidget {
-  const MoneyIncomeFromClient({super.key});
+class EditMoneyIncomeFromClient extends StatefulWidget {
+  const EditMoneyIncomeFromClient({super.key});
 
   @override
-  _MoneyIncomeFromClientState createState() => _MoneyIncomeFromClientState();
+  _EditMoneyIncomeFromClientState createState() => _EditMoneyIncomeFromClientState();
 }
 
-class _MoneyIncomeFromClientState extends State<MoneyIncomeFromClient> {
+class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();

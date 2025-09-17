@@ -10,20 +10,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 
-class MoneyIncomeAnotherCashRegister extends StatefulWidget {
-  const MoneyIncomeAnotherCashRegister({super.key});
+class AddMoneyIncomeFromClient extends StatefulWidget {
+  const AddMoneyIncomeFromClient({super.key});
 
   @override
-  _MoneyIncomeAnotherCashRegisterState createState() => _MoneyIncomeAnotherCashRegisterState();
+  _AddMoneyIncomeFromClientState createState() => _AddMoneyIncomeFromClientState();
 }
 
-class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashRegister> {
+class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  String? selectedLead;
   CashRegisterData? selectedCashRegister;
-  CashRegisterData? selectedSenderCashRegister;
+
   bool _isLoading = false;
 
   @override
@@ -35,7 +36,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedCashRegister == null) {
+    if (selectedLead == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
         false,
@@ -59,14 +60,22 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
       return;
     }
 
+    if (selectedCashRegister == null) {
+      setState(() => _isLoading = false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        false,
+      );
+      return;
+    }
 
     final bloc = context.read<MoneyIncomeBloc>();
     bloc.add(CreateMoneyIncome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      leadId: selectedCashRegister!.id,
+      leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: "client_payment",
+      operationType: "receive_another_cash_register"
     ));
   }
 
@@ -123,10 +132,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        title: localizations.translate('sender_cash_register') ?? 'Sender Cash Register',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
@@ -134,13 +140,14 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                           });
                         },
                       ),
+                      const SizedBox(height: 8),
+                      _buildDateField(localizations),
                       const SizedBox(height: 16),
-                      CashRegisterGroupWidget(
-                        title: localizations.translate('receiver_cash_register') ?? 'Receiver Cash Register',
-                        selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                      LeadRadioGroupWidget(
+                        selectedLead: selectedLead,
+                        onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
-                            selectedSenderCashRegister = selectedRegionData;
+                            selectedLead = selectedRegionData.id.toString();
                           });
                         },
                       ),
@@ -306,8 +313,8 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
   @override
   void dispose() {
     _dateController.dispose();
-    _amountController.dispose();
     _commentController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 }

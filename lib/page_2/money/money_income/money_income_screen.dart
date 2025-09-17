@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/money_income/money_income_bloc.dart';
-import 'add/money_income_from_another_cash_register.dart';
-import 'add/money_income_from_client.dart';
-import 'add/money_income_other_income.dart';
-import 'add/money_income_supplier_return.dart';
+import 'add/add_money_income_from_another_cash_register.dart';
+import 'add/add_money_income_from_client.dart';
+import 'add/add_money_income_other_income.dart';
+import 'add/add_money_income_supplier_return.dart';
 
 class MoneyIncomeScreen extends StatefulWidget {
   final int? organizationId;
@@ -256,16 +256,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               switch (value) {
                 case 'client_payment':
-                  targetScreen = const MoneyIncomeFromClient();
+                  targetScreen = const AddMoneyIncomeFromClient();
                   break;
                 case 'cash_register_transfer':
-                  targetScreen = const MoneyIncomeAnotherCashRegister();
+                  targetScreen = const AddMoneyIncomeAnotherCashRegister();
                   break;
                 case 'other_income':
-                  targetScreen = const MoneyIncomeOtherIncome();
+                  targetScreen = const AddMoneyIncomeOtherIncome();
                   break;
                 case 'supplier_return':
-                  targetScreen = const MoneyIncomeSupplierReturn();
+                  targetScreen = const AddMoneyIncomeSupplierReturn();
                   break;
                 default:
                   return;
