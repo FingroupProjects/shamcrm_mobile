@@ -4,12 +4,12 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/supplier_radio_group.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../../../../models/cash_register_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeSupplierReturn extends StatefulWidget {
@@ -29,7 +29,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  String? selectedLead;
+  CashRegisterData? selectedCashRegister;
   SupplierData? selectedSupplier;
 
   bool _isLoading = false;
@@ -63,22 +63,23 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       _commentController.text = widget.document.comment!;
     }
 
-    // Initialize selected lead
-    if (widget.document.model?.id != null) {
-      selectedLead = widget.document.model!.id.toString();
+    // Initialize selected cash register
+    if (widget.document.cashRegister != null) {
+      selectedCashRegister = CashRegisterData(
+        id: widget.document.cashRegister!.id!,
+        name: widget.document.cashRegister!.name ?? '',
+      );
     }
 
-    // Initialize selected supplier
-    // TODO: Add supplier initialization when supplier field is available in Document model
-    // selectedSupplier = null;
+
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedLead == null) {
+    if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
         false,
       );
       return;
@@ -119,9 +120,9 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
       operationType: OperationType.return_supplier.name,
-      leadId: selectedLead != null ? int.parse(selectedLead!) : null,
+      cashRegisterId: selectedCashRegister!.id.toString(),
       comment: _commentController.text.trim(),
-      supplierId: selectedSupplier?.id,
+      supplierId: int.parse(selectedSupplier!.id.toString()),
     ));
   }
 
@@ -205,11 +206,11 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
-                      LeadRadioGroupWidget(
-                        selectedLead: selectedLead,
-                        onSelectLead: (LeadData selectedRegionData) {
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData value) {
                           setState(() {
-                            selectedLead = selectedRegionData.id.toString();
+                            selectedCashRegister = value;
                           });
                         },
                       ),
