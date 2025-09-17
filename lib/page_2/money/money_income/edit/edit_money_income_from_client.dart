@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -9,33 +10,77 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
-class MoneyIncomeAnotherCashRegister extends StatefulWidget {
-  const MoneyIncomeAnotherCashRegister({super.key});
+class EditMoneyIncomeFromClient extends StatefulWidget {
+  final Document document;
+
+  const EditMoneyIncomeFromClient({
+    super.key,
+    required this.document,
+  });
 
   @override
-  _MoneyIncomeAnotherCashRegisterState createState() => _MoneyIncomeAnotherCashRegisterState();
+  _EditMoneyIncomeFromClientState createState() => _EditMoneyIncomeFromClientState();
 }
 
-class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashRegister> {
+class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  String? selectedLead;
   CashRegisterData? selectedCashRegister;
-  CashRegisterData? selectedSenderCashRegister;
+
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _initializeFields();
+  }
+
+  void _initializeFields() {
+    // Initialize date
+    if (widget.document.date != null) {
+      try {
+        final date = DateTime.parse(widget.document.date!);
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(date);
+      } catch (e) {
+        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+      }
+    } else {
+      _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    }
+
+    // Initialize amount
+    if (widget.document.amount != null) {
+      _amountController.text = widget.document.amount.toString();
+    }
+
+    // Initialize comment
+    if (widget.document.comment != null) {
+      _commentController.text = widget.document.comment!;
+    }
+
+    // Initialize selected lead
+    if (widget.document.model?.id != null) {
+      selectedLead = widget.document.model!.id.toString();
+    }
+
+    // Initialize selected cash register
+    if (widget.document.cashRegister != null) {
+      selectedCashRegister = CashRegisterData(
+        id: widget.document.cashRegister!.id!,
+        name: widget.document.cashRegister!.name!,
+      );
+    }
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedCashRegister == null) {
+    if (selectedLead == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
         false,
@@ -51,7 +96,9 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
         false,
@@ -59,40 +106,59 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
       return;
     }
 
+    if (selectedCashRegister == null) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        false,
+      );
+      return;
+    }
 
     final bloc = context.read<MoneyIncomeBloc>();
-    bloc.add(CreateMoneyIncome(
+    bloc.add(UpdateMoneyIncome(
+      id: widget.document.id,
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      leadId: selectedCashRegister!.id,
+      operationType: OperationType.client_payment.name,
+      leadId: selectedLead != null ? int.parse(selectedLead!) : null,
       comment: _commentController.text.trim(),
-      operationType: "client_payment",
+      cashRegisterId: selectedCashRegister?.id.toString(),
     ));
   }
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      if (scaffoldMessenger == null) return;
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    });
   }
 
   @override
@@ -104,13 +170,22 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
       appBar: _buildAppBar(localizations),
       body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
         listener: (context, state) {
-          setState(() => _isLoading = false);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
 
-          if (state is MoneyIncomeCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is MoneyIncomeCreateError && mounted) {
-            _showSnackBar(state.message, false);
-          }
+            setState(() => _isLoading = false);
+
+            if (state is MoneyIncomeUpdateSuccess) {
+              _showSnackBar('Document updated successfully', true);
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                if (mounted) {
+                  Navigator.pop(context, true);
+                }
+              });
+            } else if (state is MoneyIncomeUpdateError) {
+              _showSnackBar(state.message, false);
+            }
+          });
         },
         child: Form(
           key: _formKey,
@@ -123,6 +198,15 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
+                      LeadRadioGroupWidget(
+                        selectedLead: selectedLead,
+                        onSelectLead: (LeadData selectedRegionData) {
+                          setState(() {
+                            selectedLead = selectedRegionData.id.toString();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
@@ -130,15 +214,6 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
                             selectedCashRegister = selectedRegionData;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CashRegisterGroupWidget(
-                        selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedSenderCashRegister = selectedRegionData;
                           });
                         },
                       ),
@@ -169,7 +244,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_incoming_document') ?? 'Create Income',
+        localizations.translate('edit_incoming_document') ?? 'Edit Income',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -177,7 +252,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 
@@ -208,21 +283,20 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
-      controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
-      maxLines: 1,
-      keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+        controller: _amountController,
+        label: localizations.translate('amount') ?? 'Amount',
+        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        maxLines: 1,
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return localizations.translate('enter_amount') ?? 'Enter amount';
+          }
+          if (double.tryParse(value) == null) {
+            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+          }
+          return null;
         }
-        if (double.tryParse(value) == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
-        }
-
-        return null;
-      }
     );
   }
 
@@ -244,7 +318,9 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () {
+                if (mounted) Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(
@@ -286,7 +362,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
                 ),
               )
                   : Text(
-                localizations.translate('create') ?? 'Create',
+                localizations.translate('update') ?? 'Update',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -304,8 +380,8 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
   @override
   void dispose() {
     _dateController.dispose();
-    _amountController.dispose();
     _commentController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 }

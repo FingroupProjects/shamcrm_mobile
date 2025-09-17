@@ -1208,7 +1208,7 @@
 "client_sale": "Mijozga realizatsiya",
 "client_return": "Mijozdan qaytarish",
 "supplier_return": "Ta’minotchiga qaytarish",
-"appbar_money_income": "Pul tushumi",
+"appbar_money_income": "Tushum",
 "client_payment": "Mijoz to'lovi",
 "cash_register_transfer": "Boshqa kassadan tushum",
 "other_income": "Boshqa daromadlar",
@@ -1285,6 +1285,10 @@
   "add_client_return": "Mijozdan qaytish qo'shish",
   "client_return_details": "Mijozdan qaytish tafsilotlari",
   "client_return_history": "Mijozdan qaytish tarixi"
+  "sender_cash_register": "Jo'natuvchi kassa",
+  "receiver_cash_register": "Qabul qiluvchi kassa",
+  "delete_money_income": "Pul daromadini o'chirish",
+  "delete_money_income_confirm": "Siz ushbu pul daromadi hujjatini o'chirishga ishonchingiz komilmi?"
 
 
 

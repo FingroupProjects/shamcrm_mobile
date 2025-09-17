@@ -18,42 +18,41 @@ class FetchMoneyIncome extends MoneyIncomeEvent {
 }
 
 class UpdateMoneyIncome extends MoneyIncomeEvent {
-  final int documentId;
-  final DateTime date;
-  final int? storageId;
-  final String? comment;
-  final int? counterpartyId;
-  final List<Map<String, dynamic>> documentGoods;
-  final int? organizationId;
-  final int? salesFunnelId;
-  final double amount;
-  final String? description;
+  final int? id;
+  final String date;
+  final num amount;
+  final String operationType;
+  final String movementType = "PKO";
+  final int? leadId;
+  final String comment;
+  final String? cashRegisterId;
+  final String? senderCashRegisterId;
+  final int? supplierId;
 
-  const UpdateMoneyIncome({
-    required this.documentId,
+  UpdateMoneyIncome({
+    this.id,
     required this.date,
-    this.storageId,
-    this.comment,
-    this.counterpartyId,
-    required this.documentGoods,
-    this.organizationId,
-    this.salesFunnelId,
     required this.amount,
-    this.description,
+    this.leadId,
+    required this.comment,
+    required this.operationType,
+    this.cashRegisterId,
+    this.senderCashRegisterId,
+    this.supplierId,
   });
 
   @override
-  List<Object?> get props => [
-    documentId,
+  List<Object> get props => [
+    id ?? 0,
     date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId,
     amount,
-    description,
+    operationType,
+    movementType,
+    leadId ?? 0,
+    comment,
+    cashRegisterId ?? '',
+    senderCashRegisterId ?? '',
+    supplierId ?? 0,
   ];
 }
 
@@ -85,15 +84,21 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final num amount;
   final String operationType;
   final String movementType = "PKO";
-  final int leadId;
+  final int? leadId;
   final String comment;
+  final String? cashRegisterId;
+  final String? senderCashRegisterId;
+  final int? supplierId;
 
   CreateMoneyIncome({
     required this.date,
     required this.amount,
-    required this.leadId,
+    this.leadId,
     required this.comment,
     required this.operationType,
+    this.cashRegisterId,
+    this.senderCashRegisterId,
+    this.supplierId,
   });
 
   @override
@@ -102,7 +107,10 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         amount,
         operationType,
         movementType,
-        leadId,
+        leadId ?? 0,
         comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
       ];
 }

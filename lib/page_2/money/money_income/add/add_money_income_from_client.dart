@@ -2,30 +2,29 @@ import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
-import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
-import 'package:crm_task_manager/page_2/money/widgets/supplier_radio_group.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
-class MoneyIncomeSupplierReturn extends StatefulWidget {
-  const MoneyIncomeSupplierReturn({super.key});
+class AddMoneyIncomeFromClient extends StatefulWidget {
+  const AddMoneyIncomeFromClient({super.key});
 
   @override
-  _MoneyIncomeSupplierReturnState createState() => _MoneyIncomeSupplierReturnState();
+  _AddMoneyIncomeFromClientState createState() => _AddMoneyIncomeFromClientState();
 }
 
-class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
+class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   String? selectedLead;
-  SupplierData? selectedSupplier;
+  CashRegisterData? selectedCashRegister;
 
   bool _isLoading = false;
 
@@ -62,7 +61,7 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
       return;
     }
 
-    if (selectedSupplier == null) {
+    if (selectedCashRegister == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
@@ -77,8 +76,8 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
       amount: double.parse(_amountController.text.trim()),
       leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: "return_supplier"
-
+      operationType: OperationType.client_payment.name,
+      cashRegisterId: selectedCashRegister?.id.toString(),
     ));
   }
 
@@ -135,22 +134,22 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      SupplierGroupWidget(
-                        selectedSupplierId: selectedSupplier?.id.toString(),
-                        onSelectSupplier: (SupplierData value) {
-                          setState(() {
-                            selectedSupplier = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
                       LeadRadioGroupWidget(
                         selectedLead: selectedLead,
                         onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
                             selectedLead = selectedRegionData.id.toString();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDateField(localizations),
+                      const SizedBox(height: 16),
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                          setState(() {
+                            selectedCashRegister = selectedRegionData;
                           });
                         },
                       ),
@@ -189,7 +188,7 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 
@@ -315,9 +314,9 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
 
   @override
   void dispose() {
-    _amountController.dispose();
     _dateController.dispose();
     _commentController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 }

@@ -86,13 +86,17 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Future<void> _onCreateMoneyIncome(CreateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeCreateLoading());
     try {
+      // operation types are different but api method is the same for 4 types of operations, OperationType enum is used to distinguish them
       await apiService.createMoneyIncomeDocument(
         date: event.date,
         amount: event.amount,
         operationType: event.operationType,
         movementType: event.movementType,
         leadId: event.leadId,
+        senderCashRegisterId: event.senderCashRegisterId,
+        cashRegisterId: event.cashRegisterId,
         comment: event.comment,
+        supplierId: event.supplierId,
       );
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -106,16 +110,16 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     emit(MoneyIncomeUpdateLoading());
     try {
       await apiService.updateMoneyIncomeDocument(
-        documentId: event.documentId,
+        documentId: event.id!,
         date: event.date,
-        storageId: event.storageId,
-        comment: event.comment,
-        counterpartyId: event.counterpartyId,
-        documentGoods: event.documentGoods,
-        organizationId: event.organizationId,
-        salesFunnelId: event.salesFunnelId,
         amount: event.amount,
-        description: event.description,
+        operationType: event.operationType,
+        movementType: event.movementType,
+        leadId: event.leadId,
+        senderCashRegisterId: event.senderCashRegisterId,
+        cashRegisterId: event.cashRegisterId,
+        comment: event.comment,
+        supplierId: event.supplierId,
       );
 
       await Future.delayed(const Duration(milliseconds: 100));

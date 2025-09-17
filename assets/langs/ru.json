@@ -1201,7 +1201,7 @@
 "client_sale": "Реализация клиент",
 "client_return": "Возврат от клиента",
 "supplier_return": "Возврат поставщику",
-"appbar_money_income": "Денежные поступления",
+"appbar_money_income": "Приход",
 "client_payment": "Оплата от клиента",
 "cash_register_transfer": "Получение с другой кассы",
 "other_income": "Прочие доходы",
@@ -1314,6 +1314,10 @@
   "add_client_return": "Добавить возврат от клиента",
   "client_return_details": "Детали возврата от клиента",
   "client_return_history": "История возврата от клиента"
+  "sender_cash_register": "Касса отправитель",
+  "receiver_cash_register": "Касса получатель",
+  "delete_money_income": "Удалить денежный доход",
+  "delete_money_income_confirm": "Вы уверены, что хотите удалить этот документ денежного дохода?"
 
  
 

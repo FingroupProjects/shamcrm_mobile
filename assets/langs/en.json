@@ -1195,7 +1195,7 @@
 "client_sale": "Client sale",
 "client_return": "Client return",
 "supplier_return": "Supplier return",
-"appbar_money_income": "Money income",
+"appbar_money_income": "Income",
 "client_payment": "Client payment",
 "cash_register_transfer": "Cash register transfer",
 "other_income": "Other income",
@@ -1271,6 +1271,10 @@
     "add_client_return": "Add Client Return",
     "client_return_details": "Client Return Details",
     "client_return_history": "Client Return History"
+    "sender_cash_register": "Sender Cash Register",
+    "receiver_cash_register": "Receiver Cash Register",
+    "delete_money_income": "Delete Money Income",
+    "delete_money_income_confirm": "Are you sure you want to delete this money income document?"
 
 
 

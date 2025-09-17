@@ -1,15 +1,21 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/page_2/money/money_income/money_income_card.dart';
+import 'package:crm_task_manager/models/money/money_income_document_model.dart';
+import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/money_income/money_income_bloc.dart';
-import 'add/money_income_from_another_cash_register.dart';
-import 'add/money_income_from_client.dart';
-import 'add/money_income_other_income.dart';
-import 'add/money_income_supplier_return.dart';
+import 'add/add_money_income_from_another_cash_register.dart';
+import 'add/add_money_income_from_client.dart';
+import 'add/add_money_income_other_income.dart';
+import 'add/add_money_income_supplier_return.dart';
+import 'edit/edit_money_income_from_another_cash_register.dart';
+import 'edit/edit_money_income_from_client.dart';
+import 'edit/edit_money_income_other_income.dart';
+import 'edit/edit_money_income_supplier_return.dart';
+import 'operation_type.dart';
 
 class MoneyIncomeScreen extends StatefulWidget {
   final int? organizationId;
@@ -107,6 +113,50 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
         duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  
+  Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
+    if (!mounted) return;
+
+    final operationType = getOperationTypeFromString(document.operationType);
+    debugPrint('Operation type: ${document.operationType} -> ${operationType}');
+
+    if (operationType == null) {
+      _showSnackBar('Неизвестный тип операции: ${document.operationType}', false);
+      return;
+    }
+
+    Widget? targetScreen;
+
+    switch (operationType) {
+      case OperationType.client_payment:
+        targetScreen = EditMoneyIncomeFromClient(document: document);
+        break;
+      case OperationType.receive_another_cash_register:
+        targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
+        break;
+      case OperationType.other_incomes:
+        targetScreen = EditMoneyIncomeOtherIncome(document: document);
+        break;
+      case OperationType.return_supplier:
+        targetScreen = EditMoneyIncomeSupplierReturn(document: document);
+        break;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: _moneyIncomeBloc,
+          child: targetScreen,
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+    }
   }
 
   @override
@@ -237,8 +287,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       }
                       return MoneyIncomeCard(
                         document: currentData[index],
-                        onUpdate: () {
-                          _moneyIncomeBloc.add(AddMoneyIncome());
+                        onUpdate: (document) {
+                          _navigateToEditScreen(context, document);
+                        },
+                        onDelete: (documentId) {
+                          _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
                         },
                       );
                     },
@@ -256,16 +309,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               switch (value) {
                 case 'client_payment':
-                  targetScreen = const MoneyIncomeFromClient();
+                  targetScreen = const AddMoneyIncomeFromClient();
                   break;
                 case 'cash_register_transfer':
-                  targetScreen = const MoneyIncomeAnotherCashRegister();
+                  targetScreen = const AddMoneyIncomeAnotherCashRegister();
                   break;
                 case 'other_income':
-                  targetScreen = const MoneyIncomeOtherIncome();
+                  targetScreen = const AddMoneyIncomeOtherIncome();
                   break;
                 case 'supplier_return':
-                  targetScreen = const MoneyIncomeSupplierReturn();
+                  targetScreen = const AddMoneyIncomeSupplierReturn();
                   break;
                 default:
                   return;
@@ -282,8 +335,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               );
 
               if (result == true && mounted) {
-                _moneyIncomeBloc
-                    .add(const FetchMoneyIncome(forceRefresh: true));
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               }
             },
             itemBuilder: (BuildContext context) {
@@ -296,7 +348,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.person,
-                        color: Color(0xff4759FF),
+                        color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -320,7 +372,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.swap_horiz,
-                        color: Color(0xff4759FF),
+                        color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -344,7 +396,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.add_circle_outline,
-                        color: Color(0xff4759FF),
+                        color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -368,7 +420,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     children: [
                       const Icon(
                         Icons.keyboard_return,
-                        color: Color(0xff4759FF),
+                        color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -388,12 +440,19 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 ),
               ];
             },
+            offset: const Offset(0, -220), // Positions the menu above the button
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+            elevation: 8,
+            shadowColor: Colors.black.withOpacity(0.1),
             child: Container(
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
                 color: Color(0xff1E2E52),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.all(Radius.circular(18))
               ),
               child: const Icon(
                 Icons.add,
@@ -401,13 +460,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 size: 24,
               ),
             ),
-            offset: const Offset(0, -60), // Positions the menu above the button
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: Colors.white,
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.1),
           )),
     );
   }
