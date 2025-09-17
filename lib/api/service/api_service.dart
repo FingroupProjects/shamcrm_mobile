@@ -9,6 +9,10 @@ import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
+import 'package:crm_task_manager/models/money/expense_model.dart';
+import 'package:crm_task_manager/models/money/add_expense_model.dart';
+import 'package:crm_task_manager/models/money/income_model.dart';
+import 'package:crm_task_manager/models/money/add_income_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -11205,6 +11209,170 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         throw Exception(data['errors'] ?? 'Ошибка добавления в кассу');
       } else {
         throw Exception('Ошибка добавления в кассу: ${response.body}');
+      }
+    }
+  }
+
+  // Expense API methods
+  Future<ExpenseResponseModel> getExpenses({
+    int page = 1,
+    int perPage = 15,
+    String? query,
+  }) async {
+    String url = '/article?type=expense&page=$page&per_page=$perPage';
+
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getExpenses - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return ExpenseResponseModel.fromJson(data['result']);
+        } else {
+          throw Exception('Нет данных по расходам');
+        }
+      } else {
+        final data = json.decode(response.body);
+        if (data['errors'] != null) {
+          throw Exception(data['errors'] ?? 'Ошибка загрузки расходов');
+        } else {
+          throw Exception('Ошибка загрузки расходов: ${response.body}');
+        }
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных расходов: $e');
+    }
+  }
+
+  Future<ExpenseModel> postExpense(AddExpenseModel value) async {
+    final response = await _postRequest('/article', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return ExpenseModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка добавления расхода');
+      } else {
+        throw Exception('Ошибка добавления расхода: ${response.body}');
+      }
+    }
+  }
+
+  Future<bool> deleteExpense(int id) async {
+    final response = await _deleteRequest('/article/$id');
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      return data['result']['deleted'] as bool;
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка удаления расхода');
+      } else {
+        throw Exception('Ошибка удаления расхода: ${response.body}');
+      }
+    }
+  }
+
+  Future<ExpenseModel> patchExpense(int id, AddExpenseModel value) async {
+    final response = await _patchRequest('/article/$id', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return ExpenseModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка обновления расхода');
+      } else {
+        throw Exception('Ошибка обновления расхода: ${response.body}');
+      }
+    }
+  }
+
+  // Income API methods
+  Future<IncomeResponseModel> getIncomes({
+    int page = 1,
+    int perPage = 15,
+    String? query,
+  }) async {
+    String url = '/article?type=income&page=$page&per_page=$perPage';
+
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getIncomes - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return IncomeResponseModel.fromJson(data['result']);
+        } else {
+          throw Exception('Нет данных по доходам');
+        }
+      } else {
+        final data = json.decode(response.body);
+        if (data['errors'] != null) {
+          throw Exception(data['errors'] ?? 'Ошибка загрузки доходов');
+        } else {
+          throw Exception('Ошибка загрузки доходов: ${response.body}');
+        }
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных доходов: $e');
+    }
+  }
+
+  Future<IncomeModel> postIncome(AddIncomeModel value) async {
+    final response = await _postRequest('/article', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return IncomeModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка добавления дохода');
+      } else {
+        throw Exception('Ошибка добавления дохода: ${response.body}');
+      }
+    }
+  }
+
+  Future<bool> deleteIncome(int id) async {
+    final response = await _deleteRequest('/article/$id');
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      return data['result']['deleted'] as bool;
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка удаления дохода');
+      } else {
+        throw Exception('Ошибка удаления дохода: ${response.body}');
+      }
+    }
+  }
+
+  Future<IncomeModel> patchIncome(int id, AddIncomeModel value) async {
+    final response = await _patchRequest('/article/$id', value.toJson());
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return IncomeModel.fromJson(data['result']);
+    } else {
+      if (data['errors'] != null) {
+        throw Exception(data['errors'] ?? 'Ошибка обновления дохода');
+      } else {
+        throw Exception('Ошибка обновления дохода: ${response.body}');
       }
     }
   }

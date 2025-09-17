@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/cash_desk/cash_desk_bloc.dart';
+import '../../../bloc/expense/expense_bloc.dart';
+import '../../../bloc/income/income_bloc.dart';
 import 'cash_desk/cash_desk_screen.dart';
+import 'expense/expense_screen.dart';
+import 'income/income_screen.dart';
 
 class MoneyReferencesScreen extends StatefulWidget {
   const MoneyReferencesScreen({super.key});
@@ -38,8 +42,15 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       color: const Color(0xffFF9800),
       background: const Color(0xffFFF5E5),
       onTap: () {
-        // Navigate to Expense Categories screen
-        print('Navigating to Statya rasxodov');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => ExpenseBloc(),
+              child: const ExpenseScreen(),
+            ),
+          ),
+        );
       },
     ),
     _ReferenceSection(
@@ -49,8 +60,15 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       color: const Color(0xff2196F3),
       background: const Color(0xffEAF2FB),
       onTap: () {
-        // Navigate to Income Categories screen
-        print('Navigating to Statya doxodov');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => IncomeBloc(),
+              child: const IncomeScreen(),
+            ),
+          ),
+        );
       },
     ),
   ];

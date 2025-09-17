@@ -1,29 +1,29 @@
-import 'package:crm_task_manager/bloc/expense/add/add_expense_bloc.dart';
-import 'package:crm_task_manager/page_2/money/money_references/expense/add_expense_screen.dart';
+import 'package:crm_task_manager/bloc/income/add/add_income_bloc.dart';
+import 'package:crm_task_manager/page_2/money/money_references/income/add_income_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../bloc/expense/expense_bloc.dart';
-import '../../../../bloc/expense/edit/edit_expense_bloc.dart';
+import '../../../../bloc/income/income_bloc.dart';
+import '../../../../bloc/income/edit/edit_income_bloc.dart';
 import '../../../../custom_widget/custom_button.dart';
-import '../../../../models/money/expense_model.dart';
+import '../../../../models/money/income_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
-import 'edit_expense_screen.dart';
+import 'edit_income_screen.dart';
 
-class ExpenseScreen extends StatefulWidget {
-  const ExpenseScreen({super.key});
+class IncomeScreen extends StatefulWidget {
+  const IncomeScreen({super.key});
 
   @override
-  State<ExpenseScreen> createState() => _ExpenseScreenState();
+  State<IncomeScreen> createState() => _IncomeScreenState();
 }
 
-class _ExpenseScreenState extends State<ExpenseScreen> {
+class _IncomeScreenState extends State<IncomeScreen> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    context.read<ExpenseBloc>().add(const FetchExpenses());
+    context.read<IncomeBloc>().add(const FetchIncomes());
     _scrollController.addListener(_onScroll);
   }
 
@@ -34,8 +34,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   void _onScroll() {
-    if (_isBottom && !context.read<ExpenseBloc>().state.hasReachedMax) {
-      context.read<ExpenseBloc>().add(const LoadMoreExpenses());
+    if (_isBottom && !context.read<IncomeBloc>().state.hasReachedMax) {
+      context.read<IncomeBloc>().add(const LoadMoreIncomes());
     }
   }
 
@@ -52,7 +52,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: true,
-        title: const Text('Расходы',
+        title: const Text('Доходы',
             style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -60,11 +60,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: BlocBuilder<ExpenseBloc, ExpenseState>(
+      body: BlocBuilder<IncomeBloc, IncomeState>(
         builder: (context, state) {
-          if (state.status == ExpenseStatus.initialLoading) {
+          if (state.status == IncomeStatus.initialLoading) {
             return const Center(child: CircularProgressIndicator());
-          } else if (state.status == ExpenseStatus.initialError) {
+          } else if (state.status == IncomeStatus.initialError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -74,18 +74,18 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   ElevatedButton(
                     onPressed: () {
                       return context
-                          .read<ExpenseBloc>()
-                          .add(const FetchExpenses());
+                          .read<IncomeBloc>()
+                          .add(const FetchIncomes());
                     },
                     child: const Text('Повторить'),
                   ),
                 ],
               ),
             );
-          } else if (state.status == ExpenseStatus.initialLoaded ||
-              state.status == ExpenseStatus.loadingMore) {
-            final expenses = state.expenses;
-            if (expenses.isEmpty) {
+          } else if (state.status == IncomeStatus.initialLoaded ||
+              state.status == IncomeStatus.loadingMore) {
+            final incomes = state.incomes;
+            if (incomes.isEmpty) {
               return const Center(
                 child: Text(
                   'Нет данных',
@@ -100,17 +100,17 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             return RefreshIndicator(
               onRefresh: () async {
                 context
-                    .read<ExpenseBloc>()
-                    .add(const FetchExpenses());
+                    .read<IncomeBloc>()
+                    .add(const FetchIncomes());
               },
               child: ListView.builder(
                 controller: _scrollController,
                 padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: expenses.length +
-                    (state.status == ExpenseStatus.loadingMore ? 1 : 0),
+                itemCount: incomes.length +
+                    (state.status == IncomeStatus.loadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
-                  if (index >= expenses.length) {
+                  if (index >= incomes.length) {
                     // Show loading indicator at the bottom
                     return Container(
                       padding: const EdgeInsets.all(16),
@@ -119,8 +119,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     );
                   }
 
-                  final data = expenses[index];
-                  return _buildExpenseCard(data);
+                  final data = incomes[index];
+                  return _buildIncomeCard(data);
                 },
               ),
             );
@@ -131,13 +131,13 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xff1E2E52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: _navigateToAddExpense,
+        onPressed: _navigateToAddIncome,
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
     );
   }
 
-  Widget _buildExpenseCard(ExpenseModel data) {
+  Widget _buildIncomeCard(IncomeModel data) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Material(
@@ -145,7 +145,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            _navigateToEditExpense(data);
+            _navigateToEditIncome(data);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -189,6 +189,17 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                           color: Color(0xff1E2E52),
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      if (data.users.isNotEmpty)
+                        Text(
+                          'Пользователи: ${data.users.map((e) => e.name).join(', ')}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -210,29 +221,29 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
   }
 
-  void _navigateToAddExpense() async {
+  void _navigateToAddIncome() async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (context) => AddExpenseBloc(),
-          child: AddExpenseScreen(),
+          create: (context) => AddIncomeBloc(),
+          child: AddIncomeScreen(),
         ),
       ),
     );
 
     if (result == true) {
-      context.read<ExpenseBloc>().add(const FetchExpenses());
+      context.read<IncomeBloc>().add(const FetchIncomes());
     }
   }
 
-  void _navigateToEditExpense(ExpenseModel data) async {
+  void _navigateToEditIncome(IncomeModel data) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (context) => EditExpenseBloc(),
-          child: EditExpenseScreen(
+          create: (context) => EditIncomeBloc(),
+          child: EditIncomeScreen(
             initialData: data,
           ),
         ),
@@ -240,12 +251,12 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
 
     if (result == true) {
-      context.read<ExpenseBloc>().add(const FetchExpenses());
+      context.read<IncomeBloc>().add(const FetchIncomes());
     }
   }
 
   void _showDeleteConfirmation(
-      ExpenseModel data, BuildContext parentContext) {
+      IncomeModel data, BuildContext parentContext) {
     showDialog(
       context: parentContext,
       builder: (BuildContext context) {
@@ -253,7 +264,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Удалить расход',
+              'Удалить доход',
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -263,7 +274,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите удалить расход "${data.name}"?',
+            'Вы уверены, что хотите удалить доход "${data.name}"?',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
@@ -292,10 +303,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     buttonText:
                     AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      // Use parentContext instead of context to access the ExpenseBloc
+                      // Use parentContext instead of context to access the IncomeBloc
                       parentContext
-                          .read<ExpenseBloc>()
-                          .add(DeleteExpense(data.id));
+                          .read<IncomeBloc>()
+                          .add(DeleteIncome(data.id));
                       Navigator.of(context)
                           .pop(); // Use context for dialog navigation
                     },
