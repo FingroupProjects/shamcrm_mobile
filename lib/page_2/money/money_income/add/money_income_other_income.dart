@@ -186,7 +186,7 @@ class _MoneyIncomeOtherIncomeState extends State<MoneyIncomeOtherIncome> {
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 

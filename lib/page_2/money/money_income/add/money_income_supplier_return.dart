@@ -189,7 +189,7 @@ class _MoneyIncomeSupplierReturnState extends State<MoneyIncomeSupplierReturn> {
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 

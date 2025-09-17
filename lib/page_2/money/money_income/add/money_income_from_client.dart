@@ -186,7 +186,7 @@ class _MoneyIncomeFromClientState extends State<MoneyIncomeFromClient> {
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 

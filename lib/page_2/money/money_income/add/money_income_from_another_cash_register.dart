@@ -179,7 +179,7 @@ class _MoneyIncomeAnotherCashRegisterState extends State<MoneyIncomeAnotherCashR
           color: Color(0xff1E2E52),
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
     );
   }
 
