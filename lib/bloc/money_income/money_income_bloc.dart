@@ -96,6 +96,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         senderCashRegisterId: event.senderCashRegisterId,
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
+        supplierId: event.supplierId,
       );
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -107,25 +108,25 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onUpdateMoneyIncome(UpdateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeUpdateLoading());
-    // try {
-    //   await apiService.updateMoneyIncomeDocument(
-    //     documentId: event.documentId,
-    //     date: event.date,
-    //     storageId: event.storageId,
-    //     comment: event.comment,
-    //     counterpartyId: event.counterpartyId,
-    //     documentGoods: event.documentGoods,
-    //     organizationId: event.organizationId,
-    //     salesFunnelId: event.salesFunnelId,
-    //     amount: event.amount,
-    //     description: event.description,
-    //   );
-    //
-    //   await Future.delayed(const Duration(milliseconds: 100));
-    //   emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
-    // } catch (e) {
-    //   emit(MoneyIncomeUpdateError(e.toString()));
-    // }
+    try {
+      await apiService.updateMoneyIncomeDocument(
+        documentId: event.id!,
+        date: event.date,
+        amount: event.amount,
+        operationType: event.operationType,
+        movementType: event.movementType,
+        leadId: event.leadId,
+        senderCashRegisterId: event.senderCashRegisterId,
+        cashRegisterId: event.cashRegisterId,
+        comment: event.comment,
+        supplierId: event.supplierId,
+      );
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
+    } catch (e) {
+      emit(MoneyIncomeUpdateError(e.toString()));
+    }
   }
 
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {

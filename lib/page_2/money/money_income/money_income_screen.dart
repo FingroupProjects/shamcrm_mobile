@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
-import 'package:crm_task_manager/page_2/money/money_income/money_income_card.dart';
+import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -289,6 +289,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         document: currentData[index],
                         onUpdate: (document) {
                           _navigateToEditScreen(context, document);
+                        },
+                        onDelete: (documentId) {
+                          _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
                         },
                       );
                     },

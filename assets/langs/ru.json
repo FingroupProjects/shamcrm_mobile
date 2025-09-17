@@ -1296,7 +1296,9 @@
   "supplier_return_history": "История возврата поставщику",
   "add_supplier_return": "Добавить возврат поставщику",
   "sender_cash_register": "Касса отправитель",
-  "receiver_cash_register": "Касса получатель"
+  "receiver_cash_register": "Касса получатель",
+  "delete_money_income": "Удалить денежный доход",
+  "delete_money_income_confirm": "Вы уверены, что хотите удалить этот документ денежного дохода?"
 
  
 

@@ -4,17 +4,15 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeAnotherCashRegister extends StatefulWidget {
   final Document document;
-  
+
   const EditMoneyIncomeAnotherCashRegister({
     super.key,
     required this.document,
@@ -80,7 +78,15 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
     if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        false,
+      );
+      return;
+    }
+
+    if (selectedSenderCashRegister == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_sender_cash_register') ?? 'Please select a sender cash register',
         false,
       );
       return;
@@ -94,7 +100,9 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
         false,
@@ -102,9 +110,9 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       return;
     }
 
-
     final bloc = context.read<MoneyIncomeBloc>();
     bloc.add(UpdateMoneyIncome(
+      id: widget.document.id,
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
       operationType: OperationType.receive_another_cash_register.name,
@@ -117,26 +125,33 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      if (scaffoldMessenger == null) return;
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    });
   }
 
   @override
@@ -148,13 +163,22 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       appBar: _buildAppBar(localizations),
       body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
         listener: (context, state) {
-          setState(() => _isLoading = false);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
 
-          if (state is MoneyIncomeCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is MoneyIncomeCreateError && mounted) {
-            _showSnackBar(state.message, false);
-          }
+            setState(() => _isLoading = false);
+
+            if (state is MoneyIncomeUpdateSuccess) {
+              _showSnackBar('Document updated successfully', true);
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                if (mounted) {
+                  Navigator.pop(context, true);
+                }
+              });
+            } else if (state is MoneyIncomeUpdateError) {
+              _showSnackBar(state.message, false);
+            }
+          });
         },
         child: Form(
           key: _formKey,
@@ -169,10 +193,10 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                       const SizedBox(height: 8),
                       CashRegisterGroupWidget(
                         title: localizations.translate('sender_cash_register') ?? 'Sender Cash Register',
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
-                            selectedCashRegister = selectedRegionData;
+                            selectedSenderCashRegister = selectedRegionData;
                           });
                         },
                       ),
@@ -181,10 +205,10 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         title: localizations.translate('receiver_cash_register') ?? 'Receiver Cash Register',
-                        selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
-                            selectedSenderCashRegister = selectedRegionData;
+                            selectedCashRegister = selectedRegionData;
                           });
                         },
                       ),
@@ -254,21 +278,20 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
-      controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
-      maxLines: 1,
-      keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+        controller: _amountController,
+        label: localizations.translate('amount') ?? 'Amount',
+        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        maxLines: 1,
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return localizations.translate('enter_amount') ?? 'Enter amount';
+          }
+          if (double.tryParse(value) == null) {
+            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+          }
+          return null;
         }
-        if (double.tryParse(value) == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
-        }
-
-        return null;
-      }
     );
   }
 
@@ -290,7 +313,9 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () {
+                if (mounted) Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(

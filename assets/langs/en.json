@@ -1253,7 +1253,9 @@
     "supplier_return_history": "Supplier return history",
     "add_supplier_return": "Add supplier return",
     "sender_cash_register": "Sender Cash Register",
-    "receiver_cash_register": "Receiver Cash Register"
+    "receiver_cash_register": "Receiver Cash Register",
+    "delete_money_income": "Delete Money Income",
+    "delete_money_income_confirm": "Are you sure you want to delete this money income document?"
 
 
 

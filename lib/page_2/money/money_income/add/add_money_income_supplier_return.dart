@@ -76,8 +76,9 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
     bloc.add(CreateMoneyIncome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      leadId: int.parse(selectedCashRegister!.id.toString()),
+      cashRegisterId: selectedCashRegister!.id.toString(),
       comment: _commentController.text.trim(),
+      supplierId: int.parse(selectedSupplier!.id.toString()),
       operationType: OperationType.return_supplier.name
     ));
   }

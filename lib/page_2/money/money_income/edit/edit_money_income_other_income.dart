@@ -14,7 +14,7 @@ import '../operation_type.dart';
 
 class EditMoneyIncomeOtherIncome extends StatefulWidget {
   final Document document;
-  
+
   const EditMoneyIncomeOtherIncome({
     super.key,
     required this.document,
@@ -47,10 +47,12 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         final date = DateTime.parse(widget.document.date!);
         _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(date);
       } catch (e) {
-        _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+        _dateController.text =
+            DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
       }
     } else {
-      _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+      _dateController.text =
+          DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     }
 
     // Initialize amount
@@ -82,7 +84,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
 
     if (selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_lead') ??
+            'Please select a deal',
         false,
       );
       return;
@@ -93,21 +96,28 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     String? isoDate;
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(
+          _dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
+            'Enter valid date and time',
         false,
       );
       return;
     }
 
     if (selectedCashRegister == null) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ??
+            'Please select a cash register',
         false,
       );
       return;
@@ -115,7 +125,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
 
     final bloc = context.read<MoneyIncomeBloc>();
     bloc.add(UpdateMoneyIncome(
-      date: isoDate!,
+      id: widget.document.id,
+      date: isoDate,
       amount: double.parse(_amountController.text.trim()),
       operationType: OperationType.other_incomes.name,
       leadId: selectedLead != null ? int.parse(selectedLead!) : null,
@@ -127,26 +138,33 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      if (scaffoldMessenger == null) return;
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    });
   }
 
   @override
@@ -158,13 +176,22 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       appBar: _buildAppBar(localizations),
       body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
         listener: (context, state) {
-          setState(() => _isLoading = false);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
 
-          if (state is MoneyIncomeCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is MoneyIncomeCreateError && mounted) {
-            _showSnackBar(state.message, false);
-          }
+            setState(() => _isLoading = false);
+
+            if (state is MoneyIncomeUpdateSuccess) {
+              _showSnackBar('Document updated successfully', true);
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                if (mounted) {
+                  Navigator.pop(context, true);
+                }
+              });
+            } else if (state is MoneyIncomeUpdateError) {
+              _showSnackBar(state.message, false);
+            }
+          });
         },
         child: Form(
           key: _formKey,
@@ -172,7 +199,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -187,8 +215,10 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                       ),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                        selectedCashRegisterId: selectedCashRegister?.id
+                            .toString(),
+                        onSelectCashRegister: (
+                            CashRegisterData selectedRegionData) {
                           setState(() {
                             selectedCashRegister = selectedRegionData;
                           });
@@ -219,7 +249,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(
+            Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
@@ -262,21 +293,21 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
-      controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
-      maxLines: 1,
-      keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+        controller: _amountController,
+        label: localizations.translate('amount') ?? 'Amount',
+        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        maxLines: 1,
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return localizations.translate('enter_amount') ?? 'Enter amount';
+          }
+          if (double.tryParse(value) == null) {
+            return localizations.translate('enter_valid_amount') ??
+                'Enter valid amount';
+          }
+          return null;
         }
-        if (double.tryParse(value) == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
-        }
-
-        return null;
-      }
     );
   }
 
@@ -298,7 +329,9 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () {
+                if (mounted) Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(

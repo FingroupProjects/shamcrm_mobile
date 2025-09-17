@@ -18,16 +18,19 @@ class FetchMoneyIncome extends MoneyIncomeEvent {
 }
 
 class UpdateMoneyIncome extends MoneyIncomeEvent {
+  final int? id;
   final String date;
   final num amount;
   final String operationType;
   final String movementType = "PKO";
-  int? leadId;
+  final int? leadId;
   final String comment;
-  String? cashRegisterId;
-  String? senderCashRegisterId;
+  final String? cashRegisterId;
+  final String? senderCashRegisterId;
+  final int? supplierId;
 
   UpdateMoneyIncome({
+    this.id,
     required this.date,
     required this.amount,
     this.leadId,
@@ -35,10 +38,12 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     required this.operationType,
     this.cashRegisterId,
     this.senderCashRegisterId,
+    this.supplierId,
   });
 
   @override
   List<Object> get props => [
+    id ?? 0,
     date,
     amount,
     operationType,
@@ -47,6 +52,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     comment,
     cashRegisterId ?? '',
     senderCashRegisterId ?? '',
+    supplierId ?? 0,
   ];
 }
 
@@ -78,10 +84,11 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final num amount;
   final String operationType;
   final String movementType = "PKO";
-  int? leadId;
+  final int? leadId;
   final String comment;
-  String? cashRegisterId;
-  String? senderCashRegisterId;
+  final String? cashRegisterId;
+  final String? senderCashRegisterId;
+  final int? supplierId;
 
   CreateMoneyIncome({
     required this.date,
@@ -91,6 +98,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
     required this.operationType,
     this.cashRegisterId,
     this.senderCashRegisterId,
+    this.supplierId,
   });
 
   @override
@@ -103,5 +111,6 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         comment,
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
+        supplierId ?? 0,
       ];
 }

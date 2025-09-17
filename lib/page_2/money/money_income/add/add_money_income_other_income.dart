@@ -76,7 +76,8 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
       amount: double.parse(_amountController.text.trim()),
       leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: OperationType.other_incomes.name
+      operationType: OperationType.other_incomes.name,
+      cashRegisterId: selectedCashRegister?.id.toString(),
     ));
   }
 

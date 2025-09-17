@@ -76,7 +76,8 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       amount: double.parse(_amountController.text.trim()),
       leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: OperationType.client_payment.name
+      operationType: OperationType.client_payment.name,
+      cashRegisterId: selectedCashRegister?.id.toString(),
     ));
   }
 

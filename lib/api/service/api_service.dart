@@ -11578,10 +11578,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String operationType,
     required String movementType,
     String? comment,
-
     int? leadId,
     String? senderCashRegisterId,
     String? cashRegisterId,
+    int? supplierId,
   }) async {
 
     final path = await _appendQueryParams('/checking-account');
@@ -11596,6 +11596,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'sender_cash_register_id': senderCashRegisterId,
         'comment': comment,
         'cash_register_id': cashRegisterId,
+        'supplier_id': supplierId,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
@@ -11654,33 +11655,20 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   Future<Map<String, dynamic>> deleteMoneyIncomeDocument(int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    final path = '/checking-account/$documentId';
 
-    final pathWithParams = await _appendQueryParams('/checking-account/delete');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': [documentId],
+      });
 
-    final body = jsonEncode({
-      'ids': [documentId],
-    });
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'result': 'Success'};
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(
-          jsonResponse['message'] ?? 'Ошибка при удалении документа');
+      if (response.statusCode == 200) {
+        return {'result': 'Success'};
+      } else {
+        throw Exception('Failed to delete money income document!');
+      }
+    } catch (e) {
+      throw Exception('Ошибка удаления документа прихода: $e');
     }
   }
 
@@ -11717,15 +11705,42 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<void> updateMoneyIncomeDocument(
-      {required int documentId,
-        required DateTime date,
-        int? storageId,
-        String? comment,
-        int? counterpartyId,
-        required List<Map<String, dynamic>> documentGoods,
-        int? organizationId,
-        int? salesFunnelId,
-        required double amount,
-        String? description}) async {}
+  Future<void> updateMoneyIncomeDocument({required int documentId,
+    required String date,
+    required num amount,
+    required String operationType,
+    required String movementType,
+    String? comment,
+    int? leadId,
+    String? senderCashRegisterId,
+    String? cashRegisterId,
+    int? supplierId,
+  }) async {
+
+    final path = await _appendQueryParams('/checking-account/$documentId');
+
+    try {
+      final response = await _patchRequest(path, {
+        'date': date,
+        'amount': amount,
+        'operation_type': operationType,
+        'movement_type': movementType,
+        'lead_id': leadId,
+        'sender_cash_register_id': senderCashRegisterId,
+        'comment': comment,
+        'cash_register_id': cashRegisterId,
+        'supplier_id': supplierId,
+      });
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по обновлению прихода: $rawData");
+        return;
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint("Ошибка при обновлении документа прихода: $e");
+      rethrow;
+    }
+  }
 }
