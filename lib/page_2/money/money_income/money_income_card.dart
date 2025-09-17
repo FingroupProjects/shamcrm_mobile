@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 class MoneyIncomeCard extends StatelessWidget {
   final Document document;
-  final VoidCallback? onUpdate;
+  final Function(Document)? onUpdate;
 
   const MoneyIncomeCard({
     Key? key,
@@ -44,7 +44,7 @@ class MoneyIncomeCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        if (onUpdate != null) onUpdate!();
+        if (onUpdate != null) onUpdate!(document);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),

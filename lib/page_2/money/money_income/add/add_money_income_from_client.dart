@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
 class AddMoneyIncomeFromClient extends StatefulWidget {
   const AddMoneyIncomeFromClient({super.key});
@@ -75,7 +76,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       amount: double.parse(_amountController.text.trim()),
       leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: "receive_another_cash_register"
+      operationType: OperationType.client_payment.name
     ));
   }
 
@@ -132,22 +133,22 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      CashRegisterGroupWidget(
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedCashRegister = selectedRegionData;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
                       LeadRadioGroupWidget(
                         selectedLead: selectedLead,
                         onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
                             selectedLead = selectedRegionData.id.toString();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDateField(localizations),
+                      const SizedBox(height: 16),
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                          setState(() {
+                            selectedCashRegister = selectedRegionData;
                           });
                         },
                       ),

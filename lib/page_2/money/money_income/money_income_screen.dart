@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,11 @@ import 'add/add_money_income_from_another_cash_register.dart';
 import 'add/add_money_income_from_client.dart';
 import 'add/add_money_income_other_income.dart';
 import 'add/add_money_income_supplier_return.dart';
+import 'edit/edit_money_income_from_another_cash_register.dart';
+import 'edit/edit_money_income_from_client.dart';
+import 'edit/edit_money_income_other_income.dart';
+import 'edit/edit_money_income_supplier_return.dart';
+import 'operation_type.dart';
 
 class MoneyIncomeScreen extends StatefulWidget {
   final int? organizationId;
@@ -107,6 +113,50 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
         duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  
+  Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
+    if (!mounted) return;
+
+    final operationType = getOperationTypeFromString(document.operationType);
+    debugPrint('Operation type: ${document.operationType} -> ${operationType}');
+
+    if (operationType == null) {
+      _showSnackBar('Неизвестный тип операции: ${document.operationType}', false);
+      return;
+    }
+
+    Widget? targetScreen;
+
+    switch (operationType) {
+      case OperationType.client_payment:
+        targetScreen = const EditMoneyIncomeFromClient();
+        break;
+      case OperationType.receive_another_cash_register:
+        targetScreen = const EditMoneyIncomeAnotherCashRegister();
+        break;
+      case OperationType.other_incomes:
+        targetScreen = const EditMoneyIncomeOtherIncome();
+        break;
+      case OperationType.return_supplier:
+        targetScreen = const EditMoneyIncomeSupplierReturn();
+        break;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: _moneyIncomeBloc,
+          child: targetScreen,
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+    }
   }
 
   @override
@@ -237,8 +287,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       }
                       return MoneyIncomeCard(
                         document: currentData[index],
-                        onUpdate: () {
-                          _moneyIncomeBloc.add(AddMoneyIncome());
+                        onUpdate: (document) {
+                          _navigateToEditScreen(context, document);
                         },
                       );
                     },

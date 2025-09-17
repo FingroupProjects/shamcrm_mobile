@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
 class EditMoneyIncomeAnotherCashRegister extends StatefulWidget {
   const EditMoneyIncomeAnotherCashRegister({super.key});
@@ -66,7 +67,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       amount: double.parse(_amountController.text.trim()),
       leadId: selectedCashRegister!.id,
       comment: _commentController.text.trim(),
-      operationType: "client_payment",
+      operationType: OperationType.receive_another_cash_register.name,
     ));
   }
 
@@ -123,8 +124,6 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         title: localizations.translate('sender_cash_register') ?? 'Sender Cash Register',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
@@ -134,6 +133,8 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                           });
                         },
                       ),
+                      const SizedBox(height: 16),
+                      _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         title: localizations.translate('receiver_cash_register') ?? 'Receiver Cash Register',
