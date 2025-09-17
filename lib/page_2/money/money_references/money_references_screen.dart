@@ -1,67 +1,59 @@
-import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_references/money_references_screen.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../bloc/cash_desk/cash_desk_bloc.dart';
-import '../../bloc/money_income/money_income_bloc.dart';
-import '../../screens/profile/languages/app_localizations.dart';
+import '../../../bloc/cash_desk/cash_desk_bloc.dart';
+import 'cash_desk/cash_desk_screen.dart';
 
-class MoneyScreen extends StatefulWidget {
-  const MoneyScreen({super.key});
+class MoneyReferencesScreen extends StatefulWidget {
+  const MoneyReferencesScreen({super.key});
 
   @override
-  State<MoneyScreen> createState() => _MoneyScreenState();
+  State<MoneyReferencesScreen> createState() => _MoneyReferencesScreenState();
 }
 
-class _MoneyScreenState extends State<MoneyScreen> {
-  List<_MoneySection> _getSections(BuildContext context) => [
-        _MoneySection(
-          title: AppLocalizations.of(context)!.translate('income'),
-          description:
-              AppLocalizations.of(context)!.translate('add_income_money'),
-          icon: Icons.arrow_downward,
-          color: const Color(0xff4CAF50),
-          background: const Color(0xffEAF7F0),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BlocProvider(
-                  create: (context) => MoneyIncomeBloc(),
-                  child: const MoneyIncomeScreen(),
-                ),
-              ),
-            );
-          },
-        ),
-        _MoneySection(
-          title: AppLocalizations.of(context)!.translate('expense'),
-          description:
-              AppLocalizations.of(context)!.translate('add_expense_money'),
-          icon: Icons.arrow_upward,
-          color: const Color(0xffFF9800),
-          background: const Color(0xffFFF5E5),
-          onTap: () {},
-        ),
-        _MoneySection(
-          title: AppLocalizations.of(context)!.translate('references'),
-          description:
-              AppLocalizations.of(context)!.translate('list_references'),
-          icon: Icons.menu_book,
-          color: const Color(0xff2196F3),
-          background: const Color(0xffEAF2FB),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MoneyReferencesScreen(),
-              ),
-            );
-          },
-        ),
-      ];
+class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
+  List<_ReferenceSection> _getSections(BuildContext context) => [
+    _ReferenceSection(
+      title: 'Kassa',
+      description: 'Управление кассами',
+      icon: Icons.account_balance_wallet,
+      color: const Color(0xff4CAF50),
+      background: const Color(0xffEAF7F0),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => CashDeskBloc(),
+              child: const CashDeskScreen(),
+            ),
+          ),
+        );
+      },
+    ),
+    _ReferenceSection(
+      title: 'Statya rasxodov',
+      description: 'Статьи расходов',
+      icon: Icons.remove_circle_outline,
+      color: const Color(0xffFF9800),
+      background: const Color(0xffFFF5E5),
+      onTap: () {
+        // Navigate to Expense Categories screen
+        print('Navigating to Statya rasxodov');
+      },
+    ),
+    _ReferenceSection(
+      title: 'Statya doxodov',
+      description: 'Статьи доходов',
+      icon: Icons.add_circle_outline,
+      color: const Color(0xff2196F3),
+      background: const Color(0xffEAF2FB),
+      onTap: () {
+        // Navigate to Income Categories screen
+        print('Navigating to Statya doxodov');
+      },
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +66,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Text(
-          AppLocalizations.of(context)!.translate('money'),
-          style: const TextStyle(
+        title: const Text(
+          'Справочники',
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Color(0xff1E2E52),
@@ -89,9 +81,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              AppLocalizations.of(context)!.translate('sections'),
-              style: const TextStyle(
+            child: const Text(
+              'Разделы',
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52),
@@ -106,7 +98,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
     );
   }
 
-  Widget _buildSectionCard(_MoneySection section) {
+  Widget _buildSectionCard(_ReferenceSection section) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Material(
@@ -189,7 +181,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 }
 
-class _MoneySection {
+class _ReferenceSection {
   final String title;
   final String description;
   final IconData icon;
@@ -197,7 +189,7 @@ class _MoneySection {
   final Color background;
   final VoidCallback onTap;
 
-  _MoneySection({
+  _ReferenceSection({
     required this.title,
     required this.description,
     required this.icon,

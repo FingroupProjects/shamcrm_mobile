@@ -30,7 +30,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: true,
-        title: const Text('Справочники',
+        title: const Text('Kassa',
             style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
