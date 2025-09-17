@@ -59,9 +59,9 @@ class _AddCashDeskState extends State<AddCashDesk> {
           ),
           onPressed: _onCancel,
         ),
+        centerTitle: true,
         title: Text(
-          AppLocalizations.of(context)?.translate('Add Money Reference') ??
-              'Добавить',
+          AppLocalizations.of(context)?.translate('add_cash_desk') ?? 'Добавить кассу',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -75,7 +75,7 @@ class _AddCashDeskState extends State<AddCashDesk> {
           if (state.status == AddCashDeskStatus.loaded) {
             Navigator.pop(context, true);
           } else if (state.status == AddCashDeskStatus.error) {
-            // TODO : show error
+
           }
         },
         child: SafeArea(
@@ -96,10 +96,10 @@ class _AddCashDeskState extends State<AddCashDesk> {
                             CustomTextField(
                               controller: nameController,
                               hintText: AppLocalizations.of(context)
-                                  ?.translate('enter_name') ??
+                                  ?.translate('enter_title') ??
                                   'Введите название*',
                               label: AppLocalizations.of(context)
-                                  ?.translate('name') ??
+                                  ?.translate('enter_title') ??
                                   'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {

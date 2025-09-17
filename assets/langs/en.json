@@ -1274,7 +1274,32 @@
     "sender_cash_register": "Sender Cash Register",
     "receiver_cash_register": "Receiver Cash Register",
     "delete_money_income": "Delete Money Income",
-    "delete_money_income_confirm": "Are you sure you want to delete this money income document?"
+    "delete_money_income_confirm": "Are you sure you want to delete this money income document?",
+    "cash_desk": "Cash Desk",
+    "cash_desk_management": "Cash desk management",
+    "add_cash_desk": "Add cash desk",
+    "edit_cash_desk": "Edit cash desk",
+    "delete_cash_desk": "Delete cash desk",
+    "delete_cash_desk_confirm": "Are you sure you want to delete cash desk?",
+    "expenses": "Expenses",
+    "expenses_management": "Expense management",
+    "add_expense": "Add expense",
+    "edit_expense": "Edit expense",
+    "delete_expense": "Delete expense",
+    "delete_expense_confirm": "Are you sure you want to delete expense?",
+    "incomes": "Incomes",
+    "incomes_management": "Income management",
+    "add_income": "Add income",
+    "edit_income": "Edit income",
+    "delete_income": "Delete income",
+    "delete_income_confirm": "Are you sure you want to delete income?",
+    "expense_type": "Expense categories",
+    "income_type": "Income categories",
+    "enter_expense_name": "Enter expense name*",
+    "enter_income_name": "Enter income name*",
+    "expense_name": "Expense name",
+    "income_name": "Income name",
+    "type": "Type"
 
 
 

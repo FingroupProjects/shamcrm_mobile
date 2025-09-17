@@ -53,8 +53,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: true,
-        title: const Text('Расходы',
-            style: TextStyle(
+        title: Text(AppLocalizations.of(context)?.translate('expenses') ?? 'Расходы',
+            style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52))),
@@ -190,7 +190,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Тип: ${data.type}',
+                        '${AppLocalizations.of(context)?.translate('type') ?? 'Тип'}: ${data.type}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
@@ -262,7 +262,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Удалить расход',
+              AppLocalizations.of(context)?.translate('delete_expense') ?? 'Удалить расход',
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -272,7 +272,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите удалить расход "${data.name}"?',
+            '${AppLocalizations.of(context)?.translate('delete_expense_confirm') ?? 'Вы уверены, что хотите удалить расход'} "${data.name}"?',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

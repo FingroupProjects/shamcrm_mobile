@@ -53,8 +53,8 @@ class _IncomeScreenState extends State<IncomeScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: true,
-        title: const Text('Доходы',
-            style: TextStyle(
+        title: Text(AppLocalizations.of(context)?.translate('incomes') ?? 'Доходы',
+            style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52))),
@@ -190,7 +190,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Тип: ${data.type}',
+                        '${AppLocalizations.of(context)?.translate('type') ?? 'Тип'}: ${data.type}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
@@ -201,7 +201,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       const SizedBox(height: 6),
                       if (data.users.isNotEmpty)
                         Text(
-                          'Пользователи: ${data.users.map((e) => e.name).join(', ')}',
+                          '${AppLocalizations.of(context)?.translate('users') ?? 'Пользователи'}: ${data.users.map((e) => e.name).join(', ')}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
@@ -273,7 +273,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Удалить доход',
+              AppLocalizations.of(context)?.translate('delete_income') ?? 'Удалить доход',
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -283,7 +283,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите удалить доход "${data.name}"?',
+            '${AppLocalizations.of(context)?.translate('delete_income_confirm') ?? 'Вы уверены, что хотите удалить доход'} "${data.name}"?',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

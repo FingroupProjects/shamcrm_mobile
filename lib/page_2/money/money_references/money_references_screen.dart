@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../screens/profile/languages/app_localizations.dart';
+
 import '../../../bloc/cash_desk/cash_desk_bloc.dart';
 import '../../../bloc/expense/expense_bloc.dart';
 import '../../../bloc/income/income_bloc.dart';
@@ -18,8 +20,8 @@ class MoneyReferencesScreen extends StatefulWidget {
 class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
   List<_ReferenceSection> _getSections(BuildContext context) => [
     _ReferenceSection(
-      title: 'Kassa',
-      description: 'Управление кассами',
+      title: AppLocalizations.of(context)?.translate('cash_desk') ?? 'Касса',
+      description: AppLocalizations.of(context)?.translate('cash_desk_management') ?? 'Управление кассами',
       icon: Icons.account_balance_wallet,
       color: const Color(0xff4CAF50),
       background: const Color(0xffEAF7F0),
@@ -36,8 +38,8 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       },
     ),
     _ReferenceSection(
-      title: 'Statya rasxodov',
-      description: 'Статьи расходов',
+      title: AppLocalizations.of(context)?.translate('expense_type') ?? 'Статьи расходов',
+      description: AppLocalizations.of(context)?.translate('expenses_management') ?? 'Управление расходами',
       icon: Icons.remove_circle_outline,
       color: const Color(0xffFF9800),
       background: const Color(0xffFFF5E5),
@@ -54,8 +56,8 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       },
     ),
     _ReferenceSection(
-      title: 'Statya doxodov',
-      description: 'Статьи доходов',
+      title: AppLocalizations.of(context)?.translate('income_type') ?? 'Статьи доходов',
+      description: AppLocalizations.of(context)?.translate('incomes_management') ?? 'Управление доходами',
       icon: Icons.add_circle_outline,
       color: const Color(0xff2196F3),
       background: const Color(0xffEAF2FB),

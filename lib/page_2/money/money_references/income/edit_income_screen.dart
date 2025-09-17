@@ -77,7 +77,7 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
           onPressed: _onCancel,
         ),
         title: Text(
-          'Редактировать доход',
+          AppLocalizations.of(context)?.translate('edit_income') ?? 'Редактировать доход',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -116,8 +116,8 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                           children: [
                             CustomTextField(
                               controller: nameController,
-                              hintText: 'Введите название дохода*',
-                              label: 'Название',
+                              hintText: AppLocalizations.of(context)?.translate('enter_income_name') ?? 'Введите название дохода*',
+                              label: AppLocalizations.of(context)?.translate('income_name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return 'Поле обязательно';

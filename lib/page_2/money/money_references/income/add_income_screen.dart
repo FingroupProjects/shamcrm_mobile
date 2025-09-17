@@ -60,7 +60,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
           onPressed: _onCancel,
         ),
         title: Text(
-          'Добавить доход',
+          AppLocalizations.of(context)?.translate('add_income') ?? 'Добавить доход',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -99,8 +99,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                           children: [
                             CustomTextField(
                               controller: nameController,
-                              hintText: 'Введите название дохода*',
-                              label: 'Название',
+                              hintText: AppLocalizations.of(context)?.translate('enter_income_name') ?? 'Введите название дохода*',
+                              label: AppLocalizations.of(context)?.translate('income_name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return 'Поле обязательно';

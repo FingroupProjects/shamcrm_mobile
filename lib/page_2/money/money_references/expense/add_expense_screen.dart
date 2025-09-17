@@ -56,7 +56,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           onPressed: _onCancel,
         ),
         title: Text(
-          'Добавить расход',
+          AppLocalizations.of(context)?.translate('add_expense') ?? 'Добавить расход',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -95,8 +95,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           children: [
                             CustomTextField(
                               controller: nameController,
-                              hintText: 'Введите название расхода*',
-                              label: 'Название',
+                              hintText: AppLocalizations.of(context)?.translate('enter_expense_name') ?? 'Введите название расхода*',
+                              label: AppLocalizations.of(context)?.translate('expense_name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return 'Поле обязательно';

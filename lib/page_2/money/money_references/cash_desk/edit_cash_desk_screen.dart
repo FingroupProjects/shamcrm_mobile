@@ -73,8 +73,8 @@ class _EditCashDeskState extends State<EditCashDesk> {
           onPressed: _onCancel,
         ),
         title: Text(
-          AppLocalizations.of(context)?.translate('Edit Money Reference') ??
-              'Редактировать',
+          AppLocalizations.of(context)?.translate('edit_cash_desk') ??
+              'Редактировать кассу',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
