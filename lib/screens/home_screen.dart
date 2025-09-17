@@ -143,8 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // "Деньги"
     widgetsGroup2.add(MoneyScreen());
-    titleKeysGroup2.add('dengi');
-    navBarTitleKeysGroup2.add('dengi');
+    titleKeysGroup2.add('money');
+    navBarTitleKeysGroup2.add('money');
     activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Добавьте иконку в assets
     inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
 

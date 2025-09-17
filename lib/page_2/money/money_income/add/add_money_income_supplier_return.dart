@@ -47,6 +47,14 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
       return;
     }
 
+    if (selectedSupplier == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Please select a supplier',
+        false,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     String? isoDate;
@@ -66,7 +74,7 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
     if (selectedSupplier == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Please select a supplier',
         false,
       );
       return;

@@ -29,6 +29,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
+        centerTitle: true,
         title: const Text('Справочники',
             style: TextStyle(
                 fontFamily: 'Gilroy',
