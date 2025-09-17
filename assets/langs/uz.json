@@ -1284,7 +1284,7 @@
   "client_return_unapproved": "Mijozdan qaytish hujjati tasdiqlanishi bekor qilindi",
   "add_client_return": "Mijozdan qaytish qo'shish",
   "client_return_details": "Mijozdan qaytish tafsilotlari",
-  "client_return_history": "Mijozdan qaytish tarixi"
+  "client_return_history": "Mijozdan qaytish tarixi",
   "sender_cash_register": "Jo'natuvchi kassa",
   "receiver_cash_register": "Qabul qiluvchi kassa",
   "delete_money_income": "Pul daromadini o'chirish",

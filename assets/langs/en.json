@@ -1270,7 +1270,7 @@
     "client_return_unapproved": "Client return document approval cancelled",
     "add_client_return": "Add Client Return",
     "client_return_details": "Client Return Details",
-    "client_return_history": "Client Return History"
+    "client_return_history": "Client Return History",
     "sender_cash_register": "Sender Cash Register",
     "receiver_cash_register": "Receiver Cash Register",
     "delete_money_income": "Delete Money Income",
