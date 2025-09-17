@@ -36,9 +36,9 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedCashRegister == null) {
+    if (selectedCashRegister == null || selectedSenderCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
         false,
       );
       return;

@@ -254,7 +254,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_incoming_document') ?? 'Edit Income',
+        localizations.translate('edit_incoming_document'),
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -269,7 +269,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: localizations.translate('date'),
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -284,8 +284,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: localizations.translate('comment'),
+      hintText: localizations.translate('enter_comment'),
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -294,13 +294,13 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount') ?? 'Amount',
-        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        label: localizations.translate('amount'),
+        hintText: localizations.translate('enter_amount'),
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount') ?? 'Enter amount';
+            return localizations.translate('enter_amount');
           }
           if (double.tryParse(value) == null) {
             return localizations.translate('enter_valid_amount') ??
@@ -341,7 +341,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Cancel',
+                localizations.translate('cancel'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -373,7 +373,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                 ),
               )
                   : Text(
-                localizations.translate('update') ?? 'Update',
+                localizations.translate('update'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

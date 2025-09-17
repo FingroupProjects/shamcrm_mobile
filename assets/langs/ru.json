@@ -1317,7 +1317,32 @@
   "sender_cash_register": "Касса отправитель",
   "receiver_cash_register": "Касса получатель",
   "delete_money_income": "Удалить денежный доход",
-  "delete_money_income_confirm": "Вы уверены, что хотите удалить этот документ денежного дохода?"
+  "delete_money_income_confirm": "Вы уверены, что хотите удалить этот документ денежного дохода?",
+  "cash_desk": "Касса",
+  "cash_desk_management": "Управление кассами",
+  "add_cash_desk": "Добавить кассу",
+  "edit_cash_desk": "Редактировать кассу",
+  "delete_cash_desk": "Удалить кассу",
+  "delete_cash_desk_confirm": "Вы уверены, что хотите удалить кассу?",
+  "expenses": "Расходы",
+  "expenses_management": "Управление расходами",
+  "add_expense": "Добавить расход",
+  "edit_expense": "Редактировать расход",
+  "delete_expense": "Удалить расход",
+  "delete_expense_confirm": "Вы уверены, что хотите удалить расход?",
+  "incomes": "Доходы",
+  "incomes_management": "Управление доходами",
+  "add_income": "Добавить доход",
+  "edit_income": "Редактировать доход",
+  "delete_income": "Удалить доход",
+  "delete_income_confirm": "Вы уверены, что хотите удалить доход?",
+  "expense_type": "Статьи расходов",
+  "income_type": "Статьи доходов",
+  "enter_expense_name": "Введите название расхода*",
+  "enter_income_name": "Введите название дохода*",
+  "expense_name": "Название расхода",
+  "income_name": "Название дохода",
+  "type": "Тип"
 
  
 

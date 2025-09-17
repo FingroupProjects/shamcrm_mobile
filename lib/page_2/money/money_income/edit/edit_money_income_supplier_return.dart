@@ -67,7 +67,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     if (widget.document.cashRegister != null) {
       selectedCashRegister = CashRegisterData(
         id: widget.document.cashRegister!.id!,
-        name: widget.document.cashRegister!.name ?? '',
+        name: widget.document.cashRegister!.name!,
       );
     }
 
@@ -75,7 +75,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     if (widget.document.model != null) {
       selectedSupplier = SupplierData(
         id: widget.document.model!.id!,
-        name: widget.document.model!.name ?? '',
+        name: widget.document.model!.name!,
       );
     }
   }
@@ -85,7 +85,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
 
     if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register'),
         false,
       );
       return;
@@ -103,7 +103,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime'),
         false,
       );
       return;
@@ -114,7 +114,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Please select a supplier',
+        AppLocalizations.of(context)!.translate('select_supplier'),
         false,
       );
       return;
@@ -247,7 +247,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_incoming_document') ?? 'Edit Income',
+        localizations.translate('edit_incoming_document'),
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -262,7 +262,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: localizations.translate('date'),
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -277,8 +277,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: localizations.translate('comment'),
+      hintText: localizations.translate('enter_comment'),
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -287,16 +287,16 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount') ?? 'Amount',
-        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        label: localizations.translate('amount'),
+        hintText: localizations.translate('enter_amount'),
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount') ?? 'Enter amount';
+            return localizations.translate('enter_amount');
           }
           if (double.tryParse(value) == null) {
-            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+            return localizations.translate('enter_valid_amount');
           }
           return null;
         }
@@ -333,7 +333,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Cancel',
+                localizations.translate('cancel'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -365,7 +365,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                 ),
               )
                   : Text(
-                localizations.translate('update') ?? 'Update',
+                localizations.translate('update'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
