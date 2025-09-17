@@ -76,6 +76,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 'Единицы измерения',
             showSearchIcon: true,
             showFilterIcon: false,
+            showFilterOrderIcon: false,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
