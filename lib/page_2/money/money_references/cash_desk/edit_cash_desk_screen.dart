@@ -1,24 +1,24 @@
-import 'package:crm_task_manager/models/money/add_money_reference_model.dart';
+import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../bloc/money_references/edit/edit_money_references_bloc.dart';
+import '../../../../bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/filter/task/multi_user_list.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 
-class EditMoneyReference extends StatefulWidget {
+class EditCashDesk extends StatefulWidget {
   final CashRegisterModel? initialData;
-  const EditMoneyReference({super.key, this.initialData});
+  const EditCashDesk({super.key, this.initialData});
 
   @override
-  State<EditMoneyReference> createState() => _EditMoneyReferenceState();
+  State<EditCashDesk> createState() => _EditCashDeskState();
 }
 
-class _EditMoneyReferenceState extends State<EditMoneyReference> {
+class _EditCashDeskState extends State<EditCashDesk> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController nameController;
   late List<UserData> selectedUsers;
@@ -31,13 +31,13 @@ class _EditMoneyReferenceState extends State<EditMoneyReference> {
 
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      final model = AddMoneyReferenceModel(
+      final model = AddCashDeskModel(
         name: nameController.text.trim(),
         users: selectedUsers.map((user) => user.id).toList(),
       );
 
-      context.read<EditMoneyReferencesBloc>().add(
-        SubmitEditMoneyReference(
+      context.read<EditCashDeskBloc>().add(
+        SubmitEditCashDesk(
           data: model,
           id: widget.initialData!.id,
         ),
@@ -83,11 +83,11 @@ class _EditMoneyReferenceState extends State<EditMoneyReference> {
           ),
         ),
       ),
-      body: BlocListener<EditMoneyReferencesBloc, EditMoneyReferencesState>(
+      body: BlocListener<EditCashDeskBloc, EditCashDeskState>(
         listener: (context, state) {
-          if (state.status == EditMoneyReferencesStatus.loaded) {
+          if (state.status == EditCashDeskStatus.loaded) {
             Navigator.pop(context, true);
-          } else if (state.status == EditMoneyReferencesStatus.error) {
+          } else if (state.status == EditCashDeskStatus.error) {
             // TODO : show error
           }
         },
@@ -157,9 +157,9 @@ class _EditMoneyReferenceState extends State<EditMoneyReference> {
   }
 
   Widget _buildActionButtons() {
-    return BlocBuilder<EditMoneyReferencesBloc, EditMoneyReferencesState>(
+    return BlocBuilder<EditCashDeskBloc, EditCashDeskState>(
       builder: (context, state) {
-        final isLoading = state.status == EditMoneyReferencesStatus.loading;
+        final isLoading = state.status == EditCashDeskStatus.loading;
 
         return Row(
           children: [

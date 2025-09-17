@@ -1,22 +1,22 @@
-import 'package:crm_task_manager/models/money/add_money_reference_model.dart';
+import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../bloc/money_references/add/add_money_references_bloc.dart';
+import '../../../../bloc/cash_desk/add/add_cash_desk_bloc.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/filter/task/multi_user_list.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 
-class AddMoneyReference extends StatefulWidget {
-  const AddMoneyReference({super.key});
+class AddCashDesk extends StatefulWidget {
+  const AddCashDesk({super.key});
 
   @override
-  State<AddMoneyReference> createState() => _AddMoneyReferenceState();
+  State<AddCashDesk> createState() => _AddCashDeskState();
 }
 
-class _AddMoneyReferenceState extends State<AddMoneyReference> {
+class _AddCashDeskState extends State<AddCashDesk> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
   List<UserData> selectedUsers = [];
@@ -29,9 +29,9 @@ class _AddMoneyReferenceState extends State<AddMoneyReference> {
 
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AddMoneyReferencesBloc>().add(
-        SubmitAddMoneyReference(
-          data: AddMoneyReferenceModel(
+      context.read<AddCashDeskBloc>().add(
+        SubmitAddCashDesk(
+          data: AddCashDeskModel(
             name: nameController.text.trim(),
             users: selectedUsers.map((user) => user.id).toList(),
           ),
@@ -70,11 +70,11 @@ class _AddMoneyReferenceState extends State<AddMoneyReference> {
           ),
         ),
       ),
-      body: BlocListener<AddMoneyReferencesBloc, AddMoneyReferencesState>(
+      body: BlocListener<AddCashDeskBloc, AddCashDeskState>(
         listener: (context, state) {
-          if (state.status == AddMoneyReferencesStatus.loaded) {
+          if (state.status == AddCashDeskStatus.loaded) {
             Navigator.pop(context, true);
-          } else if (state.status == AddMoneyReferencesStatus.error) {
+          } else if (state.status == AddCashDeskStatus.error) {
             // TODO : show error
           }
         },
@@ -146,9 +146,9 @@ class _AddMoneyReferenceState extends State<AddMoneyReference> {
   }
 
   Widget _buildActionButtons() {
-    return BlocBuilder<AddMoneyReferencesBloc, AddMoneyReferencesState>(
+    return BlocBuilder<AddCashDeskBloc, AddCashDeskState>(
       builder: (context, state) {
-        final isLoading = state.status == AddMoneyReferencesStatus.loading;
+        final isLoading = state.status == AddCashDeskStatus.loading;
 
         return Row(
           children: [

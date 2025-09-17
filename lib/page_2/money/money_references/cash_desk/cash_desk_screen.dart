@@ -1,27 +1,27 @@
-import 'package:crm_task_manager/bloc/money_references/money_references_bloc.dart';
+import 'package:crm_task_manager/bloc/cash_desk/add/add_cash_desk_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../bloc/money_references/add/add_money_references_bloc.dart';
-import '../../../../bloc/money_references/edit/edit_money_references_bloc.dart';
+import '../../../../bloc/cash_desk/cash_desk_bloc.dart';
+import '../../../../bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../models/money/cash_register_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'edit_cash_desk_screen.dart';
 
-class MoneyReferencesScreen extends StatefulWidget {
-  const MoneyReferencesScreen({super.key});
+class CashDeskScreen extends StatefulWidget {
+  const CashDeskScreen({super.key});
 
   @override
-  State<MoneyReferencesScreen> createState() => _MoneyReferencesScreenState();
+  State<CashDeskScreen> createState() => _CashDeskScreenState();
 }
 
-class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
+class _CashDeskScreenState extends State<CashDeskScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<MoneyReferencesBloc>().add(const FetchCashRegisters());
+    context.read<CashDeskBloc>().add(const FetchCashRegisters());
   }
 
   @override
@@ -38,11 +38,11 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: BlocBuilder<MoneyReferencesBloc, MoneyReferencesState>(
+      body: BlocBuilder<CashDeskBloc, CashDeskState>(
         builder: (context, state) {
-          if (state.status == MoneyReferencesStatus.initialLoading) {
+          if (state.status == CashDeskStatus.initialLoading) {
             return const Center(child: CircularProgressIndicator());
-          } else if (state.status == MoneyReferencesStatus.initialError) {
+          } else if (state.status == CashDeskStatus.initialError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -52,7 +52,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
                   ElevatedButton(
                     onPressed: () {
                       return context
-                          .read<MoneyReferencesBloc>()
+                          .read<CashDeskBloc>()
                           .add(const FetchCashRegisters());
                     },
                     child: const Text('Повторить'),
@@ -60,7 +60,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
                 ],
               ),
             );
-          } else if (state.status == MoneyReferencesStatus.initialLoaded) {
+          } else if (state.status == CashDeskStatus.initialLoaded) {
             final cashRegisters = state.cashRegisters;
             if (cashRegisters == null || cashRegisters.isEmpty) {
               return const Center(
@@ -77,7 +77,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
             return RefreshIndicator(
               onRefresh: () async {
                 context
-                    .read<MoneyReferencesBloc>()
+                    .read<CashDeskBloc>()
                     .add(const FetchCashRegisters());
               },
               child: ListView.builder(
@@ -182,14 +182,14 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (context) => AddMoneyReferencesBloc(),
-          child: AddMoneyReference(),
+          create: (context) => AddCashDeskBloc(),
+          child: AddCashDesk(),
         ),
       ),
     );
 
     if (result == true) {
-      context.read<MoneyReferencesBloc>().add(const FetchCashRegisters());
+      context.read<CashDeskBloc>().add(const FetchCashRegisters());
     }
   }
 
@@ -198,8 +198,8 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (context) => EditMoneyReferencesBloc(),
-          child: EditMoneyReference(
+          create: (context) => EditCashDeskBloc(),
+          child: EditCashDesk(
             initialData: data,
           ),
         ),
@@ -207,7 +207,7 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
     );
 
     if (result == true) {
-      context.read<MoneyReferencesBloc>().add(const FetchCashRegisters());
+      context.read<CashDeskBloc>().add(const FetchCashRegisters());
     }
   }
 
@@ -261,8 +261,8 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
                     onPressed: () {
                       // Use parentContext instead of context to access the MoneyReferencesBloc
                       parentContext
-                          .read<MoneyReferencesBloc>()
-                          .add(DeleteMoneyReference(data.id));
+                          .read<CashDeskBloc>()
+                          .add(DeleteCashDesk(data.id));
                       Navigator.of(context)
                           .pop(); // Use context for dialog navigation
                     },

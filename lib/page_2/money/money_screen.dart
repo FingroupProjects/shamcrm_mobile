@@ -1,9 +1,9 @@
-import 'package:crm_task_manager/bloc/money_references/money_references_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 
+import '../../bloc/cash_desk/cash_desk_bloc.dart';
 import '../../bloc/money_income/money_income_bloc.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 
@@ -56,8 +56,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => BlocProvider(
-                  create: (context) => MoneyReferencesBloc(),
-                  child: const MoneyReferencesScreen(),
+                  create: (context) => CashDeskBloc(),
+                  child: const CashDeskScreen(),
                 ),
               ),
             );

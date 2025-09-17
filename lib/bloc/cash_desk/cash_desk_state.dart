@@ -1,13 +1,13 @@
-part of 'money_references_bloc.dart';
+part of 'cash_desk_bloc.dart';
 
-class MoneyReferencesState extends Equatable {
-  MoneyReferencesState({
-    this.status = MoneyReferencesStatus.initial, // Make it a parameter with default value
+class CashDeskState extends Equatable {
+  CashDeskState({
+    this.status = CashDeskStatus.initial, // Make it a parameter with default value
     this.cashRegisters,
     this.errorMessage
   });
 
-  final MoneyReferencesStatus status; // Remove the hardcoded assignment
+  final CashDeskStatus status; // Remove the hardcoded assignment
   final List<CashRegisterModel>? cashRegisters;
   final String? errorMessage;
 
@@ -16,12 +16,12 @@ class MoneyReferencesState extends Equatable {
   @override
   List<Object?> get props => [status, cashRegisters, errorMessage];
 
-  MoneyReferencesState copyWith({
-    MoneyReferencesStatus? status,
+  CashDeskState copyWith({
+    CashDeskStatus? status,
     List<CashRegisterModel>? cashRegisters,
     String? errorMessage
   }) {
-    return MoneyReferencesState(
+    return CashDeskState(
       status: status ?? this.status, // Include status in copyWith
       cashRegisters: cashRegisters ?? this.cashRegisters,
       errorMessage: errorMessage ?? this.errorMessage,

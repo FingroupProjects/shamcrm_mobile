@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
-import 'package:crm_task_manager/models/money/add_money_reference_model.dart';
+import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
@@ -11148,7 +11148,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<CashRegisterModel> postCashRegister(AddMoneyReferenceModel value) async {
+  Future<CashRegisterModel> postCashRegister(AddCashDeskModel value) async {
     final response = await _postRequest('/cashRegister', value.toJson());
     final data = json.decode(response.body);
     if (response.statusCode == 200) {
@@ -11177,7 +11177,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<CashRegisterModel> patchCashRegister(int id, AddMoneyReferenceModel value) async {
+  Future<CashRegisterModel> patchCashRegister(int id, AddCashDeskModel value) async {
     final response = await _patchRequest('/cashRegister/$id', value.toJson());
     final data = json.decode(response.body);
     if (response.statusCode == 200) {
