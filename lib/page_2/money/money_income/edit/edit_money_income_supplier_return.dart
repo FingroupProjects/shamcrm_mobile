@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
 class EditMoneyIncomeSupplierReturn extends StatefulWidget {
   const EditMoneyIncomeSupplierReturn({super.key});
@@ -77,7 +78,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       amount: double.parse(_amountController.text.trim()),
       leadId: int.parse(selectedLead!),
       comment: _commentController.text.trim(),
-      operationType: "return_supplier"
+      operationType: OperationType.return_supplier.name
 
     ));
   }

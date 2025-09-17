@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import '../operation_type.dart';
 
 class AddMoneyIncomeSupplierReturn extends StatefulWidget {
   const AddMoneyIncomeSupplierReturn({super.key});
@@ -24,7 +25,7 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  String? selectedLead;
+  CashRegisterData? selectedCashRegister;
   SupplierData? selectedSupplier;
 
   bool _isLoading = false;
@@ -38,9 +39,9 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedLead == null) {
+    if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
         false,
       );
       return;
@@ -75,10 +76,9 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
     bloc.add(CreateMoneyIncome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      leadId: int.parse(selectedLead!),
+      leadId: int.parse(selectedCashRegister!.id.toString()),
       comment: _commentController.text.trim(),
-      operationType: "return_supplier"
-
+      operationType: OperationType.return_supplier.name
     ));
   }
 
@@ -146,11 +146,11 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
-                      LeadRadioGroupWidget(
-                        selectedLead: selectedLead,
-                        onSelectLead: (LeadData selectedRegionData) {
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData value) {
                           setState(() {
-                            selectedLead = selectedRegionData.id.toString();
+                            selectedCashRegister = value;
                           });
                         },
                       ),

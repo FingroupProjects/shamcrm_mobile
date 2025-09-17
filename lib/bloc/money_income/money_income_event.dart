@@ -85,15 +85,19 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final num amount;
   final String operationType;
   final String movementType = "PKO";
-  final int leadId;
+  int? leadId;
   final String comment;
+  String? cashRegisterId;
+  String? senderCashRegisterId;
 
   CreateMoneyIncome({
     required this.date,
     required this.amount,
-    required this.leadId,
+    this.leadId,
     required this.comment,
     required this.operationType,
+    this.cashRegisterId,
+    this.senderCashRegisterId,
   });
 
   @override
@@ -102,7 +106,9 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         amount,
         operationType,
         movementType,
-        leadId,
+        leadId ?? 0,
         comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
       ];
 }

@@ -86,12 +86,15 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Future<void> _onCreateMoneyIncome(CreateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeCreateLoading());
     try {
+      // operation types are different but api method is the same for 4 types of operations, OperationType enum is used to distinguish them
       await apiService.createMoneyIncomeDocument(
         date: event.date,
         amount: event.amount,
         operationType: event.operationType,
         movementType: event.movementType,
         leadId: event.leadId,
+        senderCashRegisterId: event.senderCashRegisterId,
+        cashRegisterId: event.cashRegisterId,
         comment: event.comment,
       );
 

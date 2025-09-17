@@ -11577,9 +11577,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required num amount,
     required String operationType,
     required String movementType,
+    String? comment,
+
     int? leadId,
     String? senderCashRegisterId,
-    String? comment,
+    String? cashRegisterId,
   }) async {
 
     final path = await _appendQueryParams('/checking-account');
@@ -11592,6 +11594,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'movement_type': movementType,
         'lead_id': leadId,
         'sender_cash_register_id': senderCashRegisterId,
+        'comment': comment,
+        'cash_register_id': cashRegisterId,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
