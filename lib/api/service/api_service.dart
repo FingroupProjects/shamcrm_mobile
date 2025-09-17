@@ -11128,23 +11128,41 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
 
 
-  Future<List<CashRegisterModel>> getCashRegister() async {
-    final response = await _getRequest('/cashRegister');
-    final data = json.decode(response.body);
-    if (response.statusCode == 200) {
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List).map((item) => CashRegisterModel.fromJson(item)).toList();
-      } else if (data['errors'] != null) {
-        throw Exception(data['errors'] ?? 'Ошибка данных по кассе');
+  Future<CashRegisterResponseModel> getCashRegister({
+    int page = 1,
+    int perPage = 15,
+    String? query,
+  }) async {
+    String url = '/cashRegister?page=$page&per_page=$perPage';
+
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      print('ApiService: getCashRegister - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return CashRegisterResponseModel.fromJson(data['result']);
+        } else {
+          throw Exception('Нет данных по кассе');
+        }
       } else {
-        throw Exception('Нет данных по кассе');
+        final data = json.decode(response.body);
+        if (data['errors'] != null) {
+          throw Exception(data['errors'] ?? 'Ошибка загрузки кассы');
+        } else {
+          throw Exception('Ошибка загрузки кассы: ${response.body}');
+        }
       }
-    } else {
-      if (data['errors'] != null) {
-        throw Exception(data['error']['message'] ?? 'Ошибка загрузки кассы');
-      } else {
-        throw Exception('Ошибка загрузки кассы: ${response.body}');
-      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных кассы: $e');
     }
   }
 

@@ -1,3 +1,48 @@
+class CashRegisterResponseModel {
+  final List<CashRegisterModel> data;
+  final PaginationModel pagination;
+
+  CashRegisterResponseModel({
+    required this.data,
+    required this.pagination,
+  });
+
+  factory CashRegisterResponseModel.fromJson(Map<String, dynamic> json) {
+    return CashRegisterResponseModel(
+      data: (json['data'] as List)
+          .map((item) => CashRegisterModel.fromJson(item))
+          .toList(),
+      pagination: PaginationModel.fromJson(json['pagination']),
+    );
+  }
+}
+
+class PaginationModel {
+  final int total;
+  final int count;
+  final int perPage;
+  final int currentPage;
+  final int totalPages;
+
+  PaginationModel({
+    required this.total,
+    required this.count,
+    required this.perPage,
+    required this.currentPage,
+    required this.totalPages,
+  });
+
+  factory PaginationModel.fromJson(Map<String, dynamic> json) {
+    return PaginationModel(
+      total: json['total'],
+      count: json['count'],
+      perPage: json['per_page'],
+      currentPage: json['current_page'],
+      totalPages: json['total_pages'],
+    );
+  }
+}
+
 class CashRegisterModel {
   final int id;
   final String name;

@@ -18,10 +18,32 @@ class CashDeskScreen extends StatefulWidget {
 }
 
 class _CashDeskScreenState extends State<CashDeskScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     context.read<CashDeskBloc>().add(const FetchCashRegisters());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_isBottom && !context.read<CashDeskBloc>().state.hasReachedMax) {
+      context.read<CashDeskBloc>().add(const LoadMoreCashRegisters());
+    }
+  }
+
+  bool get _isBottom {
+    if (!_scrollController.hasClients) return false;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    return currentScroll >= (maxScroll * 0.9);
   }
 
   @override
@@ -60,7 +82,8 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                 ],
               ),
             );
-          } else if (state.status == CashDeskStatus.initialLoaded) {
+          } else if (state.status == CashDeskStatus.initialLoaded ||
+              state.status == CashDeskStatus.loadingMore) {
             final cashRegisters = state.cashRegisters;
             if (cashRegisters == null || cashRegisters.isEmpty) {
               return const Center(
@@ -81,10 +104,21 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     .add(const FetchCashRegisters());
               },
               child: ListView.builder(
+                controller: _scrollController,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: cashRegisters.length,
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                itemCount: cashRegisters.length +
+                    (state.status == CashDeskStatus.loadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index >= cashRegisters.length) {
+                    // Show loading indicator at the bottom
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(),
+                    );
+                  }
+
                   final data = cashRegisters[index];
                   return _buildCashRegisterCard(data);
                 },
@@ -230,7 +264,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
             ),
           ),
           content: Text(
-                'Вы уверены, что хотите удалить справочник',
+            'Вы уверены, что хотите удалить справочник',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
@@ -245,7 +279,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                 Expanded(
                   child: CustomButton(
                     buttonText:
-                        AppLocalizations.of(context)!.translate('cancel'),
+                    AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -257,9 +291,9 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                 Expanded(
                   child: CustomButton(
                     buttonText:
-                        AppLocalizations.of(context)!.translate('delete'),
+                    AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      // Use parentContext instead of context to access the MoneyReferencesBloc
+                      // Use parentContext instead of context to access the CashDeskBloc
                       parentContext
                           .read<CashDeskBloc>()
                           .add(DeleteCashDesk(data.id));
