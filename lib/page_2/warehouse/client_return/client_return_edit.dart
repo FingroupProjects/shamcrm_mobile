@@ -1,39 +1,37 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class IncomingDocumentEditScreen extends StatefulWidget {
+class EditClientReturnDocumentScreen extends StatefulWidget {
   final IncomingDocument document;
 
-  const IncomingDocumentEditScreen({
+  const EditClientReturnDocumentScreen({
     required this.document,
     super.key,
   });
 
   @override
-  _IncomingDocumentEditScreenState createState() => _IncomingDocumentEditScreenState();
+  _EditClientReturnDocumentScreenState createState() => _EditClientReturnDocumentScreenState();
 }
 
-class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen> {
+class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumentScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   String? _selectedStorage;
-  String? _selectedSupplier;
+  LeadData? _selectedLead;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
 
@@ -52,7 +50,15 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     
     _commentController.text = widget.document.comment ?? '';
     _selectedStorage = widget.document.storage?.id?.toString();
-    _selectedSupplier = widget.document.model?.id?.toString();
+    
+    // Для лида используем данные из model (клиента в данном случае)
+    if (widget.document.model?.id != null) {
+      _selectedLead = LeadData(
+        id: widget.document.model!.id ?? 0,
+        name: widget.document.model!.name ?? '',
+        // Добавьте другие необходимые поля если нужно
+      );
+    }
     
     // Преобразуем существующие товары в формат для редактирования
     if (widget.document.documentGoods != null) {
@@ -145,8 +151,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       return;
     }
 
-    if (_selectedSupplier == null) {
-      _showSnackBar('Выберите поставщика', false);
+    if (_selectedLead == null) {
+      _showSnackBar('Выберите лид', false);
       return;
     }
 
@@ -156,13 +162,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
-      final bloc = context.read<IncomingBloc>();
-      bloc.add(UpdateIncoming(
+      final bloc = context.read<ClientReturnBloc>();
+      bloc.add(UpdateClientReturnDocument(
         documentId: widget.document.id!,
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
-        counterpartyId: int.parse(_selectedSupplier!),
+        counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
               'good_id': item['id'],
               'quantity': item['quantity'].toString(),
@@ -212,13 +218,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: BlocListener<IncomingBloc, IncomingState>(
+      body: BlocListener<ClientReturnBloc, ClientReturnState>(
         listener: (context, state) {
           setState(() => _isLoading = false);
 
-          if (state is IncomingUpdateSuccess && mounted) {
+          if (state is ClientReturnUpdateSuccess && mounted) {
             Navigator.pop(context, true);
-          } else if (state is IncomingUpdateError && mounted) {
+          } else if (state is ClientReturnUpdateError && mounted) {
             _showSnackBar(state.message, false);
           }
         },
@@ -237,9 +243,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       const SizedBox(height: 16),
                       _buildGoodsSection(localizations),
                       const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplier,
-                        onChanged: (value) => setState(() => _selectedSupplier = value),
+                      LeadRadioGroupWidget(
+                        selectedLead: _selectedLead?.id?.toString(),
+                        onSelectLead: (lead) => setState(() => _selectedLead = lead),
                       ),
                       const SizedBox(height: 16),
                       StorageWidget(
@@ -271,7 +277,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
+        '${localizations.translate('edit_client_return') ?? 'Редактировать возврат'} №${widget.document.docNumber}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -337,7 +343,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             child: Row(
               children: [
                 const Icon(
-                  Icons.add_shopping_cart_outlined,
+                  Icons.keyboard_return,
                   color: Color(0xff4759FF),
                   size: 24,
                 ),
@@ -430,7 +436,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
-                  Icons.shopping_cart_outlined,
+                  Icons.keyboard_return,
                   color: Color(0xff4759FF),
                   size: 24,
                 ),

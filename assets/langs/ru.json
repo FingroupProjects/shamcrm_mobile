@@ -1277,7 +1277,7 @@
   "appbar_supplier_return": "Возврат поставщику",
   "create_supplier_return_document": "Создать возврат поставщику",
   "edit_supplier_return_document": "Редактировать возврат поставщику",
-  "view_supplier_return_document": "Просмотр возврата поставщику",
+  "view_supplier_return_document": "Возврат",
   "delete_supplier_return_document": "Удалить документ возврата поставщику",
   "confirm_delete_supplier_return_document": "Вы уверены, что хотите удалить этот документ возврата поставщику?",
   "no_supplier_return": "Нет возвратов поставщику",
@@ -1294,7 +1294,26 @@
   "edit_supplier_return": "Редактировать возврат",
   "supplier_return_details": "Детали возврата поставщику",
   "supplier_return_history": "История возврата поставщику",
-  "add_supplier_return": "Добавить возврат поставщику"
+  "add_supplier_return": "Добавить возврат поставщику",
+  "appbar_client_returns": "Возврат от клиента",
+  "view_return_document": "Возврат",
+  "delete_return_document": "Удалить возврат",
+  "delete_return_document_confirm": "Вы уверены, что хотите удалить этот документ возврата?",
+  "no_returns": "Нет возвратов",
+  "return": "Возврат",
+  "client_inn": "ИНН клиента",
+  "deleted_return": "Удален",
+  "create_client_return": "Создать возврат от клиента",
+  "edit_client_return": "Редактировать возврат",
+  "client_return_created": "Документ возврата от клиента создан",
+  "client_return_updated": "Документ возврата от клиента обновлен",
+  "client_return_deleted": "Документ возврата от клиента удален",
+  "client_return_restored": "Документ возврата от клиента восстановлен",
+  "client_return_approved": "Документ возврата от клиента проведен",
+  "client_return_unapproved": "Проведение документа возврата от клиента отменено",
+  "add_client_return": "Добавить возврат от клиента",
+  "client_return_details": "Детали возврата от клиента",
+  "client_return_history": "История возврата от клиента"
 
  
 

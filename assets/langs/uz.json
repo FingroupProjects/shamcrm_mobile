@@ -1265,7 +1265,26 @@
   "edit_supplier_return": "Qaytarishni tahrirlash",
   "supplier_return_details": "Ta'minotchiga qaytarish tafsilotlari",
   "supplier_return_history": "Ta'minotchiga qaytarish tarixi",
-  "add_supplier_return": "Ta'minotchiga qaytarish qo'shish"
+  "add_supplier_return": "Ta'minotchiga qaytarish qo'shish",
+  "appbar_client_returns": "Mijozdan qaytish",
+  "view_return_document": "Qaytishni ko'rish",
+  "delete_return_document": "Qaytishni o'chirish",
+  "delete_return_document_confirm": "Ushbu qaytish hujjatini o'chirishga ishonchingiz komilmi?",
+  "no_returns": "Qaytishlar yo'q",
+  "return": "Qaytish",
+  "client_inn": "Mijoz INN",
+  "deleted_return": "O'chirilgan",
+  "create_client_return": "Mijozdan qaytish yaratish",
+  "edit_client_return": "Qaytishni tahrirlash",
+  "client_return_created": "Mijozdan qaytish hujjati yaratildi",
+  "client_return_updated": "Mijozdan qaytish hujjati yangilandi",
+  "client_return_deleted": "Mijozdan qaytish hujjati o'chirildi",
+  "client_return_restored": "Mijozdan qaytish hujjati tiklandi",
+  "client_return_approved": "Mijozdan qaytish hujjati tasdiqlandi",
+  "client_return_unapproved": "Mijozdan qaytish hujjati tasdiqlanishi bekor qilindi",
+  "add_client_return": "Mijozdan qaytish qo'shish",
+  "client_return_details": "Mijozdan qaytish tafsilotlari",
+  "client_return_history": "Mijozdan qaytish tarixi"
 
 
 

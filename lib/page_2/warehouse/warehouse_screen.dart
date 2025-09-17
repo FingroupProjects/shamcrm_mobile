@@ -1,10 +1,13 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -106,6 +109,31 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     context,
     MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
   );
+} else if (document.title ==
+        AppLocalizations.of(context)!.translate('client_return') ||
+    document.title == 'Возврат от клиента') {
+  // Добавляем навигацию к экрану возврата поставщику
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => ClientReturnScreen()),
+  );
+}else if (document.title ==
+        AppLocalizations.of(context)!.translate('write_off') ||
+    document.title == 'Списание') {
+  // Добавляем навигацию к экрану возврата поставщику
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => WriteOffScreen()),
+  );
+}
+else if (document.title ==
+        AppLocalizations.of(context)!.translate('transfer') ||
+    document.title == 'Перемещение') {
+  // Добавляем навигацию к экрану перемещения с organizationId
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => MovementScreen(organizationId: 1)), // или получите реальный ID
+  );
 }
 else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,6 +170,63 @@ else {
     );
   }
 
+  // НОВЫЙ АДАПТИВНЫЙ МЕТОД ДЛЯ СЕТКИ ДОКУМЕНТОВ
+  Widget _buildDocumentGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Получаем размер экрана для более точной адаптации
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        
+        // Определяем количество колонок в зависимости от ширины экрана
+        int crossAxisCount;
+        double childAspectRatio;
+        
+        if (screenWidth < 350) {
+          // Очень маленькие экраны
+          crossAxisCount = 2;
+          childAspectRatio = 0.9;
+        } else if (screenWidth < 400) {
+          // Маленькие экраны (включая ваше устройство)
+          crossAxisCount = 2;
+          childAspectRatio = 1.0;
+        } else if (screenWidth < 500) {
+          // Средние экраны 
+          crossAxisCount = 2;
+          childAspectRatio = 1.1;
+        } else if (screenWidth < 600) {
+          // Большие телефоны
+          crossAxisCount = 2;
+          childAspectRatio = 1.2;
+        } else if (screenWidth < 900) {
+          // Планшеты
+          crossAxisCount = 3;
+          childAspectRatio = 1.1;
+        } else {
+          // Большие экраны
+          crossAxisCount = 4;
+          childAspectRatio = 1.0;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: _documents.length,
+          itemBuilder: (context, index) {
+            return _buildDocumentCard(_documents[index]);
+          },
+        );
+      },
+    );
+  }
+
+  // ОБНОВЛЕННЫЙ КОМПАКТНЫЙ МЕТОД ДЛЯ КАРТОЧЕК ДОКУМЕНТОВ
   Widget _buildDocumentCard(WarehouseDocument document) {
     return Material(
       color: Colors.transparent,
@@ -164,36 +249,45 @@ else {
               width: 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Иконка
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: document.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Иконка
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: document.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    document.icon,
+                    size: 24,
+                    color: document.color,
+                  ),
                 ),
-                child: Icon(
-                  document.icon,
-                  size: 28,
-                  color: document.color,
+                const SizedBox(height: 8),
+                // Название документа
+                Flexible(
+                  child: Text(
+                    document.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                      height: 1.1,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Название документа
-              Text(
-                document.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -332,22 +426,8 @@ else {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Сетка 2x3 для документов
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _documents.length,
-                        itemBuilder: (context, index) {
-                          return _buildDocumentCard(_documents[index]);
-                        },
-                      ),
+                      // АДАПТИВНАЯ СЕТКА ДОКУМЕНТОВ
+                      _buildDocumentGrid(),
                       const SizedBox(height: 16),
                       // Длинная кнопка "Справочники"
                       _buildReferencesButton(),

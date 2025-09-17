@@ -81,6 +81,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
             title: localizations!.translate('warehouse') ?? 'Единицы измерения',
             showSearchIcon: true,
             showFilterIcon: false,
+            showFilterOrderIcon: false,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
