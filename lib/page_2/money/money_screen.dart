@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/bloc/money_references/money_references_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_references/money_references.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 

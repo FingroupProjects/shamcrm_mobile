@@ -1,14 +1,14 @@
 import 'package:crm_task_manager/bloc/money_references/money_references_bloc.dart';
-import 'package:crm_task_manager/page_2/money/money_references/add_money_reference.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../bloc/money_references/add/add_money_references_bloc.dart';
-import '../../../bloc/money_references/edit/edit_money_references_bloc.dart';
-import '../../../custom_widget/custom_button.dart';
-import '../../../models/money/cash_register_model.dart';
-import '../../../screens/profile/languages/app_localizations.dart';
-import 'edit_money_reference.dart';
+import '../../../../bloc/money_references/add/add_money_references_bloc.dart';
+import '../../../../bloc/money_references/edit/edit_money_references_bloc.dart';
+import '../../../../custom_widget/custom_button.dart';
+import '../../../../models/money/cash_register_model.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
+import 'edit_cash_desk_screen.dart';
 
 class MoneyReferencesScreen extends StatefulWidget {
   const MoneyReferencesScreen({super.key});
