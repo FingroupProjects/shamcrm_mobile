@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -168,9 +167,15 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Center(
-                        child: PlayStoreImageLoading(
-                          size: 20.0,
-                          duration: Duration(milliseconds: 1000),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     )
