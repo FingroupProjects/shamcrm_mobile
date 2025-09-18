@@ -1,8 +1,11 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../models/author_data_response.dart';
 import '../../../../models/cash_register_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
+import '../../../../page_2/money/widgets/author_list_widget.dart';
 import '../../../../page_2/money/widgets/cash_register_radio_group.dart';
 import '../../../../page_2/money/widgets/supplier_radio_group.dart';
 import '../../../custom_textfield_deadline.dart';
@@ -45,19 +48,13 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
   SupplierData? _selectedSupplier;
+  AuthorData? selectedAuthor;
   CashRegisterData? _selectedCashRegister;
   String? _selectedStatus;
-  String? _selectedAuthor;
-  bool? _isApproved;
   bool? _isDeleted;
 
-  // Dropdown keys for rebuilding
-  Key _statusDropdownKey = UniqueKey();
-  Key _authorDropdownKey = UniqueKey();
-
   // Lists for dropdowns
-  List<String> _statuses = ['Новый', 'В обработке', 'Завершен', 'Отменен'];
-  List<String> _authors = [];
+  List<String> _statuses = ['approved', 'unapproved'];
 
   @override
   void initState() {
@@ -71,12 +68,10 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         ? CashRegisterData(id: int.tryParse(widget.initialWarehouse!) ?? 0, name: widget.initialWarehouse!)
         : null;
     _selectedStatus = widget.initialStatus;
-    _selectedAuthor = widget.initialAuthor;
     _isDeleted = widget.initialIsDeleted;
 
     _updateDateControllers();
     _loadFilterState();
-    _loadDropdownData();
   }
 
   void _updateDateControllers() {
@@ -85,17 +80,6 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     }
     if (_toDate != null) {
       _toDateController.text = "${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}";
-    }
-  }
-
-  Future<void> _loadDropdownData() async {
-    try {
-      // Load authors from API - replace with actual API calls
-      setState(() {
-        _authors = ['Автор 1', 'Автор 2', 'Автор 3'];
-      });
-    } catch (e) {
-      print('Error loading dropdown data: $e');
     }
   }
 
@@ -123,9 +107,14 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _selectedCashRegister = CashRegisterData(id: warehouseId, name: warehouseName);
       }
 
+      final authorName = prefs.getString('income_author');
+      final authorId = prefs.getInt('income_author_id');
+      if (authorName != null && authorId != null) {
+        selectedAuthor =
+            AuthorData(id: authorId, name: authorName, lastname: '');
+      }
+
       _selectedStatus = prefs.getString('income_status') ?? widget.initialStatus;
-      _selectedAuthor = prefs.getString('income_author') ?? widget.initialAuthor;
-      _isApproved = prefs.getBool('income_is_approved');
       _isDeleted = prefs.getBool('income_is_deleted') ?? widget.initialIsDeleted;
 
       _updateDateControllers();
@@ -169,16 +158,12 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       await prefs.remove('income_status');
     }
 
-    if (_selectedAuthor != null) {
-      await prefs.setString('income_author', _selectedAuthor!);
+    if (selectedAuthor != null) {
+      await prefs.setString('income_author', selectedAuthor!.name);
+      await prefs.setInt('income_author_id', selectedAuthor!.id);
     } else {
       await prefs.remove('income_author');
-    }
-
-    if (_isApproved != null) {
-      await prefs.setBool('income_is_approved', _isApproved!);
-    } else {
-      await prefs.remove('income_is_approved');
+      await prefs.remove('income_author_id');
     }
 
     if (_isDeleted != null) {
@@ -197,16 +182,15 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       _selectedSupplier = null;
       _selectedCashRegister = null;
       _selectedStatus = null;
-      _selectedAuthor = null;
-      _isApproved = null;
+      selectedAuthor = null;
       _isDeleted = null;
 
-      // Rebuild dropdowns
-      _statusDropdownKey = UniqueKey();
-      _authorDropdownKey = UniqueKey();
+      _fromDateController.clear();
+      _toDateController.clear();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
+    _applyFilters();
   }
 
   bool _isAnyFilterSelected() {
@@ -215,8 +199,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _selectedSupplier != null ||
         _selectedCashRegister != null ||
         _selectedStatus != null ||
-        _selectedAuthor != null ||
-        _isApproved != null ||
+        selectedAuthor != null ||
         _isDeleted != null;
   }
 
@@ -226,168 +209,20 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({
-        'fromDate': _fromDate,
-        'toDate': _toDate,
-        'supplier': _selectedSupplier?.id.toString(),
-        'warehouse': _selectedCashRegister?.id.toString(),
+        'date_from': _fromDate,
+        'date_to': _toDate,
+        'supplier_id': _selectedSupplier?.id.toString(),
+        'storage_id': _selectedCashRegister?.id.toString(),
         'status': _selectedStatus,
-        'author': _selectedAuthor,
-        'isApproved': _isApproved,
-        'isDeleted': _isDeleted,
+        'author_id': selectedAuthor?.id.toString(),
+        'deleted': _isDeleted,
       });
     }
     Navigator.pop(context);
   }
 
-  Widget _buildDropdown({
-    required Key key,
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            key: key,
-            hint: Text(
-              hint,
-              style: const TextStyle(
-                color: Color(0xff99A4BA),
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-            value: value,
-            isExpanded: true,
-            items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: onChanged,
-            icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xff99A4BA)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildApprovedFilter() {
-    final localizations = AppLocalizations.of(context)!;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                localizations.translate('approve_document') ?? 'Провести',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-            ),
-            DropdownButton<bool?>(
-              value: _isApproved,
-              hint: Text(
-                'Выберите статус',
-                style: const TextStyle(
-                  color: Color(0xff99A4BA),
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              items: [
-                DropdownMenuItem<bool?>(
-                  value: true,
-                  child: Text(localizations.translate('approve_document') ?? 'Провести'),
-                ),
-                DropdownMenuItem<bool?>(
-                  value: false,
-                  child: Text(localizations.translate('unapprove_document') ?? 'Отменить проведение'),
-                ),
-              ],
-              onChanged: (bool? newValue) {
-                setState(() {
-                  _isApproved = newValue;
-                });
-              },
-              underline: Container(),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xff99A4BA)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeletedFilter() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Удален',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-            ),
-            DropdownButton<bool?>(
-              value: _isDeleted,
-              hint: Text(
-                'Выберите статус',
-                style: const TextStyle(
-                  color: Color(0xff99A4BA),
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              items: [
-                DropdownMenuItem<bool?>(
-                  value: true,
-                  child: Text('Да'),
-                ),
-                DropdownMenuItem<bool?>(
-                  value: false,
-                  child: Text('Нет'),
-                ),
-              ],
-              onChanged: (bool? newValue) {
-                setState(() {
-                  _isDeleted = newValue;
-                });
-              },
-              underline: Container(),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xff99A4BA)),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getStatusDisplayText(String status) {
+    return AppLocalizations.of(context)!.translate(status);
   }
 
   @override
@@ -397,7 +232,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('filter'),
+          AppLocalizations.of(context)!.translate('filter') ?? 'Фильтр',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -420,7 +255,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
               side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-              AppLocalizations.of(context)!.translate('reset'),
+              AppLocalizations.of(context)!.translate('reset') ?? 'Сбросить',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -441,7 +276,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
               side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-              AppLocalizations.of(context)!.translate('apply'),
+              AppLocalizations.of(context)!.translate('apply') ?? 'Применить',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -541,7 +376,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Cash Register (Warehouse) Widget
+                    // Cash Register Widget
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -559,40 +394,75 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Status Dropdown
-                    _buildDropdown(
-                      key: _statusDropdownKey,
-                      hint: 'Выберите статус',
-                      value: _selectedStatus,
-                      items: _statuses,
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedStatus = value;
-                        });
-                      },
+                    // Status Dropdown with localization
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: _StatusMethodDropdown(
+                          title: AppLocalizations.of(context)!.translate('status'),
+                            statusMethodsList: [
+                              AppLocalizations.of(context)!
+                                  .translate('approved'),
+                              AppLocalizations.of(context)!
+                                  .translate('not_approved'),
+                            ],
+                            onSelectstatusMethod: (String value) {
+                              setState(() {
+                                _selectedStatus = value;
+                              });
+                            },
+                            selectedstatusMethod: _selectedStatus != null
+                                ? _getStatusDisplayText(_selectedStatus!)
+                                : null),
+                      ),
                     ),
                     const SizedBox(height: 8),
 
                     // Author Dropdown
-                    _buildDropdown(
-                      key: _authorDropdownKey,
-                      hint: 'Выберите автора',
-                      value: _selectedAuthor,
-                      items: _authors,
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedAuthor = value;
-                        });
-                      },
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: AuthorRadioGroupWidget(
+                          selectedAuthor: selectedAuthor?.id.toString(),
+                          onSelectAuthor: (AuthorData value) {
+                            setState(() {
+                              selectedAuthor = value;
+                            });
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 8),
 
-                    // Approved Status Filter
-                    _buildApprovedFilter(),
-                    const SizedBox(height: 8),
-
-                    // Deleted Status Filter
-                    _buildDeletedFilter(),
+                    // Boolean Deleted Status Dropdown
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: _StatusMethodDropdown(title: AppLocalizations.of(context)!.translate('status_delete'),
+                            statusMethodsList: [
+                              AppLocalizations.of(context)!.translate('deleted'),
+                              AppLocalizations.of(context)!.translate('not_deleted'),
+                            ],
+                            onSelectstatusMethod: (String value) {
+                              setState(() {
+                                _selectedStatus = value;
+                              });
+                            },
+                            selectedstatusMethod: _selectedStatus != null
+                                ? _getStatusDisplayText(_selectedStatus!)
+                                : null),
+                      ),
+                    ),
+                    const SizedBox(height: 96),
                   ],
                 ),
               ),
@@ -608,5 +478,121 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     _fromDateController.dispose();
     _toDateController.dispose();
     super.dispose();
+  }
+}
+
+class _StatusMethodDropdown extends StatefulWidget {
+  final String? selectedstatusMethod;
+  final Function(String) onSelectstatusMethod;
+  final List<String> statusMethodsList;
+  final String title;
+
+  const _StatusMethodDropdown({
+    super.key,
+    required this.onSelectstatusMethod,
+    this.selectedstatusMethod,
+    required this.statusMethodsList,
+    required this.title,
+  });
+
+  @override
+  State<_StatusMethodDropdown> createState() => _StatusMethodDropdownState();
+}
+
+class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
+  String? selectedstatusMethod;
+
+  _StatusMethodDropdownState();
+
+  @override
+  void initState() {
+    super.initState();
+    selectedstatusMethod = widget.selectedstatusMethod;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color:
+                Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52 на корректный
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<String>.search(
+          closeDropDownOnClearFilterSearch: true,
+          items: widget.statusMethodsList,
+          searchHintText: AppLocalizations.of(context)!.translate('search'),
+          overlayHeight: 400,
+          enabled: true,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(
+              color: Color(0xffF4F7FD),
+              width: 1,
+            ),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(
+              color: Color(0xffF4F7FD),
+              width: 1,
+            ),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) {
+            return Text(
+              item,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            );
+          },
+          headerBuilder: (context, selectedItem, enabled) {
+            return Text(
+              selectedItem.isNotEmpty
+                  ? selectedItem
+                  : AppLocalizations.of(context)!
+                      .translate('select_status_method'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          hintBuilder: (context, hint, enabled) => Text(
+            AppLocalizations.of(context)!.translate('select_status_method'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          excludeSelected: false,
+          initialItem: selectedstatusMethod,
+          onChanged: (value) {
+            if (value != null) {
+              widget.onSelectstatusMethod(value);
+              setState(() {
+                selectedstatusMethod = value;
+              });
+              FocusScope.of(context).unfocus();
+            }
+          },
+        ),
+      ],
+    );
   }
 }

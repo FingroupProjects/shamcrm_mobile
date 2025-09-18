@@ -32,7 +32,9 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final bool showFilterIncomeIcon;
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
+  final Function(Map<String, dynamic>)? onFilterIncomeSelected;
   final VoidCallback? onGoodsResetFilters;
+  final VoidCallback? onIncomeResetFilters;
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
 
@@ -50,7 +52,9 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterOrderIcon = true,
     this.showFilterIncomeIcon = false,
     this.onFilterGoodsSelected,
+    this.onFilterIncomeSelected,
     this.onGoodsResetFilters,
+    this.onIncomeResetFilters,
     required this.currentFilters,
     this.initialLabels,
   });
@@ -83,6 +87,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool _canCreateOrder = false; // Новая переменная для права order.create
   // bool _isGoodsFiltering = false;
   bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
+  bool _isIncomeFiltering = false; // Новая переменная для фильтров доходов
   
 
   @override
@@ -711,8 +716,8 @@ void navigateToGoodsFilterScreen(BuildContext context) {
 
 void navigateToOrderFilterScreen(BuildContext context) {
   if (kDebugMode) {
-    //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
-    //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    print('CustomAppBarPage2: Переход к экрану фильтров заказов');
+    print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
   }
 
   DateTime? initialFromDate = widget.currentFilters['fromDate'];
@@ -775,7 +780,6 @@ void navigateToOrderFilterScreen(BuildContext context) {
       print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
     }
 
-    // Extract initial filter values for income
     DateTime? initialFromDate = widget.currentFilters['fromDate'];
     DateTime? initialToDate = widget.currentFilters['toDate'];
     String? initialSupplier;
@@ -824,11 +828,10 @@ void navigateToOrderFilterScreen(BuildContext context) {
         builder: (context) => IncomeFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print(
-                  'CustomAppBarPage2: Получены фильтры из IncomeFilterScreen: $filters');
+              print('CustomAppBarPage2: Получены фильтры из IncomeFilterScreen: $filters');
             }
             setState(() {
-              _isGoodsFiltering = filters.isNotEmpty ||
+              _isIncomeFiltering = filters.isNotEmpty ||
                   filters['fromDate'] != null ||
                   filters['toDate'] != null ||
                   filters['supplier'] != null ||
@@ -837,17 +840,19 @@ void navigateToOrderFilterScreen(BuildContext context) {
                   filters['author'] != null ||
                   filters['isDeleted'] != null;
             });
-            widget.onFilterGoodsSelected?.call(filters);
+            debugPrint("_isIncomeFiltering: $_isIncomeFiltering");
+            debugPrint("filters: $filters");
+            widget.onFilterIncomeSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
               print('CustomAppBarPage2: Сброс фильтров из IncomeFilterScreen');
             }
             setState(() {
-              _isGoodsFiltering = false;
+              _isIncomeFiltering = false;
               widget.currentFilters.clear();
             });
-            widget.onGoodsResetFilters?.call();
+            widget.onIncomeResetFilters?.call();
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
@@ -863,9 +868,6 @@ void navigateToOrderFilterScreen(BuildContext context) {
     );
   }
 }
-
-
-
 
 class _BarcodeScannerScreen extends StatefulWidget {
   @override
