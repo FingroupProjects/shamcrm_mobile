@@ -11794,45 +11794,61 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<MoneyIncomeDocumentModel> getMoneyIncomeDocuments({
     int page = 1,
     int perPage = 20,
-    String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved,
+    String? search,
+    Map<String, dynamic>? filters,
   }) async {
-    String url = '/checking-account';
-    url += '?page=$page&per_page=$perPage';
-
-    if (query != null && query.isNotEmpty) {
-      url += '&search=$query';
-    }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
+    String path = '/checking-account?page=$page&per_page=$perPage';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getMoneyIncomeDocuments - Generated path: $path');
-    }
+    debugPrint("Фильтры для прихода: $filters");
 
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по приходу: $rawData");
-        return MoneyIncomeDocumentModel.fromJson(rawData);
-      } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+    if (filters != null) {
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
       }
-    } catch (e) {
-      throw Exception('Ошибка получения данных прихода: ${e}');
+
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        path += '&date_from=${filters['date_from']}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        path += "&date_to=${filters!['date_to']}";
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters!['deleted']}';
+      }
+      if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
+        path += '&storage_id=${filters!['storage_id']}';
+      }
+
+      if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+        path += '&supplier_id=${filters!['supplier_id']}';
+      }
     }
-  }
+
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      path = await _appendQueryParams(path);
+      if (kDebugMode) {
+        print('ApiService: getMoneyIncomeDocuments - Generated path: $path');
+      }
+
+      try {
+        final response = await _getRequest(path);
+        if (response.statusCode == 200) {
+          final rawData = json.decode(response.body);
+          debugPrint("Полученные данные по приходу: $rawData");
+          return MoneyIncomeDocumentModel.fromJson(rawData);
+        } else {
+          throw Exception('Ошибка сервера: ${response.statusCode}');
+        }
+      } catch (e) {
+        throw Exception('Ошибка получения данных прихода: ${e}');
+      }
+    }
+
 
   Future<Map<String, dynamic>> deleteMoneyIncomeDocument(int documentId) async {
     final path = '/checking-account/$documentId';

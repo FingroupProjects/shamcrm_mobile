@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,6 +34,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
   late MoneyIncomeBloc _moneyIncomeBloc;
+
   bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
@@ -40,8 +42,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   @override
   void initState() {
     super.initState();
-    _moneyIncomeBloc = MoneyIncomeBloc()
-      ..add(const FetchMoneyIncome(forceRefresh: true));
+    _moneyIncomeBloc = MoneyIncomeBloc()..add(const FetchMoneyIncome(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -52,6 +53,32 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     _focusNode.dispose();
     _moneyIncomeBloc.close();
     super.dispose();
+  }
+
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    if (kDebugMode) {
+      print('MoneyIncomeScreen: Применение фильтров: $filters');
+    }
+    setState(() {
+      _currentFilters = Map.from(filters);
+      if (kDebugMode) {
+        print('MoneyIncomeScreen: Сохранены текущие фильтры: $_currentFilters');
+      }
+    });
+    context.read<MoneyIncomeBloc>().add(FetchMoneyIncome(filters: filters, forceRefresh: true));
+  }
+
+  void _onResetFilters() {
+    if (kDebugMode) {
+      print('MoneyIncomeScreen: Сброс фильтров');
+    }
+    setState(() {
+      _currentFilters = {};
+      if (kDebugMode) {
+        print('MoneyIncomeScreen: Очищены текущие фильтры');
+      }
+    });
+    context.read<MoneyIncomeBloc>().add(FetchMoneyIncome(filters: {}, forceRefresh: true));
   }
 
   void _onScroll() {
@@ -173,6 +200,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               showSearchIcon: true,
               showFilterIcon: false,
               showFilterOrderIcon: false,
+              showFilterIncomeIcon: true,
+              onFilterIncomeSelected: _onFilterSelected,
+              onIncomeResetFilters: _onResetFilters,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _focusNode,
@@ -182,8 +212,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     _isSearching = false;
                     _searchController.clear();
                   });
-                  _moneyIncomeBloc
-                      .add(const FetchMoneyIncome(forceRefresh: true));
+                  _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
                 }
               },
               onClickProfileAvatar: () {},

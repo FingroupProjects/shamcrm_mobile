@@ -7,14 +7,16 @@ sealed class MoneyIncomeEvent extends Equatable {
 class FetchMoneyIncome extends MoneyIncomeEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
+  final String? search;
 
   const FetchMoneyIncome({
     this.forceRefresh = false,
     this.filters,
+    this.search,
   });
 
   @override
-  List<Object?> get props => [forceRefresh, filters];
+  List<Object?> get props => [forceRefresh, filters, search];
 }
 
 class UpdateMoneyIncome extends MoneyIncomeEvent {
@@ -116,4 +118,14 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         senderCashRegisterId ?? '',
         supplierId ?? 0,
       ];
+}
+
+
+class FilterMoneyIncome extends MoneyIncomeEvent {
+  final Map<String, dynamic> filters;
+
+  FilterMoneyIncome(this.filters);
+
+  @override
+  List<Object> get props => [filters];
 }
