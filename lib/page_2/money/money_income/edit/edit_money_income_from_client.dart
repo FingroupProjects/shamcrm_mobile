@@ -181,11 +181,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
             setState(() => _isLoading = false);
 
             if (state is MoneyIncomeUpdateSuccess) {
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  Navigator.pop(context, true);
-                }
-              });
+              Navigator.pop(context, true);
             } else if (state is MoneyIncomeUpdateError) {
               _showSnackBar(state.message, false);
             }
