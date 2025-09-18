@@ -341,7 +341,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel'),
+                localizations.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -373,7 +373,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                 ),
               )
                   : Text(
-                localizations.translate('update'),
+                localizations.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

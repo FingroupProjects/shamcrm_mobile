@@ -270,7 +270,7 @@
   "whatsapp_not_installed": "WhatsApp o'rnatilmagan",
   "whatsapp_open_failed": "WhatsApp ochib bo'lmadi",
   "view_lead": "Lidni ko'rish",
-  "lead": "Lid",
+  "lead": "Mijoz",
   "phone_use": "Telefon:",
   "name_details": "Ism:",
   "region_details": "Hudud:",
@@ -561,7 +561,7 @@
   "finished": "Tugatildi",
   "in_progress": "Jarayonda",
   "lead_name": "Lid:",
-  "date": "Voqealar:",
+  "date": "Sana:",
   "new_notice": "Voqealar qo‘shish",
   "enter_notice_title": "Sarlavhani kiriting",
   "notice_title": "Mavzu",
@@ -1288,7 +1288,9 @@
   "sender_cash_register": "Jo'natuvchi kassa",
   "receiver_cash_register": "Qabul qiluvchi kassa",
   "delete_money_income": "Pul daromadini o'chirish",
-  "delete_money_income_confirm": "Siz ushbu pul daromadi hujjatini o'chirishga ishonchingiz komilmi?"
+  "delete_money_income_confirm": "Siz ushbu pul daromadi hujjatini o'chirishga ishonchingiz komilmi?",
+  "cash_register_name": "Nomi"
+
 
 
 

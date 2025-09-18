@@ -148,8 +148,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
             Expanded(
               child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)?.translate('cancel') ??
-                          'Отмена',
+                      AppLocalizations.of(context)?.translate('close') ??
+                          'Закрыть',
                   buttonColor: const Color(0xffF4F7FD),
                   textColor: Colors.black,
                   onPressed: isLoading ? () {} : _onCancel),

@@ -109,10 +109,10 @@ class _EditCashDeskState extends State<EditCashDesk> {
                             CustomTextField(
                               controller: nameController,
                               hintText: AppLocalizations.of(context)
-                                      ?.translate('enter_name') ??
+                                      ?.translate('enter_title') ??
                                   'Введите название*',
                               label: AppLocalizations.of(context)
-                                      ?.translate('name') ??
+                                      ?.translate('cash_register_name') ??
                                   'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
@@ -167,8 +167,8 @@ class _EditCashDeskState extends State<EditCashDesk> {
             Expanded(
               child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)?.translate('cancel') ??
-                          'Отмена',
+                      AppLocalizations.of(context)?.translate('close') ??
+                          'Закрыть',
                   buttonColor: const Color(0xffF4F7FD),
                   textColor: Colors.black,
                   onPressed: isLoading ? () {} : _onCancel),

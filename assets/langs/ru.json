@@ -272,7 +272,7 @@
   "whatsapp_not_installed": "WhatsApp не установлен",
   "whatsapp_open_failed": "Не удалось открыть WhatsApp",
   "view_lead": "Просмотр лида",
-  "lead": "Лид",
+  "lead": "Клиент",
   "phone_use": "Телефон:",
   "name_details": "Имя:",
   "region_details": "Регион:",
@@ -565,7 +565,7 @@
   "finished": "Завершен",
   "in_progress": "В процессе",
   "lead_name": "Лид:",
-  "date": "Напоминание:",
+  "date": "Дата:",
   "new_notice": "Добавление события",
   "enter_notice_title": "Введите название",
   "notice_title": "Тематика",
@@ -1342,7 +1342,8 @@
   "enter_income_name": "Введите название дохода*",
   "expense_name": "Название расхода",
   "income_name": "Название дохода",
-  "type": "Тип"
+  "type": "Тип",
+  "cash_register_name": "Название"
 
  
 

@@ -270,7 +270,7 @@
     "whatsapp_not_installed": "WhatsApp is not installed",
     "whatsapp_open_failed": "Failed to open WhatsApp",
     "view_lead": "View Lead",
-    "lead": "Lead",
+    "lead": "Client",
     "phone_use": "Phone:",
     "name_details": "Name:",
     "region_details": "Region:",
@@ -561,7 +561,7 @@
     "finished": "Completed",
     "in_progress": "In progress",
     "lead_name": "Lead:",
-    "date": "Reminder:",
+    "date": "Date:",
     "new_notice": "Add Event ",
     "enter_notice_title": "Enter Title",
     "notice_title": "Topic",
@@ -1299,7 +1299,8 @@
     "enter_income_name": "Enter income name*",
     "expense_name": "Expense name",
     "income_name": "Income name",
-    "type": "Type"
+    "type": "Type",
+    "cash_register_name": "Title"
 
 
 
