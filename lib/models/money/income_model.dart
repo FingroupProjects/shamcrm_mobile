@@ -1,5 +1,3 @@
-import 'cash_register_model.dart';
-
 class IncomeResponseModel {
   final List<IncomeModel> data;
   final PaginationModel pagination;
@@ -49,7 +47,6 @@ class IncomeModel {
   final int id;
   final String name;
   final String type;
-  final List<UserModel> users;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -57,7 +54,6 @@ class IncomeModel {
     required this.id,
     required this.name,
     required this.type,
-    required this.users,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -67,10 +63,7 @@ class IncomeModel {
       id: json['id'],
       name: json['name'],
       type: json['type'],
-      users: (json['users'] as List<dynamic>?)
-          ?.map((e) => UserModel.fromJson(e))
-          .toList() ?? [],
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       updatedAt: json['updated_at'] != null 
@@ -83,7 +76,6 @@ class IncomeModel {
     'id': id,
     'name': name,
     'type': type,
-    'users': users.map((e) => e.toJson()).toList(),
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
   };

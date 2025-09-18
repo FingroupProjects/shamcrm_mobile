@@ -333,7 +333,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel'),
+                localizations.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -365,7 +365,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                 ),
               )
                   : Text(
-                localizations.translate('update'),
+                localizations.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

@@ -99,7 +99,7 @@ class _AddCashDeskState extends State<AddCashDesk> {
                                   ?.translate('enter_title') ??
                                   'Введите название*',
                               label: AppLocalizations.of(context)
-                                  ?.translate('enter_title') ??
+                                  ?.translate('cash_register_name') ??
                                   'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {

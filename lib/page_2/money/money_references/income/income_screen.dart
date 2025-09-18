@@ -170,16 +170,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'N: ${data.id}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
                         data.name,
                         style: const TextStyle(
                           fontSize: 18,
@@ -188,27 +178,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
                           color: Color(0xff1E2E52),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${AppLocalizations.of(context)?.translate('type') ?? 'Тип'}: ${data.type}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (data.users.isNotEmpty)
-                        Text(
-                          '${AppLocalizations.of(context)?.translate('users') ?? 'Пользователи'}: ${data.users.map((e) => e.name).join(', ')}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
                     ],
                   ),
                 ),

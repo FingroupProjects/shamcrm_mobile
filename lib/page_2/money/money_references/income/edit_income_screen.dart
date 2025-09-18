@@ -21,7 +21,6 @@ class EditIncomeScreen extends StatefulWidget {
 class _EditIncomeScreenState extends State<EditIncomeScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController nameController;
-  late List<UserData> selectedUsers;
 
   @override
   void dispose() {
@@ -33,7 +32,6 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final model = AddIncomeModel(
         name: nameController.text.trim(),
-        users: selectedUsers.map((user) => user.id).toList(),
       );
 
       context.read<EditIncomeBloc>().add(
@@ -54,11 +52,6 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
     super.initState();
     final initial = widget.initialData;
     nameController = TextEditingController(text: initial?.name ?? '');
-    selectedUsers = (initial?.users ?? []).map((e) => UserData(
-      id: e.id, 
-      name: e.name, 
-      lastname: e.lastname
-    )).toList();
   }
 
   @override
@@ -125,18 +118,6 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
-                            UserMultiSelectWidget(
-                              selectedUsers: selectedUsers
-                                  .map((user) => user.id.toString())
-                                  .toList(),
-                              onSelectUsers:
-                                  (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  selectedUsers = selectedUsersData;
-                                });
-                              },
-                            ),
                           ],
                         ),
                       ),
@@ -169,8 +150,8 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
             Expanded(
               child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)?.translate('cancel') ??
-                          'Отмена',
+                      AppLocalizations.of(context)?.translate('close') ??
+                          'Закрыть',
                   buttonColor: const Color(0xffF4F7FD),
                   textColor: Colors.black,
                   onPressed: isLoading ? () {} : _onCancel),

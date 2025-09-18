@@ -33,7 +33,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         SubmitAddIncome(
           data: AddIncomeModel(
             name: nameController.text.trim(),
-            users: selectedUsers.map((user) => user.id).toList(),
           ),
         ),
       );
