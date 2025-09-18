@@ -19,7 +19,6 @@ class AddIncomeScreen extends StatefulWidget {
 class _AddIncomeScreenState extends State<AddIncomeScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
-  List<UserData> selectedUsers = [];
 
   @override
   void dispose() {
@@ -105,19 +104,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                                   return 'Поле обязательно';
                                 }
                                 return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            UserMultiSelectWidget(
-                              selectedUsers: selectedUsers
-                                  .map((user) => user.id.toString())
-                                  .toList(),
-                              onSelectUsers: (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  selectedUsers = selectedUsersData;
-                                });
                               },
                             ),
                           ],
