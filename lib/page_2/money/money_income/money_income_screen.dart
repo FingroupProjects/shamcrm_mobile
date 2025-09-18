@@ -173,6 +173,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               showSearchIcon: true,
               showFilterIcon: false,
               showFilterOrderIcon: false,
+              showFilterIncomeIcon: true,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _focusNode,

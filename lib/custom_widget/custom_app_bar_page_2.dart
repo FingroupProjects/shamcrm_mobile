@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
@@ -29,6 +30,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showSearchIcon;
   final bool showFilterIcon;
   final bool showFilterOrderIcon;
+  final bool showFilterIncomeIcon;
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final VoidCallback? onGoodsResetFilters;
   final Map<String, dynamic> currentFilters;
@@ -46,6 +48,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showSearchIcon = true,
     this.showFilterIcon = true,
     this.showFilterOrderIcon = true,
+    this.showFilterIncomeIcon = false,
     this.onFilterGoodsSelected,
     this.onGoodsResetFilters,
     required this.currentFilters,
@@ -577,6 +580,21 @@ Future<void> _scanBarcode() async {
               ),
             ),
           ),
+        if (widget.showFilterIncomeIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isGoodsFiltering ? _iconColor : null,
+              ),
+            ),
+            onPressed: () {
+              navigateToIncomeFilterScreen(context);
+            },
+          ),
         if (widget.showFilterIcon && _canCreateProduct)
         IconButton(
           icon: Padding(
@@ -750,6 +768,100 @@ void navigateToOrderFilterScreen(BuildContext context) {
     ),
   );
 }
+
+  void navigateToIncomeFilterScreen(BuildContext context) {
+    if (kDebugMode) {
+      print('CustomAppBarPage2: Переход к экрану фильтров доходов');
+      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
+
+    // Extract initial filter values for income
+    DateTime? initialFromDate = widget.currentFilters['fromDate'];
+    DateTime? initialToDate = widget.currentFilters['toDate'];
+    String? initialSupplier;
+    String? initialWarehouse;
+    String? initialStatus;
+    String? initialAuthor;
+    bool? initialIsDeleted;
+    List<String>? initialSupplierIds;
+    List<String>? initialWarehouseIds;
+
+    if (widget.currentFilters.containsKey('supplier')) {
+      if (widget.currentFilters['supplier'] is String) {
+        initialSupplier = widget.currentFilters['supplier'];
+      } else if (widget.currentFilters['supplier'] is List &&
+          widget.currentFilters['supplier'].isNotEmpty) {
+        initialSupplierIds =
+            List<String>.from(widget.currentFilters['supplier']);
+      }
+    }
+
+    if (widget.currentFilters.containsKey('warehouse')) {
+      if (widget.currentFilters['warehouse'] is String) {
+        initialWarehouse = widget.currentFilters['warehouse'];
+      } else if (widget.currentFilters['warehouse'] is List &&
+          widget.currentFilters['warehouse'].isNotEmpty) {
+        initialWarehouseIds =
+            List<String>.from(widget.currentFilters['warehouse']);
+      }
+    }
+
+    if (widget.currentFilters.containsKey('status')) {
+      initialStatus = widget.currentFilters['status'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('author')) {
+      initialAuthor = widget.currentFilters['author'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('isDeleted')) {
+      initialIsDeleted = widget.currentFilters['isDeleted'] as bool?;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IncomeFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print(
+                  'CustomAppBarPage2: Получены фильтры из IncomeFilterScreen: $filters');
+            }
+            setState(() {
+              _isGoodsFiltering = filters.isNotEmpty ||
+                  filters['fromDate'] != null ||
+                  filters['toDate'] != null ||
+                  filters['supplier'] != null ||
+                  filters['warehouse'] != null ||
+                  filters['status'] != null ||
+                  filters['author'] != null ||
+                  filters['isDeleted'] != null;
+            });
+            widget.onFilterGoodsSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Сброс фильтров из IncomeFilterScreen');
+            }
+            setState(() {
+              _isGoodsFiltering = false;
+              widget.currentFilters.clear();
+            });
+            widget.onGoodsResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialSupplier: initialSupplier,
+          initialWarehouse: initialWarehouse,
+          initialStatus: initialStatus,
+          initialAuthor: initialAuthor,
+          initialIsDeleted: initialIsDeleted,
+          initialSupplierIds: initialSupplierIds,
+          initialWarehouseIds: initialWarehouseIds,
+        ),
+      ),
+    );
+  }
 }
 
 
