@@ -1289,7 +1289,32 @@
   "receiver_cash_register": "Qabul qiluvchi kassa",
   "delete_money_income": "Pul daromadini o'chirish",
   "delete_money_income_confirm": "Siz ushbu pul daromadi hujjatini o'chirishga ishonchingiz komilmi?",
-  "cash_register_name": "Nomi"
+  "cash_register_name": "Nomi",
+  "appbar_write_off": "Hisobdan chiqarish",
+"create_write_off": "Hisobdan chiqarishni yaratish",
+"edit_write_off": "Hisobdan chiqarishni tahrirlash",
+"no_write_offs": "Hisobdan chiqarish hujjatlari yo'q",
+"please_fill_quantity": "Tanlangan tovarlar uchun miqdorni to'ldiring",
+"appbar_movement": "Ko'chirish",
+"create_movement": "Ko'chirishni yaratish",
+"edit_movement": "Ko'chirishni tahrirlash",
+"sender_storage": "Jo'natuvchi ombor",
+"recipient_storage": "Qabul qiluvchi ombor",
+"select_sender_storage": "Jo'natuvchi omborni tanlang",
+"select_recipient_storage": "Qabul qiluvchi omborni tanlang",
+"no_movements": "Ko'chirish hujjatlari yo'q",
+"approved": "Tasdiqlangan",
+"not_approved": "Tasdiqlanmagan",
+"document_restored": "Hujjat tiklandi",
+"error_restoring_document": "Hujjatni tiklashda xatolik",
+"restore_document": "Tiklash",
+"recipient_storage_name": "Qabul qiluvchi ombor",
+"empty_0":"",
+"price_required": "Narx maydoni majburiy",
+"quantity_required": "Miqdor maydoni majburiy",
+"no_storage": "Omborlar mavjud emas"
+
+
 
 
 

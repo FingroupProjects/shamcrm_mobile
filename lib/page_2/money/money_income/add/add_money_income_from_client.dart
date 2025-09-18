@@ -265,7 +265,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Cancel',
+                localizations.translate('close') ?? 'Cancel',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -297,7 +297,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                 ),
               )
                   : Text(
-                localizations.translate('create') ?? 'Create',
+                localizations.translate('save') ?? 'Create',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

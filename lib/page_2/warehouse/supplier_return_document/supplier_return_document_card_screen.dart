@@ -108,7 +108,7 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localizations.translate('supplier_return') ?? 'Возврат поставщику'} №${doc.docNumber ?? 'N/A'}',
+                    '${localizations.translate('empty_0') ?? 'Возврат поставщику'}№${doc.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

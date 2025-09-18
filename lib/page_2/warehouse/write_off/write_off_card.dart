@@ -49,7 +49,7 @@ class WriteOffCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${localizations.translate('document') ?? 'Документ'} №${document.docNumber ?? ''}',
+                        '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
                         style: TaskCardStyles.titleStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -84,7 +84,7 @@ class WriteOffCard extends StatelessWidget {
                     Text(
                       document.date != null
                           ? DateFormat('dd.MM.yyyy').format(document.date!)
-                          : localizations.translate('no_date') ?? 'Дата не указана',
+                          : localizations.translate('empty_o') ?? 'Дата не указана',
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -105,7 +105,7 @@ class WriteOffCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        document.storage?.name ?? localizations.translate('no_storage') ?? 'Склад не указан',
+                        document.storage?.name ?? localizations.translate('empty_o') ?? 'Склад не указан',
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',

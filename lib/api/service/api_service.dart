@@ -2533,103 +2533,100 @@ class ApiService {
   }
 
   // Метод для получения списка Сделок с пагинацией
-  Future<List<Deal>> getDeals(
-    int? dealStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? managers,
-    List<int>? leads,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? daysWithoutActivity,
-    bool? hasTasks,
-    List<Map<String, dynamic>>? directoryValues,
-    int? salesFunnelId, // Новый параметр
-  }) async {
-    // Формируем базовый путь
-    String path = '/deal?page=$page&per_page=$perPage';
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    path = await _appendQueryParams(path);
-    if (kDebugMode) {
-      //print('ApiService: getDeals - Generated path: $path');
-    }
-    // Добавляем sales_funnel_id из аргумента, если он передан
-    if (salesFunnelId != null) {
-      path += '&sales_funnel_id=$salesFunnelId';
-    }
+Future<List<Deal>> getDeals(
+  int? dealStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? managers,
+  List<int>? leads,
+  int? statuses,
+  DateTime? fromDate,
+  DateTime? toDate,
+  int? daysWithoutActivity,
+  bool? hasTasks,
+  List<Map<String, dynamic>>? directoryValues,
+  List<String>? names, // Новое поле
+  int? salesFunnelId,
+}) async {
+  String path = '/deal?page=$page&per_page=$perPage';
+  path = await _appendQueryParams(path);
+  if (salesFunnelId != null) {
+    path += '&sales_funnel_id=$salesFunnelId';
+  }
 
-    bool hasFilters = (search != null && search.isNotEmpty) ||
-        (managers != null && managers.isNotEmpty) ||
-        (leads != null && leads.isNotEmpty) ||
-        (fromDate != null) ||
-        (toDate != null) ||
-        (daysWithoutActivity != null) ||
-        (hasTasks == true) ||
-        (statuses != null) ||
-        (directoryValues != null && directoryValues.isNotEmpty);
+  bool hasFilters = (search != null && search.isNotEmpty) ||
+      (managers != null && managers.isNotEmpty) ||
+      (leads != null && leads.isNotEmpty) ||
+      (fromDate != null) ||
+      (toDate != null) ||
+      (daysWithoutActivity != null) ||
+      (hasTasks == true) ||
+      (statuses != null) ||
+      (directoryValues != null && directoryValues.isNotEmpty) ||
+      (names != null && names.isNotEmpty); // Учитываем names
 
-    if (dealStatusId != null && !hasFilters) {
-      path += '&deal_status_id=$dealStatusId';
-    }
+  if (dealStatusId != null && !hasFilters) {
+    path += '&deal_status_id=$dealStatusId';
+  }
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
 
-    if (managers != null && managers.isNotEmpty) {
-      for (int i = 0; i < managers.length; i++) {
-        path += '&managers[$i]=${managers[i]}';
-      }
-    }
-    if (leads != null && leads.isNotEmpty) {
-      for (int i = 0; i < leads.length; i++) {
-        path += '&clients[$i]=${leads[i]}';
-      }
-    }
-    if (daysWithoutActivity != null) {
-      path += '&lastUpdate=$daysWithoutActivity';
-    }
-    if (hasTasks == true) {
-      path += '&withTasks=1';
-    }
-    if (statuses != null) {
-      path += '&deal_status_id=$statuses';
-    }
-
-    if (fromDate != null && toDate != null) {
-      final formattedFromDate =
-          "${fromDate!.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
-      final formattedToDate =
-          "${toDate!.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
-      path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
-    }
-
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        path +=
-            '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-        path +=
-            '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
-      }
-    }
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о сделках в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки сделок!');
+  if (managers != null && managers.isNotEmpty) {
+    for (int i = 0; i < managers.length; i++) {
+      path += '&managers[$i]=${managers[i]}';
     }
   }
+  if (leads != null && leads.isNotEmpty) {
+    for (int i = 0; i < leads.length; i++) {
+      path += '&clients[$i]=${leads[i]}';
+    }
+  }
+  if (daysWithoutActivity != null) {
+    path += '&lastUpdate=$daysWithoutActivity';
+  }
+  if (hasTasks == true) {
+    path += '&withTasks=1';
+  }
+  if (statuses != null) {
+    path += '&deal_status_id=$statuses';
+  }
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate =
+        "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
+    final formattedToDate =
+        "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
+    path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+  }
+  if (directoryValues != null && directoryValues.isNotEmpty) {
+    for (int i = 0; i < directoryValues.length; i++) {
+      path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
+      path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+    }
+  }
+  if (names != null && names.isNotEmpty) {
+    for (int i = 0; i < names.length; i++) {
+      path += '&names[$i]=${Uri.encodeComponent(names[i])}'; // Кодируем названия
+    }
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о сделках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки сделок!');
+  }
+}
 
 // Метод для получения статусов Сделок
   Future<List<DealStatus>> getDealStatuses() async {

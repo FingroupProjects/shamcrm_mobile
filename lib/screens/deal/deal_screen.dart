@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
@@ -72,6 +73,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<Map<String, dynamic>> _selectedDirectoryValues = [];
 
   List<ManagerData> _initialselectedManagers = [];
+    
   List<LeadData> _initialselectedLeads = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
@@ -79,7 +81,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool? _initialHasTasks;
   int? _initialDaysWithoutActivity;
   List<Map<String, dynamic>> _initialDirectoryValues = [];
-
+List<DealNameData> _initialSelectedDealNames = [];
+List<DealNameData> _selectedDealNames = [];
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
 
@@ -306,52 +309,54 @@ Future<void> _onRefresh() async {
     );
   }
 
-  Future<void> _loadFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-    //print("DealScreen: Loading filter state from SharedPreferences");
-    setState(() {
-      _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
-          .map((m) => ManagerData.fromJson(m))
-          .toList();
-      _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
-          .map((l) => LeadData.fromJson(l))
-          .toList();
-      _selectedStatuses = prefs.getInt('deal_selected_statuses');
-      _fromDate = prefs.getString('deal_from_date') != null
-          ? DateTime.parse(prefs.getString('deal_from_date')!)
-          : null;
-      _toDate = prefs.getString('deal_to_date') != null
-          ? DateTime.parse(prefs.getString('deal_to_date')!)
-          : null;
-      _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
-      _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
-      _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
-          .map((d) => Map<String, dynamic>.from(d))
-          .toList();
-      //print("DealScreen: Loaded Managers: $_selectedManagers");
-      //print("DealScreen: Loaded Leads: $_selectedLeads");
-      //print("DealScreen: Loaded Statuses: $_selectedStatuses");
-      //print("DealScreen: Loaded FromDate: $_fromDate");
-      //print("DealScreen: Loaded ToDate: $_toDate");
-      //print("DealScreen: Loaded DaysWithoutActivity: $_daysWithoutActivity");
-      //print("DealScreen: Loaded HasTasks: $_hasTasks");
-      //print("DealScreen: Loaded DirectoryValues: $_selectedDirectoryValues");
-    });
-  }
+Future<void> _loadFilterState() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
+        .map((m) => ManagerData.fromJson(m))
+        .toList();
+    _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
+        .map((l) => LeadData.fromJson(l))
+        .toList();
+    _selectedStatuses = prefs.getInt('deal_selected_statuses');
+    _fromDate = prefs.getString('deal_from_date') != null
+        ? DateTime.parse(prefs.getString('deal_from_date')!)
+        : null;
+    _toDate = prefs.getString('deal_to_date') != null
+        ? DateTime.parse(prefs.getString('deal_to_date')!)
+        : null;
+    _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
+    _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
+    _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
+        .map((d) => Map<String, dynamic>.from(d))
+        .toList();
+    _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
+        .map((name) => DealNameData(id: 0, title: name))
+        .toList();
+    _initialselectedManagers = List.from(_selectedManagers);
+    _initialselectedLeads = List.from(_selectedLeads);
+    _initialSelStatus = _selectedStatuses;
+    _intialFromDate = _fromDate;
+    _intialToDate = _toDate;
+    _initialHasTasks = _hasTasks;
+    _initialDaysWithoutActivity = _daysWithoutActivity;
+    _initialDirectoryValues = List.from(_selectedDirectoryValues);
+    _initialSelectedDealNames = List.from(_selectedDealNames);
+  });
+}
 
-  Future<void> _saveFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-    //print("DealScreen: Saving filter state to SharedPreferences");
-    await prefs.setString('deal_selected_managers', jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
-    await prefs.setString('deal_selected_leads', jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
-    await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
-    await prefs.setString('deal_from_date', _fromDate?.toIso8601String() ?? '');
-    await prefs.setString('deal_to_date', _toDate?.toIso8601String() ?? '');
-    await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
-    await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
-    await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
-    //print("DealScreen: Saved DirectoryValues: $_selectedDirectoryValues");
-  }
+ Future<void> _saveFilterState() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('deal_selected_managers', jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
+  await prefs.setString('deal_selected_leads', jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
+  await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
+  await prefs.setString('deal_from_date', _fromDate?.toIso8601String() ?? '');
+  await prefs.setString('deal_to_date', _toDate?.toIso8601String() ?? '');
+  await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
+  await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
+  await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
+  await prefs.setString('deal_selected_names', jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
+}
 
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
@@ -509,76 +514,79 @@ Future<void> _onRefresh() async {
     await _saveFilterState();
   }
 
-  void _resetFilters() {
-    setState(() {
-      //print('DealScreen: Resetting filters');
-      _showCustomTabBar = true;
-      _selectedManagers = [];
-      _selectedLeads = [];
-      _selectedStatuses = null;
-      _fromDate = null;
-      _toDate = null;
-      _hasTasks = false;
-      _daysWithoutActivity = null;
-      _selectedDirectoryValues = [];
-      _initialselectedManagers = [];
-      _initialselectedLeads = [];
-      _initialSelStatus = null;
-      _intialFromDate = null;
-      _intialToDate = null;
-      _lastSearchQuery = '';
-      _searchController.clear();
-      _initialHasTasks = false;
-      _initialDaysWithoutActivity = null;
-      _initialDirectoryValues = [];
-    });
-    _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
-  }
+void _resetFilters() {
+  setState(() {
+    _showCustomTabBar = true;
+    _selectedManagers = [];
+    _selectedLeads = [];
+    _selectedStatuses = null;
+    _fromDate = null;
+    _toDate = null;
+    _hasTasks = false;
+    _daysWithoutActivity = null;
+    _selectedDirectoryValues = [];
+    _selectedDealNames = [];
+    _initialselectedManagers = [];
+    _initialselectedLeads = [];
+    _initialSelStatus = null;
+    _intialFromDate = null;
+    _intialToDate = null;
+    _lastSearchQuery = '';
+    _searchController.clear();
+    _initialHasTasks = false;
+    _initialDaysWithoutActivity = null;
+    _initialDirectoryValues = [];
+    _initialSelectedDealNames = [];
+  });
+  _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+}
 
-  Future<void> _handleManagerSelected(Map managers) async {
-    setState(() {
-      //print('DealScreen: Handling manager selection: $managers');
-      _showCustomTabBar = false;
-      _selectedManagers = managers['managers'];
-      _selectedLeads = managers['leads'];
-      _selectedStatuses = managers['statuses'];
-      _fromDate = managers['fromDate'];
-      _toDate = managers['toDate'];
-      _hasTasks = managers['hasTask'];
-      _daysWithoutActivity = managers['daysWithoutActivity'];
-      _initialHasTasks = managers['hasTask'];
-      _initialselectedLeads = managers['leads'];
-      _initialDaysWithoutActivity = managers['daysWithoutActivity'];
-      _initialselectedManagers = managers['managers'];
-      _initialSelStatus = managers['statuses'];
-      _intialFromDate = managers['fromDate'];
-      _intialToDate = managers['toDate'];
-      _selectedDirectoryValues = (managers['directory_values'] as List?)
-              ?.map((item) => {
-                    'directory_id': item['directory_id'],
-                    'entry_id': item['entry_id'],
-                  })
-              .toList() ??
-          [];
-      _initialDirectoryValues = List.from(_selectedDirectoryValues);
-    });
+Future<void> _handleManagerSelected(Map managers) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedManagers = managers['managers'] ?? [];
+    _selectedLeads = managers['leads'] ?? [];
+    _selectedStatuses = managers['statuses'];
+    _fromDate = managers['fromDate'];
+    _toDate = managers['toDate'];
+    _hasTasks = managers['hasTask'];
+    _daysWithoutActivity = managers['daysWithoutActivity'];
+    _selectedDealNames = (managers['names'] as List?)?.map((name) => DealNameData(id: 0, title: name)).toList() ?? [];
+    _initialHasTasks = managers['hasTask'];
+    _initialselectedLeads = managers['leads'] ?? [];
+    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+    _initialselectedManagers = managers['managers'] ?? [];
+    _initialSelStatus = managers['statuses'];
+    _intialFromDate = managers['fromDate'];
+    _intialToDate = managers['toDate'];
+    _selectedDirectoryValues = (managers['directory_values'] as List?)
+            ?.map((item) => {
+                  'directory_id': item['directory_id'],
+                  'entry_id': item['entry_id'],
+                })
+            .toList() ??
+        [];
+    _initialDirectoryValues = List.from(_selectedDirectoryValues);
+    _initialSelectedDealNames = List.from(_selectedDealNames);
+  });
 
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _dealBloc.add(FetchDeals(
-      currentStatusId,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      statusIds: _selectedStatuses,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      hasTasks: _hasTasks,
-      leadIds: _selectedLeads.map((lead) => lead.id).toList(),
-      daysWithoutActivity: _daysWithoutActivity,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      directoryValues: _selectedDirectoryValues,
-      salesFunnelId: _selectedFunnel?.id,
-    ));
-    await _saveFilterState();
-  }
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  _dealBloc.add(FetchDeals(
+    currentStatusId,
+    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    statusIds: _selectedStatuses,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    hasTasks: _hasTasks,
+    leadIds: _selectedLeads.map((lead) => lead.id).toList(),
+    daysWithoutActivity: _daysWithoutActivity,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    directoryValues: _selectedDirectoryValues,
+    names: _selectedDealNames.map((dealName) => dealName.title).toList(), // Передаем names
+    salesFunnelId: _selectedFunnel?.id,
+  ));
+  await _saveFilterState();
+}
 
   Future _handleStatusSelected(int? selectedStatusId) async {
     setState(() {
@@ -705,6 +713,7 @@ Future<void> _onRefresh() async {
             initialManagerDealDaysWithoutActivity: _initialDaysWithoutActivity,
             initialManagerDealHasTasks: _initialHasTasks,
             initialDirectoryValuesDeal: _initialDirectoryValues,
+            initialDealNames: _initialSelectedDealNames.map((dealName) => dealName.title).toList(), // Передаем начальные имена
             onDealResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -730,7 +739,8 @@ Future<void> _onRefresh() async {
                       _toDate == null &&
                       _selectedLeads.isEmpty &&
                       _hasTasks == false &&
-                      _daysWithoutActivity == null) {
+                      _daysWithoutActivity == null&&
+            _selectedDealNames.isEmpty) {
                     //print("DealScreen: IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;

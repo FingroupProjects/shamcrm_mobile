@@ -22,6 +22,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<Goods> selectedGoods = [];
   Map<int, Map<String, dynamic>> goodsDetails = {};
+  Map<int, Map<String, bool>> fieldErrors = {}; // Для отслеживания ошибок валидации
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -34,7 +35,67 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
     return widget.existingItems.any((item) => item['id'] == goodsId);
   }
 
+  // Валидация полей для конкретного товара
+  bool _validateGoodsFields(int goodsId) {
+    final details = goodsDetails[goodsId];
+    final isAlreadyAdded = _isGoodsAlreadyAdded(goodsId);
+    
+    if (details == null) return false;
+    
+    bool isQuantityValid = details['quantity'] != null && details['quantity'] > 0;
+    bool isPriceValid = isAlreadyAdded || (details['price'] != null && details['price'] >= 0);
+    
+    // Обновляем состояние ошибок
+    setState(() {
+      fieldErrors[goodsId] = {
+        'quantity': !isQuantityValid,
+        'price': !isPriceValid,
+      };
+    });
+    
+    return isQuantityValid && isPriceValid;
+  }
+
+  // Валидация всех выбранных товаров
+  bool _validateAllSelectedGoods() {
+    bool allValid = true;
+    
+    for (final goods in selectedGoods) {
+      if (!_validateGoodsFields(goods.id)) {
+        allValid = false;
+      }
+    }
+    
+    return allValid;
+  }
+
   void _returnSelectedProducts() {
+    // Проверяем валидность всех полей
+    if (!_validateAllSelectedGoods()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('please_fill_all_required_fields') ?? 
+            'Пожалуйста, заполните все обязательные поля (количество и цена)',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     // Фильтруем только товары с заполненными данными
     final selectedProducts = selectedGoods
         .where((goods) => 
@@ -57,7 +118,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('please_fill_all_fields') ?? 'Заполните количество для выбранных товаров',
+            AppLocalizations.of(context)!.translate('no_valid_products_selected') ?? 'Не выбрано ни одного корректного товара',
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -85,12 +146,18 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       if (selectedGoods.contains(goods)) {
         selectedGoods.remove(goods);
         goodsDetails.remove(goods.id);
+        fieldErrors.remove(goods.id); // Удаляем ошибки
       } else {
         selectedGoods.add(goods);
         goodsDetails[goods.id] = {
           'quantity': null,
           'price': _isGoodsAlreadyAdded(goods.id) ? null : null,
           'total': 0.0,
+        };
+        // Инициализируем ошибки
+        fieldErrors[goods.id] = {
+          'quantity': false,
+          'price': false,
         };
       }
     });
@@ -100,6 +167,15 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
     if (goodsDetails.containsKey(goodsId)) {
       setState(() {
         goodsDetails[goodsId]![field] = value;
+        
+        // Очищаем ошибку для конкретного поля при вводе корректного значения
+        if (fieldErrors.containsKey(goodsId)) {
+          if (field == 'quantity' && value != null && value > 0) {
+            fieldErrors[goodsId]!['quantity'] = false;
+          } else if (field == 'price' && value != null && value >= 0) {
+            fieldErrors[goodsId]!['price'] = false;
+          }
+        }
         
         // Пересчитываем общую сумму
         final quantity = goodsDetails[goodsId]!['quantity'];
@@ -358,6 +434,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   }
 
   Widget _buildGoodsDetailsForm(Goods goods, bool isAlreadyAdded) {
+    final hasQuantityError = fieldErrors[goods.id]?['quantity'] ?? false;
+    final hasPriceError = fieldErrors[goods.id]?['price'] ?? false;
+    
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 30),
       child: Container(
@@ -373,39 +452,90 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start, // Выравниваем по верху
               children: [
                 Expanded(
-                  child: TextFormField(
-                    decoration: _inputDecoration(
-                      AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                  child: Container(
+                    height: 70, // Фиксированная высота для контейнера поля
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          decoration: _inputDecoration(
+                            AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                            hasError: hasQuantityError,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            final newQuantity = int.tryParse(value) ?? 0;
+                            if (newQuantity > 0) {
+                              _updateGoodsDetails(goods.id, 'quantity', newQuantity);
+                            } else {
+                              _updateGoodsDetails(goods.id, 'quantity', null);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        // Резервируем место под текст ошибки
+                        Container(
+                          height: 16, // Фиксированная высота для текста ошибки
+                          alignment: Alignment.centerLeft,
+                          child: hasQuantityError
+                              ? Text(
+                                  AppLocalizations.of(context)!.translate('quantity_required') ?? 'Количество обязательно',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                    fontFamily: 'Gilroy',
+                                  ),
+                                )
+                              : null, // Пустое место если нет ошибки
+                        ),
+                      ],
                     ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      final newQuantity = int.tryParse(value) ?? 0;
-                      if (newQuantity > 0) {
-                        _updateGoodsDetails(goods.id, 'quantity', newQuantity);
-                      } else {
-                        _updateGoodsDetails(goods.id, 'quantity', null);
-                      }
-                    },
                   ),
                 ),
                 if (!isAlreadyAdded) ...[
                   const SizedBox(width: 12),
                   Expanded(
-                    child: TextFormField(
-                      decoration: _inputDecoration(
-                        AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                    child: Container(
+                      height: 70, // Такая же фиксированная высота
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            decoration: _inputDecoration(
+                              AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                              hasError: hasPriceError,
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              final newPrice = double.tryParse(value) ?? 0.0;
+                              if (newPrice >= 0) {
+                                _updateGoodsDetails(goods.id, 'price', newPrice);
+                              } else {
+                                _updateGoodsDetails(goods.id, 'price', null);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                          // Резервируем место под текст ошибки
+                          Container(
+                            height: 16, // Фиксированная высота для текста ошибки
+                            alignment: Alignment.centerLeft,
+                            child: hasPriceError
+                                ? Text(
+                                    AppLocalizations.of(context)!.translate('price_required') ?? 'Цена обязательна',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  )
+                                : null, // Пустое место если нет ошибки
+                          ),
+                        ],
                       ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        final newPrice = double.tryParse(value) ?? 0.0;
-                        if (newPrice >= 0) {
-                          _updateGoodsDetails(goods.id, 'price', newPrice);
-                        } else {
-                          _updateGoodsDetails(goods.id, 'price', null);
-                        }
-                      },
                     ),
                   ),
                 ],
@@ -430,7 +560,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, {bool hasError = false}) {
     return InputDecoration(
       hintText: label,
       hintStyle: const TextStyle(
@@ -438,25 +568,39 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         fontSize: 12,
         color: Color(0xff99A4BA),
       ),
-      border: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      border: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: Color(0xFFE5E7EB),
+          color: hasError ? Colors.red : const Color(0xFFE5E7EB),
           width: 1,
         ),
       ),
-      enabledBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: Color(0xFFE5E7EB),
+          color: hasError ? Colors.red : const Color(0xFFE5E7EB),
           width: 1,
         ),
       ),
-      focusedBorder: const OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: hasError ? Colors.red : const Color(0xff4759FF),
+          width: 1,
+        ),
+      ),
+      errorBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: Color(0xff4759FF),
+          color: Colors.red,
           width: 1,
+        ),
+      ),
+      focusedErrorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Colors.red,
+          width: 2,
         ),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -623,7 +623,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

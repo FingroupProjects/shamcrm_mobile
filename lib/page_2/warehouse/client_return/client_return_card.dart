@@ -82,7 +82,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${AppLocalizations.of(context)!.translate('return') ?? 'Возврат'} №${doc.docNumber ?? 'N/A'}',
+                    '${AppLocalizations.of(context)!.translate('empty_0') ?? 'Возврат'}№${doc.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

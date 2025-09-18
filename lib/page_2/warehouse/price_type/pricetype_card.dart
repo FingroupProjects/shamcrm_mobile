@@ -72,7 +72,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('price_type') ?? 'Поставщик'}: ${widget.supplier.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Поставщик'}${widget.supplier.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

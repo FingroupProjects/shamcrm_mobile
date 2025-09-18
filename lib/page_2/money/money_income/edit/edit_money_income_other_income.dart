@@ -317,7 +317,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
       text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline :  Icons.cancel_outlined,
+      icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
         setState(() {

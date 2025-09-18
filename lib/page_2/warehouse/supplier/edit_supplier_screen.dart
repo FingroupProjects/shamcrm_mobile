@@ -224,7 +224,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                            AppLocalizations.of(context)!.translate('cancel') ??
+                            AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,

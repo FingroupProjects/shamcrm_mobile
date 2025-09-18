@@ -116,7 +116,7 @@ class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDelet
                 children: [
                   Expanded(
                     child: CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+                      buttonText: AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                       onPressed: () {
                         Navigator.of(context).pop();
                       },

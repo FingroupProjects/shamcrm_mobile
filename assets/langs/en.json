@@ -1300,7 +1300,30 @@
     "expense_name": "Expense name",
     "income_name": "Income name",
     "type": "Type",
-    "cash_register_name": "Title"
+    "cash_register_name": "Title",
+    "appbar_write_off": "Write-off",
+"create_write_off": "Create Write-off",
+"edit_write_off": "Edit Write-off",
+"no_write_offs": "No write-off documents",
+"please_fill_quantity": "Fill in quantity for selected goods",
+"appbar_movement": "Movement",
+"create_movement": "Create Movement",
+"edit_movement": "Edit Movement",
+"sender_storage": "Sender Storage",
+"recipient_storage": "Recipient Storage",
+"select_sender_storage": "Select sender storage",
+"select_recipient_storage": "Select recipient storage",
+"no_movements": "No movement documents",
+"approved": "Approved",
+"not_approved": "Not Approved",
+"document_restored": "Document restored",
+"error_restoring_document": "Error restoring document",
+"restore_document": "Restore",
+"recipient_storage_name": "Recipient Storage",
+"empty_0":"",
+"price_required": "Price is required",
+"quantity_required": "Quantity is required",
+"no_storage": "No storage"
 
 
 
