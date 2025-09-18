@@ -28,6 +28,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final String? cashRegisterId;
   final String? senderCashRegisterId;
   final int? supplierId;
+  final bool approved;
 
   UpdateMoneyIncome({
     this.id,
@@ -39,6 +40,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    required this.approved,
   });
 
   @override
@@ -53,6 +55,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     cashRegisterId ?? '',
     senderCashRegisterId ?? '',
     supplierId ?? 0,
+    approved,
   ];
 }
 

@@ -99,7 +99,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         supplierId: event.supplierId,
       );
 
-      await Future.delayed(const Duration(milliseconds: 100));
       emit(const MoneyIncomeCreateSuccess('Документ успешно создан'));
     } catch (e) {
       emit(MoneyIncomeCreateError(e.toString()));
@@ -120,9 +119,8 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        approved: event.approved,
       );
-
-      await Future.delayed(const Duration(milliseconds: 100));
       emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       emit(MoneyIncomeUpdateError(e.toString()));

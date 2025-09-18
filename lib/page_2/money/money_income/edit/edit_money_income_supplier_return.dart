@@ -5,6 +5,7 @@ import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/supplier_radio_group.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +34,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   SupplierData? selectedSupplier;
 
   bool _isLoading = false;
+  late bool _isApproved;
 
   @override
   void initState() {
@@ -41,6 +43,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   }
 
   void _initializeFields() {
+    _isApproved = widget.document.approved ?? false;
+
     // Initialize date
     if (widget.document.date != null) {
       try {
@@ -129,6 +133,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       cashRegisterId: selectedCashRegister!.id.toString(),
       comment: _commentController.text.trim(),
       supplierId: int.parse(selectedSupplier!.id.toString()),
+      approved: _isApproved,
     ));
   }
 
@@ -179,12 +184,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
             setState(() => _isLoading = false);
 
             if (state is MoneyIncomeUpdateSuccess) {
-              _showSnackBar('Document updated successfully', true);
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (mounted) {
-                  Navigator.pop(context, true);
-                }
-              });
+              Navigator.pop(context, true);
             } else if (state is MoneyIncomeUpdateError) {
               _showSnackBar(state.message, false);
             }
@@ -193,6 +193,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: SingleChildScrollView(
@@ -201,6 +202,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
+                      _buildApproveButton(localizations),
+                      const SizedBox(height: 16),
                       SupplierGroupWidget(
                         selectedSupplierId: selectedSupplier?.id.toString(),
                         onSelectSupplier: (SupplierData value) {
@@ -300,6 +303,19 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
           }
           return null;
         }
+    );
+  }
+
+    Widget _buildApproveButton(AppLocalizations localizations) {
+    return StyledActionButton(
+      text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      icon: !_isApproved ? Icons.check_circle_outline :  Icons.cancel_outlined,
+      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+      onPressed: () {
+        setState(() {
+          _isApproved = !_isApproved;
+        });
+      }
     );
   }
 

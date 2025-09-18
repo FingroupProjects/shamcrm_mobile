@@ -11899,6 +11899,7 @@ Future<void> updateMoneyIncomeDocument({
     String? senderCashRegisterId,
     String? cashRegisterId,
     int? supplierId,
+    required bool approved,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -11913,6 +11914,7 @@ Future<void> updateMoneyIncomeDocument({
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'approved': approved,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
