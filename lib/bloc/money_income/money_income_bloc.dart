@@ -98,9 +98,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         comment: event.comment,
         supplierId: event.supplierId,
       );
-
-      await Future.delayed(const Duration(milliseconds: 100));
-      emit(const MoneyIncomeCreateSuccess('Документ успешно создан'));
     } catch (e) {
       emit(MoneyIncomeCreateError(e.toString()));
     }
@@ -109,6 +106,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Future<void> _onUpdateMoneyIncome(UpdateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeUpdateLoading());
     try {
+      // operation types are different but api method is the same for 4 types of operations, OperationType enum is used to distinguish them
       await apiService.updateMoneyIncomeDocument(
         documentId: event.id!,
         date: event.date,
@@ -120,10 +118,8 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        approved: event.approved,
       );
-
-      await Future.delayed(const Duration(milliseconds: 100));
-      emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       emit(MoneyIncomeUpdateError(e.toString()));
     }

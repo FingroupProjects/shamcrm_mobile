@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   CashRegisterData? selectedCashRegister;
 
   bool _isLoading = false;
+  late bool _isApproved;
 
   @override
   void initState() {
@@ -41,6 +43,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   }
 
   void _initializeFields() {
+    _isApproved = widget.document.approved ?? false;
+
     // Initialize date
     if (widget.document.date != null) {
       try {
@@ -132,8 +136,10 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       leadId: selectedLead != null ? int.parse(selectedLead!) : null,
       comment: _commentController.text.trim(),
       cashRegisterId: selectedCashRegister?.id.toString(),
+      approved: _isApproved,
     ));
   }
+
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
@@ -182,8 +188,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
             setState(() => _isLoading = false);
 
             if (state is MoneyIncomeUpdateSuccess) {
-              _showSnackBar('Document updated successfully', true);
-              Future.delayed(const Duration(milliseconds: 1000), () {
+              Future.delayed(const Duration(milliseconds: 500), () {
                 if (mounted) {
                   Navigator.pop(context, true);
                 }
@@ -202,9 +207,11 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 8),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 8),
+                      _buildApproveButton(localizations),
+                      const SizedBox(height: 16),
                       LeadRadioGroupWidget(
                         selectedLead: selectedLead,
                         onSelectLead: (LeadData selectedRegionData) {
@@ -308,6 +315,19 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
           }
           return null;
         }
+    );
+  }
+
+    Widget _buildApproveButton(AppLocalizations localizations) {
+    return StyledActionButton(
+      text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      icon: !_isApproved ? Icons.check_circle_outline :  Icons.cancel_outlined,
+      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+      onPressed: () {
+        setState(() {
+          _isApproved = !_isApproved;
+        });
+      }
     );
   }
 
