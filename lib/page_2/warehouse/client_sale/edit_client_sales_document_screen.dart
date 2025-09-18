@@ -623,7 +623,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -655,7 +655,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                       ),
                     )
                   : Text(
-                      localizations.translate('update') ?? 'Обновить',
+                      localizations.translate('save') ?? 'Обновить',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

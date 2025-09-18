@@ -68,7 +68,7 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
               Expanded(
                 child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+                      AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                   onPressed: () {
                     Navigator.of(context).pop();
                   },

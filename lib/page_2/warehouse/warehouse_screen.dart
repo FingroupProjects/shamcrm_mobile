@@ -170,13 +170,12 @@ else {
     );
   }
 
-  // НОВЫЙ АДАПТИВНЫЙ МЕТОД ДЛЯ СЕТКИ ДОКУМЕНТОВ
+  // АДАПТИВНЫЙ МЕТОД ДЛЯ СЕТКИ ДОКУМЕНТОВ С ПОДДЕРЖКОЙ СКРОЛЛА
   Widget _buildDocumentGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Получаем размер экрана для более точной адаптации
         final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
         
         // Определяем количество колонок в зависимости от ширины экрана
         int crossAxisCount;
@@ -210,7 +209,7 @@ else {
 
         return GridView.builder(
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: const ClampingScrollPhysics(), // ИЗМЕНЕНО: разрешаем скролл
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
@@ -226,7 +225,7 @@ else {
     );
   }
 
-  // ОБНОВЛЕННЫЙ КОМПАКТНЫЙ МЕТОД ДЛЯ КАРТОЧЕК ДОКУМЕНТОВ
+  // КОМПАКТНЫЙ МЕТОД ДЛЯ КАРТОЧЕК ДОКУМЕНТОВ
   Widget _buildDocumentCard(WarehouseDocument document) {
     return Material(
       color: Colors.transparent,
@@ -399,39 +398,43 @@ else {
                 )
               : Container(
                   color: const Color(0xffF8F9FB),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Заголовок секции
-                      Text(
-                        localizations.translate('warehouse_documents') ??
-                            'Документы склада',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                  child: SingleChildScrollView( // ДОБАВЛЕНО: оборачиваем в SingleChildScrollView
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Заголовок секции
+                        Text(
+                          localizations.translate('warehouse_documents') ??
+                              'Документы склада',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        localizations.translate('select_document_type') ??
-                            'Выберите тип документа для работы со складом',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                        const SizedBox(height: 8),
+                        Text(
+                          localizations.translate('select_document_type') ??
+                              'Выберите тип документа для работы со складом',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      // АДАПТИВНАЯ СЕТКА ДОКУМЕНТОВ
-                      _buildDocumentGrid(),
-                      const SizedBox(height: 16),
-                      // Длинная кнопка "Справочники"
-                      _buildReferencesButton(),
-                    ],
+                        const SizedBox(height: 20),
+                        // АДАПТИВНАЯ СЕТКА ДОКУМЕНТОВ
+                        _buildDocumentGrid(),
+                        const SizedBox(height: 16),
+                        // Длинная кнопка "Справочники"
+                        _buildReferencesButton(),
+                        // ДОБАВЛЕНО: дополнительный отступ снизу для удобства скролла
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
     );

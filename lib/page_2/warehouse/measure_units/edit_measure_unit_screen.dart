@@ -123,7 +123,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
         //                 Navigator.pop(context);
         //               },
         //               child: Text(
-        //                 AppLocalizations.of(context)!.translate('cancel') ??
+        //                 AppLocalizations.of(context)!.translate('close') ??
         //                     'Отмена',
         //                 style: const TextStyle(
         //                   fontFamily: 'Gilroy',
@@ -247,7 +247,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                            AppLocalizations.of(context)!.translate('cancel') ??
+                            AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,

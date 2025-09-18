@@ -545,7 +545,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -577,7 +577,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                       ),
                     )
                   : Text(
-                      localizations.translate('update') ?? 'Обновить',
+                      localizations.translate('save') ?? 'Обновить',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

@@ -78,7 +78,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('storage') ?? 'Склад'}: ${widget.warehouse.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Склад'}${widget.warehouse.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

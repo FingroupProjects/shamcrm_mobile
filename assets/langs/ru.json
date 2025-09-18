@@ -1343,7 +1343,27 @@
   "expense_name": "Название расхода",
   "income_name": "Название дохода",
   "type": "Тип",
-  "cash_register_name": "Название"
+  "cash_register_name": "Название",
+  "appbar_write_off": "Списание",
+"create_write_off": "Создать списание",
+"edit_write_off": "Редактировать списание",
+"no_write_offs": "Нет документов списания",
+"please_fill_quantity": "Заполните количество для выбранных товаров",
+"appbar_movement": "Перемещение",
+"create_movement": "Создать перемещение",
+"edit_movement": "Редактировать перемещение",
+"sender_storage": "Склад отправитель",
+"recipient_storage": "Склад получатель",
+"select_sender_storage": "Выберите склад отправитель",
+"select_recipient_storage": "Выберите склад получатель",
+"no_movements": "Нет документов перемещения",
+"document_restored": "Документ восстановлен",
+"error_restoring_document": "Ошибка при восстановлении документа",
+"recipient_storage_name": "Склад получатель",
+"empty_0":"",
+"quantity_required":"Количество обязательно",
+"price_required":"Цена обязательна",
+"no_storage":"Склад не указан"
 
  
 

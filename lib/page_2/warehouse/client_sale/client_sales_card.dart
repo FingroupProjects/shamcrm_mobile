@@ -83,7 +83,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${AppLocalizations.of(context)!.translate('incoming') ?? 'Приход'} №${doc.docNumber ?? 'N/A'}',
+                    '${AppLocalizations.of(context)!.translate('empty_0') ?? 'Приход'}№${doc.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

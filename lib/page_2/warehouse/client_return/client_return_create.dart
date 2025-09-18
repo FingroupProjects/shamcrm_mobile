@@ -593,7 +593,7 @@ class CreateClientReturnDocumentScreenState
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -625,7 +625,7 @@ class CreateClientReturnDocumentScreenState
                       ),
                     )
                   : Text(
-                      localizations.translate('create') ?? 'Создать',
+                      localizations.translate('save') ?? 'Создать',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

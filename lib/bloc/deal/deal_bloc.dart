@@ -20,6 +20,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   bool? _currentHasTasks;
   int? _currentDaysWithoutActivity;
   List<Map<String, dynamic>>? _currentDirectoryValues;
+  List<String>? _currentNames; // Новое поле
 
 
   DealBloc(this.apiService) : super(DealInitial()) {
@@ -64,6 +65,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     _currentHasTasks = event.hasTasks;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
+    _currentNames = event.names; // Сохраняем names
 
     if (!await _checkInternetConnection()) {
       print('DealBloc: _fetchDeals - No internet connection');
@@ -96,6 +98,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       hasTasks: event.hasTasks,
       daysWithoutActivity: event.daysWithoutActivity,
       directoryValues: event.directoryValues,
+      names: event.names,
       salesFunnelId: event.salesFunnelId,
     );
 

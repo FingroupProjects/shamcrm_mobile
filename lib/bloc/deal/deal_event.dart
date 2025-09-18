@@ -21,6 +21,7 @@ abstract class DealEvent {}
     final bool? hasTasks;
     final int? salesFunnelId;
     final List<Map<String, dynamic>>? directoryValues; // Добавляем directory_values
+    final List<String>? names; // Новое поле
 
     FetchDeals(
       this.statusId, {
@@ -34,6 +35,7 @@ abstract class DealEvent {}
       this.hasTasks,
       this.directoryValues,
       this.salesFunnelId,
+      this.names,
       
     });
   }

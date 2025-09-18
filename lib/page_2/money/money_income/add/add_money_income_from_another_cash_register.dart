@@ -256,7 +256,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('cancel') ?? 'Cancel',
+                localizations.translate('close') ?? 'Cancel',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -288,7 +288,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                 ),
               )
                   : Text(
-                localizations.translate('create') ?? 'Create',
+                localizations.translate('save') ?? 'Create',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

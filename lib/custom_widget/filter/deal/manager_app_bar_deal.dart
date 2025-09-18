@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -32,6 +34,7 @@ class DealManagerFilterScreen extends StatefulWidget {
   final int? initialDaysWithoutActivity;
   final bool? initialHasTasks;
   final List<Map<String, dynamic>>? initialDirectoryValues;
+  final List<String>? initialDealNames;
 
   DealManagerFilterScreen({
     Key? key,
@@ -49,6 +52,7 @@ class DealManagerFilterScreen extends StatefulWidget {
     this.onResetFilters,
     this.initialHasTasks,
     this.initialDirectoryValues,
+    this.initialDealNames,
   }) : super(key: key);
 
   @override
@@ -66,11 +70,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   DateTime? _createAt;
   Map<int, MainField?> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
+  List<DealNameData> _selectedDealNames = [];
 
   @override
   void initState() {
     super.initState();
-    //print("InitState: Initializing DealManagerFilterScreen");
     _selectedManagers = widget.initialManagers ?? [];
     _selectedLeads = widget.initialLeads ?? [];
     _selectedStatuses = widget.initialStatuses;
@@ -78,49 +82,44 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     _toDate = widget.initialToDate;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
     _hasTasks = widget.initialHasTasks;
-    //print("InitState: Initial Managers: $_selectedManagers");
-    //print("InitState: Initial Leads: $_selectedLeads");
-    //print("InitState: Initial Statuses: $_selectedStatuses");
-    //print("InitState: Initial FromDate: $_fromDate");
-    //print("InitState: Initial ToDate: $_toDate");
-    //print("InitState: Initial DirectoryValues: ${widget.initialDirectoryValues}");
+    _selectedDealNames = widget.initialDealNames
+            ?.map((name) => DealNameData(id: 0, title: name))
+            .toList() ?? [];
     _loadFilterState();
     _fetchDirectoryLinks();
   }
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    //print("Loading filter state from SharedPreferences");
     setState(() {
       _selectedDirectoryFields = (jsonDecode(prefs.getString('deal_selected_directory_fields') ?? '{}') as Map)
           .map((key, value) => MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
-      //print("Loaded DirectoryFields: $_selectedDirectoryFields");
+      _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
+          .map((name) => DealNameData(id: 0, title: name))
+          .toList();
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    //print("Saving filter state to SharedPreferences");
-    await prefs.setString('deal_selected_directory_fields', jsonEncode(_selectedDirectoryFields.map((key, value) => MapEntry(key.toString(), value?.toJson()))));
-    //print("Saved DirectoryFields: $_selectedDirectoryFields");
+    await prefs.setString('deal_selected_directory_fields',
+        jsonEncode(_selectedDirectoryFields.map((key, value) => MapEntry(key.toString(), value?.toJson()))));
+    await prefs.setString('deal_selected_names',
+        jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
   }
 
   Future<void> _fetchDirectoryLinks() async {
-    //print("Fetching directory links");
     try {
       final response = await ApiService().getDealDirectoryLinks();
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
           for (var link in _directoryLinks) {
-            _selectedDirectoryFields[link.id] = _selectedDirectoryFields[link.id] ?? null; // Сохраняем существующее значение
+            _selectedDirectoryFields[link.id] = _selectedDirectoryFields[link.id] ?? null;
           }
-          //print("Fetched DirectoryLinks: $_directoryLinks");
-          //print("Updated DirectoryFields after fetch: $_selectedDirectoryFields");
         });
       }
     } catch (e) {
-      //print("Error fetching directory links: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
       );
@@ -214,8 +213,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //print("Building DealManagerFilterScreen");
-    //print("Current DirectoryFields: $_selectedDirectoryFields");
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
       appBar: AppBar(
@@ -236,7 +233,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                //print("Resetting filters");
                 widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedLeads.clear();
@@ -246,10 +242,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _daysWithoutActivity = null;
                 _hasTasks = null;
                 _selectedDirectoryFields.clear();
+                _selectedDealNames.clear();
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = null;
                 }
-                //print("After reset: DirectoryFields: $_selectedDirectoryFields");
               });
             },
             style: TextButton.styleFrom(
@@ -273,7 +269,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           SizedBox(width: 10),
           TextButton(
             onPressed: () async {
-              //print("Applying filters");
               await _saveFilterState();
               await DealCache.clearAllDeals();
               Map<String, dynamic> filterData = {
@@ -294,8 +289,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                           'entry_id': entry.value!.id,
                         })
                     .toList(),
+                'names': _selectedDealNames.map((dealName) => dealName.title).toList(), // Добавляем names
               };
-              //print("FilterData to send: $filterData");
               if (_selectedManagers.isNotEmpty ||
                   _selectedLeads.isNotEmpty ||
                   _selectedStatuses != null ||
@@ -303,7 +298,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                   _toDate != null ||
                   _daysWithoutActivity != null ||
                   _hasTasks != null ||
-                  _selectedDirectoryFields.values.any((field) => field != null)) {
+                  _selectedDirectoryFields.values.any((field) => field != null) ||
+                  _selectedDealNames.isNotEmpty) {
                 widget.onManagersSelected?.call(filterData);
               }
               Navigator.pop(context);
@@ -369,12 +365,27 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
+                        child: DealNamesMultiSelectWidget(
+                          selectedDealNames: _selectedDealNames.map((dealName) => dealName.title).toList(),
+                          onSelectDealNames: (List<DealNameData> selectedDealNamesData) {
+                            setState(() {
+                              _selectedDealNames = selectedDealNamesData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
                         child: ManagerMultiSelectWidget(
                           selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
                           onSelectManagers: (List<ManagerData> selectedUsersData) {
                             setState(() {
                               _selectedManagers = selectedUsersData;
-                              //print("Selected Managers updated: $_selectedManagers");
                             });
                           },
                         ),
@@ -391,7 +402,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                           onSelectLeads: (List<LeadData> selectedUsersData) {
                             setState(() {
                               _selectedLeads = selectedUsersData;
-                              //print("Selected Leads updated: $_selectedLeads");
                             });
                           },
                         ),
@@ -408,7 +418,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                           onSelectStatus: (DealStatus selectedStatusData) {
                             setState(() {
                               _selectedStatuses = selectedStatusData.id;
-                              //print("Selected Status updated: $_selectedStatuses");
                             });
                           },
                         ),
@@ -427,7 +436,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               onSelectField: (MainField? field) {
                                 setState(() {
                                   _selectedDirectoryFields[link.id] = field;
-                                  //print("Selected DirectoryField for link ${link.id}: $field");
                                 });
                               },
                               initialField: _selectedDirectoryFields[link.id],
@@ -446,7 +454,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                             _hasTasks ?? false,
                             (value) => setState(() {
                               _hasTasks = value;
-                              //print("HasTasks updated: $_hasTasks");
                             }),
                           ),
                         ],
@@ -479,7 +486,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               onChanged: (double value) {
                                 setState(() {
                                   _daysWithoutActivity = value.toInt();
-                                  //print("DaysWithoutActivity updated: $_daysWithoutActivity");
                                 });
                               },
                               activeColor: ChatSmsStyles.messageBubbleSenderColor,

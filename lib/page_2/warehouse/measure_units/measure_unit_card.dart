@@ -77,7 +77,7 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('units_of_measurement') ?? 'Единицы измерения'}: ${widget.supplier.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Единицы измерения'}${widget.supplier.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

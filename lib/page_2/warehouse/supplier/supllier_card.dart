@@ -67,7 +67,7 @@ class _SupplierCardState extends State<SupplierCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('supplier') ?? 'Поставщик'}: ${widget.supplier.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Поставщик'}${widget.supplier.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

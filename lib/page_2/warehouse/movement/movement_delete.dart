@@ -114,7 +114,7 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
             children: [
               Expanded(
                 child: CustomButton(
-                  buttonText: localizations.translate('cancel') ?? 'Отмена',
+                  buttonText: localizations.translate('close') ?? 'Отмена',
                   onPressed: () {
                     if (!_isDeleting) {
                       Navigator.of(context).pop();

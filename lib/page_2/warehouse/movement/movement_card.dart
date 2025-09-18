@@ -75,7 +75,7 @@ class MovementCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${localizations.translate('document') ?? 'Документ'} №${document.docNumber ?? ''}',
+                        '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
                         style: TaskCardStyles.titleStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -130,7 +130,7 @@ class MovementCard extends StatelessWidget {
         Text(
           document.date != null
               ? DateFormat('dd.MM.yyyy').format(document.date!)
-              : (localizations.translate('no_date') ?? 'Дата не указана'),
+              : (localizations.translate('empty_0') ?? 'Дата не указана'),
           style: const TextStyle(
             fontSize: 14,
             fontFamily: 'Gilroy',
@@ -153,7 +153,7 @@ class MovementCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            '${localizations.translate('from') ?? 'От'}: ${document.storage?.name ?? (localizations.translate('no_storage') ?? 'Склад не указан')}',
+            '${localizations.translate('empty_0') ?? 'От'}${document.storage?.name ?? (localizations.translate('no_storage') ?? 'Склад не указан')}',
             style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
@@ -178,7 +178,7 @@ class MovementCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            '${localizations.translate('to') ?? 'К'}: ${_getRecipientStorageName(document, localizations)}',
+            '${localizations.translate('empty_0') ?? 'К'}${_getRecipientStorageName(document, localizations)}',
             style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',

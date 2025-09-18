@@ -208,7 +208,7 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                            AppLocalizations.of(context)!.translate('cancel') ??
+                            AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
@@ -230,7 +230,7 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
                           }
                           return CustomButton(
                             buttonText: AppLocalizations.of(context)!
-                                    .translate('update') ??
+                                    .translate('save') ??
                                 'Обновить',
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,

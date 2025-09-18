@@ -108,7 +108,7 @@ class _IncomingCardState extends State<IncomingCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localizations.translate('incoming') ?? 'Приход'} №${doc.docNumber ?? 'N/A'}',
+                    '${localizations.translate('empty_0') ?? 'Приход'}№${doc.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

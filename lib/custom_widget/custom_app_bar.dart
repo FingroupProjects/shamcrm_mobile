@@ -133,7 +133,7 @@ class CustomAppBar extends StatefulWidget {
   final VoidCallback? onLeadResetFilters;
   final VoidCallback? onDealResetFilters;
   final VoidCallback? onEventResetFilters;
-
+final List<String>? initialDealNames; // Новый параметр
   final bool showMyTaskIcon;
   final bool showMenuIcon;
   final bool showSeparateFilter;
@@ -278,10 +278,12 @@ class CustomAppBar extends StatefulWidget {
     this.initialDepartment,
     this.onLeadsDealSelected,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
+
     this.titleWidget, // Добавляем в конструктор
     this.onFiltersReset,
     this.showGps = true, // Добавляем по умолчанию true
     this.currentSalesFunnelId,
+    this.initialDealNames, // Добавляем новый параметр
   });
 
   @override
@@ -1712,6 +1714,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialFromDate: widget.initialManagerDealFromDate,
           initialToDate: widget.initialManagerDealToDate,
           onResetFilters: widget.onDealResetFilters,
+          initialDealNames: widget.initialDealNames, // Передаем новый параметр
           initialDaysWithoutActivity:
               widget.initialManagerDealDaysWithoutActivity,
           initialDirectoryValues:
