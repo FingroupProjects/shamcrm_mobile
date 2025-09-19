@@ -64,7 +64,7 @@ class CustomAppBarPage2 extends StatefulWidget {
 }
 
 class _CustomAppBarState extends State<CustomAppBarPage2>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isSearching = false;
   final ApiService _apiService = ApiService();
   late TextEditingController _searchController;
