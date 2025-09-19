@@ -1323,7 +1323,12 @@
 "empty_0":"",
 "price_required": "Price is required",
 "quantity_required": "Quantity is required",
-"no_storage": "No storage"
+"no_storage": "No storage",
+    "status_delete": "Deleted",
+    "select_author": "Select author",
+    "not_deleted": "not deleted",
+    "from_date": "From date",
+    "to_date": "To date"
 
 
 

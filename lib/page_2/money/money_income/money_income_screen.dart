@@ -33,6 +33,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
+  String? _search = null;
   late MoneyIncomeBloc _moneyIncomeBloc;
 
   bool _isInitialLoad = true;
@@ -100,10 +101,10 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     setState(() {
       _isSearching = query.isNotEmpty;
     });
-    _currentFilters['query'] = query;
+    _search = query;
     _moneyIncomeBloc.add(FetchMoneyIncome(
       forceRefresh: true,
-      filters: _currentFilters,
+      search: _search,
     ));
   }
 
@@ -147,10 +148,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     if (!mounted) return;
 
     final operationType = getOperationTypeFromString(document.operationType);
-    debugPrint('Operation type: ${document.operationType} -> ${operationType}');
 
     if (operationType == null) {
-      _showSnackBar('Неизвестный тип операции: ${document.operationType}', false);
       return;
     }
 

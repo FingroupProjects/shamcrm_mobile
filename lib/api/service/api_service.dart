@@ -11809,23 +11809,27 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '&author_id=${filters['author_id']}';
       }
 
+      if (filters.containsKey('status') && filters['status'] != null) {
+        path += '&status=${filters['status']}';
+      }
+
       if (filters.containsKey('date_from') && filters['date_from'] != null) {
         path += '&date_from=${filters['date_from']}';
       }
 
       if (filters.containsKey('date_to') && filters['date_to'] != null) {
-        path += "&date_to=${filters!['date_to']}";
+        path += "&date_to=${filters['date_to']}";
       }
 
       if (filters.containsKey('deleted') && filters['deleted'] != null) {
-        path += '&deleted=${filters!['deleted']}';
+        path += '&deleted=${filters['deleted']}';
       }
       if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
-        path += '&storage_id=${filters!['storage_id']}';
+        path += '&storage_id=${filters['storage_id']}';
       }
 
       if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
-        path += '&supplier_id=${filters!['supplier_id']}';
+        path += '&supplier_id=${filters['supplier_id']}';
       }
     }
 
