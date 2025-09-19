@@ -62,11 +62,23 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     }
     setState(() {
       _currentFilters = Map.from(filters);
+      _isInitialLoad = true;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
       if (kDebugMode) {
         print('MoneyIncomeScreen: Сохранены текущие фильтры: $_currentFilters');
       }
     });
-    context.read<MoneyIncomeBloc>().add(FetchMoneyIncome(filters: filters, forceRefresh: true));
+
+    // Clear search when applying filters
+    _searchController.clear();
+    _search = null;
+
+    _moneyIncomeBloc.add(FetchMoneyIncome(
+      filters: filters,
+      forceRefresh: true,
+      search: null,
+    ));
   }
 
   void _onResetFilters() {
@@ -74,14 +86,23 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       print('MoneyIncomeScreen: Сброс фильтров');
     }
     setState(() {
-      _currentFilters = {};
+      _currentFilters.clear();
+      _isInitialLoad = true;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _searchController.clear();
+      _search = null;
       if (kDebugMode) {
         print('MoneyIncomeScreen: Очищены текущие фильтры');
       }
     });
-    context.read<MoneyIncomeBloc>().add(FetchMoneyIncome(filters: {}, forceRefresh: true));
-  }
 
+    _moneyIncomeBloc.add(FetchMoneyIncome(
+      filters: {},
+      forceRefresh: true,
+      search: null,
+    ));
+  }
   void _onScroll() {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
@@ -210,8 +231,12 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
+                    _search = null; // Очищаем поиск
                   });
-                  _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+                  _moneyIncomeBloc.add(FetchMoneyIncome(
+                    forceRefresh: true,
+                    filters: _currentFilters, // Сохраняем фильтры при очистке поиска
+                  ));
                 }
               },
               onClickProfileAvatar: () {},
@@ -222,6 +247,13 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
           body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
               if (!mounted) return;
+
+              if (kDebugMode) {
+                print('MoneyIncomeScreen: State changed to ${state.runtimeType}');
+                if (state is MoneyIncomeLoaded) {
+                  print('MoneyIncomeScreen: Data count in state: ${state.data.length}');
+                }
+              }
 
               if (state is MoneyIncomeLoaded) {
                 setState(() {
@@ -244,18 +276,15 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               } else if (state is MoneyIncomeUpdateError) {
                 _showSnackBar(state.message, false);
               } else if (state is MoneyIncomeDeleteSuccess) {
-                // Показываем SnackBar только если мы находимся на MoneyIncomeScreen
-                // (т.е. если диалог уже закрыт и мы вернулись сюда)
                 _showSnackBar(state.message, true);
-
-                // Обновляем список после успешного удаления
-                _moneyIncomeBloc
-                    .add(const FetchMoneyIncome(forceRefresh: true));
+                _moneyIncomeBloc.add(FetchMoneyIncome(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
               } else if (state is MoneyIncomeRestoreSuccess) {
                 _showSnackBar(state.message, true);
-                // Обновляем список после успешного восстановления
-                _moneyIncomeBloc
-                    .add(const FetchMoneyIncome(forceRefresh: true));
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeRestoreError) {
                 _showSnackBar(state.message, false);
               }
