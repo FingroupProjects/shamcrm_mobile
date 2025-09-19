@@ -1363,7 +1363,13 @@
 "empty_0":"",
 "quantity_required":"Количество обязательно",
 "price_required":"Цена обязательна",
-"no_storage":"Склад не указан"
+"no_storage":"Склад не указан",
+  "status_delete": "Удален",
+  "select_author": "Выберите автора",
+  "not_deleted": "не удален",
+  "from_date": "С даты",
+    "to_date": "По дату"
+
 
  
 

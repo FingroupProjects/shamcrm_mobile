@@ -53,9 +53,6 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   String? _selectedStatus;
   bool? _isDeleted;
 
-  // Lists for dropdowns
-  List<String> _statuses = ['approved', 'unapproved'];
-
   @override
   void initState() {
     super.initState();
@@ -101,10 +98,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
       }
 
-      final warehouseName = prefs.getString('income_warehouse');
-      final warehouseId = prefs.getInt('income_warehouse_id');
-      if (warehouseName != null && warehouseId != null) {
-        _selectedCashRegister = CashRegisterData(id: warehouseId, name: warehouseName);
+      final cashRegisterName = prefs.getString('income_cash_register');
+      final cashRegisterId = prefs.getInt('income_cash_register_id');
+      if (cashRegisterName != null && cashRegisterId != null) {
+        _selectedCashRegister =
+            CashRegisterData(id: cashRegisterId, name: cashRegisterName);
       }
 
       final authorName = prefs.getString('income_author');
@@ -114,7 +112,8 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
             AuthorData(id: authorId, name: authorName, lastname: '');
       }
 
-      _selectedStatus = prefs.getString('income_status') ?? widget.initialStatus;
+      _selectedStatus =
+          prefs.getString('money_income_status') ?? widget.initialStatus;
       _isDeleted = prefs.getBool('income_is_deleted') ?? widget.initialIsDeleted;
 
       _updateDateControllers();
@@ -145,17 +144,18 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     }
 
     if (_selectedCashRegister != null) {
-      await prefs.setString('income_warehouse', _selectedCashRegister!.name);
-      await prefs.setInt('income_warehouse_id', _selectedCashRegister!.id);
+      await prefs.setString(
+          'income_cash_register', _selectedCashRegister!.name);
+      await prefs.setInt('income_cash_register_id', _selectedCashRegister!.id);
     } else {
-      await prefs.remove('income_warehouse');
-      await prefs.remove('income_warehouse_id');
+      await prefs.remove('income_cash_register');
+      await prefs.remove('income_cash_register_id');
     }
 
     if (_selectedStatus != null) {
-      await prefs.setString('income_status', _selectedStatus!);
+      await prefs.setString('money_income_status', _selectedStatus!);
     } else {
-      await prefs.remove('income_status');
+      await prefs.remove('money_income_status');
     }
 
     if (selectedAuthor != null) {
@@ -208,15 +208,17 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
-      widget.onSelectedDataFilter?.call({
+      final filters = {
         'date_from': _fromDate,
         'date_to': _toDate,
         'supplier_id': _selectedSupplier?.id.toString(),
         'storage_id': _selectedCashRegister?.id.toString(),
         'status': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
-        'deleted': _isDeleted,
-      });
+        'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
+      };
+
+      widget.onSelectedDataFilter?.call(filters);
     }
     Navigator.pop(context);
   }
@@ -310,8 +312,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             if (mounted) {
                               setState(() {
                                 _fromDateController.text = date;
-                                // Parse the date string back to DateTime
-                                List<String> parts = date.split('.');
+                                List<String> parts = date.split('/');
                                 if (parts.length == 3) {
                                   _fromDate = DateTime(
                                     int.parse(parts[2]),
@@ -341,8 +342,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             if (mounted) {
                               setState(() {
                                 _toDateController.text = date;
-                                // Parse the date string back to DateTime
-                                List<String> parts = date.split('.');
+                                List<String> parts = date.split('/');
                                 if (parts.length == 3) {
                                   _toDate = DateTime(
                                     int.parse(parts[2]),
@@ -411,9 +411,9 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             ],
                             onSelectstatusMethod: (String value) {
                               setState(() {
-                                _selectedStatus = value;
-                              });
-                            },
+                                _selectedStatus = value ==  AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
+                                });
+                              },
                             selectedstatusMethod: _selectedStatus != null
                                 ? _getStatusDisplayText(_selectedStatus!)
                                 : null),
@@ -454,12 +454,13 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             ],
                             onSelectstatusMethod: (String value) {
                               setState(() {
-                                _selectedStatus = value;
+                                _isDeleted = value == AppLocalizations.of(context)!.translate('deleted');
                               });
                             },
-                            selectedstatusMethod: _selectedStatus != null
-                                ? _getStatusDisplayText(_selectedStatus!)
-                                : null),
+                            // selectedstatusMethod: _selectedStatus != null
+                            //     ? _getStatusDisplayText(_selectedStatus!)
+                            //     : null
+                        ),
                       ),
                     ),
                     const SizedBox(height: 96),
@@ -522,29 +523,41 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
             color:
-                Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52 на корректный
+                Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 4),
-        CustomDropdown<String>.search(
-          closeDropDownOnClearFilterSearch: true,
+        CustomDropdown<String>(
           items: widget.statusMethodsList,
-          searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
           enabled: true,
+          hintBuilder: (context, selectedItem, enabled) {
+            return Text(
+              selectedItem.isNotEmpty
+                  ? selectedItem
+                  : AppLocalizations.of(context)!
+                          .translate('select_status_method') ??
+                      'Выберите статус',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          hintText: AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
           decoration: CustomDropdownDecoration(
             closedFillColor: Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
             closedBorder: Border.all(
               color: Color(0xffF4F7FD),
               width: 1,
             ),
-            closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
               color: Color(0xffF4F7FD),
               width: 1,
             ),
-            expandedBorderRadius: BorderRadius.circular(12),
+            closedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
@@ -562,7 +575,8 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
               selectedItem.isNotEmpty
                   ? selectedItem
                   : AppLocalizations.of(context)!
-                      .translate('select_status_method'),
+                          .translate('select_status_method') ??
+                      'Выберите статус',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -571,16 +585,6 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
               ),
             );
           },
-          hintBuilder: (context, hint, enabled) => Text(
-            AppLocalizations.of(context)!.translate('select_status_method'),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          excludeSelected: false,
           initialItem: selectedstatusMethod,
           onChanged: (value) {
             if (value != null) {

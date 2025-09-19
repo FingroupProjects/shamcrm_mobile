@@ -780,8 +780,8 @@ void navigateToOrderFilterScreen(BuildContext context) {
       print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
     }
 
-    DateTime? initialFromDate = widget.currentFilters['fromDate'];
-    DateTime? initialToDate = widget.currentFilters['toDate'];
+    DateTime? initialFromDate = widget.currentFilters['date_from'];
+    DateTime? initialToDate = widget.currentFilters['date_to'];
     String? initialSupplier;
     String? initialWarehouse;
     String? initialStatus;
@@ -790,36 +790,24 @@ void navigateToOrderFilterScreen(BuildContext context) {
     List<String>? initialSupplierIds;
     List<String>? initialWarehouseIds;
 
-    if (widget.currentFilters.containsKey('supplier')) {
-      if (widget.currentFilters['supplier'] is String) {
-        initialSupplier = widget.currentFilters['supplier'];
-      } else if (widget.currentFilters['supplier'] is List &&
-          widget.currentFilters['supplier'].isNotEmpty) {
-        initialSupplierIds =
-            List<String>.from(widget.currentFilters['supplier']);
-      }
+    if (widget.currentFilters.containsKey('supplier_id')) {
+        initialSupplier = widget.currentFilters['supplier_id'];
     }
 
-    if (widget.currentFilters.containsKey('warehouse')) {
-      if (widget.currentFilters['warehouse'] is String) {
-        initialWarehouse = widget.currentFilters['warehouse'];
-      } else if (widget.currentFilters['warehouse'] is List &&
-          widget.currentFilters['warehouse'].isNotEmpty) {
-        initialWarehouseIds =
-            List<String>.from(widget.currentFilters['warehouse']);
-      }
+    if (widget.currentFilters.containsKey('storage_id')) {
+        initialWarehouse = widget.currentFilters['storage_id'];
     }
 
     if (widget.currentFilters.containsKey('status')) {
       initialStatus = widget.currentFilters['status'].toString();
     }
 
-    if (widget.currentFilters.containsKey('author')) {
-      initialAuthor = widget.currentFilters['author'].toString();
+    if (widget.currentFilters.containsKey('author_id')) {
+      initialAuthor = widget.currentFilters['author_id'].toString();
     }
 
-    if (widget.currentFilters.containsKey('isDeleted')) {
-      initialIsDeleted = widget.currentFilters['isDeleted'] as bool?;
+    if (widget.currentFilters.containsKey('deleted')) {
+      initialIsDeleted = widget.currentFilters['deleted'] as bool?;
     }
 
     Navigator.push(
@@ -832,8 +820,8 @@ void navigateToOrderFilterScreen(BuildContext context) {
             }
             setState(() {
               _isIncomeFiltering = filters.isNotEmpty ||
-                  filters['fromDate'] != null ||
-                  filters['toDate'] != null ||
+                  filters['date_from'] != null ||
+                  filters['date_to'] != null ||
                   filters['supplier'] != null ||
                   filters['warehouse'] != null ||
                   filters['status'] != null ||

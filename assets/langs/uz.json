@@ -1312,7 +1312,13 @@
 "empty_0":"",
 "price_required": "Narx maydoni majburiy",
 "quantity_required": "Miqdor maydoni majburiy",
-"no_storage": "Omborlar mavjud emas"
+"no_storage": "Omborlar mavjud emas",
+  "status_delete": "O'chirilgan",
+  "select_author": "Muallifni tanlang",
+  "not_deleted": "o'chirilmagan",
+  "from_date": "Sanadan",
+    "to_date": "Sanagacha"
+
 
 
 
