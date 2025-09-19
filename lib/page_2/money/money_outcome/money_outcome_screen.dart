@@ -62,11 +62,23 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     }
     setState(() {
       _currentFilters = Map.from(filters);
+      _isInitialLoad = true;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
       if (kDebugMode) {
         print('MoneyOutcomeScreen: Сохранены текущие фильтры: $_currentFilters');
       }
     });
-    context.read<MoneyOutcomeBloc>().add(FetchMoneyOutcome(filters: filters, forceRefresh: true));
+
+    // Clear search when applying filters
+    _searchController.clear();
+    _search = null;
+
+    _moneyOutcomeBloc.add(FetchMoneyOutcome(
+      filters: filters,
+      forceRefresh: true,
+      search: null,
+    ));
   }
 
   void _onResetFilters() {
@@ -74,12 +86,22 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       print('MoneyOutcomeScreen: Сброс фильтров');
     }
     setState(() {
-      _currentFilters = {};
+      _currentFilters.clear();
+      _isInitialLoad = true;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _searchController.clear();
+      _search = null;
       if (kDebugMode) {
         print('MoneyOutcomeScreen: Очищены текущие фильтры');
       }
     });
-    context.read<MoneyOutcomeBloc>().add(FetchMoneyOutcome(filters: {}, forceRefresh: true));
+
+    _moneyOutcomeBloc.add(FetchMoneyOutcome(
+      filters: {},
+      forceRefresh: true,
+      search: null,
+    ));
   }
 
   void _onScroll() {
@@ -199,9 +221,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
               showSearchIcon: true,
               showFilterIcon: false,
               showFilterOrderIcon: false,
-              // showFilterOutcomeIcon: true,
-              // onFilterOutcomeSelected: _onFilterSelected,
-              // onOutcomeResetFilters: _onResetFilters,
+              showFilterIncomeIcon: true,
+              onFilterIncomeSelected: _onFilterSelected,
+              onIncomeResetFilters: _onResetFilters,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _focusNode,
@@ -210,8 +232,12 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
+                    _search = null; // Очищаем поиск
                   });
-                  _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                  _moneyOutcomeBloc.add(FetchMoneyOutcome(
+                    forceRefresh: true,
+                    filters: _currentFilters, // Сохраняем фильтры при очистке поиска
+                  ));
                 }
               },
               onClickProfileAvatar: () {},
@@ -222,6 +248,13 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
           body: BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
             listener: (context, state) {
               if (!mounted) return;
+
+              if (kDebugMode) {
+                print('MoneyOutcomeScreen: State changed to ${state.runtimeType}');
+                if (state is MoneyOutcomeLoaded) {
+                  print('MoneyOutcomeScreen: Data count in state: ${state.data.length}');
+                }
+              }
 
               if (state is MoneyOutcomeLoaded) {
                 setState(() {
@@ -244,18 +277,15 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
               } else if (state is MoneyOutcomeUpdateError) {
                 _showSnackBar(state.message, false);
               } else if (state is MoneyOutcomeDeleteSuccess) {
-                // Показываем SnackBar только если мы находимся на MoneyOutcomeScreen
-                // (т.е. если диалог уже закрыт и мы вернулись сюда)
                 _showSnackBar(state.message, true);
-
-                // Обновляем список после успешного удаления
-                _moneyOutcomeBloc
-                    .add(const FetchMoneyOutcome(forceRefresh: true));
+                _moneyOutcomeBloc.add(FetchMoneyOutcome(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
               } else if (state is MoneyOutcomeRestoreSuccess) {
                 _showSnackBar(state.message, true);
-                // Обновляем список после успешного восстановления
-                _moneyOutcomeBloc
-                    .add(const FetchMoneyOutcome(forceRefresh: true));
+                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeRestoreError) {
                 _showSnackBar(state.message, false);
               }
