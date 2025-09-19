@@ -1,40 +1,40 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/models/money/money_income_document_model.dart';
-import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
+import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/widgets/money_outcome_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../bloc/money_income/money_income_bloc.dart';
-import 'add/add_money_income_from_another_cash_register.dart';
-import 'add/add_money_income_from_client.dart';
-import 'add/add_money_income_other_income.dart';
-import 'add/add_money_income_supplier_return.dart';
-import 'edit/edit_money_income_from_another_cash_register.dart';
-import 'edit/edit_money_income_from_client.dart';
-import 'edit/edit_money_income_other_income.dart';
-import 'edit/edit_money_income_supplier_return.dart';
+import '../../../bloc/money_outcome/money_outcome_bloc.dart';
+import 'add/add_money_outcome_from_another_cash_register.dart';
+import 'add/add_money_outcome_from_client.dart';
+import 'add/add_money_outcome_other_outcome.dart';
+import 'add/add_money_outcome_supplier_return.dart';
+import 'edit/edit_money_outcome_from_another_cash_register.dart';
+import 'edit/edit_money_outcome_from_client.dart';
+import 'edit/edit_money_outcome_other_outcome.dart';
+import 'edit/edit_money_outcome_supplier_return.dart';
 import 'operation_type.dart';
 
-class MoneyIncomeScreen extends StatefulWidget {
+class MoneyOutcomeScreen extends StatefulWidget {
   final int? organizationId;
 
-  const MoneyIncomeScreen({this.organizationId, super.key});
+  const MoneyOutcomeScreen({this.organizationId, super.key});
 
   @override
-  State<MoneyIncomeScreen> createState() => _MoneyIncomeScreenState();
+  State<MoneyOutcomeScreen> createState() => _MoneyOutcomeScreenState();
 }
 
-class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
+class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
   String? _search = null;
-  late MoneyIncomeBloc _moneyIncomeBloc;
+  late MoneyOutcomeBloc _moneyOutcomeBloc;
 
   bool _isInitialLoad = true;
   bool _isLoadingMore = false;
@@ -43,7 +43,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   @override
   void initState() {
     super.initState();
-    _moneyIncomeBloc = MoneyIncomeBloc()..add(const FetchMoneyIncome(forceRefresh: true));
+    _moneyOutcomeBloc = MoneyOutcomeBloc()..add(const FetchMoneyOutcome(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -52,57 +52,36 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _moneyIncomeBloc.close();
+    _moneyOutcomeBloc.close();
     super.dispose();
   }
 
   void _onFilterSelected(Map<String, dynamic> filters) {
     if (kDebugMode) {
-      print('MoneyIncomeScreen: Применение фильтров: $filters');
+      print('MoneyOutcomeScreen: Применение фильтров: $filters');
     }
     setState(() {
       _currentFilters = Map.from(filters);
-      _isInitialLoad = true;
-      _hasReachedMax = false;
-      _isLoadingMore = false;
       if (kDebugMode) {
-        print('MoneyIncomeScreen: Сохранены текущие фильтры: $_currentFilters');
+        print('MoneyOutcomeScreen: Сохранены текущие фильтры: $_currentFilters');
       }
     });
-
-    // Clear search when applying filters
-    _searchController.clear();
-    _search = null;
-
-    _moneyIncomeBloc.add(FetchMoneyIncome(
-      filters: filters,
-      forceRefresh: true,
-      search: null,
-    ));
+    context.read<MoneyOutcomeBloc>().add(FetchMoneyOutcome(filters: filters, forceRefresh: true));
   }
 
   void _onResetFilters() {
     if (kDebugMode) {
-      print('MoneyIncomeScreen: Сброс фильтров');
+      print('MoneyOutcomeScreen: Сброс фильтров');
     }
     setState(() {
-      _currentFilters.clear();
-      _isInitialLoad = true;
-      _hasReachedMax = false;
-      _isLoadingMore = false;
-      _searchController.clear();
-      _search = null;
+      _currentFilters = {};
       if (kDebugMode) {
-        print('MoneyIncomeScreen: Очищены текущие фильтры');
+        print('MoneyOutcomeScreen: Очищены текущие фильтры');
       }
     });
-
-    _moneyIncomeBloc.add(FetchMoneyIncome(
-      filters: {},
-      forceRefresh: true,
-      search: null,
-    ));
+    context.read<MoneyOutcomeBloc>().add(FetchMoneyOutcome(filters: {}, forceRefresh: true));
   }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
@@ -111,7 +90,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       setState(() {
         _isLoadingMore = true;
       });
-      _moneyIncomeBloc.add(FetchMoneyIncome(
+      _moneyOutcomeBloc.add(FetchMoneyOutcome(
         forceRefresh: false,
         filters: _currentFilters,
       ));
@@ -123,7 +102,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       _isSearching = query.isNotEmpty;
     });
     _search = query;
-    _moneyIncomeBloc.add(FetchMoneyIncome(
+    _moneyOutcomeBloc.add(FetchMoneyOutcome(
       forceRefresh: true,
       search: _search,
     ));
@@ -137,7 +116,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       _isInitialLoad = true;
       _hasReachedMax = false;
     });
-    _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+    _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -178,16 +157,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
     switch (operationType) {
       case OperationType.client_payment:
-        targetScreen = EditMoneyIncomeFromClient(document: document);
+        targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
       case OperationType.receive_another_cash_register:
-        targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
+        targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
         break;
-      case OperationType.other_incomes:
-        targetScreen = EditMoneyIncomeOtherIncome(document: document);
+      case OperationType.other_outcomes:
+        targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
       case OperationType.return_supplier:
-        targetScreen = EditMoneyIncomeSupplierReturn(document: document);
+        targetScreen = EditMoneyOutcomeSupplierReturn(document: document);
         break;
     }
 
@@ -195,14 +174,14 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => BlocProvider.value(
-          value: _moneyIncomeBloc,
+          value: _moneyOutcomeBloc,
           child: targetScreen,
         ),
       ),
     );
 
     if (result == true && mounted) {
-      _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+      _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
     }
   }
 
@@ -210,19 +189,19 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return BlocProvider.value(
-      value: _moneyIncomeBloc,
+      value: _moneyOutcomeBloc,
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
             forceMaterialTransparency: true,
             title: CustomAppBarPage2(
-              title: localizations!.translate('appbar_money_income'),
+              title: localizations!.translate('appbar_money_outcome'),
               showSearchIcon: true,
               showFilterIcon: false,
               showFilterOrderIcon: false,
-              showFilterIncomeIcon: true,
-              onFilterIncomeSelected: _onFilterSelected,
-              onIncomeResetFilters: _onResetFilters,
+              // showFilterOutcomeIcon: true,
+              // onFilterOutcomeSelected: _onFilterSelected,
+              // onOutcomeResetFilters: _onResetFilters,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _focusNode,
@@ -231,12 +210,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
-                    _search = null; // Очищаем поиск
                   });
-                  _moneyIncomeBloc.add(FetchMoneyIncome(
-                    forceRefresh: true,
-                    filters: _currentFilters, // Сохраняем фильтры при очистке поиска
-                  ));
+                  _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
                 }
               },
               onClickProfileAvatar: () {},
@@ -244,54 +219,50 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               currentFilters: {},
             ),
           ),
-          body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
+          body: BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
             listener: (context, state) {
               if (!mounted) return;
 
-              if (kDebugMode) {
-                print('MoneyIncomeScreen: State changed to ${state.runtimeType}');
-                if (state is MoneyIncomeLoaded) {
-                  print('MoneyIncomeScreen: Data count in state: ${state.data.length}');
-                }
-              }
-
-              if (state is MoneyIncomeLoaded) {
+              if (state is MoneyOutcomeLoaded) {
                 setState(() {
                   _hasReachedMax = state.hasReachedMax;
                   _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
-              } else if (state is MoneyIncomeError) {
+              } else if (state is MoneyOutcomeError) {
                 setState(() {
                   _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
                 _showSnackBar(state.message, false);
-              } else if (state is MoneyIncomeCreateSuccess) {
+              } else if (state is MoneyOutcomeCreateSuccess) {
                 _showSnackBar(state.message, true);
-              } else if (state is MoneyIncomeCreateError) {
+              } else if (state is MoneyOutcomeCreateError) {
                 _showSnackBar(state.message, false);
-              } else if (state is MoneyIncomeUpdateSuccess) {
+              } else if (state is MoneyOutcomeUpdateSuccess) {
                 _showSnackBar(state.message, true);
-              } else if (state is MoneyIncomeUpdateError) {
+              } else if (state is MoneyOutcomeUpdateError) {
                 _showSnackBar(state.message, false);
-              } else if (state is MoneyIncomeDeleteSuccess) {
+              } else if (state is MoneyOutcomeDeleteSuccess) {
+                // Показываем SnackBar только если мы находимся на MoneyOutcomeScreen
+                // (т.е. если диалог уже закрыт и мы вернулись сюда)
                 _showSnackBar(state.message, true);
-                _moneyIncomeBloc.add(FetchMoneyIncome(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search,
-                ));
-              } else if (state is MoneyIncomeRestoreSuccess) {
+
+                // Обновляем список после успешного удаления
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
+              } else if (state is MoneyOutcomeRestoreSuccess) {
                 _showSnackBar(state.message, true);
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
-              } else if (state is MoneyIncomeRestoreError) {
+                // Обновляем список после успешного восстановления
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
+              } else if (state is MoneyOutcomeRestoreError) {
                 _showSnackBar(state.message, false);
               }
             },
-            child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
+            child: BlocBuilder<MoneyOutcomeBloc, MoneyOutcomeState>(
               builder: (context, state) {
-                if (state is MoneyIncomeLoading) {
+                if (state is MoneyOutcomeLoading) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -301,14 +272,14 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 }
 
                 final currentData =
-                    state is MoneyIncomeLoaded ? state.data : [];
+                    state is MoneyOutcomeLoaded ? state.data : [];
 
-                if (currentData.isEmpty && state is MoneyIncomeLoaded) {
+                if (currentData.isEmpty && state is MoneyOutcomeLoaded) {
                   return Center(
                     child: Text(
                       _isSearching
                           ? localizations.translate('nothing_found')
-                          : localizations.translate('no_money_income'),
+                          : localizations.translate('no_money_outcome'),
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -342,13 +313,13 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                               )
                             : const SizedBox.shrink();
                       }
-                      return MoneyIncomeCard(
+                      return MoneyOutcomeCard(
                         document: currentData[index],
                         onUpdate: (document) {
                           _navigateToEditScreen(context, document);
                         },
                         onDelete: (documentId) {
-                          _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+                          _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
                         },
                       );
                     },
@@ -358,7 +329,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             ),
           ),
           floatingActionButton: PopupMenuButton<String>(
-            key: const Key('create_money_income_button'),
+            key: const Key('create_money_outcome_button'),
             onSelected: (String value) async {
               if (!mounted) return;
 
@@ -366,16 +337,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               switch (value) {
                 case 'client_payment':
-                  targetScreen = const AddMoneyIncomeFromClient();
+                  targetScreen = const AddMoneyOutcomeFromClient();
                   break;
                 case 'cash_register_transfer':
-                  targetScreen = const AddMoneyIncomeAnotherCashRegister();
+                  targetScreen = const AddMoneyOutcomeAnotherCashRegister();
                   break;
-                case 'other_income':
-                  targetScreen = const AddMoneyIncomeOtherIncome();
+                case 'other_outcome':
+                  targetScreen = const AddMoneyOutcomeOtherOutcome();
                   break;
                 case 'supplier_return':
-                  targetScreen = const AddMoneyIncomeSupplierReturn();
+                  targetScreen = const AddMoneyOutcomeSupplierReturn();
                   break;
                 default:
                   return;
@@ -385,14 +356,14 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => BlocProvider.value(
-                    value: _moneyIncomeBloc,
+                    value: _moneyOutcomeBloc,
                     child: targetScreen,
                   ),
                 ),
               );
 
               if (result == true && mounted) {
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
               }
             },
             itemBuilder: (BuildContext context) {
@@ -448,7 +419,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: 'other_income',
+                  value: 'other_outcome',
                   child: Row(
                     children: [
                       const Icon(
@@ -459,7 +430,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('other_income'),
+                          localizations.translate('other_outcome'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',

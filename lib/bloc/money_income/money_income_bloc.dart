@@ -32,12 +32,16 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onFetchMoneyIncome(FetchMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
+    // Always emit loading for force refresh or initial load
+    if (event.forceRefresh || _allData.isEmpty) {
+      emit(MoneyIncomeLoading());
+    }
+
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData = [];
+      _allData.clear(); // Use clear() instead of = []
       _filters = event.filters;
       _search = event.search;
-      emit(MoneyIncomeLoading());
     } else if (state is MoneyIncomeLoaded && (state as MoneyIncomeLoaded).hasReachedMax) {
       return;
     }
@@ -60,7 +64,13 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       }
 
       final newData = response.result?.data ?? [];
-      _allData = event.forceRefresh ? newData : [..._allData, ...newData];
+
+      // Clear and rebuild for force refresh, append for pagination
+      if (event.forceRefresh) {
+        _allData = List.from(newData); // Create new list instance
+      } else {
+        _allData.addAll(newData);
+      }
 
       final hasReachedMax = (response.result?.pagination?.currentPage ?? 1) >= (response.result?.pagination?.totalPages ?? 1);
 
@@ -68,8 +78,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         _currentPage++;
       }
 
+      // Always emit a new state instance
       emit(MoneyIncomeLoaded(
-        data: _allData,
+        data: List.from(_allData), // Create new list instance for the state
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
       ));
