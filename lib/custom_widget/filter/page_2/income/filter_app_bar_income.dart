@@ -1,7 +1,13 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../bloc/supplier_list/supplier_list_bloc.dart';
+import '../../../../bloc/supplier_list/supplier_list_event.dart';
+import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
+import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
+import '../../../../bloc/author/get_all_author_bloc.dart';
 import '../../../../models/author_data_response.dart';
 import '../../../../models/cash_register_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
@@ -67,6 +73,9 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     _selectedStatus = widget.initialStatus;
     _isDeleted = widget.initialIsDeleted;
 
+    context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+    context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+    context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
     _updateDateControllers();
     _loadFilterState();
   }

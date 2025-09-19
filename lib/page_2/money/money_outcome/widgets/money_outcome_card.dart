@@ -130,7 +130,7 @@ class MoneyOutcomeCard extends StatelessWidget {
             if (document.operationType != null && document.operationType == OperationType.receive_another_cash_register.name) ...[
               const SizedBox(height: 8),
                 Text(
-                  'Получение с другой кассы: ${document.cashRegister!.name}',
+                  'Получение с другой кассы: ${document.cashRegister?.name}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
