@@ -74,7 +74,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   static String _cachedUserImage = '';
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
-  late StreamSubscription<ChannelReadEvent> notificationSubscription;
+  StreamSubscription<ChannelReadEvent>? notificationSubscription;
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
@@ -229,7 +229,7 @@ Future<void> _scanBarcode() async {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
-    notificationSubscription.cancel();
+    notificationSubscription?.cancel();
     socketClient.disconnect();
     if (kDebugMode) {
       //print('CustomAppBarPage2: Очистка ресурсов');

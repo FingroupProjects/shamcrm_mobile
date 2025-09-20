@@ -13,31 +13,10 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
       listener: (context, state) {
-        if (state is MoneyOutcomeDeleteError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            ),
-          );
-        } else if (state is MoneyOutcomeDeleteSuccess) {
-          // Просто закрываем диалог, сообщение покажет основной экран
+        if (state is MoneyOutcomeDeleteSuccess) {
           Navigator.of(context).pop(true);
+        } else if (state is MoneyOutcomeDeleteError) {
+          Navigator.of(context).pop(false);
         }
       },
       child: AlertDialog(
@@ -82,9 +61,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('delete'),
                   onPressed: () {
-                    context
-                        .read<MoneyOutcomeBloc>()
-                        .add(DeleteMoneyOutcome(documentId));
+                    context.read<MoneyOutcomeBloc>().add(DeleteMoneyOutcome(documentId));
                   },
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,

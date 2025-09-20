@@ -150,7 +150,7 @@ class MoneyOutcomeCard extends StatelessWidget {
       showDialog(
         context: context,
         builder: (_) => BlocProvider.value(
-          value: context.read<MoneyOutcomeBloc>(), // reuse the same instance
+          value: context.read<MoneyOutcomeBloc>(),
           child: MoneyOutcomeDeleteDialog(documentId: document.id!),
         ),
       ).then((result) {

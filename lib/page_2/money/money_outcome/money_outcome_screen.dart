@@ -5,6 +5,7 @@ import 'package:crm_task_manager/page_2/money/money_outcome/widgets/money_outcom
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/money_outcome/money_outcome_bloc.dart';
@@ -143,29 +144,30 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   }
 
   void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    // Используем глобальный scaffoldMessengerKey, чтобы не зависеть от жизненного цикла локального контекста
+    // и избежать ошибок «deactivated widget's ancestor».
+    scaffoldMessengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
   }
 
-  
   Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
     if (!mounted) return;
 
@@ -254,6 +256,15 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 if (state is MoneyOutcomeLoaded) {
                   print('MoneyOutcomeScreen: Data count in state: ${state.data.length}');
                 }
+              }
+
+              if (state is MoneyOutcomeDeleteError && mounted) {
+                _showSnackBar(state.message, false);
+                _moneyOutcomeBloc.add(FetchMoneyOutcome(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
               }
 
               if (state is MoneyOutcomeLoaded) {
