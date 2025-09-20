@@ -1318,6 +1318,14 @@
   "receiver_cash_register": "Касса получатель",
   "delete_money_income": "Удалить денежный доход",
   "delete_money_income_confirm": "Вы уверены, что хотите удалить этот документ денежного дохода?",
+  "appbar_money_outcome": "Расход",
+  "other_outcome": "Прочие расходы",
+  "no_money_outcome": "Нет денежных расходов",
+  "create_outgoing_document": "Создать расход",
+  "edit_outgoing_document": "Редактирование расхода",
+  "delete_money_outcome": "Удалить денежный расход",
+  "delete_money_outcome_confirm": "Вы уверены, что хотите удалить этот документ денежного расхода?",
+  "outcome": "Расход",
   "cash_desk": "Касса",
   "cash_desk_management": "Управление кассами",
   "add_cash_desk": "Добавить кассу",
@@ -1363,7 +1371,13 @@
 "empty_0":"",
 "quantity_required":"Количество обязательно",
 "price_required":"Цена обязательна",
-"no_storage":"Склад не указан"
+"no_storage":"Склад не указан",
+  "status_delete": "Удален",
+  "select_author": "Выберите автора",
+  "not_deleted": "не удален",
+  "from_date": "С даты",
+    "to_date": "По дату"
+
 
  
 

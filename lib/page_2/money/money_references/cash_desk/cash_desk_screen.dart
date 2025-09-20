@@ -173,16 +173,6 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'N: ${data.id}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
                         data.name,
                         style: const TextStyle(
                           fontSize: 18,

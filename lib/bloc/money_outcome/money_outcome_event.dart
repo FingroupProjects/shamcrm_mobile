@@ -1,15 +1,15 @@
-part of 'money_income_bloc.dart';
+part of 'money_outcome_bloc.dart';
 
-sealed class MoneyIncomeEvent extends Equatable {
-  const MoneyIncomeEvent();
+sealed class MoneyOutcomeEvent extends Equatable {
+  const MoneyOutcomeEvent();
 }
 
-class FetchMoneyIncome extends MoneyIncomeEvent {
+class FetchMoneyOutcome extends MoneyOutcomeEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
   final String? search;
 
-  const FetchMoneyIncome({
+  const FetchMoneyOutcome({
     this.forceRefresh = false,
     this.filters,
     this.search,
@@ -19,12 +19,12 @@ class FetchMoneyIncome extends MoneyIncomeEvent {
   List<Object?> get props => [forceRefresh, filters, search];
 }
 
-class UpdateMoneyIncome extends MoneyIncomeEvent {
+class UpdateMoneyOutcome extends MoneyOutcomeEvent {
   final int? id;
   final String date;
   final num amount;
   final String operationType;
-  final String movementType = "PKO";
+  final String movementType = "RKO";
   final int? leadId;
   final String comment;
   final String? cashRegisterId;
@@ -32,7 +32,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final int? supplierId;
   final bool approved;
 
-  UpdateMoneyIncome({
+  UpdateMoneyOutcome({
     this.id,
     required this.date,
     required this.amount,
@@ -61,41 +61,41 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   ];
 }
 
-class DeleteMoneyIncome extends MoneyIncomeEvent {
+class DeleteMoneyOutcome extends MoneyOutcomeEvent {
   final int documentId;
 
-  const DeleteMoneyIncome(this.documentId);
+  const DeleteMoneyOutcome(this.documentId);
 
   @override
   List<Object> get props => [documentId];
 }
 
-class RestoreMoneyIncome extends MoneyIncomeEvent {
+class RestoreMoneyOutcome extends MoneyOutcomeEvent {
   final int documentId;
 
-  const RestoreMoneyIncome(this.documentId);
+  const RestoreMoneyOutcome(this.documentId);
 
   @override
   List<Object> get props => [documentId];
 }
 
-class AddMoneyIncome extends MoneyIncomeEvent {
+class AddMoneyOutcome extends MoneyOutcomeEvent {
   @override
   List<Object> get props => [];
 }
 
-class CreateMoneyIncome extends MoneyIncomeEvent {
+class CreateMoneyOutcome extends MoneyOutcomeEvent {
   final String date;
   final num amount;
   final String operationType;
-  final String movementType = "PKO";
+  final String movementType = "RKO";
   final int? leadId;
   final String comment;
   final String? cashRegisterId;
   final String? senderCashRegisterId;
   final int? supplierId;
 
-  CreateMoneyIncome({
+  CreateMoneyOutcome({
     required this.date,
     required this.amount,
     this.leadId,
@@ -121,10 +121,10 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
 }
 
 
-class FilterMoneyIncome extends MoneyIncomeEvent {
+class FilterMoneyOutcome extends MoneyOutcomeEvent {
   final Map<String, dynamic> filters;
 
-  FilterMoneyIncome(this.filters);
+  FilterMoneyOutcome(this.filters);
 
   @override
   List<Object> get props => [filters];

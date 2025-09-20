@@ -13,6 +13,8 @@ import 'package:crm_task_manager/models/money/expense_model.dart';
 import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
+import 'package:crm_task_manager/models/money/add_outcome_model.dart';
+import 'package:crm_task_manager/models/money/outcome_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -121,6 +123,7 @@ import '../../models/cash_register_list_model.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
+import '../../models/money/money_outcome_document_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
@@ -11794,45 +11797,67 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<MoneyIncomeDocumentModel> getMoneyIncomeDocuments({
     int page = 1,
     int perPage = 20,
-    String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved,
+    String? search,
+    Map<String, dynamic>? filters,
   }) async {
-    String url = '/checking-account';
-    url += '?page=$page&per_page=$perPage';
-
-    if (query != null && query.isNotEmpty) {
-      url += '&search=$query';
-    }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
+    String path = '/checking-account?type=PKO&page=$page&per_page=$perPage';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getMoneyIncomeDocuments - Generated path: $path');
-    }
+    debugPrint("Фильтры для прихода: $filters");
 
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по приходу: $rawData");
-        return MoneyIncomeDocumentModel.fromJson(rawData);
-      } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+    if (filters != null) {
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
       }
-    } catch (e) {
-      throw Exception('Ошибка получения данных прихода: ${e}');
+
+      if (filters.containsKey('status') && filters['status'] != null) {
+        path += '&status=${filters['status']}';
+      }
+
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        final dateFrom = filters['date_from'] as DateTime;
+        path += '&date_from=${dateFrom.toIso8601String()}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        final dateTo = filters['date_to'] as DateTime;
+        path += "&date_to=${dateTo.toIso8601String()}";
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters['deleted']}';
+      }
+      if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
+        path += '&storage_id=${filters['storage_id']}';
+      }
+
+      if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+        path += '&supplier_id=${filters['supplier_id']}';
+      }
     }
-  }
+
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      path = await _appendQueryParams(path);
+      if (kDebugMode) {
+        print('ApiService: getMoneyIncomeDocuments - Generated path: $path');
+      }
+
+      try {
+        final response = await _getRequest(path);
+        if (response.statusCode == 200) {
+          final rawData = json.decode(response.body);
+          debugPrint("Полученные данные по приходу: $rawData");
+          return MoneyIncomeDocumentModel.fromJson(rawData);
+        } else {
+          throw Exception('Ошибка сервера: ${response.statusCode}');
+        }
+      } catch (e) {
+        throw Exception('Ошибка получения данных прихода: ${e}');
+      }
+    }
+
 
   Future<Map<String, dynamic>> deleteMoneyIncomeDocument(int documentId) async {
     final path = '/checking-account/$documentId';
@@ -11925,6 +11950,204 @@ Future<void> updateMoneyIncomeDocument({
       rethrow;
     }
   }
+
+  // ============================= MONEY OUTCOME API METHODS =============================
+
+  Future<void> createMoneyOutcomeDocument({required String date,
+    required num amount,
+    required String operationType,
+    required String movementType,
+    String? comment,
+    int? leadId,
+    String? senderCashRegisterId,
+    String? cashRegisterId,
+    int? supplierId,
+  }) async {
+
+    final path = await _appendQueryParams('/checking-account');
+
+    try {
+      final response = await _postRequest(path, {
+        'date': date,
+        'amount': amount,
+        'operation_type': operationType,
+        'movement_type': movementType,
+        'lead_id': leadId,
+        'sender_cash_register_id': senderCashRegisterId,
+        'comment': comment,
+        'cash_register_id': cashRegisterId,
+        'supplier_id': supplierId,
+      });
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по расходу: $rawData");
+        return;
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных расхода: $e');
+    }
+
+  }
+
+  Future<MoneyOutcomeDocumentModel> getMoneyOutcomeDocuments({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    Map<String, dynamic>? filters,
+  }) async {
+    String path = '/checking-account?type=RKO&page=$page&per_page=$perPage';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    debugPrint("Фильтры для расхода: $filters");
+
+    if (filters != null) {
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
+      }
+
+      if (filters.containsKey('status') && filters['status'] != null) {
+        path += '&status=${filters['status']}';
+      }
+
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        final dateFrom = filters['date_from'] as DateTime;
+        path += '&date_from=${dateFrom.toIso8601String()}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        final dateTo = filters['date_to'] as DateTime;
+        path += "&date_to=${dateTo.toIso8601String()}";
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters['deleted']}';
+      }
+      if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
+        path += '&storage_id=${filters['storage_id']}';
+      }
+
+      if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+        path += '&supplier_id=${filters['supplier_id']}';
+      }
+    }
+
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      path = await _appendQueryParams(path);
+      if (kDebugMode) {
+        print('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
+      }
+
+      try {
+        final response = await _getRequest(path);
+        if (response.statusCode == 200) {
+          final rawData = json.decode(response.body);
+          debugPrint("Полученные данные по расходу: $rawData");
+          return MoneyOutcomeDocumentModel.fromJson(rawData);
+        } else {
+          throw Exception('Ошибка сервера: ${response.statusCode}');
+        }
+      } catch (e) {
+        throw Exception('Ошибка получения данных расхода: ${e}');
+      }
+    }
+
+  Future<Map<String, dynamic>> deleteMoneyOutcomeDocument(int documentId) async {
+    final path = '/checking-account/$documentId';
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': [documentId],
+      });
+
+      if (response.statusCode == 200) {
+        return {'result': 'Success'};
+      } else {
+        throw Exception('Failed to delete money outcome document!');
+      }
+    } catch (e) {
+      throw Exception('Ошибка удаления документа расхода: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> restoreMoneyOutcomeDocument(
+      int documentId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final pathWithParams =
+    await _appendQueryParams('/checking-account/restore');
+    final uri = Uri.parse('$baseUrl$pathWithParams');
+
+    final body = jsonEncode({
+      'ids': [documentId],
+    });
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'result': 'Success'};
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+    }
+  }
+
+Future<void> updateMoneyOutcomeDocument({
+    required int documentId,
+    required String date,
+    required num amount,
+    required String operationType,
+    required String movementType,
+    String? comment,
+    int? leadId,
+    String? senderCashRegisterId,
+    String? cashRegisterId,
+    int? supplierId,
+    required bool approved,
+  }) async {
+    final path = await _appendQueryParams('/checking-account/$documentId');
+
+    try {
+      final response = await _patchRequest(path, {
+        'date': date,
+        'amount': amount,
+        'operation_type': operationType,
+        'movement_type': movementType,
+        'lead_id': leadId,
+        'sender_cash_register_id': senderCashRegisterId,
+        'comment': comment,
+        'cash_register_id': cashRegisterId,
+        'supplier_id': supplierId,
+        'approved': approved,
+      });
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по обновлению расхода: $rawData");
+        return;
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint("Ошибка при обновлении документа расхода: $e");
+      rethrow;
+    }
+  }
+
+  // ============================= END MONEY OUTCOME API METHODS =============================
 
 //_______________________________end cash register and suppliers____________________________//
 

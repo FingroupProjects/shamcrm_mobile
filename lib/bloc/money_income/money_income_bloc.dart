@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -11,8 +13,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   final ApiService apiService = ApiService();
   int _currentPage = 1;
   final int _perPage = 20;
-  Map<String, dynamic> _filters = {};
+  Map<String, dynamic>? _filters;
+  String? _search = '';
   List<Document> _allData = [];
+
 
   MoneyIncomeBloc() : super(MoneyIncomeInitial()) {
     on<FetchMoneyIncome>(_onFetchMoneyIncome);
@@ -28,26 +32,30 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onFetchMoneyIncome(FetchMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
+    // Always emit loading for force refresh or initial load
+    if (event.forceRefresh || _allData.isEmpty) {
+      emit(MoneyIncomeLoading());
+    }
+
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData = [];
-      _filters = event.filters ?? {};
-      emit(MoneyIncomeLoading());
+      _allData.clear(); // Use clear() instead of = []
+      _filters = event.filters;
+      _search = event.search;
     } else if (state is MoneyIncomeLoaded && (state as MoneyIncomeLoaded).hasReachedMax) {
       return;
     }
 
     try {
       if (kDebugMode) {
-        print('MoneyIncomeBloc: Fetching page $_currentPage with filters: $_filters');
+        print('MoneyIncomeBloc: Fetching page $_currentPage with filters: $_filters search: ${event.search}');
       }
 
       final response = await apiService.getMoneyIncomeDocuments(
         page: _currentPage,
         perPage: _perPage,
-        query: _filters['query'],
-        fromDate: _filters['fromDate'],
-        toDate: _filters['toDate'],
+        filters: _filters,
+        search: _search,
       );
 
       if (kDebugMode) {
@@ -55,19 +63,24 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         print('MoneyIncomeBloc: Data count: ${response.result?.data?.length ?? 0}');
       }
 
-      // Handle the response structure similar to IncomingBloc
       final newData = response.result?.data ?? [];
-      _allData = event.forceRefresh ? newData : [..._allData, ...newData];
 
-      // Handle pagination similar to IncomingBloc
+      // Clear and rebuild for force refresh, append for pagination
+      if (event.forceRefresh) {
+        _allData = List.from(newData); // Create new list instance
+      } else {
+        _allData.addAll(newData);
+      }
+
       final hasReachedMax = (response.result?.pagination?.currentPage ?? 1) >= (response.result?.pagination?.totalPages ?? 1);
 
       if (!hasReachedMax && newData.isNotEmpty) {
         _currentPage++;
       }
 
+      // Always emit a new state instance
       emit(MoneyIncomeLoaded(
-        data: _allData,
+        data: List.from(_allData), // Create new list instance for the state
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
       ));

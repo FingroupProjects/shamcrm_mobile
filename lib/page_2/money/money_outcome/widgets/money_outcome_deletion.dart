@@ -1,19 +1,19 @@
-import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
+import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class MoneyIncomeDeleteDialog extends StatelessWidget {
+class MoneyOutcomeDeleteDialog extends StatelessWidget {
   final int documentId;
 
-  const MoneyIncomeDeleteDialog({super.key, required this.documentId});
+  const MoneyOutcomeDeleteDialog({super.key, required this.documentId});
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
+    return BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
       listener: (context, state) {
-        if (state is MoneyIncomeDeleteError) {
+        if (state is MoneyOutcomeDeleteError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -35,7 +35,7 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
           );
-        } else if (state is MoneyIncomeDeleteSuccess) {
+        } else if (state is MoneyOutcomeDeleteSuccess) {
           // Просто закрываем диалог, сообщение покажет основной экран
           Navigator.of(context).pop(true);
         }
@@ -44,7 +44,7 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            AppLocalizations.of(context)!.translate('delete_money_income'),
+            AppLocalizations.of(context)!.translate('delete_money_outcome'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -54,7 +54,7 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
           ),
         ),
         content: Text(
-          AppLocalizations.of(context)?.translate('delete_money_income_confirm') ??
+          AppLocalizations.of(context)?.translate('delete_money_outcome_confirm') ??
               'Вы уверены, что хотите удалить этот документ денежного дохода?',
           style: TextStyle(
             fontSize: 16,
@@ -83,8 +83,8 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
                   buttonText: AppLocalizations.of(context)!.translate('delete'),
                   onPressed: () {
                     context
-                        .read<MoneyIncomeBloc>()
-                        .add(DeleteMoneyIncome(documentId));
+                        .read<MoneyOutcomeBloc>()
+                        .add(DeleteMoneyOutcome(documentId));
                   },
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,

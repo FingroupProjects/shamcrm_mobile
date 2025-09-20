@@ -27,49 +27,70 @@ class LeadCard extends StatefulWidget {
   @override
   _LeadCardState createState() => _LeadCardState();
 }
-
 //928886524
-class _LeadCardState extends State<LeadCard>
-    with SingleTickerProviderStateMixin {
+class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin {
+  late String dropdownValue;
+  late int statusId;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
-  }
+    dropdownValue = widget.title;
+    statusId = widget.statusId;
 
-  Widget _buildDealCount(String statusColor, int count) {
-    if (count <= 0) {
-      return Container(
-        width: 30,
-        height: 30,
-      );
-    }
+    // Инициализация анимации для мигания
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
 
-    // Преобразуем HEX-цвет в Color
-    Color backgroundColor = _hexToColor(statusColor);
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        '$count',
-        style: const TextStyle(
-          fontSize: 12,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
+    _fadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
-// Вспомогательная функция для преобразования HEX в Color
-  Color _hexToColor(String hexColor) {
-    final hexCode = hexColor.replaceAll('#', '');
-    return Color(int.parse('FF$hexCode', radix: 16));
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
+
+  Widget _buildDealCount(String statusColor, int count) {
+  if (count <= 0) {
+    return Container(
+      width: 30,
+      height: 30,
+    );
+  }
+
+  // Преобразуем HEX-цвет в Color
+  Color backgroundColor = _hexToColor(statusColor);
+
+  return Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: backgroundColor,
+      shape: BoxShape.circle,
+    ),
+    child: Text(
+      '$count',
+      style: const TextStyle(
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+    ),
+  );
+}
+
+// Вспомогательная функция для преобразования HEX в Color
+Color _hexToColor(String hexColor) {
+  final hexCode = hexColor.replaceAll('#', '');
+  return Color(int.parse('FF$hexCode', radix: 16));
+}
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -98,8 +119,7 @@ class _LeadCardState extends State<LeadCard>
   };
 
   Color getBorderColor(String? sourceName) {
-    return sourceColors[sourceName] ??
-        Color(0xFFB0BEC5); // Универсальный серый по умолчанию
+    return sourceColors[sourceName] ?? Color(0xFFB0BEC5); // Универсальный серый по умолчанию
   }
 
   Widget _buildHourglassIcon() {
@@ -152,167 +172,207 @@ class _LeadCardState extends State<LeadCard>
     Color borderColor = getBorderColor(widget.lead.source?.name);
 
     return GestureDetector(
-        onTap: () {},
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: shouldBlink
-              ? TaskCardStyles.taskCardDecoration.copyWith(
-                  border: Border.all(
-                    color: borderColor,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: borderColor,
-                      blurRadius: 6,
-                      spreadRadius: 1,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LeadDetailsScreen(
+              leadId: widget.lead.id.toString(),
+              leadName: widget.lead.name,
+              leadStatus: dropdownValue,
+              statusId: statusId,
+            ),
+          ),
+        );
+      },
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: shouldBlink
+                ? TaskCardStyles.taskCardDecoration.copyWith(
+                    border: Border.all(
+                      color: borderColor.withOpacity(_fadeAnimation.value),
+                      width: 2,
                     ),
-                  ],
-                )
-              : TaskCardStyles.taskCardDecoration,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  text: widget.lead.name,
-                  style: TaskCardStyles.titleStyle,
-                  children: const <TextSpan>[
-                    TextSpan(
-                      text: '\n\u200B',
-                      style: TaskCardStyles.titleStyle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: borderColor.withOpacity(_fadeAnimation.value * 0.3),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  )
+                : TaskCardStyles.taskCardDecoration,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    text: widget.lead.name,
+                    style: TaskCardStyles.titleStyle,
+                    children: const <TextSpan>[
+                      TextSpan(
+                        text: '\n\u200B',
+                        style: TaskCardStyles.titleStyle,
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('column'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xfff99A4BA),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            DropdownBottomSheet(
+                              context,
+                              dropdownValue,
+                              (String newValue, int newStatusId) {
+                                setState(() {
+                                  dropdownValue = newValue;
+                                  statusId = newStatusId;
+                                });
+                                widget.onStatusId(newStatusId);
+                                widget.onStatusUpdated();
+                              },
+                              widget.lead,
+                            );
+                          },
+                          child: Container(
+                            key: widget.dropdownStatusKey,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Color(0xff1E2E52),
+                                  width: 0.2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    constraints: BoxConstraints(maxWidth: 200),
+                                    child: Text(
+                                      dropdownValue,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Image.asset(
+                                    'assets/icons/tabBar/dropdown.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('column'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xfff99A4BA),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        ClipOval(
+                          child: Image.asset(
+                            iconPath,
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          key: widget.dropdownStatusKey,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Color(0xff1E2E52),
-                                width: 0.2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            child: Row(
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.lead.source?.name ?? '',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                   // Заменяем секцию с кружочками в Column внутри build
+Row(
+  mainAxisAlignment: MainAxisAlignment.start,
+  children: [
+    // Проверяем, есть ли mainPageDeals и отображаем кружочки
+    if (widget.lead.mainPageDeals != null && widget.lead.mainPageDeals!.isNotEmpty)
+      ...widget.lead.mainPageDeals!.map((deal) {
+        return Row(
+          children: [
+            _buildDealCount(deal.statusColor, deal.count),
+            if (deal != widget.lead.mainPageDeals!.last) const SizedBox(width: 2),
+          ],
+        );
+      }).toList(),
+    // Если mainPageDeals пустой, показываем пустые кружочки для обратной совместимости
+    if (widget.lead.mainPageDeals == null || widget.lead.mainPageDeals!.isEmpty)
+      ...[
+        _buildDealCount('#000000', 0), // Пустой кружочек
+        _buildDealCount('#000000', 0), // Пустой кружочек
+        _buildDealCount('#000000', 0), // Пустой кружочек
+      ],
+  ],
+),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            _buildHourglassIcon(),
+                            Row(
                               children: [
-                                const SizedBox(width: 8),
                                 Image.asset(
-                                  'assets/icons/tabBar/dropdown.png',
-                                  width: 20,
-                                  height: 20,
+                                  'assets/icons/tabBar/date.png',
+                                  width: 18,
+                                  height: 18,
+                                ),
+                                Text(
+                                  ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff99A4BA),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      ClipOval(
-                        child: Image.asset(
-                          iconPath,
-                          width: 28,
-                          height: 28,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.lead.source?.name ?? '',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  // Заменяем секцию с кружочками в Column внутри build
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      // Проверяем, есть ли mainPageDeals и отображаем кружочки
-                      if (widget.lead.mainPageDeals != null &&
-                          widget.lead.mainPageDeals!.isNotEmpty)
-                        ...widget.lead.mainPageDeals!.map((deal) {
-                          return Row(
-                            children: [
-                              _buildDealCount(deal.statusColor, deal.count),
-                              if (deal != widget.lead.mainPageDeals!.last)
-                                const SizedBox(width: 2),
-                            ],
-                          );
-                        }).toList(),
-                      // Если mainPageDeals пустой, показываем пустые кружочки для обратной совместимости
-                      if (widget.lead.mainPageDeals == null ||
-                          widget.lead.mainPageDeals!.isEmpty) ...[
-                        _buildDealCount('#000000', 0), // Пустой кружочек
-                        _buildDealCount('#000000', 0), // Пустой кружочек
-                        _buildDealCount('#000000', 0), // Пустой кружочек
-                      ],
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          _buildHourglassIcon(),
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/icons/tabBar/date.png',
-                                width: 18,
-                                height: 18,
-                              ),
-                              Text(
-                                ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff99A4BA),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Container(
+                          const SizedBox(width: 12),
+                   Flexible(
+      child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -333,13 +393,16 @@ class _LeadCardState extends State<LeadCard>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ));
+                   ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }
