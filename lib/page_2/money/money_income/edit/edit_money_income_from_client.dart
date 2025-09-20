@@ -212,16 +212,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                   }
                 });
               },
-            ),
-            // Добавлен слушатель для GetAllLeadBloc - ИСПРАВЛЕНИЕ
-            BlocListener<GetAllLeadBloc, GetAllLeadState>(
-              listener: (context, state) {
-                if (state is GetAllLeadError && mounted) {
-                  print('Lead loading error: ${state.toString()}');
-                  _showSnackBar('Ошибка загрузки лидов', false);
-                }
-              },
-            ),
+            )
           ],
           child: Form(
             key: _formKey,
@@ -236,7 +227,6 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                         const SizedBox(height: 8),
                         _buildApproveButton(localizations),
                         const SizedBox(height: 16),
-                        // Заменен на безопасный виджет - ИСПРАВЛЕНИЕ
                         _buildLeadSelection(),
                         const SizedBox(height: 16),
                         _buildDateField(localizations),
@@ -244,14 +234,9 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                         CashRegisterGroupWidget(
                           selectedCashRegisterId: selectedCashRegister?.id.toString(),
                           onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                            try {
-                              setState(() {
-                                selectedCashRegister = selectedRegionData;
-                              });
-                            } catch (e) {
-                              print('Error selecting cash register: $e');
-                              _showSnackBar('Ошибка выбора кассы', false);
-                            }
+                            setState(() {
+                              selectedCashRegister = selectedRegionData;
+                            });
                           },
                         ),
                         const SizedBox(height: 16),
@@ -315,19 +300,9 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         return LeadRadioGroupWidget(
           selectedLead: selectedLead,
           onSelectLead: (LeadData selectedRegionData) {
-            try {
-              print('Selected lead data: ${selectedRegionData.toString()}'); // Для отладки
-              if (selectedRegionData.id != null) {
-                setState(() {
-                  selectedLead = selectedRegionData.id.toString();
-                });
-              } else {
-                throw Exception('Lead ID is null');
-              }
-            } catch (e) {
-              print('Error selecting lead: $e');
-              _showSnackBar('Ошибка выбора лида: $e', false);
-            }
+            setState(() {
+              selectedLead = selectedRegionData.id.toString();
+            });
           },
         );
       },

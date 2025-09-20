@@ -148,6 +148,15 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['paymentMethod'] != null ||
             (widget.currentFilters['managers'] != null &&
                 widget.currentFilters['managers'].isNotEmpty));
+    
+    _isIncomeFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['date_from'] != null ||
+            widget.currentFilters['date_to'] != null ||
+            widget.currentFilters['supplier_id'] != null ||
+            widget.currentFilters['storage_id'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['author_id'] != null ||
+            widget.currentFilters['deleted'] != null);
   }
 
   Future<void> _checkPermissions() async {
@@ -593,7 +602,7 @@ Future<void> _scanBarcode() async {
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isGoodsFiltering ? _iconColor : null,
+                color: _isIncomeFiltering ? _iconColor : null,
               ),
             ),
             onPressed: () {
@@ -807,7 +816,10 @@ void navigateToOrderFilterScreen(BuildContext context) {
     }
 
     if (widget.currentFilters.containsKey('deleted')) {
-      initialIsDeleted = widget.currentFilters['deleted'] as bool?;
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue  == '1';
+      }
     }
 
     Navigator.push(

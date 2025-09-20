@@ -201,7 +201,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               },
               onClickProfileAvatar: () {},
               clearButtonClickFiltr: (bool p1) {},
-              currentFilters: {},
+              currentFilters: _currentFilters,
             ),
           ),
           body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(

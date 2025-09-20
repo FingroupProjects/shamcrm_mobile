@@ -433,7 +433,9 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                                 });
                               },
                             selectedstatusMethod: _selectedStatus != null
-                                ? _getStatusDisplayText(_selectedStatus!)
+                                ? (_selectedStatus == "1" 
+                                    ? AppLocalizations.of(context)!.translate('approved')
+                                    : AppLocalizations.of(context)!.translate('not_approved'))
                                 : null),
                       ),
                     ),
@@ -475,9 +477,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                                 _isDeleted = value == AppLocalizations.of(context)!.translate('deleted');
                               });
                             },
-                            // selectedstatusMethod: _selectedStatus != null
-                            //     ? _getStatusDisplayText(_selectedStatus!)
-                            //     : null
+                            selectedstatusMethod: _isDeleted != null
+                                ? (_isDeleted == true 
+                                    ? AppLocalizations.of(context)!.translate('deleted')
+                                    : AppLocalizations.of(context)!.translate('not_deleted'))
+                                : null
                         ),
                       ),
                     ),

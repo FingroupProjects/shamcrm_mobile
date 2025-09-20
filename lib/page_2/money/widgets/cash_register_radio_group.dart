@@ -51,9 +51,10 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
         selectedCashRegisterData = cashRegistersList.firstWhere(
               (register) => register.id.toString() == widget.selectedCashRegisterId,
         );
-        if (selectedCashRegisterData?.id != null) {
-          widget.onSelectCashRegister(selectedCashRegisterData!);
-        }
+        // Убираем автоматический вызов callback - это вызывает setState during build
+        // if (selectedCashRegisterData?.id != null) {
+        //   widget.onSelectCashRegister(selectedCashRegisterData!);
+        // }
       } catch (e) {
         // selectedCashRegisterData = null;
       }
