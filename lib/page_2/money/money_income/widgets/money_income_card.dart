@@ -21,7 +21,9 @@ class MoneyIncomeCard extends StatelessWidget {
 
   String _formatAmount(dynamic amount) {
     if (amount == null) return '0.00';
-    double amountValue = amount is String ? double.tryParse(amount) ?? 0.0 : amount.toDouble();
+    double amountValue = amount is String
+        ? double.tryParse(amount) ?? 0.0
+        : amount.toDouble();
     return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
   }
 
@@ -36,7 +38,7 @@ class MoneyIncomeCard extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    return document.approved == false ? Colors.orange: Colors.green;
+    return document.approved == false ? Colors.orange : Colors.green;
   }
 
   @override
@@ -63,7 +65,8 @@ class MoneyIncomeCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${localizations.translate('income') ?? 'Доход'} №${document.docNumber}',
+                    '${localizations.translate('income') ?? 'Доход'} №${document
+                        .docNumber}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -75,7 +78,8 @@ class MoneyIncomeCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: _getStatusColor().withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
@@ -107,7 +111,8 @@ class MoneyIncomeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localizations.translate('amount') ?? 'Сумма'}: ${_formatAmount(document.amount)}',
+              '${localizations.translate('amount') ?? 'Сумма'}: ${_formatAmount(
+                  document.amount)}',
               style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -115,10 +120,12 @@ class MoneyIncomeCard extends StatelessWidget {
                 color: Color(0xff1E2E52),
               ),
             ),
-            if (document.model != null && document.model!.name != null && document.model!.name!.isNotEmpty) ...[
+            if (document.model != null && document.model!.name != null &&
+                document.model!.name!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                '${localizations.translate('client') ?? 'Клиент'}: ${document.model!.name}',
+                '${localizations.translate('client') ?? 'Клиент'}: ${document
+                    .model!.name}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
@@ -127,17 +134,18 @@ class MoneyIncomeCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (document.operationType != null && document.operationType == OperationType.send_another_cash_register.name) ...[
+            if (document.operationType != null && document.operationType ==
+                OperationType.send_another_cash_register.name) ...[
               const SizedBox(height: 8),
-                Text(
-                  'Получение с другой кассы: ${document.cashRegister!.name}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
-                )
+              Text(
+                'Получение с другой кассы: ${document.cashRegister!.name}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff99A4BA),
+                ),
+              )
             ],
           ],
         ),
@@ -149,15 +157,13 @@ class MoneyIncomeCard extends StatelessWidget {
     if (document.id != null && onDelete != null) {
       showDialog(
         context: context,
-        builder: (_) => BlocProvider.value(
-          value: context.read<MoneyIncomeBloc>(), // reuse the same instance
-          child: MoneyIncomeDeleteDialog(documentId: document.id!),
-        ),
-      ).then((result) {
-        if (result == true) {
-          onDelete!(document.id!);
-        }
-      });
+        builder: (_) =>
+            BlocProvider.value(
+              value: context.read<MoneyIncomeBloc>(),
+              child: MoneyIncomeDeleteDialog(
+                  documentId: document.id!, onDelete: onDelete),
+            ),
+      );
     }
   }
 }
