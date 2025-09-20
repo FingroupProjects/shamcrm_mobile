@@ -119,7 +119,7 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
       id: widget.document.id,
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.receive_another_cash_register.name,
+      operationType: OperationType.send_another_cash_register.name,
       comment: _commentController.text.trim(),
       cashRegisterId: selectedCashRegister?.id.toString(),
       senderCashRegisterId: selectedSenderCashRegister?.id.toString(),

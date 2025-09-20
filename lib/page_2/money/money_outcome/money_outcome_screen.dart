@@ -181,10 +181,10 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       case OperationType.client_payment:
         targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
-      case OperationType.receive_another_cash_register:
+      case OperationType.send_another_cash_register:
         targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
         break;
-      case OperationType.other_outcomes:
+      case OperationType.other_incomes:
         targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
       case OperationType.return_supplier:

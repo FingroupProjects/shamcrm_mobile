@@ -66,7 +66,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
       cashRegisterId: selectedCashRegister!.id.toString(),
       senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
       comment: _commentController.text.trim(),
-      operationType: OperationType.receive_another_cash_register.name,
+      operationType: OperationType.send_another_cash_register.name,
     ));
   }
 

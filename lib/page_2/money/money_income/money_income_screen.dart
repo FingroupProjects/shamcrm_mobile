@@ -180,7 +180,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       case OperationType.client_payment:
         targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
-      case OperationType.receive_another_cash_register:
+      case OperationType.send_another_cash_register:
         targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
       case OperationType.other_incomes:

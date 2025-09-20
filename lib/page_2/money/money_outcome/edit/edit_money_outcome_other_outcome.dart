@@ -143,7 +143,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.other_outcomes.name,
+        operationType: OperationType.other_incomes.name,
         leadId: selectedLead != null ? int.parse(selectedLead!) : null,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id.toString(),
