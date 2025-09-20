@@ -776,8 +776,8 @@ void navigateToOrderFilterScreen(BuildContext context) {
 
   void navigateToIncomeFilterScreen(BuildContext context) {
     if (kDebugMode) {
-      print('CustomAppBarPage2: Переход к экрану фильтров доходов');
-      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+      // print('CustomAppBarPage2: Переход к экрану фильтров доходов');
+      // print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
     }
 
     DateTime? initialFromDate = widget.currentFilters['date_from'];

@@ -217,6 +217,15 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
+
+      // choose from date 00:00:00 and to date 23:59:59
+      if (_fromDate != null) {
+        _fromDate = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day, 0, 0, 0);
+      }
+      if (_toDate != null) {
+        _toDate = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
+      }
+
       final filters = {
         'date_from': _fromDate,
         'date_to': _toDate,
