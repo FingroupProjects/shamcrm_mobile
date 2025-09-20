@@ -74,47 +74,118 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     });
 
-    _initializeWithInternetCheck();
+    // Запускаем инициализацию асинхронно
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeWithInternetCheck();
+    });
   }
 
   Future<void> _initializeWithInternetCheck() async {
-    print('PinScreen: Initializing with internet check');
-    // Очищаем кэш воронок при входе в PinScreen
-    await _apiService.clearCachedSalesFunnels();
-    await _ensureInternetConnection();
+    try {
+      print('PinScreen: Initializing with internet check');
+      
+      // Показываем индикатор загрузки
+      setState(() {
+        _isLoading = true;
+      });
 
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      // Очищаем кэш воронок при входе в PinScreen
+      await _apiService.clearCachedSalesFunnels();
+      
+      // Проверяем интернет соединение
+      await _ensureInternetConnection();
 
-    await _loadUserPhone();
-    setState(() {
-      _isLoading = false;
-    });
+      // Запускаем разрешения
+      if (mounted) {
+        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      }
 
-    await _loadUserRoleId();
-    _checkSavedPin();
-    _initBiometrics();
-    await _fetchMiniAppSettings();
-    await _fetchTutorialProgress();
-    await _fetchSettings();
+      // Загружаем данные пользователя параллельно
+      await Future.wait([
+        _loadUserPhone(),
+        _loadUserRoleId(),
+        _fetchMiniAppSettings(),
+        _fetchTutorialProgress(),
+        _fetchSettings(),
+      ]);
+
+      // Проверяем PIN и инициализируем биометрию
+      await _checkSavedPin();
+      await _initBiometrics();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      
+    } catch (e) {
+      print('PinScreen: Error during initialization: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog('Ошибка инициализации', e.toString());
+      }
+    }
   }
 
-  // Остальные методы без изменений
+  // Метод для показа ошибок пользователю
+  void _showErrorDialog(String title, String message) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text('Произошла ошибка. Попробуйте перезапустить приложение.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              SystemNavigator.pop();
+            },
+            child: Text('Закрыть приложение'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeWithInternetCheck(); // Повторная попытка
+            },
+            child: Text('Повторить'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _ensureInternetConnection() async {
     bool hasInternet = false;
-    while (!hasInternet) {
+    int attempts = 0;
+    const maxAttempts = 3;
+
+    while (!hasInternet && attempts < maxAttempts && mounted) {
+      attempts++;
       var connectivityResult = await (Connectivity().checkConnectivity());
+      
       if (connectivityResult == ConnectivityResult.none) {
-        await _showNoInternetDialog(context);
+        if (mounted) {
+          await _showNoInternetDialog(context);
+        }
       } else {
         try {
           final result = await InternetAddress.lookup('google.com').timeout(Duration(seconds: 5));
           if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
             hasInternet = true;
           } else {
-            await _showNoInternetDialog(context);
+            if (mounted) {
+              await _showNoInternetDialog(context);
+            }
           }
         } catch (e) {
-          await _showNoInternetDialog(context);
+          if (mounted) {
+            await _showNoInternetDialog(context);
+          }
         }
       }
     }
@@ -193,34 +264,37 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     }
   }
-Future<void> _initBiometrics() async {
-  final localizations = AppLocalizations.of(context)!;
 
-  try {
-    _canCheckBiometrics = await _auth.canCheckBiometrics;
+  Future<void> _initBiometrics() async {
+    try {
+      final localizations = AppLocalizations.of(context);
+      if (localizations == null) return;
 
-    if (_canCheckBiometrics) {
-      _availableBiometrics = await _auth.getAvailableBiometrics();
-      if (_availableBiometrics.isNotEmpty) {
-        if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
-          _authenticate();
-        } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
-          _authenticate();
+      _canCheckBiometrics = await _auth.canCheckBiometrics;
+
+      if (_canCheckBiometrics) {
+        _availableBiometrics = await _auth.getAvailableBiometrics();
+        if (_availableBiometrics.isNotEmpty) {
+          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
+            _authenticate();
+          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
+            _authenticate();
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.translate('biometric_unavailable')),
+            ),
+          );
         }
       }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')),
-          ),
-        );
-      }
+    } on PlatformException catch (e) {
+      debugPrint('Ошибка инициализации биометрии: $e');
     }
-  } on PlatformException catch (e) {
-    debugPrint('Ошибка инициализации биометрии!');
   }
-}
+
   Future<void> _loadUserRoleId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -243,13 +317,13 @@ Future<void> _initBiometrics() async {
         });
       }
 
-      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-      print('PinScreen: Dispatched FetchTaskStatuses');
-      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-
       if (mounted) {
+        BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+        BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+        BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+        print('PinScreen: Dispatched FetchTaskStatuses');
+        BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+
         setState(() {
           isPermissionsLoaded = true;
         });
@@ -265,26 +339,26 @@ Future<void> _initBiometrics() async {
   }
 
   Future<void> _loadUserPhone() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    String? savedUserName = prefs.getString('userName');
-    String? savedUserNameProfile = prefs.getString('userNameProfile');
-    String? savedUserImage = prefs.getString('userImage');
-
-    if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-      if (mounted) {
-        setState(() {
-          _userName = savedUserName;
-          _userNameProfile = savedUserNameProfile;
-          _userImage = savedUserImage;
-        });
-      }
-      return;
-    }
-
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? '';
+
+      String? savedUserName = prefs.getString('userName');
+      String? savedUserNameProfile = prefs.getString('userNameProfile');
+      String? savedUserImage = prefs.getString('userImage');
+
+      if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+        if (mounted) {
+          setState(() {
+            _userName = savedUserName;
+            _userNameProfile = savedUserNameProfile;
+            _userImage = savedUserImage;
+          });
+        }
+        return;
+      }
+
+      SharedPreferences prefsAgain = await SharedPreferences.getInstance();
+      String UUID = prefsAgain.getString('userID') ?? '';
       
       print('PinScreen: userID: $UUID');
 
@@ -314,19 +388,22 @@ Future<void> _initBiometrics() async {
   }
 
   Future<void> _checkSavedPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPin = prefs.getString('user_pin');
-    if (savedPin == null) {
-      if (mounted) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPin = prefs.getString('user_pin');
+      if (savedPin == null && mounted) {
         Navigator.of(context).pushReplacementNamed('/pin_setup');
       }
+    } catch (e) {
+      print('PinScreen: Error checking saved PIN: $e');
     }
   }
 
   Future<void> _authenticate() async {
-    final localizations = AppLocalizations.of(context)!;
-
     try {
+      final localizations = AppLocalizations.of(context);
+      if (localizations == null) return;
+
       if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -356,17 +433,26 @@ Future<void> _initBiometrics() async {
   }
 
   void _navigateToHome() {
+    if (!mounted) return;
+    
+    // Выполняем навигацию и обработку сообщений асинхронно
     Future.delayed(Duration(milliseconds: 10), () {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (tutorialProgress == null) {
-          await _fetchTutorialProgress();
-        }
-        if (widget.initialMessage != null) {
-          await _firebaseApi.handleMessage(widget.initialMessage!);
-        }
-      });
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            if (tutorialProgress == null) {
+              await _fetchTutorialProgress();
+            }
+            if (widget.initialMessage != null) {
+              await _firebaseApi.handleMessage(widget.initialMessage!);
+            }
+          } catch (e) {
+            print('PinScreen: Error in post frame callback: $e');
+          }
+        });
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     });
-    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _onNumberPressed(String number) async {
@@ -375,8 +461,12 @@ Future<void> _initBiometrics() async {
         _pin += number;
       });
 
-      if (await Vibration.hasVibrator() ?? false) {
-        Vibration.vibrate(duration: 50);
+      try {
+        if (await Vibration.hasVibrator() ?? false) {
+          Vibration.vibrate(duration: 50);
+        }
+      } catch (e) {
+        // Игнорируем ошибки вибрации
       }
 
       if (_pin.length == 4) {
@@ -395,9 +485,14 @@ Future<void> _initBiometrics() async {
   }
 
   void _triggerErrorEffect() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 200);
+    try {
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 200);
+      }
+    } catch (e) {
+      // Игнорируем ошибки вибрации
     }
+    
     setState(() {
       _isWrongPin = true;
       _pin = '';
@@ -434,7 +529,8 @@ Future<void> _initBiometrics() async {
 
   String getGreetingMessage() {
     final hour = DateTime.now().hour;
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) return 'Добро пожаловать!';
 
     if (hour >= 5 && hour < 11) {
       return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
@@ -449,7 +545,41 @@ Future<void> _initBiometrics() async {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Показываем индикатор загрузки
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Инициализация...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -576,8 +706,7 @@ Future<void> _initBiometrics() async {
       ),
     );
   }
-
-  Future<void> _showNoInternetDialog(BuildContext context) async {
+   Future<void> _showNoInternetDialog(BuildContext context) async {
     final localizations = AppLocalizations.of(context);
     return showDialog(
       context: context,
