@@ -27,11 +27,15 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showManualInput = false;
   bool _showPasswordField = false;  
   String _verifiedLogin = '';
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkDomain();
+    // Запускаем проверку домена асинхронно
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkDomainAsync();
+    });
   }
 
   @override
@@ -47,12 +51,25 @@ class _AuthScreenState extends State<AuthScreen> {
         .hasMatch(email);
   }
 
-  // Check domain status
-  Future<void> _checkDomain() async {
-    final isChecked = await context.read<ApiService>().isDomainChecked();
-    setState(() {
-      _isDomainChecked = isChecked;
-    });
+  // Асинхронная проверка домена
+  Future<void> _checkDomainAsync() async {
+    try {
+      final isChecked = await context.read<ApiService>().isDomainChecked();
+      if (mounted) {
+        setState(() {
+          _isDomainChecked = isChecked;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('AuthScreen: Error checking domain: $e');
+      if (mounted) {
+        setState(() {
+          _isDomainChecked = false;
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -61,6 +78,32 @@ class _AuthScreenState extends State<AuthScreen> {
     if (localizations == null) {
       return Scaffold(
         body: Center(child: Text('Localization not available')),
+      );
+    }
+
+    // Показываем индикатор загрузки пока проверяется домен
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Проверка конфигурации...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -112,26 +155,36 @@ class _AuthScreenState extends State<AuthScreen> {
                           icon: const Icon(Icons.qr_code_scanner,
                               size: 120, color: Color(0xff1E2E52)),
                           onPressed: () async {
-                            final scanResult = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => QrScannerScreen()),
-                            );
-                            if (scanResult != null && scanResult is String) {
-                              if (_isValidEmail(scanResult)) {
-                                setState(() {
-                                  _showManualInput = true;
-                                  emailController.text = scanResult;
-                                  _showPasswordField = false;
-                                  _verifiedLogin = '';
-                                });
-                                context
-                                    .read<DomainBloc>()
-                                    .add(CheckEmail(scanResult));
-                              } else {
+                            try {
+                              final scanResult = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => QrScannerScreen()),
+                              );
+                              if (scanResult != null && scanResult is String && mounted) {
+                                if (_isValidEmail(scanResult)) {
+                                  setState(() {
+                                    _showManualInput = true;
+                                    emailController.text = scanResult;
+                                    _showPasswordField = false;
+                                    _verifiedLogin = '';
+                                  });
+                                  context
+                                      .read<DomainBloc>()
+                                      .add(CheckEmail(scanResult));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Неверный адрес электронной почты в QR-коде')),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              print('AuthScreen: Error with QR scan: $e');
+                              if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text('Неверный адрес электронной почты в QR-коде')),
+                                      content: Text('Ошибка сканирования QR-кода')),
                                 );
                               }
                             }
@@ -218,33 +271,44 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           BlocConsumer<DomainBloc, DomainState>(
                             listener: (context, state) async {
-                              if (state is DomainError) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(state.message)),
-                                );
-                              } else if (state is EmailVerified) {
-                                setState(() {
-                                  _showPasswordField = true;
-                                  _verifiedLogin = state.login;
-                                });
-                                await context
-                                    .read<ApiService>()
-                                    .initializeWithEmailFlow();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        const Icon(Icons.check_circle,
-                                            color: Colors.white, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(localizations
-                                            .translate('Email успешно подтверждена')),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 3),
-                                  ),
-                                );
+                              try {
+                                if (state is DomainError) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(state.message)),
+                                  );
+                                } else if (state is EmailVerified) {
+                                  setState(() {
+                                    _showPasswordField = true;
+                                    _verifiedLogin = state.login;
+                                  });
+                                  await context
+                                      .read<ApiService>()
+                                      .initializeWithEmailFlow();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.check_circle,
+                                                color: Colors.white, size: 20),
+                                            const SizedBox(width: 8),
+                                            Text(localizations
+                                                .translate('Email успешно подтверждена')),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                print('AuthScreen: Error in domain listener: $e');
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Произошла ошибка при проверке email')),
+                                  );
+                                }
                               }
                             },
                             builder: (context, domainState) {
@@ -258,7 +322,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   );
                                 }
                                 return CustomButton(
-                                  buttonText: localizations.translate('Прододжить'),
+                                  buttonText: localizations.translate('Продолжить'),
                                   buttonColor: const Color(0xff4F40EC),
                                   textColor: Colors.white,
                                   onPressed: () {
@@ -284,23 +348,34 @@ class _AuthScreenState extends State<AuthScreen> {
                                 );
                               }
                               return BlocConsumer<LoginBloc, LoginState>(
-  listener: (context, loginState) async {
-    if (loginState is LoginLoaded) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userName', loginState.user.name.toString());
-      await prefs.setString('userID', loginState.user.id.toString());
-      await prefs.setString('userLogin', loginState.user.login.toString());
-      final organizationId = await context.read<ApiService>().getSelectedOrganization();
-      print('AuthScreen: Login successful, organization_id: $organizationId');
-      await Future.delayed(const Duration(seconds: 2));
-      await _checkPinSetupStatus(context);
-    } else if (loginState is LoginError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loginState.message)),
-      );
-    }
-  },
-  builder: (context, loginState) {
+                                listener: (context, loginState) async {
+                                  try {
+                                    if (loginState is LoginLoaded) {
+                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                      await prefs.setString('userName', loginState.user.name.toString());
+                                      await prefs.setString('userID', loginState.user.id.toString());
+                                      await prefs.setString('userLogin', loginState.user.login.toString());
+                                      final organizationId = await context.read<ApiService>().getSelectedOrganization();
+                                      print('AuthScreen: Login successful, organization_id: $organizationId');
+                                      await Future.delayed(const Duration(seconds: 2));
+                                      if (mounted) {
+                                        await _checkPinSetupStatus(context);
+                                      }
+                                    } else if (loginState is LoginError) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(loginState.message)),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    print('AuthScreen: Error in login listener: $e');
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Ошибка входа в систему')),
+                                      );
+                                    }
+                                  }
+                                },
+                                builder: (context, loginState) {
                                   if (loginState is LoginLoading ||
                                       loginState is LoginLoaded) {
                                     return const Center(
@@ -380,15 +455,27 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-Future<void> _checkPinSetupStatus(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
+  Future<void> _checkPinSetupStatus(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
 
-    if (!isPinSetupComplete) {
-      await prefs.setBool('isPinSetupComplete', true);
-      Navigator.pushReplacementNamed(context, '/pin_setup');
-    } else {
-      Navigator.pushReplacementNamed(context, '/pin_screen');
+      if (!isPinSetupComplete) {
+        await prefs.setBool('isPinSetupComplete', true);
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/pin_setup');
+        }
+      } else {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/pin_screen');
+        }
+      }
+    } catch (e) {
+      print('AuthScreen: Error checking PIN setup status: $e');
+      if (mounted) {
+        // Fallback - идем на pin_setup
+        Navigator.pushReplacementNamed(context, '/pin_setup');
+      }
     }
-}
+  }
 }

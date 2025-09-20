@@ -304,21 +304,37 @@ Widget build(BuildContext context) {
                             lead: leads[index],
                             title: widget.title,
                             statusId: widget.statusId,
-                            onStatusUpdated: () async {
-                              print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
-                              final newStatusId = leads[index].statusId;
-                              if (newStatusId != widget.statusId) {
-                                await LeadCache.moveLeadToStatus(
-                                  leads[index],
-                                  widget.statusId,
-                                  newStatusId,
-                                );
-                                print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
-                                await LeadCache.updateLeadCountTemporary(widget.statusId, newStatusId);
-                                final currentBloc = BlocProvider.of<LeadBloc>(context);
-                                currentBloc.add(RestoreCountsFromCache());
-                              }
-                            },
+                        // Исправленный метод onStatusUpdated в LeadColumn
+onStatusUpdated: () async {
+  // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: проверяем mounted перед любыми асинхронными операциями
+  if (!mounted) return;
+  
+  print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
+  final newStatusId = leads[index].statusId;
+  
+  if (newStatusId != widget.statusId) {
+    await LeadCache.moveLeadToStatus(
+      leads[index],
+      widget.statusId,
+      newStatusId,
+    );
+    
+    if (!mounted) return; // Проверяем mounted после асинхронной операции
+    
+    print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
+    await LeadCache.updateLeadCountTemporary(widget.statusId, newStatusId);
+    
+    if (!mounted) return; // Еще одна проверка
+    
+    // ИСПРАВЛЕНИЕ: безопасное обращение к Provider
+    try {
+      final currentBloc = context.read<LeadBloc>();
+      currentBloc.add(RestoreCountsFromCache());
+    } catch (e) {
+      print('LeadColumn: Error accessing LeadBloc after widget disposal: $e');
+    }
+  }
+},
                             onStatusId: (StatusLeadId) {
                               print(
                                   'LeadColumn: onStatusId called with id: $StatusLeadId');

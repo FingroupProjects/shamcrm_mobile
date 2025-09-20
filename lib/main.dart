@@ -129,54 +129,167 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final apiService = ApiService();
-  final authService = AuthService();
-  final bool isDomainChecked = await apiService.isDomainChecked();
-  if (isDomainChecked) {
-    await apiService.initialize();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Инициализация Firebase с проверкой
+    await _initializeFirebase();
+    
+    // Инициализация сервисов
+    final apiService = ApiService();
+    final authService = AuthService();
+    
+    // Проверка домена
+    final bool isDomainChecked = await apiService.isDomainChecked();
+    if (isDomainChecked) {
+      await apiService.initialize();
+    }
+    
+    // Получение токена и PIN
+    final String? token = await apiService.getToken();
+    final String? pin = await authService.getPin();
+
+    // App Tracking Transparency
+    await AppTrackingTransparency.requestTrackingAuthorization();
+
+    // Firebase Messaging инициализация
+    await _initializeFirebaseMessaging(apiService);
+
+    // UI настройки
+    SystemChrome.setSystemUIOverlayStyle( 
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+      ),
+    );
+
+    // Языковые настройки
+    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    final Locale savedLocale = savedLanguageCode != null
+        ? Locale(savedLanguageCode)
+        : const Locale('ru');
+
+    runApp(MyApp(
+      apiService: apiService,
+      authService: authService,
+      isDomainChecked: isDomainChecked,
+      token: token,
+      pin: pin,
+      initialLocale: savedLocale,
+      initialMessage: null, // Инициализируем как null, получим позже
+    ));
+  } catch (e, stackTrace) {
+    print('Критическая ошибка при запуске приложения: $e');
+    print('StackTrace: $stackTrace');
+    
+    // Показываем экран ошибки вместо краша
+    runApp(ErrorApp(error: e.toString()));
   }
-  final String? token = await apiService.getToken();
-  final String? pin = await authService.getPin();
-
-  await AppTrackingTransparency.requestTrackingAuthorization();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await FirebaseMessaging.instance.requestPermission();
-  await getFCMTokens(apiService);
-
-  FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
-  RemoteMessage? initialMessage = firebaseApi.getInitialMessage();
-
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-    ),
-  );
-
-  final String? savedLanguageCode = await LanguageManager.getLanguage();
-  final Locale savedLocale = savedLanguageCode != null
-      ? Locale(savedLanguageCode)
-      : const Locale('ru');
-
-  runApp(MyApp(
-    apiService: apiService,
-    authService: authService,
-    isDomainChecked: isDomainChecked,
-    token: token,
-    pin: pin,
-    initialLocale: savedLocale,
-    initialMessage: initialMessage,
-  ));
 }
 
-Future<void> getFCMTokens(ApiService apiService) async {}
+// Безопасная инициализация Firebase
+Future<void> _initializeFirebase() async {
+  try {
+    // Проверяем, не инициализирован ли уже Firebase
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('Firebase успешно инициализирован');
+    } else {
+      print('Firebase уже инициализирован');
+    }
+  } catch (e) {
+    print('Ошибка инициализации Firebase: $e');
+    // Не бросаем исключение, продолжаем работу без Firebase
+  }
+}
+
+// Безопасная инициализация Firebase Messaging
+Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      await FirebaseMessaging.instance.requestPermission();
+      await getFCMTokens(apiService);
+
+      FirebaseApi firebaseApi = FirebaseApi();
+      await firebaseApi.initNotifications();
+      
+      // Получение initial message перенесено в отдельный метод
+    }
+  } catch (e) {
+    print('Ошибка инициализации Firebase Messaging: $e');
+    // Продолжаем работу без push уведомлений
+  }
+}
+
+Future<void> getFCMTokens(ApiService apiService) async {
+  try {
+    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      print('FCM Token получен: ${fcmToken.substring(0, 20)}...');
+      // Отправка токена в API может быть выполнена позже
+    }
+  } catch (e) {
+    print('Ошибка получения FCM токена: $e');
+  }
+}
+
+// Экран ошибки для критических сбоев
+class ErrorApp extends StatelessWidget {
+  final String error;
+  
+  const ErrorApp({Key? key, required this.error}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: Colors.red,
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Ошибка запуска приложения',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Пожалуйста, перезапустите приложение',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    SystemNavigator.pop(); // Закрыть приложение
+                  },
+                  child: Text('Закрыть'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class MyApp extends StatefulWidget {
   final ApiService apiService;
@@ -208,11 +321,34 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
+  RemoteMessage? _initialMessage;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
+    _initializeApp();
+  }
+
+  // Асинхронная инициализация компонентов
+  Future<void> _initializeApp() async {
+    try {
+      // Получаем initial message после полной инициализации Firebase
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseApi firebaseApi = FirebaseApi();
+        _initialMessage = firebaseApi.getInitialMessage();
+      }
+      
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      print('Ошибка инициализации приложения: $e');
+      setState(() {
+        _isInitialized = true; // Продолжаем работу даже с ошибкой
+      });
+    }
   }
 
   void setLocale(Locale newLocale) {
@@ -223,6 +359,25 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Показываем загрузку пока приложение инициализируется
+    if (!_isInitialized) {
+      return MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text('Инициализация...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
         Provider<ApiService>.value(value: widget.apiService),
@@ -368,7 +523,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)), 
         BlocProvider(create: (context) => MovementBloc(widget.apiService)), 
 
-      ],
+   ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
         color: Colors.white,
@@ -406,7 +561,7 @@ class _MyAppState extends State<MyApp> {
               return PinSetupScreen();
             } else {
               return PinScreen(
-                initialMessage: widget.initialMessage,
+                initialMessage: _initialMessage,
               );
             }
           },
@@ -418,8 +573,6 @@ class _MyAppState extends State<MyApp> {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/pin_screen': (context) => PinScreen(),
-          // '/phone_verification': (context) => PhoneVerificationScreen(),
-          // '/phone_call': (context) => PhoneCallScreen(),
           '/profile': (context) => ProfileScreen(),
         },
       ),
