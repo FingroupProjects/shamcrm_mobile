@@ -113,96 +113,80 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   SalesFunnel? _selectedFunnel;
   List<int>? _selectedManagerIds;
 
-@override
-void initState() {
-  super.initState();
-  print('LeadScreen: initState started');
-  
-  // Безопасная инициализация Bloc'ов
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (mounted) {
-      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-      context.read<GetAllRegionBloc>().add(GetAllRegionEv());
-      context.read<GetAllSourceBloc>().add(GetAllSourceEv());
-      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    }
-  });
+  @override
+  void initState() {
+    super.initState();
+    print('LeadScreen: initState started');
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    context.read<GetAllSourceBloc>().add(GetAllSourceEv());
+    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+    tabScrollController = ScrollController();
+    tabScrollController.addListener(_onScroll);
+    _loadFeatureState();
 
-  tabScrollController = ScrollController();
-  tabScrollController.addListener(_onScroll);
-  _loadFeatureState();
+    _apiService.getSelectedSalesFunnel().then((funnelId) {
+      if (funnelId != null && mounted) {
+        context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
+          SalesFunnel(
+            id: int.parse(funnelId),
+            name: '',
+            organizationId: 1,
+            isActive: true,
+            createdAt: '',
+            updatedAt: '',
+          ),
+        ));
+      }
+    });
 
-  // Инициализация потока с проверкой mounted
-  _initializeSalesFunnelStream();
-  _checkPermissions();
-}
+    context.read<SalesFunnelBloc>().stream.listen((state) {
+      if (state is SalesFunnelLoaded && mounted) {
+        setState(() {
+          _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        });
+        LeadCache.getLeadStatuses().then((cachedStatuses) {
+          if (cachedStatuses.isNotEmpty && mounted) {
+            setState(() {
+              _tabTitles = cachedStatuses
+                  .map((status) => {'id': status['id'], 'title': status['title']})
+                  .toList();
+              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController.index = _currentTabIndex;
 
-void _initializeSalesFunnelStream() {
-  context.read<SalesFunnelBloc>().stream.listen((state) {
-    if (!mounted) return; // Критическая проверка!
-    
-    if (state is SalesFunnelLoaded) {
-      setState(() {
-        _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-      });
-      
-      _initializeLeadStatuses();
-    }
-  });
-}
+              _tabController.addListener(() {
+                if (!_tabController.indexIsChanging) {
+                  setState(() {
+                    _currentTabIndex = _tabController.index;
+                    print('LeadScreen: Tab changed to index: $_currentTabIndex');
+                  });
+                  _scrollToActiveTab();
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  context.read<LeadBloc>().add(FetchLeads(
+                    currentStatusId,
+                    salesFunnelId: _selectedFunnel?.id,
+                    ignoreCache: true,
+                  ));
+                  print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
+                }
+              });
 
-Future<void> _initializeLeadStatuses() async {
-  if (!mounted) return;
-  
-  final cachedStatuses = await LeadCache.getLeadStatuses();
-  if (cachedStatuses.isNotEmpty && mounted) {
-    _setupTabController(cachedStatuses);
-  } else if (mounted) {
-    context.read<LeadBloc>().add(FetchLeadStatuses());
+              final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
+              context.read<LeadBloc>().add(FetchLeads(
+                currentStatusId,
+                salesFunnelId: _selectedFunnel?.id,
+                ignoreCache: true,
+              ));
+            });
+          } else {
+            context.read<LeadBloc>().add(FetchLeadStatuses());
+          }
+        });
+      }
+    });
+
+    _checkPermissions();
   }
-}
-
-void _setupTabController(List<Map<String, dynamic>> statuses) {
-  if (!mounted) return;
-  
-  setState(() {
-    _tabTitles = statuses
-        .map((status) => {'id': status['id'], 'title': status['title']})
-        .toList();
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
-    _tabController.index = _currentTabIndex;
-    
-    _tabController.addListener(_onTabChanged);
-    
-    if (_tabTitles.isNotEmpty) {
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      context.read<LeadBloc>().add(FetchLeads(
-        currentStatusId,
-        salesFunnelId: _selectedFunnel?.id,
-        ignoreCache: true,
-      ));
-    }
-  });
-}
-
-void _onTabChanged() {
-  if (!mounted || _tabController.indexIsChanging) return;
-  
-  setState(() {
-    _currentTabIndex = _tabController.index;
-  });
-  
-  _scrollToActiveTab();
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  
-  if (mounted) {
-    context.read<LeadBloc>().add(FetchLeads(
-      currentStatusId,
-      salesFunnelId: _selectedFunnel?.id,
-      ignoreCache: true,
-    ));
-  }
-}
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1614,5 +1598,4 @@ Widget _buildTabBarView() {
     super.dispose();
   }
 }
-
 

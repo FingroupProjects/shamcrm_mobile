@@ -103,6 +103,7 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
@@ -360,23 +361,26 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     // Показываем загрузку пока приложение инициализируется
-    if (!_isInitialized) {
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text('Инициализация...'),
-              ],
+  if (!_isInitialized) {
+  return MaterialApp(
+    home: Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
             ),
-          ),
+            SizedBox(height: 20),
+            Text('Инициализация...'),
+          ],
         ),
-      );
-    }
+      ),
+    ),
+  );
+}
 
     return MultiProvider(
       providers: [
