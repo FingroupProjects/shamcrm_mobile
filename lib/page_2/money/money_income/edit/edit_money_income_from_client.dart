@@ -44,7 +44,6 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
     super.initState();
     _initializeFields();
     
-    // Инициализация BLoC для загрузки лидов - ИСПРАВЛЕНИЕ
     try {
       context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     } catch (e) {
@@ -96,7 +95,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
 
     if (selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
         false,
       );
       return;
@@ -114,7 +113,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
       );
       return;
@@ -125,7 +124,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -147,7 +146,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      _showSnackBar('Ошибка обновления документа: $e', false);
+      _showSnackBar(AppLocalizations.of(context)!.translate('error_updating_document')?.replaceAll('{error}', e.toString()) ?? 'Ошибка обновления документа: $e', false);
     }
   }
 
@@ -278,7 +277,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
             child: Column(
               children: [
                 Text(
-                  'Ошибка загрузки лидов',
+                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
                   style: const TextStyle(
                     color: Colors.red,
                     fontFamily: 'Gilroy',
@@ -290,7 +289,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                   onPressed: () {
                     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   },
-                  child: const Text('Повторить'),
+                  child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
                 ),
               ],
             ),
@@ -319,7 +318,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_incoming_document') ?? 'Edit Income',
+        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -334,7 +333,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -349,8 +348,8 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -359,23 +358,23 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount') ?? 'Amount',
-        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount') ?? 'Enter amount';
+            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
           }
           
           // Улучшенная валидация - ИСПРАВЛЕНИЕ
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
           }
           
           if (doubleValue <= 0) {
-            return 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
           }
 
           return null;
@@ -385,7 +384,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
 
   Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
@@ -426,7 +425,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Закрыть',
+                AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -458,7 +457,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Сохранить',
+                AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

@@ -4,7 +4,6 @@ import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:flutter/foundation.dart';
 
 part 'money_income_event.dart';
 part 'money_income_state.dart';
@@ -92,7 +91,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         supplierId: event.supplierId,
       );
 
-      emit(const MoneyIncomeCreateSuccess('Документ успешно создан'));
+      emit(const MoneyIncomeCreateSuccess('document_created_successfully'));
     } catch (e) {
       emit(MoneyIncomeCreateError(e.toString()));
     }
@@ -114,7 +113,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         supplierId: event.supplierId,
         approved: event.approved,
       );
-      emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
+      emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {
       emit(MoneyIncomeUpdateError(e.toString()));
     }
@@ -125,9 +124,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
       if (result) {
-        emit(const MoneyIncomeDeleteSuccess('Документ успешно удален'));
+        emit(const MoneyIncomeDeleteSuccess('document_deleted_successfully'));
       } else {
-        emit(const MoneyIncomeDeleteError('Не удалось удалить документ'));
+        emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
       }
     } catch (e) {
       emit(MoneyIncomeDeleteError(e.toString()));
@@ -139,12 +138,12 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     try {
       final result = await apiService.restoreMoneyIncomeDocument(event.documentId);
       if (result['result'] == 'Success') {
-        emit(const MoneyIncomeRestoreSuccess('Документ успешно восстановлен'));
+        emit(const MoneyIncomeRestoreSuccess('document_restored_successfully'));
       } else {
-        emit(const MoneyIncomeRestoreError('Не удалось восстановить документ'));
+        emit(const MoneyIncomeRestoreError('failed_to_restore_document'));
       }
     } catch (e) {
-      emit(MoneyIncomeRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      emit(MoneyIncomeRestoreError('error_restoring_document: ${e.toString()}'));
     }
   }
 }

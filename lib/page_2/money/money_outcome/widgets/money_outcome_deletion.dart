@@ -34,7 +34,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
         ),
         content: Text(
           AppLocalizations.of(context)?.translate('delete_money_outcome_confirm') ??
-              'Вы уверены, что хотите удалить этот документ денежного дохода?',
+              AppLocalizations.of(context)!.translate('confirm_delete_money_income_document') ?? 'Вы уверены, что хотите удалить этот документ денежного дохода?',
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',

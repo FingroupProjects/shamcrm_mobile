@@ -1,5 +1,5 @@
 enum OperationType {
-  send_another_cash_register,
+  receive_another_cash_register,
   other_incomes,
   return_supplier,
   client_payment,

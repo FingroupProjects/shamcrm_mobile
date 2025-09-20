@@ -140,7 +140,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       case OperationType.client_payment:
         targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
-      case OperationType.send_another_cash_register:
+      case OperationType.receive_another_cash_register:
         targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
       case OperationType.other_incomes:
@@ -209,9 +209,10 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               if (!mounted) return;
 
               if (kDebugMode) {
-                print('MoneyIncomeScreen: State changed to ${state.runtimeType}');
+                final localizations = AppLocalizations.of(context)!;
+                print(localizations.translate('money_income_screen_state_changed').replaceAll('{stateType}', state.runtimeType.toString()) ?? 'Экран доходов: Состояние изменено на ${state.runtimeType}');
                 if (state is MoneyIncomeLoaded) {
-                  print('MoneyIncomeScreen: Data count in state: ${state.data.length}');
+                  print(localizations.translate('money_income_screen_data_count').replaceAll('{count}', state.data.length.toString()) ?? 'Экран доходов: Количество данных в состоянии: ${state.data.length}');
                 }
               }
 
@@ -322,7 +323,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               if (value == OperationType.client_payment.name) {
                 targetScreen = const AddMoneyIncomeFromClient();
-              } else if (value == OperationType.send_another_cash_register.name) {
+              } else if (value == OperationType.receive_another_cash_register.name) {
                 targetScreen = const AddMoneyIncomeAnotherCashRegister();
               } else if (value == OperationType.other_incomes.name) {
                 targetScreen = const AddMoneyIncomeOtherIncome();
@@ -373,7 +374,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.send_another_cash_register.name,
+                  value: OperationType.receive_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -397,7 +398,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.send_another_cash_register.name,
+                  value: OperationType.other_incomes.name,
                   child: Row(
                     children: [
                       const Icon(

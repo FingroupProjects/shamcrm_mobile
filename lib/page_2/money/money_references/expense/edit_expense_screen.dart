@@ -111,7 +111,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                               label: AppLocalizations.of(context)?.translate('expense_name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
-                                  return 'Поле обязательно';
+                                  return AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
                                 }
                                 return null;
                               },

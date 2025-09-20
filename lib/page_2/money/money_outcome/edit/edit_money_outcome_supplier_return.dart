@@ -129,7 +129,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
       id: widget.document.id,
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.return_supplier.name,
+      operationType: OperationType.supplier_payment.name,
       cashRegisterId: selectedCashRegister!.id.toString(),
       comment: _commentController.text.trim(),
       supplierId: int.parse(selectedSupplier!.id.toString()),
@@ -250,7 +250,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_outgoing_document'),
+        AppLocalizations.of(context)!.translate('edit_outgoing_document'),
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -265,7 +265,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date'),
+      label: AppLocalizations.of(context)!.translate('date'),
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -280,8 +280,8 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment'),
-      hintText: localizations.translate('enter_comment'),
+      label: AppLocalizations.of(context)!.translate('comment'),
+      hintText: AppLocalizations.of(context)!.translate('enter_comment'),
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -290,16 +290,16 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount'),
-        hintText: localizations.translate('enter_amount'),
+        label: AppLocalizations.of(context)!.translate('amount'),
+        hintText: AppLocalizations.of(context)!.translate('enter_amount'),
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount');
+            return AppLocalizations.of(context)!.translate('enter_amount');
           }
           if (double.tryParse(value) == null) {
-            return localizations.translate('enter_valid_amount');
+            return AppLocalizations.of(context)!.translate('enter_valid_amount');
           }
           return null;
         }
@@ -308,7 +308,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
 
     Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
@@ -349,7 +349,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Закрыть',
+                AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -381,7 +381,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Сохранить',
+                AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

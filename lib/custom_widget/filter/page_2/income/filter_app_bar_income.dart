@@ -479,8 +479,8 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             },
                             selectedstatusMethod: _isDeleted != null
                                 ? (_isDeleted == true 
-                                    ? AppLocalizations.of(context)!.translate('deleted')
-                                    : AppLocalizations.of(context)!.translate('not_deleted'))
+                                    ? AppLocalizations.of(context)!.translate('status_deleted')
+                                    : AppLocalizations.of(context)!.translate('status_not_deleted'))
                                 : null
                         ),
                       ),

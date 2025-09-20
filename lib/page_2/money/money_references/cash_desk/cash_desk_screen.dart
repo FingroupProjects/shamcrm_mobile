@@ -6,9 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../bloc/cash_desk/cash_desk_bloc.dart';
 import '../../../../bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
+import '../../../../custom_widget/custom_app_bar_page_2.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../models/money/cash_register_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../screens/profile/profile_screen.dart';
 import 'edit_cash_desk_screen.dart';
 
 class CashDeskScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class CashDeskScreen extends StatefulWidget {
 
 class _CashDeskScreenState extends State<CashDeskScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool isClickAvatarIcon = false;
 
   @override
   void initState() {
@@ -52,19 +55,29 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        centerTitle: true,
-        title: Text(AppLocalizations.of(context)?.translate('cash_desk') ?? 'Касса',
-            style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
+        title: CustomAppBarPage2(
+          title: isClickAvatarIcon
+              ? AppLocalizations.of(context)?.translate('appbar_settings') ?? 'Настройки'
+              : AppLocalizations.of(context)?.translate('cash_desk') ?? 'Касса',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: false,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          currentFilters: {},
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
-      body: BlocBuilder<CashDeskBloc, CashDeskState>(
+      body: isClickAvatarIcon ?
+          ProfileScreen() :
+          BlocBuilder<CashDeskBloc, CashDeskState>(
         builder: (context, state) {
           if (state.status == CashDeskStatus.initialLoading) {
             return Center(
@@ -78,7 +91,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Ошибка загрузки'),
+                  Text(AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки'),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -86,7 +99,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                           .read<CashDeskBloc>()
                           .add(const FetchCashRegisters());
                     },
-                    child: const Text('Повторить'),
+                    child: Text(AppLocalizations.of(context)?.translate('retry') ?? 'Повторить'),
                   ),
                 ],
               ),
@@ -95,9 +108,9 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
               state.status == CashDeskStatus.loadingMore) {
             final cashRegisters = state.cashRegisters;
             if (cashRegisters.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  'Нет данных',
+                  AppLocalizations.of(context)?.translate('no_data') ?? 'Нет данных',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -184,7 +197,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                       const SizedBox(height: 6),
                       if (data.users.isNotEmpty)
                         Text(
-                          'Пользователи: ${data.users.map((e) => e.name).join(', ')}',
+                          (AppLocalizations.of(context)?.translate('users') ?? 'Пользователи: {users}').replaceAll('{users}', data.users.map((e) => e.name).join(', ')),
                           style: const TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
@@ -256,7 +269,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Удалить справочник',
+              AppLocalizations.of(context)?.translate('delete_reference') ?? 'Удалить справочник',
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -266,7 +279,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите удалить справочник',
+            AppLocalizations.of(context)?.translate('confirm_delete_reference') ?? 'Вы уверены, что хотите удалить справочник',
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

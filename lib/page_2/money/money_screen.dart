@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import '../../bloc/cash_desk/cash_desk_bloc.dart';
 import '../../bloc/money_income/money_income_bloc.dart';
 import '../../bloc/money_outcome/money_outcome_bloc.dart';
+import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../screens/profile/languages/app_localizations.dart';
+import '../../screens/profile/profile_screen.dart';
 
 class MoneyScreen extends StatefulWidget {
   const MoneyScreen({super.key});
@@ -75,6 +77,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
         ),
       ];
 
+  bool isClickAvatarIcon = false;
+
   @override
   Widget build(BuildContext context) {
     final sections = _getSections(context);
@@ -83,20 +87,29 @@ class _MoneyScreenState extends State<MoneyScreen> {
       backgroundColor: const Color(0xffF8F9FB),
       appBar: AppBar(
         forceMaterialTransparency: true,
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Text(
-          AppLocalizations.of(context)!.translate('money'),
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
-          ),
+        title: CustomAppBarPage2(
+          title: isClickAvatarIcon
+              ? AppLocalizations.of(context)!.translate('appbar_settings') ?? 'Настройки'
+              :  AppLocalizations.of(context)!.translate('money') ?? 'Деньги',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: false,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          currentFilters: {},
         ),
       ),
-      body: ListView(
+      body: isClickAvatarIcon ?
+          ProfileScreen() :
+          ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(

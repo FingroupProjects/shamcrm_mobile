@@ -124,8 +124,7 @@ class MoneyIncomeCard extends StatelessWidget {
                 document.model!.name!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                '${localizations.translate('client') ?? 'Клиент'}: ${document
-                    .model!.name}',
+                '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
@@ -135,10 +134,10 @@ class MoneyIncomeCard extends StatelessWidget {
               ),
             ],
             if (document.operationType != null && document.operationType ==
-                OperationType.send_another_cash_register.name) ...[
+                OperationType.receive_another_cash_register.name) ...[
               const SizedBox(height: 8),
               Text(
-                'Получение с другой кассы: ${document.cashRegister!.name}',
+                localizations.translate('receiving_from_another_cash_register').replaceAll('{cashRegister}', document.cashRegister!.name ?? '') ?? 'Получение с другой кассы: ${document.cashRegister!.name}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
