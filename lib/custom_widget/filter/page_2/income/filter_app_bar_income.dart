@@ -5,15 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../bloc/supplier_list/supplier_list_bloc.dart';
 import '../../../../bloc/supplier_list/supplier_list_event.dart';
+import '../../../../bloc/supplier_list/supplier_list_state.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
+import '../../../../bloc/cash_register_list/cash_register_list_state.dart';
 import '../../../../bloc/author/get_all_author_bloc.dart';
 import '../../../../models/author_data_response.dart';
 import '../../../../models/cash_register_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
-import '../../../../page_2/money/widgets/author_list_widget.dart';
-import '../../../../page_2/money/widgets/cash_register_radio_group.dart';
-import '../../../../page_2/money/widgets/supplier_radio_group.dart';
 import '../../../custom_textfield_deadline.dart';
 
 class IncomeFilterScreen extends StatefulWidget {
@@ -59,25 +58,59 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   String? _selectedStatus;
   bool? _isDeleted;
 
+  // Списки данных
+  List<SupplierData> suppliersList = [];
+  List<CashRegisterData> cashRegistersList = [];
+  List<AuthorData> authorsList = [];
+
   @override
   void initState() {
     super.initState();
-    _fromDate = widget.initialFromDate;
-    _toDate = widget.initialToDate;
-    _selectedSupplier = widget.initialSupplier != null
-        ? SupplierData(id: int.tryParse(widget.initialSupplier!) ?? 0, name: widget.initialSupplier!)
-        : null;
-    _selectedCashRegister = widget.initialWarehouse != null
-        ? CashRegisterData(id: int.tryParse(widget.initialWarehouse!) ?? 0, name: widget.initialWarehouse!)
-        : null;
-    _selectedStatus = widget.initialStatus;
-    _isDeleted = widget.initialIsDeleted;
+    _initializeData();
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
 
-    context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
-    context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
-    context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
-    _updateDateControllers();
-    _loadFilterState();
+  void _preloadDataIfNeeded() {
+    // Проверяем и загружаем поставщиков
+    final supplierState = context.read<GetAllSupplierBloc>().state;
+    if (supplierState is! GetAllSupplierSuccess) {
+      context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+    }
+
+    // Проверяем и загружаем кассы
+    final cashRegisterState = context.read<GetAllCashRegisterBloc>().state;
+    if (cashRegisterState is! GetAllCashRegisterSuccess) {
+      context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+    }
+
+    // Проверяем и загружаем авторов
+    final authorState = context.read<GetAllAuthorBloc>().state;
+    if (authorState is! GetAllAuthorSuccess) {
+      context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+    }
+  }
+
+  void _initializeData() async {
+    try {
+      _fromDate = widget.initialFromDate;
+      _toDate = widget.initialToDate;
+      _selectedSupplier = widget.initialSupplier != null
+          ? SupplierData(id: int.tryParse(widget.initialSupplier!) ?? 0, name: widget.initialSupplier!)
+          : null;
+      _selectedCashRegister = widget.initialWarehouse != null
+          ? CashRegisterData(id: int.tryParse(widget.initialWarehouse!) ?? 0, name: widget.initialWarehouse!)
+          : null;
+      _selectedStatus = widget.initialStatus;
+      _isDeleted = widget.initialIsDeleted;
+
+      _updateDateControllers();
+      await _loadFilterState();
+    } catch (e) {
+      debugPrint('Error in initializeData: $e');
+    }
   }
 
   void _updateDateControllers() {
@@ -90,113 +123,118 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   }
 
   Future<void> _loadFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      final fromDateMillis = prefs.getInt('income_from_date');
-      final toDateMillis = prefs.getInt('income_to_date');
-      if (fromDateMillis != null) {
-        _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
-      }
-      if (toDateMillis != null) {
-        _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          final fromDateMillis = prefs.getInt('income_from_date');
+          final toDateMillis = prefs.getInt('income_to_date');
+          if (fromDateMillis != null) {
+            _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
+          }
+          if (toDateMillis != null) {
+            _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
+          }
 
-      final supplierName = prefs.getString('income_supplier');
-      final supplierId = prefs.getInt('income_supplier_id');
-      if (supplierName != null && supplierId != null) {
-        _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
+          final supplierName = prefs.getString('income_supplier');
+          final supplierId = prefs.getInt('income_supplier_id');
+          if (supplierName != null && supplierId != null) {
+            _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
+          }
+
+          final cashRegisterName = prefs.getString('income_cash_register');
+          final cashRegisterId = prefs.getInt('income_cash_register_id');
+          if (cashRegisterName != null && cashRegisterId != null) {
+            _selectedCashRegister = CashRegisterData(id: cashRegisterId, name: cashRegisterName);
+          }
+
+          final authorName = prefs.getString('income_author');
+          final authorId = prefs.getInt('income_author_id');
+          if (authorName != null && authorId != null) {
+            selectedAuthor = AuthorData(id: authorId, name: authorName, lastname: '');
+          }
+
+          _selectedStatus = prefs.getString('money_income_status') ?? widget.initialStatus;
+          _isDeleted = prefs.getBool('income_is_deleted') ?? widget.initialIsDeleted;
+
+          _updateDateControllers();
+        });
       }
-
-      final cashRegisterName = prefs.getString('income_cash_register');
-      final cashRegisterId = prefs.getInt('income_cash_register_id');
-      if (cashRegisterName != null && cashRegisterId != null) {
-        _selectedCashRegister =
-            CashRegisterData(id: cashRegisterId, name: cashRegisterName);
-      }
-
-      final authorName = prefs.getString('income_author');
-      final authorId = prefs.getInt('income_author_id');
-      if (authorName != null && authorId != null) {
-        selectedAuthor =
-            AuthorData(id: authorId, name: authorName, lastname: '');
-      }
-
-      _selectedStatus =
-          prefs.getString('money_income_status') ?? widget.initialStatus;
-      _isDeleted = prefs.getBool('income_is_deleted') ?? widget.initialIsDeleted;
-
-      _updateDateControllers();
-    });
+    } catch (e) {
+      debugPrint('Error loading filter state: $e');
+    }
   }
 
   Future<void> _saveFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    if (_fromDate != null) {
-      await prefs.setInt('income_from_date', _fromDate!.millisecondsSinceEpoch);
-    } else {
-      await prefs.remove('income_from_date');
-    }
+      if (_fromDate != null) {
+        await prefs.setInt('income_from_date', _fromDate!.millisecondsSinceEpoch);
+      } else {
+        await prefs.remove('income_from_date');
+      }
 
-    if (_toDate != null) {
-      await prefs.setInt('income_to_date', _toDate!.millisecondsSinceEpoch);
-    } else {
-      await prefs.remove('income_to_date');
-    }
+      if (_toDate != null) {
+        await prefs.setInt('income_to_date', _toDate!.millisecondsSinceEpoch);
+      } else {
+        await prefs.remove('income_to_date');
+      }
 
-    if (_selectedSupplier != null) {
-      await prefs.setString('income_supplier', _selectedSupplier!.name);
-      await prefs.setInt('income_supplier_id', _selectedSupplier!.id);
-    } else {
-      await prefs.remove('income_supplier');
-      await prefs.remove('income_supplier_id');
-    }
+      if (_selectedSupplier != null) {
+        await prefs.setString('income_supplier', _selectedSupplier!.name);
+        await prefs.setInt('income_supplier_id', _selectedSupplier!.id);
+      } else {
+        await prefs.remove('income_supplier');
+        await prefs.remove('income_supplier_id');
+      }
 
-    if (_selectedCashRegister != null) {
-      await prefs.setString(
-          'income_cash_register', _selectedCashRegister!.name);
-      await prefs.setInt('income_cash_register_id', _selectedCashRegister!.id);
-    } else {
-      await prefs.remove('income_cash_register');
-      await prefs.remove('income_cash_register_id');
-    }
+      if (_selectedCashRegister != null) {
+        await prefs.setString('income_cash_register', _selectedCashRegister!.name);
+        await prefs.setInt('income_cash_register_id', _selectedCashRegister!.id);
+      } else {
+        await prefs.remove('income_cash_register');
+        await prefs.remove('income_cash_register_id');
+      }
 
-    if (_selectedStatus != null) {
-      await prefs.setString('money_income_status', _selectedStatus!);
-    } else {
-      await prefs.remove('money_income_status');
-    }
+      if (_selectedStatus != null) {
+        await prefs.setString('money_income_status', _selectedStatus!);
+      } else {
+        await prefs.remove('money_income_status');
+      }
 
-    if (selectedAuthor != null) {
-      await prefs.setString('income_author', selectedAuthor!.name);
-      await prefs.setInt('income_author_id', selectedAuthor!.id);
-    } else {
-      await prefs.remove('income_author');
-      await prefs.remove('income_author_id');
-    }
+      if (selectedAuthor != null) {
+        await prefs.setString('income_author', selectedAuthor!.name);
+        await prefs.setInt('income_author_id', selectedAuthor!.id);
+      } else {
+        await prefs.remove('income_author');
+        await prefs.remove('income_author_id');
+      }
 
-    if (_isDeleted != null) {
-      await prefs.setBool('income_is_deleted', _isDeleted!);
-    } else {
-      await prefs.remove('income_is_deleted');
+      if (_isDeleted != null) {
+        await prefs.setBool('income_is_deleted', _isDeleted!);
+      } else {
+        await prefs.remove('income_is_deleted');
+      }
+    } catch (e) {
+      debugPrint('Error saving filter state: $e');
     }
   }
 
   void _resetFilters() {
-    setState(() {
-      _fromDate = null;
-      _toDate = null;
-      _fromDateController.clear();
-      _toDateController.clear();
-      _selectedSupplier = null;
-      _selectedCashRegister = null;
-      _selectedStatus = null;
-      selectedAuthor = null;
-      _isDeleted = null;
-
-      _fromDateController.clear();
-      _toDateController.clear();
-    });
+    if (mounted) {
+      setState(() {
+        _fromDate = null;
+        _toDate = null;
+        _fromDateController.clear();
+        _toDateController.clear();
+        _selectedSupplier = null;
+        _selectedCashRegister = null;
+        _selectedStatus = null;
+        selectedAuthor = null;
+        _isDeleted = null;
+      });
+    }
     widget.onResetFilters?.call();
     _saveFilterState();
     _applyFilters();
@@ -213,6 +251,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   }
 
   void _applyFilters() async {
+
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
@@ -238,11 +277,464 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
 
       widget.onSelectedDataFilter?.call(filters);
     }
-    Navigator.pop(context);
   }
 
   String _getStatusDisplayText(String status) {
-    return AppLocalizations.of(context)!.translate(status);
+    if (status == "1") {
+      return AppLocalizations.of(context)!.translate('approved') ?? 'Одобрено';
+    } else if (status == "0") {
+      return AppLocalizations.of(context)!.translate('not_approved') ?? 'Не одобрено';
+    }
+    return AppLocalizations.of(context)!.translate(status) ?? status;
+  }
+
+  Widget _buildSupplierWidget() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 4),
+            BlocConsumer<GetAllSupplierBloc, GetAllSupplierState>(
+              listener: (context, state) {
+                if (state is GetAllSupplierSuccess) {
+                  setState(() {
+                    suppliersList = state.dataSuppliers.result ?? [];
+                  });
+                }
+              },
+              builder: (context, state) {
+                if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                  context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllSupplierLoading) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllSupplierError) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        TextButton(
+                          onPressed: () {
+                            context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                          },
+                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Если список пуст даже после успешной загрузки, показываем placeholder
+                if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  );
+                }
+
+                return CustomDropdown<SupplierData>.search(
+                  items: suppliersList,
+                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  overlayHeight: 300,
+                  enabled: true,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: const Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      item.name,
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    return Text(
+                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
+                      ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+                      : null,
+                  onChanged: (value) {
+                    if (value != null && mounted) {
+                      setState(() {
+                        _selectedSupplier = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCashRegisterWidget() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('cash_register') ?? 'Касса',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 4),
+            BlocConsumer<GetAllCashRegisterBloc, GetAllCashRegisterState>(
+              listener: (context, state) {
+                if (state is GetAllCashRegisterSuccess) {
+                  setState(() {
+                    cashRegistersList = state.dataCashRegisters.result ?? [];
+                  });
+                }
+              },
+              builder: (context, state) {
+                if (state is GetAllCashRegisterInitial || (state is GetAllCashRegisterSuccess && cashRegistersList.isEmpty)) {
+                  context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllCashRegisterLoading) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllCashRegisterError) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        TextButton(
+                          onPressed: () {
+                            context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+                          },
+                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Если список пуст даже после успешной загрузки, показываем placeholder
+                if (state is GetAllCashRegisterSuccess && cashRegistersList.isEmpty) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  );
+                }
+
+                return CustomDropdown<CashRegisterData>.search(
+                  items: cashRegistersList,
+                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  overlayHeight: 300,
+                  enabled: true,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: const Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      item.name,
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    return Text(
+                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  initialItem: _selectedCashRegister != null && cashRegistersList.any((c) => c.id == _selectedCashRegister!.id)
+                      ? cashRegistersList.firstWhere((c) => c.id == _selectedCashRegister!.id)
+                      : null,
+                  onChanged: (value) {
+                    if (value != null && mounted) {
+                      setState(() {
+                        _selectedCashRegister = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuthorWidget() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('author') ?? 'Автор',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 4),
+            BlocConsumer<GetAllAuthorBloc, GetAllAuthorState>(
+              listener: (context, state) {
+                if (state is GetAllAuthorSuccess) {
+                  setState(() {
+                    authorsList = state.dataAuthor.result ?? [];
+                  });
+                }
+              },
+              builder: (context, state) {
+                if (state is GetAllAuthorInitial || (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
+                  context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllAuthorLoading) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  );
+                }
+
+                if (state is GetAllAuthorError) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        TextButton(
+                          onPressed: () {
+                            context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+                          },
+                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Если список пуст даже после успешной загрузки, показываем placeholder
+                if (state is GetAllAuthorSuccess && authorsList.isEmpty) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  );
+                }
+
+                return CustomDropdown<AuthorData>.search(
+                  items: authorsList,
+                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  overlayHeight: 300,
+                  enabled: true,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: const Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      '${item.name ?? ''} ${item.lastname ?? ''}',
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    return Text(
+                      selectedItem != null
+                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                          : AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  initialItem: selectedAuthor != null && authorsList.any((a) => a.id == selectedAuthor!.id)
+                      ? authorsList.firstWhere((a) => a.id == selectedAuthor!.id)
+                      : null,
+                  onChanged: (value) {
+                    if (value != null && mounted) {
+                      setState(() {
+                        selectedAuthor = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -377,57 +869,27 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     const SizedBox(height: 8),
 
                     // Supplier Widget
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: SupplierGroupWidget(
-                          selectedSupplierId: _selectedSupplier?.id.toString(),
-                          onSelectSupplier: (SupplierData value) {
-                            setState(() {
-                              _selectedSupplier = value;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    _buildSupplierWidget(),
                     const SizedBox(height: 8),
 
                     // Cash Register Widget
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: CashRegisterGroupWidget(
-                          selectedCashRegisterId: _selectedCashRegister?.id.toString(),
-                          onSelectCashRegister: (CashRegisterData value) {
-                            setState(() {
-                              _selectedCashRegister = value;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    _buildCashRegisterWidget(),
                     const SizedBox(height: 8),
 
                     // Status Dropdown with localization
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: _StatusMethodDropdown(
-                          title: AppLocalizations.of(context)!.translate('status'),
-                            statusMethodsList: [
-                              AppLocalizations.of(context)!
-                                  .translate('approved'),
-                              AppLocalizations.of(context)!
-                                  .translate('not_approved'),
-                            ],
-                            onSelectstatusMethod: (String value) {
+                          title: AppLocalizations.of(context)!.translate('status') ?? 'Статус',
+                          statusMethodsList: [
+                            AppLocalizations.of(context)!.translate('approved') ?? 'Одобрено',
+                            AppLocalizations.of(context)!.translate('not_approved') ?? 'Не одобрено',
+                          ],
+                          onSelectstatusMethod: (String value) {
+                            if (mounted) {
                               setState(() {
                                 _selectedStatus = value ==  AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
                                 });
@@ -437,51 +899,40 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                                     ? AppLocalizations.of(context)!.translate('approved')
                                     : AppLocalizations.of(context)!.translate('not_approved'))
                                 : null),
+
                       ),
                     ),
                     const SizedBox(height: 8),
 
                     // Author Dropdown
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: AuthorRadioGroupWidget(
-                          selectedAuthor: selectedAuthor?.id.toString(),
-                          onSelectAuthor: (AuthorData value) {
-                            setState(() {
-                              selectedAuthor = value;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
+                    _buildAuthorWidget(),
                     const SizedBox(height: 8),
 
                     // Boolean Deleted Status Dropdown
                     Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: _StatusMethodDropdown(title: AppLocalizations.of(context)!.translate('status_delete'),
-                            statusMethodsList: [
-                              AppLocalizations.of(context)!.translate('deleted'),
-                              AppLocalizations.of(context)!.translate('not_deleted'),
-                            ],
-                            onSelectstatusMethod: (String value) {
+                        child: _StatusMethodDropdown(
+                          title: AppLocalizations.of(context)!.translate('status_delete') ?? 'Статус удаления',
+                          statusMethodsList: [
+                            AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено',
+                            AppLocalizations.of(context)!.translate('not_deleted') ?? 'Не удалено',
+                          ],
+                          onSelectstatusMethod: (String value) {
+                            if (mounted) {
                               setState(() {
-                                _isDeleted = value == AppLocalizations.of(context)!.translate('deleted');
+                                _isDeleted = value == (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено');
                               });
+
                             },
                             selectedstatusMethod: _isDeleted != null
                                 ? (_isDeleted == true 
                                     ? AppLocalizations.of(context)!.translate('status_deleted')
                                     : AppLocalizations.of(context)!.translate('status_not_deleted'))
                                 : null
+
                         ),
                       ),
                     ),
@@ -525,12 +976,18 @@ class _StatusMethodDropdown extends StatefulWidget {
 class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
   String? selectedstatusMethod;
 
-  _StatusMethodDropdownState();
-
   @override
   void initState() {
     super.initState();
     selectedstatusMethod = widget.selectedstatusMethod;
+  }
+
+  @override
+  void didUpdateWidget(_StatusMethodDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedstatusMethod != oldWidget.selectedstatusMethod) {
+      selectedstatusMethod = widget.selectedstatusMethod;
+    }
   }
 
   @override
@@ -544,30 +1001,14 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color:
-                Color(0xff1E2E52),
+            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 4),
         CustomDropdown<String>(
           items: widget.statusMethodsList,
-          overlayHeight: 400,
+          overlayHeight: 150,
           enabled: true,
-          hintBuilder: (context, selectedItem, enabled) {
-            return Text(
-              selectedItem.isNotEmpty
-                  ? selectedItem
-                  : AppLocalizations.of(context)!
-                          .translate('select_status_method') ??
-                      'Выберите статус',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            );
-          },
           hintText: AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
           decoration: CustomDropdownDecoration(
             closedFillColor: Color(0xffF4F7FD),
@@ -596,9 +1037,20 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             return Text(
               selectedItem.isNotEmpty
                   ? selectedItem
-                  : AppLocalizations.of(context)!
-                          .translate('select_status_method') ??
-                      'Выберите статус',
+                  : AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          hintBuilder: (context, selectedItem, enabled) {
+            return Text(
+              selectedItem.isNotEmpty
+                  ? selectedItem
+                  : AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -609,7 +1061,7 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
           },
           initialItem: selectedstatusMethod,
           onChanged: (value) {
-            if (value != null) {
+            if (value != null && mounted) {
               widget.onSelectstatusMethod(value);
               setState(() {
                 selectedstatusMethod = value;

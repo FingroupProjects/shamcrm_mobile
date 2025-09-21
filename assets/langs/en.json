@@ -1337,6 +1337,7 @@
     "not_deleted": "not deleted",
     "from_date": "From date",
     "to_date": "To date",
+
     "document_created_successfully": "Document created successfully",
     "document_updated_successfully": "Document updated successfully",
     "document_deleted_successfully": "Document deleted successfully",
@@ -1370,4 +1371,49 @@
     "supplier_payment": "Supplier payment",
     "other_expenses": "Other expenses",
     "send_another_cash_register": "Send to another cash register"
+
+
+
+    "appbar_warehouse": "Warehouse",
+    "appbar_online_store": "Online Store",
+   
+    "confirm_delete_document": "Are you sure you want to delete this document?",
+ 
+    "search_goods": "Search goods",
+    "selected_goods": "Selected goods",
+
+    "select_goods": "Select goods",
+    "field_required_goods": "Select at least one good",
+    "invalid_quantity": "Enter a valid quantity",
+    "invalid_price": "Enter a valid price",
+    "select_storage": "Select storage",
+
+    "inn": "TIN",
+    "enter_inn": "Enter TIN",
+    "note": "Note",
+    "enter_note": "Enter note",
+    "enter_supplier_name": "Enter supplier name",
+    "add_supplier": "Add supplier",
+    "edit_supplier": "Edit supplier",
+    "delete_supplier": "Delete supplier",
+    "add_measure_unit": "Add measurement unit",
+    "enter_measure_unit_name": "Enter measurement unit name",
+    "short_name": "Short name",
+    "enter_short_name": "Enter short name",
+    "edit_measure_unit": "Edit measurement unit",
+    "create_at": "Created at",
+    "startName": "Initial name",
+    "deleted_incoming": "Deleted",
+    "approved_incoming": "Approved",
+    "not_approved_incoming": "Not approved",
+
+    "deleted_at": "Deleted at",
+
+    "deleting": "Deleting...",
+    "edit_incoming_document": "Edit incoming",
+    "edit_pricetype": "Edit price type",
+    "edit_warehouse": "Edit warehouse"
+
+
+
 }
