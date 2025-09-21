@@ -889,11 +889,12 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             AppLocalizations.of(context)!.translate('not_approved') ?? 'Не одобрено',
                           ],
                           onSelectstatusMethod: (String value) {
-                            if (mounted) {
-                              setState(() {
-                                _selectedStatus = value ==  AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
+                              if (mounted) {
+                                setState(() {
+                                  _selectedStatus = value == AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
                                 });
-                              },
+                              }
+                            },
                             selectedstatusMethod: _selectedStatus != null
                                 ? (_selectedStatus == "1" 
                                     ? AppLocalizations.of(context)!.translate('approved')
@@ -920,20 +921,18 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                             AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено',
                             AppLocalizations.of(context)!.translate('not_deleted') ?? 'Не удалено',
                           ],
-                          onSelectstatusMethod: (String value) {
-                            if (mounted) {
-                              setState(() {
-                                _isDeleted = value == (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено');
-                              });
-
-                            },
                             selectedstatusMethod: _isDeleted != null
-                                ? (_isDeleted == true 
+                                ? (_isDeleted == true
                                     ? AppLocalizations.of(context)!.translate('status_deleted')
                                     : AppLocalizations.of(context)!.translate('status_not_deleted'))
-                                : null
-
-                        ),
+                                : null,
+                            onSelectstatusMethod: (String value) {
+                              if (mounted) {
+                                setState(() {
+                                  _isDeleted = value == (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено');
+                                });
+                              }
+                            }),
                       ),
                     ),
                     const SizedBox(height: 96),
