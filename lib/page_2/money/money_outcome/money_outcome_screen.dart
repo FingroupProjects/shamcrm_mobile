@@ -5,6 +5,7 @@ import 'package:crm_task_manager/page_2/money/money_outcome/widgets/money_outcom
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/money_outcome/money_outcome_bloc.dart';
@@ -58,7 +59,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
   void _onFilterSelected(Map<String, dynamic> filters) {
     if (kDebugMode) {
-      print('MoneyOutcomeScreen: Применение фильтров: $filters');
+      final localizations = AppLocalizations.of(context)!;
+      print(localizations.translate('money_outcome_screen_applying_filters').replaceAll('{filters}', filters.toString()) ?? 'Экран расходов: Применение фильтров: $filters');
     }
     setState(() {
       _currentFilters = Map.from(filters);
@@ -66,7 +68,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       _hasReachedMax = false;
       _isLoadingMore = false;
       if (kDebugMode) {
-        print('MoneyOutcomeScreen: Сохранены текущие фильтры: $_currentFilters');
+        final localizations = AppLocalizations.of(context)!;
+        print(localizations.translate('money_outcome_screen_filters_saved').replaceAll('{filters}', _currentFilters.toString()) ?? 'Экран расходов: Сохранены текущие фильтры: $_currentFilters');
       }
     });
 
@@ -83,7 +86,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
   void _onResetFilters() {
     if (kDebugMode) {
-      print('MoneyOutcomeScreen: Сброс фильтров');
+      final localizations = AppLocalizations.of(context)!;
+      print(localizations.translate('money_outcome_screen_reset_filters') ?? 'Экран расходов: Сброс фильтров');
     }
     setState(() {
       _currentFilters.clear();
@@ -143,29 +147,30 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   }
 
   void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    // Используем глобальный scaffoldMessengerKey, чтобы не зависеть от жизненного цикла локального контекста
+    // и избежать ошибок «deactivated widget's ancestor».
+    scaffoldMessengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
   }
 
-  
   Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
     if (!mounted) return;
 
@@ -178,16 +183,16 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     Widget? targetScreen;
 
     switch (operationType) {
-      case OperationType.client_payment:
+      case OperationType.client_return:
         targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
-      case OperationType.receive_another_cash_register:
+      case OperationType.send_another_cash_register:
         targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
         break;
-      case OperationType.other_outcomes:
+      case OperationType.other_expenses:
         targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
-      case OperationType.return_supplier:
+      case OperationType.supplier_payment:
         targetScreen = EditMoneyOutcomeSupplierReturn(document: document);
         break;
     }
@@ -254,6 +259,15 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 if (state is MoneyOutcomeLoaded) {
                   print('MoneyOutcomeScreen: Data count in state: ${state.data.length}');
                 }
+              }
+
+              if (state is MoneyOutcomeDeleteError && mounted) {
+                _showSnackBar(state.message, false);
+                _moneyOutcomeBloc.add(FetchMoneyOutcome(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
               }
 
               if (state is MoneyOutcomeLoaded) {
@@ -359,27 +373,22 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             ),
           ),
           floatingActionButton: PopupMenuButton<String>(
-            key: const Key('create_money_outcome_button'),
+            key: const Key('create_money_income_button'),
             onSelected: (String value) async {
               if (!mounted) return;
 
               Widget targetScreen;
 
-              switch (value) {
-                case 'client_payment':
-                  targetScreen = const AddMoneyOutcomeFromClient();
-                  break;
-                case 'cash_register_transfer':
-                  targetScreen = const AddMoneyOutcomeAnotherCashRegister();
-                  break;
-                case 'other_outcome':
-                  targetScreen = const AddMoneyOutcomeOtherOutcome();
-                  break;
-                case 'supplier_return':
-                  targetScreen = const AddMoneyOutcomeSupplierReturn();
-                  break;
-                default:
-                  return;
+              if (value == OperationType.client_return.name) {
+                targetScreen = const AddMoneyOutcomeFromClient();
+              } else if (value == OperationType.send_another_cash_register.name) {
+                targetScreen = const AddMoneyOutcomeAnotherCashRegister();
+              } else if (value == OperationType.other_expenses.name) {
+                targetScreen = const AddMoneyOutcomeOtherOutcome();
+              } else if (value == OperationType.supplier_payment.name) {
+                targetScreen = const AddMoneyOutcomeSupplierReturn();
+              } else {
+                return;
               }
 
               final result = await Navigator.push(
@@ -397,11 +406,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
               }
             },
             itemBuilder: (BuildContext context) {
-              final localizations = AppLocalizations.of(context)!;
-
               return [
                 PopupMenuItem<String>(
-                  value: 'client_payment',
+                  value: OperationType.client_return.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -412,7 +419,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('client_payment'),
+                          localizations.translate('client_return'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -425,7 +432,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: 'cash_register_transfer',
+                  value: OperationType.send_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -436,7 +443,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('cash_register_transfer'),
+                          localizations.translate('send_another_cash_register'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -449,7 +456,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: 'other_outcome',
+                  value: OperationType.other_expenses.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -460,7 +467,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('other_outcome'),
+                          localizations.translate('other_expenses'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -473,7 +480,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: 'supplier_return',
+                  value: OperationType.supplier_payment.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -484,7 +491,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('supplier_return'),
+                          localizations.translate('supplier_payment'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -498,7 +505,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 ),
               ];
             },
-            offset: const Offset(0, -220), // Positions the menu above the button
+            offset: const Offset(0, -220),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -509,8 +516,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: Color(0xff1E2E52),
-                borderRadius: BorderRadius.all(Radius.circular(18))
+                  color: Color(0xff1E2E52),
+                  borderRadius: BorderRadius.all(Radius.circular(18))
               ),
               child: const Icon(
                 Icons.add,

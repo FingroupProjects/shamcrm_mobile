@@ -251,26 +251,31 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   }
 
   void _applyFilters() async {
-    try {
-      await _saveFilterState();
-      if (!_isAnyFilterSelected()) {
-        widget.onResetFilters?.call();
-      } else {
-        final filters = {
-          'date_from': _fromDate,
-          'date_to': _toDate,
-          'supplier_id': _selectedSupplier?.id.toString(),
-          'storage_id': _selectedCashRegister?.id.toString(),
-          'status': _selectedStatus,
-          'author_id': selectedAuthor?.id.toString(),
-          'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
-        };
 
-        widget.onSelectedDataFilter?.call(filters);
+    await _saveFilterState();
+    if (!_isAnyFilterSelected()) {
+      widget.onResetFilters?.call();
+    } else {
+
+      // choose from date 00:00:00 and to date 23:59:59
+      if (_fromDate != null) {
+        _fromDate = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day, 0, 0, 0);
       }
-      Navigator.pop(context);
-    } catch (e) {
-      debugPrint('Error applying filters: $e');
+      if (_toDate != null) {
+        _toDate = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
+      }
+
+      final filters = {
+        'date_from': _fromDate,
+        'date_to': _toDate,
+        'supplier_id': _selectedSupplier?.id.toString(),
+        'storage_id': _selectedCashRegister?.id.toString(),
+        'status': _selectedStatus,
+        'author_id': selectedAuthor?.id.toString(),
+        'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
+      };
+
+      widget.onSelectedDataFilter?.call(filters);
     }
   }
 
@@ -886,14 +891,15 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                           onSelectstatusMethod: (String value) {
                             if (mounted) {
                               setState(() {
-                                _selectedStatus = value == (AppLocalizations.of(context)!.translate('approved') ?? 'Одобрено') ? "1" : "0";
-                              });
-                            }
-                          },
-                          selectedstatusMethod: _selectedStatus != null
-                              ? _getStatusDisplayText(_selectedStatus!)
-                              : null,
-                        ),
+                                _selectedStatus = value ==  AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
+                                });
+                              },
+                            selectedstatusMethod: _selectedStatus != null
+                                ? (_selectedStatus == "1" 
+                                    ? AppLocalizations.of(context)!.translate('approved')
+                                    : AppLocalizations.of(context)!.translate('not_approved'))
+                                : null),
+
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -919,13 +925,14 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                               setState(() {
                                 _isDeleted = value == (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено');
                               });
-                            }
-                          },
-                          selectedstatusMethod: _isDeleted != null
-                              ? (_isDeleted!
-                                  ? (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено')
-                                  : (AppLocalizations.of(context)!.translate('not_deleted') ?? 'Не удалено'))
-                              : null,
+
+                            },
+                            selectedstatusMethod: _isDeleted != null
+                                ? (_isDeleted == true 
+                                    ? AppLocalizations.of(context)!.translate('status_deleted')
+                                    : AppLocalizations.of(context)!.translate('status_not_deleted'))
+                                : null
+
                         ),
                       ),
                     ),

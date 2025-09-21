@@ -74,7 +74,7 @@ class _EditCashDeskState extends State<EditCashDesk> {
         ),
         title: Text(
           AppLocalizations.of(context)?.translate('edit_cash_desk') ??
-              'Редактировать кассу',
+              AppLocalizations.of(context)?.translate('edit_reference') ?? 'Редактировать кассу',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -110,15 +110,15 @@ class _EditCashDeskState extends State<EditCashDesk> {
                               controller: nameController,
                               hintText: AppLocalizations.of(context)
                                       ?.translate('enter_title') ??
-                                  'Введите название*',
+                                  AppLocalizations.of(context)!.translate('enter_name') ?? 'Введите название*',
                               label: AppLocalizations.of(context)
                                       ?.translate('cash_register_name') ??
-                                  'Название',
+                                  AppLocalizations.of(context)!.translate('name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return AppLocalizations.of(context)
                                           ?.translate('field_required') ??
-                                      'Поле обязательно';
+                                      AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
                                 }
                                 return null;
                               },

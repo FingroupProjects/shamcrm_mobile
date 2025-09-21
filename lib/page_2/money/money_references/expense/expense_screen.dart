@@ -6,9 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../bloc/expense/expense_bloc.dart';
 import '../../../../bloc/expense/edit/edit_expense_bloc.dart';
+import '../../../../custom_widget/custom_app_bar_page_2.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../models/money/expense_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../screens/profile/profile_screen.dart';
 import 'edit_expense_screen.dart';
 
 class ExpenseScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class ExpenseScreen extends StatefulWidget {
 
 class _ExpenseScreenState extends State<ExpenseScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool isClickAvatarIcon = false;
 
   @override
   void initState() {
@@ -52,16 +55,29 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        centerTitle: true,
-        title: Text(AppLocalizations.of(context)?.translate('expenses') ?? 'Расходы',
-            style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52))),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        title: CustomAppBarPage2(
+          title: isClickAvatarIcon
+              ? AppLocalizations.of(context)?.translate('appbar_settings') ?? 'Настройки'
+              : AppLocalizations.of(context)?.translate('expenses') ?? 'Расходы',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: false,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          currentFilters: {},
+        ),
       ),
-      body: BlocBuilder<ExpenseBloc, ExpenseState>(
+      body: isClickAvatarIcon ?
+          ProfileScreen() :
+          BlocBuilder<ExpenseBloc, ExpenseState>(
         builder: (context, state) {
           if (state.status == ExpenseStatus.initialLoading) {
             return Center(

@@ -74,7 +74,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   static String _cachedUserImage = '';
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
-  late StreamSubscription<ChannelReadEvent> notificationSubscription;
+  StreamSubscription<ChannelReadEvent>? notificationSubscription;
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
@@ -148,6 +148,15 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['paymentMethod'] != null ||
             (widget.currentFilters['managers'] != null &&
                 widget.currentFilters['managers'].isNotEmpty));
+    
+    _isIncomeFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['date_from'] != null ||
+            widget.currentFilters['date_to'] != null ||
+            widget.currentFilters['supplier_id'] != null ||
+            widget.currentFilters['storage_id'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['author_id'] != null ||
+            widget.currentFilters['deleted'] != null);
   }
 
   Future<void> _checkPermissions() async {
@@ -229,7 +238,7 @@ Future<void> _scanBarcode() async {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
-    notificationSubscription.cancel();
+    notificationSubscription?.cancel();
     socketClient.disconnect();
     if (kDebugMode) {
       //print('CustomAppBarPage2: Очистка ресурсов');
@@ -593,7 +602,7 @@ Future<void> _scanBarcode() async {
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isGoodsFiltering ? _iconColor : null,
+                color: _isIncomeFiltering ? _iconColor : null,
               ),
             ),
             onPressed: () {
@@ -776,8 +785,8 @@ void navigateToOrderFilterScreen(BuildContext context) {
 
   void navigateToIncomeFilterScreen(BuildContext context) {
     if (kDebugMode) {
-      print('CustomAppBarPage2: Переход к экрану фильтров доходов');
-      print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+      // print('CustomAppBarPage2: Переход к экрану фильтров доходов');
+      // print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
     }
 
     DateTime? initialFromDate = widget.currentFilters['date_from'];
@@ -807,7 +816,10 @@ void navigateToOrderFilterScreen(BuildContext context) {
     }
 
     if (widget.currentFilters.containsKey('deleted')) {
-      initialIsDeleted = widget.currentFilters['deleted'] as bool?;
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue  == '1';
+      }
     }
 
     Navigator.push(

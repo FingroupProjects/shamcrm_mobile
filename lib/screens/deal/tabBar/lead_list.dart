@@ -48,9 +48,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         selectedLeadData = leadsList.firstWhere(
           (lead) => lead.id.toString() == widget.selectedLead,
         );
-        if (selectedLeadData?.managerId != null) {
-          widget.onSelectLead(selectedLeadData!);
-        }
+        // Убираем автоматический вызов callback - это вызывает setState during build
+        // if (selectedLeadData?.managerId != null) {
+        //   widget.onSelectLead(selectedLeadData!);
+        // }
       } catch (e) {
         // selectedLeadData = null;
       }

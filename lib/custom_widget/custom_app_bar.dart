@@ -303,7 +303,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _isTaskFiltering = false;
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
-  late StreamSubscription<ChannelReadEvent> notificationSubscription;
+  StreamSubscription<ChannelReadEvent>? notificationSubscription;
   final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
@@ -457,7 +457,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
-    notificationSubscription.cancel();
+    notificationSubscription?.cancel();
     socketClient.disconnect();
 
     super.dispose();

@@ -74,7 +74,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
           } else if (state.status == AddIncomeStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message ?? 'Ошибка добавления дохода'),
+                content: Text(state.message ?? AppLocalizations.of(context)!.translate('error_adding_income') ?? 'Ошибка добавления дохода'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -101,7 +101,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                               label: AppLocalizations.of(context)?.translate('income_name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
-                                  return 'Поле обязательно';
+                                  return AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
                                 }
                                 return null;
                               },
@@ -140,7 +140,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
               child: CustomButton(
                   buttonText: AppLocalizations.of(context)
                       ?.translate('cancel') ??
-                      'Отмена',
+                      AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
                   buttonColor: const Color(0xffF4F7FD),
                   textColor: Colors.black,
                   onPressed: isLoading ? () {} : _onCancel
@@ -174,7 +174,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                   : CustomButton(
                 buttonText: AppLocalizations.of(context)
                     ?.translate('save') ??
-                    'Сохранить',
+                    AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 buttonColor: const Color(0xff4759FF),
                 textColor: Colors.white,
                 onPressed: _onSave,

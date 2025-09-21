@@ -96,7 +96,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
 
     if (selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
         false,
       );
       return;
@@ -114,7 +114,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
       );
       return;
@@ -125,7 +125,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -137,7 +137,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.client_payment.name,
+        operationType: OperationType.client_return.name,
         leadId: selectedLead != null ? int.parse(selectedLead!) : null,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id.toString(),
@@ -147,7 +147,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      _showSnackBar('Ошибка обновления документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('error_updating_document')?.replaceAll('{error}', e.toString()) ?? 'Ошибка обновления документа: $e', false);
     }
   }
 
@@ -293,7 +294,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
             child: Column(
               children: [
                 Text(
-                  'Ошибка загрузки лидов',
+                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
                   style: const TextStyle(
                     color: Colors.red,
                     fontFamily: 'Gilroy',
@@ -305,7 +306,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                   onPressed: () {
                     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   },
-                  child: const Text('Повторить'),
+                  child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
                 ),
               ],
             ),
@@ -344,7 +345,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_outgoing_document') ?? 'Edit Outcome',
+        AppLocalizations.of(context)!.translate('edit_outgoing_document') ?? 'Редактировать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -359,7 +360,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: localizations.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -374,8 +375,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: localizations.translate('comment') ?? 'Комментарий',
+      hintText: localizations.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -384,23 +385,23 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount') ?? 'Amount',
-        hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+        label: localizations.translate('amount') ?? 'Сумма',
+        hintText: localizations.translate('enter_amount') ?? 'Введите сумму',
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount') ?? 'Enter amount';
+            return localizations.translate('enter_amount') ?? 'Введите сумму';
           }
           
           // Улучшенная валидация - ИСПРАВЛЕНИЕ
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+            return localizations.translate('enter_valid_amount') ?? 'Введите корректную сумму';
           }
           
           if (doubleValue <= 0) {
-            return 'Сумма должна быть больше нуля';
+            return localizations.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
           }
 
           return null;
@@ -451,7 +452,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Закрыть',
+                AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -483,7 +484,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Сохранить',
+                AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

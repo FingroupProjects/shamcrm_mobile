@@ -49,7 +49,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
 
     if (selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
         false,
       );
       return;
@@ -65,7 +65,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
       );
       return;
@@ -74,7 +74,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     if (selectedCashRegister == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -87,12 +87,12 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
         amount: double.parse(_amountController.text.trim()),
         leadId: int.parse(selectedLead!),
         comment: _commentController.text.trim(),
-        operationType: OperationType.client_payment.name,
+        operationType: OperationType.client_return.name,
         cashRegisterId: selectedCashRegister?.id.toString(),
       ));
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar('Ошибка создания документа: $e', false);
+      _showSnackBar(AppLocalizations.of(context)!.translate('error_creating_document').replaceAll('{error}', e.toString()) ?? 'Ошибка создания документа: $e', false);
     }
   }
 
@@ -152,7 +152,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
               listener: (context, state) {
                 if (state is GetAllLeadError && mounted) {
                   print('Lead loading error: ${state.toString()}');
-                  _showSnackBar('Ошибка загрузки лидов', false);
+                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', false);
                 }
               },
             ),
@@ -182,7 +182,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                               });
                             } catch (e) {
                               print('Error selecting cash register: $e');
-                              _showSnackBar('Ошибка выбора кассы', false);
+                              _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы', false);
                             }
                           },
                         ),
@@ -225,7 +225,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
             child: Column(
               children: [
                 Text(
-                  'Ошибка загрузки лидов',
+                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
                   style: const TextStyle(
                     color: Colors.red,
                     fontFamily: 'Gilroy',
@@ -237,7 +237,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                   onPressed: () {
                     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   },
-                  child: const Text('Повторить'),
+                  child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
                 ),
               ],
             ),
@@ -258,7 +258,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
               }
             } catch (e) {
               print('Error selecting lead: $e');
-              _showSnackBar('Ошибка выбора лида: $e', false);
+              _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_lead')?.replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e', false);
             }
           },
         );
@@ -276,7 +276,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_outgoing_document') ?? 'Create Outcome',
+        AppLocalizations.of(context)!.translate('create_outgoing_document') ?? 'Создать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -291,7 +291,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -306,8 +306,8 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -316,23 +316,22 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+      label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+      hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
       maxLines: 1,
       keyboardType: TextInputType.number,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+          return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
         }
         
-        // Улучшенная валидация - ИСПРАВЛЕНИЕ
         final doubleValue = double.tryParse(value.trim());
         if (doubleValue == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+          return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
         }
         
         if (doubleValue <= 0) {
-          return 'Сумма должна быть больше нуля';
+          return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
         }
 
         return null;
@@ -368,7 +367,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Cancel',
+                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -400,7 +399,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Create',
+                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

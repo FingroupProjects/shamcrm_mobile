@@ -11859,7 +11859,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
 
-  Future<Map<String, dynamic>> deleteMoneyIncomeDocument(int documentId) async {
+  Future<bool> deleteMoneyIncomeDocument(int documentId) async {
     final path = '/checking-account/$documentId';
 
     try {
@@ -11868,12 +11868,12 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode == 200) {
-        return {'result': 'Success'};
+        return true;
       } else {
         throw Exception('Failed to delete money income document!');
       }
     } catch (e) {
-      throw Exception('Ошибка удаления документа прихода: $e');
+      throw Exception(e.toString());
     }
   }
 

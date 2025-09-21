@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../custom_widget/custom_app_bar_page_2.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
+import '../../../screens/profile/profile_screen.dart';
 
 import '../../../bloc/cash_desk/cash_desk_bloc.dart';
 import '../../../bloc/expense/expense_bloc.dart';
@@ -18,6 +20,8 @@ class MoneyReferencesScreen extends StatefulWidget {
 }
 
 class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
+  bool isClickAvatarIcon = false;
+
   List<_ReferenceSection> _getSections(BuildContext context) => [
     _ReferenceSection(
       title: AppLocalizations.of(context)?.translate('cash_desk') ?? 'Касса',
@@ -83,27 +87,36 @@ class _MoneyReferencesScreenState extends State<MoneyReferencesScreen> {
       backgroundColor: const Color(0xffF8F9FB),
       appBar: AppBar(
         forceMaterialTransparency: true,
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Справочники',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
-          ),
+        title: CustomAppBarPage2(
+          title: isClickAvatarIcon
+              ? AppLocalizations.of(context)?.translate('appbar_settings') ?? 'Настройки'
+              : AppLocalizations.of(context)?.translate('references') ?? 'Справочники',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: false,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          currentFilters: {},
         ),
       ),
-      body: ListView(
+      body: isClickAvatarIcon ?
+          ProfileScreen() :
+          ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: const Text(
-              'Разделы',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)?.translate('sections') ?? 'Разделы',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52),

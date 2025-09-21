@@ -1338,6 +1338,41 @@
     "from_date": "From date",
     "to_date": "To date",
 
+    "document_created_successfully": "Document created successfully",
+    "document_updated_successfully": "Document updated successfully",
+    "document_deleted_successfully": "Document deleted successfully",
+    "document_restored_successfully": "Document restored successfully",
+    "failed_to_delete_document": "Failed to delete document",
+    "failed_to_restore_document": "Failed to restore document",
+    "select_sender_cash_register": "Please select sender cash register",
+    "error_updating_document": "Error updating document: {error}",
+    "error_creating_document": "Error creating document: {error}",
+    "error_loading_leads": "Error loading clients",
+    "error_selecting_cash_register": "Error selecting cash register",
+    "error_selecting_lead": "Error selecting client: {error}",
+    "error_adding_income": "Error adding income",
+    "delete_reference": "Delete reference",
+    "amount_must_be_greater_than_zero": "Amount must be greater than zero",
+    "confirm_delete_income_document": "Are you sure you want to delete this income document?",
+    "confirm_delete_money_income_document": "Are you sure you want to delete this money income document?",
+    "confirm_delete_reference": "Are you sure you want to delete this reference?",
+    "receiving_from_another_cash_register": "Receiving from another cash register: {cashRegister}",
+    "no_data": "No data",
+    "reference_name": "Reference name",
+    "edit_reference": "Edit reference",
+    "lead_id_is_null": "Client ID is null",
+    "error_initializing_get_all_lead_bloc": "Error initializing: {error}",
+    "lead_loading_error": "Error loading leads: {state}",
+    "error_selecting_cash_register_debug": "Error selecting cash register: {error}",
+    "selected_lead_data_debug": "Selected lead data: {data}",
+    "error_selecting_lead_debug": "Error selecting lead: {error}",
+    "status_deleted" : "deleted",
+    "status_not_deleted" : "not deleted",
+    "supplier_payment": "Supplier payment",
+    "other_expenses": "Other expenses",
+    "send_another_cash_register": "Send to another cash register"
+
+
 
     "appbar_warehouse": "Warehouse",
     "appbar_online_store": "Online Store",
@@ -1378,25 +1413,6 @@
     "edit_incoming_document": "Edit incoming",
     "edit_pricetype": "Edit price type",
     "edit_warehouse": "Edit warehouse"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

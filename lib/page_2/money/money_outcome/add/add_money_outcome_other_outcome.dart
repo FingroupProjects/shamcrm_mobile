@@ -49,7 +49,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
 
     if (selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Please select a deal',
+        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
         false,
       );
       return;
@@ -65,7 +65,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
       );
       return;
@@ -74,7 +74,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
     if (selectedCashRegister == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -87,7 +87,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
         amount: double.parse(_amountController.text.trim()),
         leadId: int.parse(selectedLead!),
         comment: _commentController.text.trim(),
-        operationType: OperationType.other_outcomes.name,
+        operationType: OperationType.other_expenses.name,
         cashRegisterId: selectedCashRegister?.id.toString(),
       ));
     } catch (e) {
@@ -276,7 +276,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_outgoing_document') ?? 'Create Outcome',
+        AppLocalizations.of(context)!.translate('create_outgoing_document') ?? 'Создать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -291,7 +291,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -306,8 +306,8 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -316,19 +316,19 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+      label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+      hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
       maxLines: 1,
       keyboardType: TextInputType.number,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+          return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
         }
         
         // Улучшенная валидация - ИСПРАВЛЕНИЕ
         final doubleValue = double.tryParse(value.trim());
         if (doubleValue == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+          return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
         }
         
         if (doubleValue <= 0) {
@@ -368,7 +368,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Cancel',
+                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -400,7 +400,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Create',
+                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

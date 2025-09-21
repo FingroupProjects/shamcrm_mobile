@@ -97,15 +97,15 @@ class _AddCashDeskState extends State<AddCashDesk> {
                               controller: nameController,
                               hintText: AppLocalizations.of(context)
                                   ?.translate('enter_title') ??
-                                  'Введите название*',
+                                  AppLocalizations.of(context)!.translate('enter_name') ?? 'Введите название*',
                               label: AppLocalizations.of(context)
                                   ?.translate('cash_register_name') ??
-                                  'Название',
+                                  AppLocalizations.of(context)!.translate('name') ?? 'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return AppLocalizations.of(context)
                                       ?.translate('field_required') ??
-                                      'Поле обязательно';
+                                      AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
                                 }
                                 return null;
                               },
@@ -157,7 +157,7 @@ class _AddCashDeskState extends State<AddCashDesk> {
               child: CustomButton(
                   buttonText: AppLocalizations.of(context)
                       ?.translate('cancel') ??
-                      'Отмена',
+                      AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
                   buttonColor: const Color(0xffF4F7FD),
                   textColor: Colors.black,
                   onPressed: isLoading ? () {} : _onCancel
@@ -191,7 +191,7 @@ class _AddCashDeskState extends State<AddCashDesk> {
                   : CustomButton(
                 buttonText: AppLocalizations.of(context)
                     ?.translate('save') ??
-                    'Сохранить',
+                    AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 buttonColor: const Color(0xff4759FF),
                 textColor: Colors.white,
                 onPressed: _onSave,

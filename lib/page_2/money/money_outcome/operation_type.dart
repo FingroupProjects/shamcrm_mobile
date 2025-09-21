@@ -1,8 +1,8 @@
 enum OperationType {
-  receive_another_cash_register,
-  other_outcomes,
-  return_supplier,
-  client_payment,
+  send_another_cash_register,
+  other_expenses,
+  supplier_payment,
+  client_return,
 }
 
 OperationType? getOperationTypeFromString(String? operationTypeString) {

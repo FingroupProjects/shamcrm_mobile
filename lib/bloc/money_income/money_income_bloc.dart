@@ -4,7 +4,6 @@ import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:flutter/foundation.dart';
 
 part 'money_income_event.dart';
 part 'money_income_state.dart';
@@ -32,14 +31,13 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onFetchMoneyIncome(FetchMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    // Always emit loading for force refresh or initial load
     if (event.forceRefresh || _allData.isEmpty) {
       emit(MoneyIncomeLoading());
     }
 
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData.clear(); // Use clear() instead of = []
+      _allData.clear();
       _filters = event.filters;
       _search = event.search;
     } else if (state is MoneyIncomeLoaded && (state as MoneyIncomeLoaded).hasReachedMax) {
@@ -47,10 +45,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     }
 
     try {
-      if (kDebugMode) {
-        print('MoneyIncomeBloc: Fetching page $_currentPage with filters: $_filters search: ${event.search}');
-      }
-
       final response = await apiService.getMoneyIncomeDocuments(
         page: _currentPage,
         perPage: _perPage,
@@ -58,16 +52,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         search: _search,
       );
 
-      if (kDebugMode) {
-        print('MoneyIncomeBloc: Response received');
-        print('MoneyIncomeBloc: Data count: ${response.result?.data?.length ?? 0}');
-      }
-
       final newData = response.result?.data ?? [];
 
-      // Clear and rebuild for force refresh, append for pagination
       if (event.forceRefresh) {
-        _allData = List.from(newData); // Create new list instance
+        _allData = List.from(newData);
       } else {
         _allData.addAll(newData);
       }
@@ -78,20 +66,12 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         _currentPage++;
       }
 
-      // Always emit a new state instance
       emit(MoneyIncomeLoaded(
-        data: List.from(_allData), // Create new list instance for the state
+        data: List.from(_allData),
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
       ));
-
-      if (kDebugMode) {
-        print('MoneyIncomeBloc: Emitted MoneyIncomeLoaded with ${_allData.length} total items, hasReachedMax: $hasReachedMax');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        print('MoneyIncomeBloc: Error occurred: $e');
-      }
       emit(MoneyIncomeError(e.toString()));
     }
   }
@@ -99,7 +79,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Future<void> _onCreateMoneyIncome(CreateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeCreateLoading());
     try {
-      // operation types are different but api method is the same for 4 types of operations, OperationType enum is used to distinguish them
       await apiService.createMoneyIncomeDocument(
         date: event.date,
         amount: event.amount,
@@ -112,7 +91,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         supplierId: event.supplierId,
       );
 
-      emit(const MoneyIncomeCreateSuccess('Документ успешно создан'));
+      emit(const MoneyIncomeCreateSuccess('document_created_successfully'));
     } catch (e) {
       emit(MoneyIncomeCreateError(e.toString()));
     }
@@ -134,7 +113,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         supplierId: event.supplierId,
         approved: event.approved,
       );
-      emit(const MoneyIncomeUpdateSuccess('Документ успешно обновлен'));
+      emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {
       emit(MoneyIncomeUpdateError(e.toString()));
     }
@@ -144,14 +123,13 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     emit(MoneyIncomeDeleteLoading());
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(const MoneyIncomeDeleteSuccess('Документ успешно удален'));
+      if (result) {
+        emit(const MoneyIncomeDeleteSuccess('document_deleted_successfully'));
       } else {
-        emit(const MoneyIncomeDeleteError('Не удалось удалить документ'));
+        emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
       }
     } catch (e) {
-      emit(MoneyIncomeDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      emit(MoneyIncomeDeleteError(e.toString()));
     }
   }
 
@@ -160,13 +138,12 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     try {
       final result = await apiService.restoreMoneyIncomeDocument(event.documentId);
       if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(const MoneyIncomeRestoreSuccess('Документ успешно восстановлен'));
+        emit(const MoneyIncomeRestoreSuccess('document_restored_successfully'));
       } else {
-        emit(const MoneyIncomeRestoreError('Не удалось восстановить документ'));
+        emit(const MoneyIncomeRestoreError('failed_to_restore_document'));
       }
     } catch (e) {
-      emit(MoneyIncomeRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      emit(MoneyIncomeRestoreError('error_restoring_document: ${e.toString()}'));
     }
   }
 }

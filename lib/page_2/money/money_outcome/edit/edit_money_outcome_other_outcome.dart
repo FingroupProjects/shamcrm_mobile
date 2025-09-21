@@ -143,7 +143,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.other_outcomes.name,
+        operationType: OperationType.other_expenses.name,
         leadId: selectedLead != null ? int.parse(selectedLead!) : null,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id.toString(),
@@ -354,7 +354,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('edit_outgoing_document'),
+        AppLocalizations.of(context)!.translate('edit_outgoing_document'),
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -369,7 +369,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date'),
+      label: AppLocalizations.of(context)!.translate('date'),
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -384,8 +384,8 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment'),
-      hintText: localizations.translate('enter_comment'),
+      label: AppLocalizations.of(context)!.translate('comment'),
+      hintText: AppLocalizations.of(context)!.translate('enter_comment'),
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -394,19 +394,19 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         controller: _amountController,
-        label: localizations.translate('amount'),
-        hintText: localizations.translate('enter_amount'),
+        label: AppLocalizations.of(context)!.translate('amount'),
+        hintText: AppLocalizations.of(context)!.translate('enter_amount'),
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return localizations.translate('enter_amount');
+            return AppLocalizations.of(context)!.translate('enter_amount');
           }
           
           // Улучшенная валидация - ИСПРАВЛЕНИЕ
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
           }
           
           if (doubleValue <= 0) {
@@ -420,7 +420,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
 
   Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved ? localizations.translate('approve_document') ?? 'Провести' :  localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
@@ -461,7 +461,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Закрыть',
+                AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -493,7 +493,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Сохранить',
+                AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

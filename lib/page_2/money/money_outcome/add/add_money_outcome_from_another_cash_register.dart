@@ -36,7 +36,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
 
     if (selectedCashRegister == null || selectedSenderCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Please select a cash register',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -52,7 +52,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Enter valid date and time',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
       );
       return;
@@ -66,7 +66,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
       cashRegisterId: selectedCashRegister!.id.toString(),
       senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
       comment: _commentController.text.trim(),
-      operationType: OperationType.receive_another_cash_register.name,
+      operationType: OperationType.send_another_cash_register.name,
     ));
   }
 
@@ -124,7 +124,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
                     children: [
                       const SizedBox(height: 8),
                       CashRegisterGroupWidget(
-                        title: localizations.translate('sender_cash_register') ?? 'Sender Cash Register',
+                        title: AppLocalizations.of(context)!.translate('sender_cash_register') ?? 'Касса-отправитель',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
@@ -136,7 +136,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        title: localizations.translate('receiver_cash_register') ?? 'Receiver Cash Register',
+                        title: AppLocalizations.of(context)!.translate('receiver_cash_register') ?? 'Касса-получатель',
                         selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
                           setState(() {
@@ -171,7 +171,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        localizations.translate('create_outgoing_document') ?? 'Create Outcome',
+        AppLocalizations.of(context)!.translate('create_outgoing_document') ?? 'Создать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -186,7 +186,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Date',
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -201,8 +201,8 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Comment',
-      hintText: localizations.translate('enter_comment') ?? 'Enter comment',
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -211,16 +211,16 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _amountController,
-      label: localizations.translate('amount') ?? 'Amount',
-      hintText: localizations.translate('enter_amount') ?? 'Enter amount',
+      label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+      hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
       maxLines: 1,
       keyboardType: TextInputType.number,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Enter amount';
+          return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
         }
         if (double.tryParse(value) == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Enter valid amount';
+          return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
         }
 
         return null;
@@ -256,7 +256,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
                 elevation: 0,
               ),
               child: Text(
-                localizations.translate('close') ?? 'Cancel',
+                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -288,7 +288,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
                 ),
               )
                   : Text(
-                localizations.translate('save') ?? 'Create',
+                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

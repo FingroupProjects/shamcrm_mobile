@@ -127,10 +127,10 @@ class MoneyOutcomeCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (document.operationType != null && document.operationType == OperationType.receive_another_cash_register.name) ...[
+            if (document.operationType != null && document.operationType == OperationType.send_another_cash_register.name) ...[
               const SizedBox(height: 8),
                 Text(
-                  'Получение с другой кассы: ${document.cashRegister?.name}',
+                  '${localizations.translate('receiving_from_another_cash_register')?.replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Получение с другой кассы: ${document.cashRegister?.name}'}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -150,7 +150,7 @@ class MoneyOutcomeCard extends StatelessWidget {
       showDialog(
         context: context,
         builder: (_) => BlocProvider.value(
-          value: context.read<MoneyOutcomeBloc>(), // reuse the same instance
+          value: context.read<MoneyOutcomeBloc>(),
           child: MoneyOutcomeDeleteDialog(documentId: document.id!),
         ),
       ).then((result) {
