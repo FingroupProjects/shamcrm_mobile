@@ -1416,34 +1416,9 @@
 
     "deleted_at": "O‘chirilgan sana",
     "deleting": "O‘chirilmoqda...",
-    "edit_incoming_document": "Kirimni tahrirlash",
     "edit_pricetype": "Narx turini tahrirlash",
-    "edit_warehouse": "Omborni tahrirlash",
-    "cash_desk": "Kassa",
-    "cash_desk_management": "Kassalarni boshqarish",
-    "add_cash_desk": "Kassa qo‘shish",
-    "edit_cash_desk": "Kassani tahrirlash",
-    "delete_cash_desk": "Kassani o‘chirish",
-    "delete_cash_desk_confirm": "Ushbu kassani o‘chirishga ishonchingiz komilmi?",
-    "expenses": "Chiqimlar",
-    "expenses_management": "Chiqimlarni boshqarish",
-    "add_expense": "Chiqim qo‘shish",
-    "edit_expense": "Chiqimni tahrirlash",
-    "delete_expense": "Chiqimni o‘chirish",
-    "delete_expense_confirm": "Ushbu chiqimni o‘chirishga ishonchingiz komilmi?",
-    "incomes": "Daromadlar",
-    "incomes_management": "Daromadlarni boshqarish",
-    "add_income": "Daromad qo‘shish",
-    "edit_income": "Daromadni tahrirlash",
-    "delete_income": "Daromadni o‘chirish",
-    "delete_income_confirm": "Ushbu daromadni o‘chirishga ishonchingiz komilmi?",
-    "expense_type": "Chiqim turlari",
-    "income_type": "Daromad turlari",
-    "enter_expense_name": "Chiqim nomini kiriting*",
-    "enter_income_name": "Daromad nomini kiriting*",
-    "expense_name": "Chiqim nomi",
-    "income_name": "Daromad nomi",
-    "type": "Tur"
+    "edit_warehouse": "Omborni tahrirlash"
+
 
 
 
