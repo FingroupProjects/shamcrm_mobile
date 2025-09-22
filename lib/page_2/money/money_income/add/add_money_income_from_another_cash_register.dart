@@ -29,6 +29,15 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    // Здесь можно добавить предзагрузку данных если нужно
   }
 
   void _createDocument() async {
@@ -58,7 +67,9 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
         false,
@@ -67,7 +78,9 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
     }
 
     if (selectedCashRegister!.id  == selectedSenderCashRegister!.id) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar(
         AppLocalizations.of(context)!.translate('cash_registers_must_be_different') ?? 'Касса-отправитель и касса-получатель должны быть разными',
         false,
@@ -90,26 +103,33 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      if (scaffoldMessenger == null) return;
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isSuccess ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    });
   }
 
   @override
@@ -119,16 +139,24 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
+            listener: (context, state) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
 
-          if (state is MoneyIncomeCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is MoneyIncomeCreateError && mounted) {
-            _showSnackBar(state.message, false);
-          }
-        },
+                setState(() => _isLoading = false);
+
+                if (state is MoneyIncomeCreateSuccess) {
+                  Navigator.pop(context, true);
+                } else if (state is MoneyIncomeCreateError) {
+                  _showSnackBar(state.message, false);
+                }
+              });
+            },
+          ),
+        ],
         child: Form(
           key: _formKey,
           child: Column(
@@ -144,9 +172,16 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                         title: AppLocalizations.of(context)!.translate('sender_cash_register') ?? 'Касса-отправитель',
                         selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedSenderCashRegister = selectedRegionData;
-                          });
+                          try {
+                            setState(() {
+                              selectedSenderCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting sender cash register: $e');
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false);
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -156,9 +191,16 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                         title: AppLocalizations.of(context)!.translate('receiver_cash_register') ?? 'Касса-получатель',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedCashRegister = selectedRegionData;
-                          });
+                          try {
+                            setState(() {
+                              selectedCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting receiver cash register: $e');
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false);
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -232,16 +274,22 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
       maxLines: 1,
       keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
-        }
-        if (double.tryParse(value) == null) {
-          return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
-        }
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+          }
 
-        return null;
-      }
+          final doubleValue = double.tryParse(value.trim());
+          if (doubleValue == null) {
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+          }
+
+          if (doubleValue <= 0) {
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+          }
+
+          return null;
+        }
     );
   }
 
@@ -263,7 +311,9 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              onPressed: _isLoading ? null : () {
+                if (mounted) Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(

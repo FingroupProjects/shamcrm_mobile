@@ -10,13 +10,13 @@ import 'package:intl/intl.dart';
 class MoneyIncomeCard extends StatelessWidget {
   final Document document;
   final Function(Document)? onUpdate;
-  final Function(int)? onDelete;
+  final VoidCallback onDelete;
 
   const MoneyIncomeCard({
     Key? key,
     required this.document,
     this.onUpdate,
-    this.onDelete,
+    required this.onDelete,
   }) : super(key: key);
 
   String _formatAmount(dynamic amount) {
@@ -53,7 +53,7 @@ class MoneyIncomeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFE9EDF5),
-          // borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
         child: Column(
@@ -93,17 +93,17 @@ class MoneyIncomeCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (onDelete != null) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _showDeleteDialog(context),
-                        child: Image.asset(
-                          'assets/icons/delete.png',
-                          width: 24,
-                          height: 24,
-                        ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        onDelete();
+                      },
+                      child: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],
@@ -149,19 +149,5 @@ class MoneyIncomeCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _showDeleteDialog(BuildContext context) {
-    if (document.id != null && onDelete != null) {
-      showDialog(
-        context: context,
-        builder: (_) =>
-            BlocProvider.value(
-              value: context.read<MoneyIncomeBloc>(),
-              child: MoneyIncomeDeleteDialog(
-                  documentId: document.id!, onDelete: onDelete),
-            ),
-      );
-    }
   }
 }

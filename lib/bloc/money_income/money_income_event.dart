@@ -151,3 +151,12 @@ class ToggleApproveOneMoneyIncomeDocument extends MoneyIncomeEvent {
   @override
   List<Object> get props => [documentId, approve];
 }
+
+class RemoveLocalFromList extends MoneyIncomeEvent {
+  final int documentId;
+
+  const RemoveLocalFromList(this.documentId);
+
+  @override
+  List<Object> get props => [documentId];
+}

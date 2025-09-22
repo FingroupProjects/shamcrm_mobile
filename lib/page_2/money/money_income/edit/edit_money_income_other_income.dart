@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/income_category_list/income_category_list_
 import 'package:crm_task_manager/bloc/income_category_list/income_category_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/income_category_data.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -35,7 +36,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   final TextEditingController _amountController = TextEditingController();
   CashRegisterData? selectedCashRegister;
   IncomeCategoryData? selectedIncomeCategory;
-
+  List<IncomeCategoryData> incomeCategoriesList = [];
 
   bool _isLoading = false;
   late bool _isApproved;
@@ -44,12 +45,18 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   void initState() {
     super.initState();
     _initializeFields();
-    
-    // Инициализация BLoC для загрузки категорий дохода
-    try {
+
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    // Проверяем и загружаем категории доходов
+    final incomeCategoryState = context.read<GetAllIncomeCategoryBloc>().state;
+    if (incomeCategoryState is! GetAllIncomeCategorySuccess) {
       context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
-    } catch (e) {
-      print('Error initializing GetAllIncomeCategoryBloc: $e');
     }
   }
 
@@ -302,24 +309,97 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
 
   // Метод для построения выбора категории дохода
   Widget _buildIncomeCategorySelection() {
-    return BlocBuilder<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
-      builder: (context, state) {
-        return IncomeRadioGroupWidget(
-          selectedIncomeCategoryId: selectedIncomeCategory?.id,
-          onSelectIncomeCategory: (IncomeCategoryData selectedCategoryData) {
-            try {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text(
+        //   AppLocalizations.of(context)!.translate('income_category') ?? 'Категория дохода',
+        //   style: const TextStyle(
+        //     fontSize: 16,
+        //     fontWeight: FontWeight.w500,
+        //     fontFamily: 'Gilroy',
+        //     color: Color(0xff1E2E52),
+        //   ),
+        // ),
+        // const SizedBox(height: 4),
+        BlocConsumer<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
+          listener: (context, state) {
+            if (state is GetAllIncomeCategorySuccess) {
               setState(() {
-                selectedIncomeCategory = selectedCategoryData;
+                incomeCategoriesList = state.dataIncomeCategories.result ?? [];
               });
-            } catch (e) {
-              _showSnackBar(
-                  AppLocalizations.of(context)!.translate('error_selecting_income_category') ?? 'Ошибка выбора категории дохода: $e',
-                  false
-              );
             }
           },
-        );
-      },
+          builder: (context, state) {
+            if (state is GetAllIncomeCategoryInitial || (state is GetAllIncomeCategorySuccess && incomeCategoriesList.isEmpty)) {
+              context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllIncomeCategoryLoading) {
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllIncomeCategoryError) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(AppLocalizations.of(context)!.translate('error_loading_income_categories') ?? 'Ошибка загрузки категорий дохода',
+                        style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    TextButton(
+                      onPressed: () {
+                        context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
+                      },
+                      child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Если список пуст даже после успешной загрузки, показываем placeholder
+            if (state is GetAllIncomeCategorySuccess && incomeCategoriesList.isEmpty) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('select_income_category') ?? 'Выберите категорию дохода',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              );
+            }
+
+            return IncomeRadioGroupWidget(
+              selectedIncomeCategoryId: selectedIncomeCategory?.id,
+              onSelectIncomeCategory: (IncomeCategoryData selectedCategoryData) {
+                try {
+                  setState(() {
+                    selectedIncomeCategory = selectedCategoryData;
+                  });
+                } catch (e) {
+                  _showSnackBar(
+                      AppLocalizations.of(context)!.translate('error_selecting_income_category') ?? 'Ошибка выбора категории дохода: $e',
+                      false
+                  );
+                }
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 

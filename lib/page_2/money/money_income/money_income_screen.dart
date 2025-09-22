@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
+import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_deletion.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -166,6 +167,22 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     }
   }
 
+  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
+    showDialog(
+        context: context,
+        builder: (_) => BlocProvider.value(
+          value: context.read<MoneyIncomeBloc>(),
+          child: MoneyIncomeDeleteDialog(documentId: document.id!, onDelete: (id) {
+            onDelete();
+          }),
+        ),
+      ).then((value) {
+        if (mounted) {
+          FocusScope.of(context).requestFocus(FocusNode());
+        }
+      });
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -208,14 +225,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             listener: (context, state) {
               if (!mounted) return;
 
-              if (kDebugMode) {
-                final localizations = AppLocalizations.of(context)!;
-                print(localizations.translate('money_income_screen_state_changed').replaceAll('{stateType}', state.runtimeType.toString()) ?? 'Экран доходов: Состояние изменено на ${state.runtimeType}');
-                if (state is MoneyIncomeLoaded) {
-                  print(localizations.translate('money_income_screen_data_count').replaceAll('{count}', state.data.length.toString()) ?? 'Экран доходов: Количество данных в состоянии: ${state.data.length}');
-                }
-              }
-
               if (state is MoneyIncomeLoaded) {
                 setState(() {
                   _hasReachedMax = state.hasReachedMax;
@@ -242,21 +251,15 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
               } else if (state is MoneyIncomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
-                _moneyIncomeBloc.add(FetchMoneyIncome(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search,
-                ));
               } else if (state is MoneyIncomeRestoreSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeRestoreError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
-                if (state is MoneyIncomeLoading) {
+                if (state is MoneyIncomeLoading || _isInitialLoad) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -305,8 +308,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                               )
                             : const SizedBox.shrink();
                       }
+
+                      final document = currentData[index];
+
                       return Dismissible(
-                        key: Key(currentData[index].id.toString()),
+                        key: Key(document.id.toString()),
                         direction: DismissDirection.endToStart,
                         background: Container(
                           padding: const EdgeInsets.all(8),
@@ -325,21 +331,27 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           child: const Icon(Icons.delete, color: Colors.white, size: 24),
                         ),
                         onDismissed: (direction) {
-                          print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
+                          print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(currentData[index].id!));
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: MoneyIncomeCard(
-                            document: currentData[index],
+                            document: document,
                             onUpdate: (document) {
                           _navigateToEditScreen(context, document);
                         },
-                        onDelete: (documentId) {
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(documentId));
+                        onDelete: () {
+                              debugPrint("show delete dialog for document ID: ${document.id}");
+                              showDeleteDialog(
+                                  context: context,
+                                  document: currentData[index],
+                                  onDelete: () {
+                                    _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                                  });
                             },
                           ),
                         ),

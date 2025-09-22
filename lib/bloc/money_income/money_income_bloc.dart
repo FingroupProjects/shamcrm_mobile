@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 
 part 'money_income_event.dart';
+
 part 'money_income_state.dart';
 
 class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
@@ -16,7 +18,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   String? _search = '';
   List<Document> _allData = [];
 
-
   MoneyIncomeBloc() : super(MoneyIncomeInitial()) {
     on<FetchMoneyIncome>(_onFetchMoneyIncome);
     on<CreateMoneyIncome>(_onCreateMoneyIncome);
@@ -26,6 +27,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<AddMoneyIncome>(_onAddMoneyIncome);
     // on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
     on<ToggleApproveOneMoneyIncomeDocument>(_onToggleApproveOneMoneyIncomeDocument);
+    on<RemoveLocalFromList>(_onRemoveLocalFromList);
   }
 
   // Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
@@ -38,7 +40,8 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   //   }
   // }
 
-  Future<void> _onToggleApproveOneMoneyIncomeDocument(ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
+  Future<void> _onToggleApproveOneMoneyIncomeDocument(
+      ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
     try {
       final approved = await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
       if (approved) {
@@ -147,10 +150,12 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeDeleteLoading());
+    await Future.delayed(const Duration(seconds: 5));
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
       if (result) {
         emit(const MoneyIncomeDeleteSuccess('document_deleted_successfully'));
+        add(RemoveLocalFromList(event.documentId));
       } else {
         emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
       }
@@ -170,6 +175,25 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       }
     } catch (e) {
       emit(MoneyIncomeRestoreError('error_restoring_document: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyIncomeState> emit) async {
+    // Проверяем процент оставшихся
+    // Если удалено >= 30%, сразу подгружаем новые данные с сервера (форсированно) иначе просто удаляем из локального списка
+
+    final deletedPercent = 1 - (_allData.length / (_perPage));
+    if (deletedPercent >= 0.3) {
+      debugPrint('Force refresh due to high deletion percentage: $deletedPercent');
+      add(FetchMoneyIncome(forceRefresh: true));
+    } else {
+      debugPrint('Local removal, deletion percentage: $deletedPercent');
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      emit(MoneyIncomeLoaded(
+        data: List.from(_allData),
+        pagination: null,
+        hasReachedMax: false,
+      ));
     }
   }
 }
