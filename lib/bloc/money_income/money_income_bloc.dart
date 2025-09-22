@@ -24,6 +24,31 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<DeleteMoneyIncome>(_onDeleteMoneyIncome);
     on<RestoreMoneyIncome>(_onRestoreMoneyIncome);
     on<AddMoneyIncome>(_onAddMoneyIncome);
+    // on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
+    on<ToggleApproveOneMoneyIncomeDocument>(_onToggleApproveOneMoneyIncomeDocument);
+  }
+
+  // Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+  //   final allApproved = await apiService.masApproveMoneyIncomeDocuments(event.documentIds);
+  //
+  //   if (allApproved) {
+  //     emit(MoneyIncomeApproveMassSuccess(""));
+  //   } else {
+  //     emit(MoneyIncomeApproveMassError("approve_mass_error"));
+  //   }
+  // }
+
+  Future<void> _onToggleApproveOneMoneyIncomeDocument(ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
+    try {
+      final approved = await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
+      if (approved) {
+        emit(MoneyIncomeToggleOneApproveSuccess(""));
+      } else {
+        emit(MoneyIncomeToggleOneApproveError("approve_error"));
+      }
+    } catch (e) {
+      emit(MoneyIncomeToggleOneApproveError(e.toString()));
+    }
   }
 
   Future<void> _onAddMoneyIncome(AddMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
@@ -111,7 +136,6 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
-        approved: event.approved,
       );
       emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {

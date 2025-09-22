@@ -1408,7 +1408,8 @@
   "status_not_deleted" : "не удален",
   "supplier_payment": "Оплата поставщику",
   "other_expenses": "Прочие расходы",
-  "send_another_cash_register": "Отправление на другую кассу"
+  "send_another_cash_register": "Отправление на другую кассу",
+  "status_changed_successfully_approve": "Статус успешно изменён!"
 
  
 

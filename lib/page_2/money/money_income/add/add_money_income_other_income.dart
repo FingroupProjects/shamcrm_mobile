@@ -168,8 +168,9 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        // Заменен на безопасный виджет - ИСПРАВЛЕНИЕ
                         _buildLeadSelection(),
+                        const SizedBox(height: 16),
+                        _buildDateField(localizations),
                         const SizedBox(height: 16),
                         CashRegisterGroupWidget(
                           selectedCashRegisterId: selectedCashRegister?.id.toString(),
@@ -184,8 +185,6 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                             }
                           },
                         ),
-                        const SizedBox(height: 16),
-                        _buildDateField(localizations),
                         const SizedBox(height: 16),
                         _buildAmountField(localizations),
                         const SizedBox(height: 16),

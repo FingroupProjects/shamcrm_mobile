@@ -30,7 +30,6 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final String? cashRegisterId;
   final String? senderCashRegisterId;
   final int? supplierId;
-  final bool approved;
 
   UpdateMoneyIncome({
     this.id,
@@ -42,7 +41,6 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
-    required this.approved,
   });
 
   @override
@@ -57,7 +55,6 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     cashRegisterId ?? '',
     senderCashRegisterId ?? '',
     supplierId ?? 0,
-    approved,
   ];
 }
 
@@ -128,4 +125,23 @@ class FilterMoneyIncome extends MoneyIncomeEvent {
 
   @override
   List<Object> get props => [filters];
+}
+//
+// class MassApproveMoneyIncomeDocuments extends MoneyIncomeEvent {
+//   final List<int> documentIds;
+//
+//   const MassApproveMoneyIncomeDocuments(this.documentIds);
+//
+//   @override
+//   List<Object> get props => [documentIds];
+// }
+
+class ToggleApproveOneMoneyIncomeDocument extends MoneyIncomeEvent {
+  final int documentId;
+  final bool approve;
+
+  const ToggleApproveOneMoneyIncomeDocument(this.documentId, this.approve);
+
+  @override
+  List<Object> get props => [documentId, approve];
 }

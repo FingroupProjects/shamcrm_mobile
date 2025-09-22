@@ -11910,7 +11910,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-Future<void> updateMoneyIncomeDocument({
+  Future<void> updateMoneyIncomeDocument({
     required int documentId,
     required String date,
     required num amount,
@@ -11921,7 +11921,6 @@ Future<void> updateMoneyIncomeDocument({
     String? senderCashRegisterId,
     String? cashRegisterId,
     int? supplierId,
-    required bool approved,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -11936,7 +11935,6 @@ Future<void> updateMoneyIncomeDocument({
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
-        'approved': approved,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
@@ -11948,6 +11946,42 @@ Future<void> updateMoneyIncomeDocument({
     } catch (e) {
       debugPrint("Ошибка при обновлении документа прихода: $e");
       rethrow;
+    }
+  }
+
+  // Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
+  //   final path = await _appendQueryParams('/checking-account/mass-approve');
+  //
+  //   try {
+  //     final response = await _patchRequest(path, {
+  //       'ids': ids,
+  //     });
+  //
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       return true;
+  //     } else {
+  //       throw Exception('Ошибка при массовом проведении документов прихода');
+  //     }
+  //   } catch (e) {
+  //     throw Exception('Ошибка при массовом проведении документов прихода: $e');
+  //   }
+  // }
+
+  Future<bool> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
+    final path = approve
+        ? await _appendQueryParams('/checking-account/mass-approve')
+        : await _appendQueryParams('/checking-account/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': [id],
+      });
+
+     final body = json.decode(response.body);
+     return (body['result']['approved_count'] as int) == 1;
+
+    } catch (e) {
+      throw Exception('Ошибка при массовом проведении документов прихода: $e');
     }
   }
 

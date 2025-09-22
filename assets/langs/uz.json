@@ -1381,9 +1381,10 @@
   "expense_name": "Chiqim nomi",
   "income_name": "Tushum nomi",
   "type": "Tur",
-  "supplier_payment": "Ta’minotchi to‘lovi",
+  "supplier_payment": "Ta'minotchi to'lovi",
   "other_expenses": "Boshqa chiqimlar",
   "send_another_cash_register": "Boshqa kassaga yuborish",
+  "status_changed_successfully_approve": "Status muvaffaqiyatli o'zgartirildi!",
 
     "appbar_warehouse": "Ombor",
     "appbar_online_store": "Onlayn do‘kon",

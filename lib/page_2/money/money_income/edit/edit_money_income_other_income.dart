@@ -133,8 +133,18 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       return;
     }
 
-    try {
-      final bloc = context.read<MoneyIncomeBloc>();
+    final areDatesTheSame = _areDatesEqual(widget.document.date ?? '', isoDate);
+    debugPrint("areDatesTheSame: $areDatesTheSame");
+
+    final bloc = context.read<MoneyIncomeBloc>();
+
+    if (
+    !areDatesTheSame ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
+        widget.document.model?.id.toString() != selectedLead?.toString()
+    ) {
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -143,16 +153,11 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         leadId: selectedLead != null ? int.parse(selectedLead!) : null,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id.toString(),
-        approved: _isApproved,
       ));
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_updating_document').replaceAll('{error}', e.toString()) ??
-              'Ошибка обновления документа: $e',
-          false);
+    }
+
+    if (widget.document.approved != _isApproved) {
+      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
     }
   }
 
@@ -215,6 +220,12 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                   } else if (state is MoneyIncomeUpdateError) {
                     _showSnackBar(state.message, false);
                   }
+                  if (state is MoneyIncomeToggleOneApproveSuccess) {
+                    setState(() => _isLoading = false);
+                    Navigator.pop(context, true);
+                  } else if (state is MoneyIncomeToggleOneApproveError) {
+                    setState(() => _isLoading = false);
+                  }
                 });
               },
             ),
@@ -242,11 +253,11 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                         const SizedBox(height: 16),
                         _buildLeadSelection(),
                         const SizedBox(height: 16),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
                         CashRegisterGroupWidget(
-                          selectedCashRegisterId: selectedCashRegister?.id
-                              .toString(),
-                          onSelectCashRegister: (
-                              CashRegisterData selectedRegionData) {
+                          selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                          onSelectCashRegister: (CashRegisterData selectedRegionData) {
                             try {
                               setState(() {
                                 selectedCashRegister = selectedRegionData;
@@ -254,14 +265,13 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                             } catch (e) {
                               print('Error selecting cash register: $e');
                               _showSnackBar(
-                                  AppLocalizations.of(context)!.translate('error_selecting_cash_register') ??
-                                      'Ошибка выбора кассы',
-                                  false);
+                                  AppLocalizations.of(context)!.translate('error_selecting_cash_register')
+                                      ?? 'Ошибка выбора кассы',
+                                  false
+                              );
                             }
                           },
                         ),
-                        const SizedBox(height: 16),
-                        _buildDateField(localizations),
                         const SizedBox(height: 16),
                         _buildAmountField(localizations),
                         const SizedBox(height: 16),
@@ -513,5 +523,25 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     _dateController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+}
+
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }

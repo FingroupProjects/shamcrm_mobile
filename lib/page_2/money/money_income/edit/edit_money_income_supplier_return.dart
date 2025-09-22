@@ -124,17 +124,31 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       return;
     }
 
+    final areDatesTheSame = _areDatesEqual(widget.document.date ?? '', isoDate);
+    debugPrint("areDatesTheSame: $areDatesTheSame");
+
     final bloc = context.read<MoneyIncomeBloc>();
-    bloc.add(UpdateMoneyIncome(
-      id: widget.document.id,
-      date: isoDate,
-      amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.return_supplier.name,
-      cashRegisterId: selectedCashRegister!.id.toString(),
-      comment: _commentController.text.trim(),
-      supplierId: int.parse(selectedSupplier!.id.toString()),
-      approved: _isApproved,
-    ));
+
+    if (!areDatesTheSame ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
+        widget.document.model?.id.toString() != selectedSupplier?.toString()
+    ) {
+      bloc.add(UpdateMoneyIncome(
+        id: widget.document.id,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: OperationType.return_supplier.name,
+        cashRegisterId: selectedCashRegister!.id.toString(),
+        comment: _commentController.text.trim(),
+        supplierId: int.parse(selectedSupplier!.id.toString()),
+      ));
+    }
+
+    if (widget.document.approved != _isApproved) {
+      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -187,6 +201,12 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
               Navigator.pop(context, true);
             } else if (state is MoneyIncomeUpdateError) {
               _showSnackBar(state.message, false);
+            }
+            if (state is MoneyIncomeToggleOneApproveSuccess) {
+              setState(() => _isLoading = false);
+              Navigator.pop(context, true);
+            } else if (state is MoneyIncomeToggleOneApproveError) {
+              setState(() => _isLoading = false);
             }
           });
         },
@@ -402,5 +422,25 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     _dateController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+}
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+
+  debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+  try {
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }

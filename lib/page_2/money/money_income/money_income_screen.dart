@@ -140,7 +140,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       case OperationType.client_payment:
         targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
-      case OperationType.receive_another_cash_register:
+      case OperationType.send_another_cash_register:
         targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
       case OperationType.other_incomes:
@@ -236,6 +236,10 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
               } else if (state is MoneyIncomeUpdateError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+              }  else if (state is MoneyIncomeToggleOneApproveSuccess) {
+                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess:  true);
+              } else if (state is MoneyIncomeToggleOneApproveError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
               } else if (state is MoneyIncomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
                 _moneyIncomeBloc.add(FetchMoneyIncome(
@@ -323,7 +327,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               if (value == OperationType.client_payment.name) {
                 targetScreen = const AddMoneyIncomeFromClient();
-              } else if (value == OperationType.receive_another_cash_register.name) {
+              } else if (value == OperationType.send_another_cash_register.name) {
                 targetScreen = const AddMoneyIncomeAnotherCashRegister();
               } else if (value == OperationType.other_incomes.name) {
                 targetScreen = const AddMoneyIncomeOtherIncome();
@@ -374,7 +378,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.receive_another_cash_register.name,
+                  value: OperationType.send_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(

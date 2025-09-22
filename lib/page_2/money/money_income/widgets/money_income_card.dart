@@ -134,7 +134,7 @@ class MoneyIncomeCard extends StatelessWidget {
               ),
             ],
             if (document.operationType != null && document.operationType ==
-                OperationType.receive_another_cash_register.name) ...[
+                OperationType.send_another_cash_register.name) ...[
               const SizedBox(height: 8),
               Text(
                 localizations.translate('receiving_from_another_cash_register').replaceAll('{cashRegister}', document.cashRegister!.name ?? '') ?? 'Получение с другой кассы: ${document.cashRegister!.name}',

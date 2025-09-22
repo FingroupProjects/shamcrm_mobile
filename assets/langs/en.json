@@ -1368,9 +1368,10 @@
     "error_selecting_lead_debug": "Error selecting lead: {error}",
     "status_deleted" : "deleted",
     "status_not_deleted" : "not deleted",
-    "supplier_payment": "Supplier payment",
-    "other_expenses": "Other expenses",
-    "send_another_cash_register": "Send to another cash register",
+  "supplier_payment": "Supplier payment",
+  "other_expenses": "Other expenses",
+  "send_another_cash_register": "Send to another cash register",
+  "status_changed_successfully_approve": "Status changed successfully!",
 
 
 
