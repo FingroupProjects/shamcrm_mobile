@@ -50,11 +50,10 @@ class MoneyIncomeCard extends StatelessWidget {
         if (onUpdate != null) onUpdate!(document);
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFE9EDF5),
-          borderRadius: BorderRadius.circular(12),
+          // borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
         child: Column(

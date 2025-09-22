@@ -265,7 +265,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   );
                 }
 
-                final currentData = state is MoneyIncomeLoaded ? state.data : [];
+                final List<Document> currentData = state is MoneyIncomeLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is MoneyIncomeLoaded) {
                   return Center(
@@ -285,7 +285,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   color: const Color(0xff1E2E52),
                   backgroundColor: Colors.white,
                   onRefresh: _onRefresh,
-                  child: ListView.builder(
+                  child: ListView.separated(
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -303,14 +305,44 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                               )
                             : const SizedBox.shrink();
                       }
-                      return MoneyIncomeCard(
-                        document: currentData[index],
-                        onUpdate: (document) {
+                      return Dismissible(
+                        key: Key(currentData[index].id.toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                        ),
+                        onDismissed: (direction) {
+                          print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
+                          setState(() {
+                            currentData.removeAt(index);
+                          });
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(currentData[index].id!));
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: MoneyIncomeCard(
+                            document: currentData[index],
+                            onUpdate: (document) {
                           _navigateToEditScreen(context, document);
                         },
                         onDelete: (documentId) {
                           _moneyIncomeBloc.add(DeleteMoneyIncome(documentId));
-                        },
+                            },
+                          ),
+                        ),
                       );
                     },
                   ),

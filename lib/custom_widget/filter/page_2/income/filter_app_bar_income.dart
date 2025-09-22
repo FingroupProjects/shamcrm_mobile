@@ -281,15 +281,6 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     }
   }
 
-  String _getStatusDisplayText(String status) {
-    if (status == "1") {
-      return AppLocalizations.of(context)!.translate('approved') ?? 'Одобрено';
-    } else if (status == "0") {
-      return AppLocalizations.of(context)!.translate('not_approved') ?? 'Не одобрено';
-    }
-    return AppLocalizations.of(context)!.translate(status) ?? status;
-  }
-
   Widget _buildSupplierWidget() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
