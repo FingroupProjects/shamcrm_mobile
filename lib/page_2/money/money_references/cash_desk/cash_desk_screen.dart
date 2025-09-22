@@ -194,17 +194,6 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                           color: Color(0xff1E2E52),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      if (data.users.isNotEmpty)
-                        Text(
-                          (AppLocalizations.of(context)?.translate('users') ?? 'Пользователи: {users}').replaceAll('{users}', data.users.map((e) => e.name).join(', ')),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
                     ],
                   ),
                 ),
