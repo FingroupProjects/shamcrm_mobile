@@ -207,58 +207,54 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
   Widget _buildLeadSelection() {
     return BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
       builder: (context, state) {
-        if (state is GetAllLeadLoading) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          );
-        }
-        
-        if (state is GetAllLeadError) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                  },
-                  child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
-                ),
-              ],
-            ),
-          );
-        }
+        // if (state is GetAllLeadLoading) {
+        //   return Container(
+        //     padding: const EdgeInsets.all(16),
+        //     child: const Center(
+        //       child: CircularProgressIndicator(
+        //         color: Color(0xff1E2E52),
+        //       ),
+        //     ),
+        //   );
+        // }
+        //
+        // if (state is GetAllLeadError) {
+        //   return Container(
+        //     padding: const EdgeInsets.all(16),
+        //     child: Column(
+        //       children: [
+        //         Text(
+        //           AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
+        //           style: const TextStyle(
+        //             color: Colors.red,
+        //             fontFamily: 'Gilroy',
+        //             fontSize: 14,
+        //           ),
+        //         ),
+        //         const SizedBox(height: 8),
+        //         ElevatedButton(
+        //           onPressed: () {
+        //             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+        //           },
+        //           child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
+        //         ),
+        //       ],
+        //     ),
+        //   );
+        // }
 
         return LeadRadioGroupWidget(
           selectedLead: selectedLead,
           onSelectLead: (LeadData selectedRegionData) {
-            try {
-              print('Selected lead data: ${selectedRegionData.toString()}'); // Для отладки
-              if (selectedRegionData.id != null) {
-                setState(() {
-                  selectedLead = selectedRegionData.id.toString();
-                });
-              } else {
-                throw Exception('Lead ID is null');
-              }
-            } catch (e) {
-              print('Error selecting lead: $e');
-              _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_lead').replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e', false);
-            }
+            // try {
+              // print('Selected lead data: ${selectedRegionData.toString()}'); // Для отладки
+              setState(() {
+                selectedLead = selectedRegionData.id.toString();
+              });
+            // } catch (e) {
+            //   print('Error selecting lead: $e');
+            //   _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_lead').replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e', false);
+            // }
           },
         );
       },
