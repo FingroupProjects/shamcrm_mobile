@@ -116,31 +116,35 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
     final bloc = context.read<MoneyIncomeBloc>();
 
-    final areDatesTheSame = _areDatesEqual(widget.document.date ?? '', isoDate);
-    debugPrint("areDatesTheSame: $areDatesTheSame");
-
-    if (
-    !areDatesTheSame ||
-    widget.document.amount != _amountController.text.trim() ||
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+        widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
-    widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
-    widget.document.senderCashregister?.id.toString() != selectedSenderCashRegister?.id.toString()
-    ) {
-      // Only send update event if something has changed
+        widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
+        widget.document.senderCashregister?.id.toString() != selectedSenderCashRegister?.id.toString();
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
       bloc.add(UpdateMoneyIncome(
-      id: widget.document.id,
-      date: isoDate,
-      amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.send_another_cash_register.name,
-      comment: _commentController.text.trim(),
-      cashRegisterId: selectedCashRegister?.id.toString(),
-      senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
-    ));
+        id: widget.document.id,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: OperationType.send_another_cash_register.name,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister?.id.toString(),
+        senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
+      ));
     }
 
-    if (widget.document.approved != _isApproved) {
-      // Only send approve/unapprove event if approval status has changed
+    if (approvalChanged) {
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      Navigator.pop(context);
     }
   }
 

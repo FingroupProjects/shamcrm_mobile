@@ -157,7 +157,7 @@ class Document {
   final MoneyOrganization? organization;
   final CashRegister? cashRegister;
   final CashRegister? senderCashregister;
-  final String? article;
+  final Article? article;
   final String? amount;
   final Model? model;
   final String? comment;
@@ -200,7 +200,7 @@ class Document {
         senderCashregister: json['sender_cashregister'] != null
             ? CashRegister.fromJson(json['sender_cashregister'])
             : null,
-        article: _parseString(json['article']),
+        article: json['article'] != null ? Article.fromJson(json['article']) : null,
         amount: _parseString(json['amount']),
         model: json['model'] != null ? Model.fromJson(json['model']) : null,
         comment: _parseString(json['comment']),
@@ -230,7 +230,7 @@ class Document {
     "organization": organization?.toJson(),
     "cash_register": cashRegister?.toJson(),
     "sender_cashregister": senderCashregister?.toJson(),
-    "article": article,
+    "article": article?.toJson(),
     "amount": amount,
     "model": model?.toJson(),
     "comment": comment,
@@ -282,6 +282,52 @@ class CashRegister {
     "updated_at": updatedAt,
   };
 }
+
+class Article {
+  final int? id;
+  final String? name;
+  final String? type; // income, expense
+  final String? createdAt;
+  final String? updatedAt;
+
+  Article({
+    this.id,
+    this.name,
+    this.type,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Article.fromJson(Map<String, dynamic> json) {
+    try {
+      return Article(
+        id: json['id'],
+        name: _parseString(json['name']),
+        type: _parseString(json['type']),
+        createdAt: _parseString(json['created_at']),
+        updatedAt: _parseString(json['updated_at']),
+      );
+    } catch (e) {
+      print('Error parsing Article: $e');
+      rethrow;
+    }
+  }
+
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "type": type,
+    "created_at": createdAt,
+    "updated_at": updatedAt,
+  };
+}
+
 
 class Model {
   final int? id;

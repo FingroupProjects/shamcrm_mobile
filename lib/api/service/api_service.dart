@@ -121,6 +121,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/cash_register_list_model.dart';
 import '../../models/domain_check.dart';
+import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
@@ -11734,6 +11735,24 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return cashRegistersData;
   }
 
+  //Метод для получения income categories
+  Future<IncomeCategoriesDataResponse> getAllIncomeCategories() async {
+    final path = await _appendQueryParams('/article?type=income');
+
+    final response = await _getRequest(path);;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return IncomeCategoriesDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении данных!');
+    }
+  }
+
   //Метод для получения suppliers
   Future<SuppliersDataResponse> getAllSuppliers() async {
     final path = await _appendQueryParams('/suppliers');
@@ -11762,6 +11781,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String movementType,
     String? comment,
     int? leadId,
+    int? articleId,
     String? senderCashRegisterId,
     String? cashRegisterId,
     int? supplierId,
@@ -11776,6 +11796,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'operation_type': operationType,
         'movement_type': movementType,
         'lead_id': leadId,
+        'article_id': articleId,
         'sender_cash_register_id': senderCashRegisterId,
         'comment': comment,
         'cash_register_id': cashRegisterId,
@@ -11812,8 +11833,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '&author_id=${filters['author_id']}';
       }
 
-      if (filters.containsKey('status') && filters['status'] != null) {
-        path += '&status=${filters['status']}';
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
       }
 
       if (filters.containsKey('date_from') && filters['date_from'] != null) {
@@ -11918,6 +11939,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String movementType,
     String? comment,
     int? leadId,
+    int? articleId,
     String? senderCashRegisterId,
     String? cashRegisterId,
     int? supplierId,
@@ -11931,6 +11953,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'operation_type': operationType,
         'movement_type': movementType,
         'lead_id': leadId,
+        'article_id': articleId,
         'sender_cash_register_id': senderCashRegisterId,
         'comment': comment,
         'cash_register_id': cashRegisterId,

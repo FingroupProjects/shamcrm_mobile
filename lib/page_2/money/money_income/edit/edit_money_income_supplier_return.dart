@@ -124,17 +124,16 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       return;
     }
 
-    final areDatesTheSame = _areDatesEqual(widget.document.date ?? '', isoDate);
-    debugPrint("areDatesTheSame: $areDatesTheSame");
-
-    final bloc = context.read<MoneyIncomeBloc>();
-
-    if (!areDatesTheSame ||
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
-        widget.document.model?.id.toString() != selectedSupplier?.toString()
-    ) {
+        widget.document.model?.id.toString() != selectedSupplier?.id.toString();
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
+      final bloc = context.read<MoneyIncomeBloc>();
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -146,8 +145,16 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       ));
     }
 
-    if (widget.document.approved != _isApproved) {
+    if (approvalChanged) {
+      final bloc = context.read<MoneyIncomeBloc>();
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      Navigator.pop(context);
     }
   }
 

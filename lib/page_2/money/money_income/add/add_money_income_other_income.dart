@@ -1,17 +1,17 @@
 import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';  // Добавлен импорт
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_bloc.dart';
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_event.dart';
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/income_category_data.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/page_2/money/widgets/income_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
 import '../operation_type.dart';
 
 class AddMoneyIncomeOtherIncome extends StatefulWidget {
@@ -26,7 +26,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  String? selectedLead;
+  IncomeCategoryData? selectedIncomeCategory;
   CashRegisterData? selectedCashRegister;
 
   bool _isLoading = false;
@@ -36,20 +36,20 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     
-    // Инициализация BLoC для загрузки лидов - ИСПРАВЛЕНИЕ
+    // Инициализация BLoC для загрузки категорий дохода
     try {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
     } catch (e) {
-      print('Error initializing GetAllLeadBloc: $e');
+      print('Error initializing GetAllIncomeCategoryBloc: $e');
     }
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedLead == null) {
+    if (selectedIncomeCategory == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
+        AppLocalizations.of(context)!.translate('select_income_category') ?? 'Пожалуйста, выберите категорию дохода',
         false,
       );
       return;
@@ -85,7 +85,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
       bloc.add(CreateMoneyIncome(
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        leadId: int.parse(selectedLead!),
+        articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
         operationType: OperationType.other_incomes.name,
         cashRegisterId: selectedCashRegister?.id.toString(),
@@ -131,7 +131,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
       body: MultiBlocProvider(
         // Добавлен MultiBlocProvider - ИСПРАВЛЕНИЕ
         providers: [
-          BlocProvider(create: (_) => GetAllLeadBloc()),
+          BlocProvider(create: (_) => GetAllIncomeCategoryBloc()),
         ],
         child: MultiBlocListener(
           // Заменен BlocListener на MultiBlocListener - ИСПРАВЛЕНИЕ
@@ -147,12 +147,12 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                 }
               },
             ),
-            // Добавлен слушатель для GetAllLeadBloc - ИСПРАВЛЕНИЕ
-            BlocListener<GetAllLeadBloc, GetAllLeadState>(
+            // Добавлен слушатель для GetAllIncomeCategoryBloc
+            BlocListener<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
               listener: (context, state) {
-                if (state is GetAllLeadError && mounted) {
-                  print('Lead loading error: ${state.toString()}');
-                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', false);
+                if (state is GetAllIncomeCategoryError && mounted) {
+                  print('Income category loading error: ${state.toString()}');
+                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_income_categories') ?? 'Ошибка загрузки категорий дохода', false);
                 }
               },
             ),
@@ -168,7 +168,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        _buildLeadSelection(),
+                        _buildIncomeCategorySelection(),
                         const SizedBox(height: 16),
                         _buildDateField(localizations),
                         const SizedBox(height: 16),
@@ -203,57 +203,22 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     );
   }
 
-  Widget _buildLeadSelection() {
-    return BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
+  Widget _buildIncomeCategorySelection() {
+    return BlocBuilder<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
       builder: (context, state) {
-        // if (state is GetAllLeadLoading) {
-        //   return Container(
-        //     padding: const EdgeInsets.all(16),
-        //     child: const Center(
-        //       child: CircularProgressIndicator(
-        //         color: Color(0xff1E2E52),
-        //       ),
-        //     ),
-        //   );
-        // }
-        //
-        // if (state is GetAllLeadError) {
-        //   return Container(
-        //     padding: const EdgeInsets.all(16),
-        //     child: Column(
-        //       children: [
-        //         Text(
-        //           AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-        //           style: const TextStyle(
-        //             color: Colors.red,
-        //             fontFamily: 'Gilroy',
-        //             fontSize: 14,
-        //           ),
-        //         ),
-        //         const SizedBox(height: 8),
-        //         ElevatedButton(
-        //           onPressed: () {
-        //             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-        //           },
-        //           child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
-        //         ),
-        //       ],
-        //     ),
-        //   );
-        // }
-
-        return LeadRadioGroupWidget(
-          selectedLead: selectedLead,
-          onSelectLead: (LeadData selectedRegionData) {
-            // try {
-              // print('Selected lead data: ${selectedRegionData.toString()}'); // Для отладки
+        return IncomeRadioGroupWidget(
+          selectedIncomeCategoryId: selectedIncomeCategory?.id,
+          onSelectIncomeCategory: (IncomeCategoryData selectedCategoryData) {
+            try {
               setState(() {
-                selectedLead = selectedRegionData.id.toString();
+                selectedIncomeCategory = selectedCategoryData;
               });
-            // } catch (e) {
-            //   print('Error selecting lead: $e');
-            //   _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_lead').replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e', false);
-            // }
+            } catch (e) {
+              _showSnackBar(
+                  AppLocalizations.of(context)!.translate('error_selecting_income_category') ?? 'Ошибка выбора категории дохода: $e',
+                  false
+              );
+            }
           },
         );
       },

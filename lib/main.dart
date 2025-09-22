@@ -31,6 +31,7 @@ import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
@@ -397,6 +398,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllSourceBloc()),
         BlocProvider(create: (context) => GetAllLeadBloc()),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
+        BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => GetAllLeadMultiBloc()),

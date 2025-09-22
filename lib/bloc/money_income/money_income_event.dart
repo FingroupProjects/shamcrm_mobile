@@ -26,6 +26,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final String operationType;
   final String movementType = "PKO";
   final int? leadId;
+  final int? articleId;
   final String comment;
   final String? cashRegisterId;
   final String? senderCashRegisterId;
@@ -36,6 +37,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     required this.date,
     required this.amount,
     this.leadId,
+    this.articleId,
     required this.comment,
     required this.operationType,
     this.cashRegisterId,
@@ -51,6 +53,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     operationType,
     movementType,
     leadId ?? 0,
+    articleId ?? 0,
     comment,
     cashRegisterId ?? '',
     senderCashRegisterId ?? '',
@@ -87,6 +90,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final String operationType;
   final String movementType = "PKO";
   final int? leadId;
+  final int? articleId;
   final String comment;
   final String? cashRegisterId;
   final String? senderCashRegisterId;
@@ -96,6 +100,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
     required this.date,
     required this.amount,
     this.leadId,
+    this.articleId,
     required this.comment,
     required this.operationType,
     this.cashRegisterId,
@@ -110,6 +115,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         operationType,
         movementType,
         leadId ?? 0,
+        articleId ?? 0,
         comment,
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',

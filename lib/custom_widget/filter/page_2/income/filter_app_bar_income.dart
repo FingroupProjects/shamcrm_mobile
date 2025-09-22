@@ -221,7 +221,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     }
   }
 
-  void _resetFilters() {
+  Future<void> _resetFilters() async {
     if (mounted) {
       setState(() {
         _fromDate = null;
@@ -236,8 +236,9 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       });
     }
     widget.onResetFilters?.call();
-    _saveFilterState();
-    _applyFilters();
+    await _saveFilterState();
+    await _applyFilters();
+    Navigator.pop(context);
   }
 
   bool _isAnyFilterSelected() {
@@ -250,8 +251,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _isDeleted != null;
   }
 
-  void _applyFilters() async {
-
+  _applyFilters() async {
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
@@ -270,12 +270,13 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         'date_to': _toDate,
         'supplier_id': _selectedSupplier?.id.toString(),
         'storage_id': _selectedCashRegister?.id.toString(),
-        'status': _selectedStatus,
+        'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
         'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
       };
 
       widget.onSelectedDataFilter?.call(filters);
+      Navigator.pop(context);
     }
   }
 
