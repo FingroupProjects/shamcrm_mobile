@@ -14,6 +14,7 @@ import '../../../../models/author_data_response.dart';
 import '../../../../models/cash_register_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
 import '../../../custom_textfield_deadline.dart';
+import '../../../dropdown_loading_state.dart';
 
 class IncomeFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
@@ -319,19 +320,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
               builder: (context, state) {
                 if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
                   context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllSupplierLoading) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllSupplierError) {
@@ -356,7 +349,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                 // Если список пуст даже после успешной загрузки, показываем placeholder
                 if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
                   return Container(
-                    height: 50,
+                    height: 30,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: const Color(0xffF4F7FD),
@@ -468,19 +461,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
               builder: (context, state) {
                 if (state is GetAllCashRegisterInitial || (state is GetAllCashRegisterSuccess && cashRegistersList.isEmpty)) {
                   context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllCashRegisterLoading) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllCashRegisterError) {
@@ -617,19 +602,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
               builder: (context, state) {
                 if (state is GetAllAuthorInitial || (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
                   context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllAuthorLoading) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 if (state is GetAllAuthorError) {
@@ -653,23 +630,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
 
                 // Если список пуст даже после успешной загрузки, показываем placeholder
                 if (state is GetAllAuthorSuccess && authorsList.isEmpty) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  );
+                  return const DropdownLoadingState();
                 }
 
                 return CustomDropdown<AuthorData>.search(
