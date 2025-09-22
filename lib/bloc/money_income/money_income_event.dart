@@ -26,23 +26,23 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final String operationType;
   final String movementType = "PKO";
   final int? leadId;
+  final int? articleId;
   final String comment;
   final String? cashRegisterId;
   final String? senderCashRegisterId;
   final int? supplierId;
-  final bool approved;
 
   UpdateMoneyIncome({
     this.id,
     required this.date,
     required this.amount,
     this.leadId,
+    this.articleId,
     required this.comment,
     required this.operationType,
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
-    required this.approved,
   });
 
   @override
@@ -53,11 +53,11 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     operationType,
     movementType,
     leadId ?? 0,
+    articleId ?? 0,
     comment,
     cashRegisterId ?? '',
     senderCashRegisterId ?? '',
     supplierId ?? 0,
-    approved,
   ];
 }
 
@@ -90,6 +90,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final String operationType;
   final String movementType = "PKO";
   final int? leadId;
+  final int? articleId;
   final String comment;
   final String? cashRegisterId;
   final String? senderCashRegisterId;
@@ -99,6 +100,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
     required this.date,
     required this.amount,
     this.leadId,
+    this.articleId,
     required this.comment,
     required this.operationType,
     this.cashRegisterId,
@@ -113,6 +115,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         operationType,
         movementType,
         leadId ?? 0,
+        articleId ?? 0,
         comment,
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
@@ -128,4 +131,32 @@ class FilterMoneyIncome extends MoneyIncomeEvent {
 
   @override
   List<Object> get props => [filters];
+}
+//
+// class MassApproveMoneyIncomeDocuments extends MoneyIncomeEvent {
+//   final List<int> documentIds;
+//
+//   const MassApproveMoneyIncomeDocuments(this.documentIds);
+//
+//   @override
+//   List<Object> get props => [documentIds];
+// }
+
+class ToggleApproveOneMoneyIncomeDocument extends MoneyIncomeEvent {
+  final int documentId;
+  final bool approve;
+
+  const ToggleApproveOneMoneyIncomeDocument(this.documentId, this.approve);
+
+  @override
+  List<Object> get props => [documentId, approve];
+}
+
+class RemoveLocalFromList extends MoneyIncomeEvent {
+  final int documentId;
+
+  const RemoveLocalFromList(this.documentId);
+
+  @override
+  List<Object> get props => [documentId];
 }

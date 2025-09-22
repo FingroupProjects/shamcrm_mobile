@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 // import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -138,4 +139,50 @@ class AppStyles {
     fontFamily: 'Gilroy',
     color: Colors.white,
   );
+}
+
+class MoneyInputFormatter extends TextInputFormatter {
+  final int decimalRange;
+
+  MoneyInputFormatter({this.decimalRange = 2}) : assert(decimalRange >= 0);
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    String value = newValue.text;
+
+    // Allow empty
+    if (value.isEmpty) return newValue;
+
+    // Reject if contains anything except digits and dot
+    final regEx = RegExp(r'^\d*\.?\d*$');
+    if (!regEx.hasMatch(value)) {
+      return oldValue;
+    }
+
+    // Must not start with dot
+    if (value.startsWith('.')) {
+      return oldValue;
+    }
+
+    // Must not start with 0 unless it's "0." (like 0.25)
+    if (value.startsWith('0') && value.length > 1 && !value.startsWith('0.')) {
+      return oldValue;
+    }
+
+    // Only one dot allowed
+    if (value.indexOf('.') != value.lastIndexOf('.')) {
+      return oldValue;
+    }
+
+    // Limit decimal places
+    if (value.contains('.')) {
+      final parts = value.split('.');
+      if (parts.length > 1 && parts[1].length > decimalRange) {
+        return oldValue;
+      }
+    }
+
+    return newValue;
+  }
 }

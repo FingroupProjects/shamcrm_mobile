@@ -1,19 +1,20 @@
 import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';  // Добавлен импорт
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_bloc.dart';
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_event.dart';
+import 'package:crm_task_manager/bloc/income_category_list/income_category_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/income_category_data.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
+import 'package:crm_task_manager/page_2/money/widgets/income_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeOtherIncome extends StatefulWidget {
@@ -33,8 +34,9 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  String? selectedLead;
   CashRegisterData? selectedCashRegister;
+  IncomeCategoryData? selectedIncomeCategory;
+  List<IncomeCategoryData> incomeCategoriesList = [];
 
   bool _isLoading = false;
   late bool _isApproved;
@@ -43,12 +45,18 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   void initState() {
     super.initState();
     _initializeFields();
-    
-    // Инициализация BLoC для загрузки лидов - ИСПРАВЛЕНИЕ
-    try {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-    } catch (e) {
-      print('Error initializing GetAllLeadBloc: $e');
+
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    // Проверяем и загружаем категории доходов
+    final incomeCategoryState = context.read<GetAllIncomeCategoryBloc>().state;
+    if (incomeCategoryState is! GetAllIncomeCategorySuccess) {
+      context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
     }
   }
 
@@ -79,9 +87,12 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       _commentController.text = widget.document.comment!;
     }
 
-    // Initialize selected lead
-    if (widget.document.model?.id != null) {
-      selectedLead = widget.document.model!.id.toString();
+    // Initialize selected income category
+    if (widget.document.article?.id != null) {
+      selectedIncomeCategory = IncomeCategoryData(
+        id: widget.document.article!.id!,
+        name: widget.document.article!.name!,
+      );
     }
 
     // Initialize selected cash register
@@ -96,9 +107,9 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedLead == null) {
+    if (selectedIncomeCategory == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
+        AppLocalizations.of(context)!.translate('select_income_category') ?? 'Пожалуйста, выберите категорию дохода',
         false,
       );
       return;
@@ -133,26 +144,37 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       return;
     }
 
-    try {
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
+        widget.document.article?.id.toString() != selectedIncomeCategory?.id.toString();
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
       final bloc = context.read<MoneyIncomeBloc>();
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
         operationType: OperationType.other_incomes.name,
-        leadId: selectedLead != null ? int.parse(selectedLead!) : null,
+        articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id.toString(),
-        approved: _isApproved,
       ));
-    } catch (e) {
+    }
+
+    if (approvalChanged) {
+      final bloc = context.read<MoneyIncomeBloc>();
+      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_updating_document').replaceAll('{error}', e.toString()) ??
-              'Ошибка обновления документа: $e',
-          false);
+      Navigator.pop(context);
     }
   }
 
@@ -198,7 +220,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       body: MultiBlocProvider(
         // Добавлен MultiBlocProvider - ИСПРАВЛЕНИЕ
         providers: [
-          BlocProvider(create: (_) => GetAllLeadBloc()),
+          BlocProvider(create: (_) => GetAllIncomeCategoryBloc()),
         ],
         child: MultiBlocListener(
           // Заменен BlocListener на MultiBlocListener - ИСПРАВЛЕНИЕ
@@ -215,13 +237,19 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                   } else if (state is MoneyIncomeUpdateError) {
                     _showSnackBar(state.message, false);
                   }
+                  if (state is MoneyIncomeToggleOneApproveSuccess) {
+                    setState(() => _isLoading = false);
+                    Navigator.pop(context, true);
+                  } else if (state is MoneyIncomeToggleOneApproveError) {
+                    setState(() => _isLoading = false);
+                  }
                 });
               },
             ),
-            BlocListener<GetAllLeadBloc, GetAllLeadState>(
+            BlocListener<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
               listener: (context, state) {
-                if (state is GetAllLeadError && mounted) {
-                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', false);
+                if (state is GetAllIncomeCategoryError && mounted) {
+                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_income_categories') ?? 'Ошибка загрузки категорий дохода', false);
                 }
               },
             ),
@@ -240,13 +268,13 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                         const SizedBox(height: 8),
                         _buildApproveButton(localizations),
                         const SizedBox(height: 16),
-                        _buildLeadSelection(),
+                        _buildIncomeCategorySelection(),
+                        const SizedBox(height: 16),
+                        _buildDateField(localizations),
                         const SizedBox(height: 16),
                         CashRegisterGroupWidget(
-                          selectedCashRegisterId: selectedCashRegister?.id
-                              .toString(),
-                          onSelectCashRegister: (
-                              CashRegisterData selectedRegionData) {
+                          selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                          onSelectCashRegister: (CashRegisterData selectedRegionData) {
                             try {
                               setState(() {
                                 selectedCashRegister = selectedRegionData;
@@ -254,14 +282,13 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                             } catch (e) {
                               print('Error selecting cash register: $e');
                               _showSnackBar(
-                                  AppLocalizations.of(context)!.translate('error_selecting_cash_register') ??
-                                      'Ошибка выбора кассы',
-                                  false);
+                                  AppLocalizations.of(context)!.translate('error_selecting_cash_register')
+                                      ?? 'Ошибка выбора кассы',
+                                  false
+                              );
                             }
                           },
                         ),
-                        const SizedBox(height: 16),
-                        _buildDateField(localizations),
                         const SizedBox(height: 16),
                         _buildAmountField(localizations),
                         const SizedBox(height: 16),
@@ -280,63 +307,99 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     );
   }
 
-  // Новый метод для безопасного построения выбора лидов - ИСПРАВЛЕНИЕ
-  Widget _buildLeadSelection() {
-    return BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
-      builder: (context, state) {
-        if (state is GetAllLeadLoading) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          );
-        }
-        
-        if (state is GetAllLeadError) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                  },
-                  child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return LeadRadioGroupWidget(
-          selectedLead: selectedLead,
-          onSelectLead: (LeadData selectedRegionData) {
-            try {
+  // Метод для построения выбора категории дохода
+  Widget _buildIncomeCategorySelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text(
+        //   AppLocalizations.of(context)!.translate('income_category') ?? 'Категория дохода',
+        //   style: const TextStyle(
+        //     fontSize: 16,
+        //     fontWeight: FontWeight.w500,
+        //     fontFamily: 'Gilroy',
+        //     color: Color(0xff1E2E52),
+        //   ),
+        // ),
+        // const SizedBox(height: 4),
+        BlocConsumer<GetAllIncomeCategoryBloc, GetAllIncomeCategoryState>(
+          listener: (context, state) {
+            if (state is GetAllIncomeCategorySuccess) {
               setState(() {
-                selectedLead = selectedRegionData.id.toString();
+                incomeCategoriesList = state.dataIncomeCategories.result ?? [];
               });
-            } catch (e) {
-              _showSnackBar(
-                  AppLocalizations.of(context)!.translate('error_selecting_lead').
-                    replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e',
-                  false
-              );
             }
           },
-        );
-      },
+          builder: (context, state) {
+            if (state is GetAllIncomeCategoryInitial || (state is GetAllIncomeCategorySuccess && incomeCategoriesList.isEmpty)) {
+              context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllIncomeCategoryLoading) {
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllIncomeCategoryError) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(AppLocalizations.of(context)!.translate('error_loading_income_categories') ?? 'Ошибка загрузки категорий дохода',
+                        style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    TextButton(
+                      onPressed: () {
+                        context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
+                      },
+                      child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Если список пуст даже после успешной загрузки, показываем placeholder
+            if (state is GetAllIncomeCategorySuccess && incomeCategoriesList.isEmpty) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('select_income_category') ?? 'Выберите категорию дохода',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              );
+            }
+
+            return IncomeRadioGroupWidget(
+              selectedIncomeCategoryId: selectedIncomeCategory?.id,
+              onSelectIncomeCategory: (IncomeCategoryData selectedCategoryData) {
+                try {
+                  setState(() {
+                    selectedIncomeCategory = selectedCategoryData;
+                  });
+                } catch (e) {
+                  _showSnackBar(
+                      AppLocalizations.of(context)!.translate('error_selecting_income_category') ?? 'Ошибка выбора категории дохода: $e',
+                      false
+                  );
+                }
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -513,5 +576,25 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
     _dateController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+}
+
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }

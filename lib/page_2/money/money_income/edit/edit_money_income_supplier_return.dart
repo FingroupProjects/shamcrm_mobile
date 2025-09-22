@@ -1,16 +1,20 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
+import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
+import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
+import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
+import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
-import 'package:crm_task_manager/page_2/money/widgets/supplier_radio_group.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../../models/cash_register_list_model.dart';
 import '../operation_type.dart';
 
 class EditMoneyIncomeSupplierReturn extends StatefulWidget {
@@ -30,9 +34,10 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  CashRegisterData? selectedCashRegister;
-  SupplierData? selectedSupplier;
 
+  SupplierData? _selectedSupplier;
+  CashRegisterData? selectedCashRegister;
+  List<SupplierData> suppliersList = [];
   bool _isLoading = false;
   late bool _isApproved;
 
@@ -40,6 +45,19 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   void initState() {
     super.initState();
     _initializeFields();
+
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    // Проверяем и загружаем поставщиков
+    final supplierState = context.read<GetAllSupplierBloc>().state;
+    if (supplierState is! GetAllSupplierSuccess) {
+      context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+    }
   }
 
   void _initializeFields() {
@@ -67,6 +85,14 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       _commentController.text = widget.document.comment!;
     }
 
+    // Initialize selected supplier with proper object structure
+    if (widget.document.model?.id != null) {
+      _selectedSupplier = SupplierData(
+        id: widget.document.model!.id!,
+        name: widget.document.model!.name ?? widget.document.model!.id.toString(),
+      );
+    }
+
     // Initialize selected cash register
     if (widget.document.cashRegister != null) {
       selectedCashRegister = CashRegisterData(
@@ -74,22 +100,14 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         name: widget.document.cashRegister!.name!,
       );
     }
-
-    // initialize selected supplier from model field
-    if (widget.document.model != null) {
-      selectedSupplier = SupplierData(
-        id: widget.document.model!.id!,
-        name: widget.document.model!.name!,
-      );
-    }
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedCashRegister == null) {
+    if (_selectedSupplier == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
         false,
       );
       return;
@@ -113,28 +131,50 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       return;
     }
 
-    if (selectedSupplier == null) {
+    if (selectedCashRegister == null) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
         false,
       );
       return;
     }
 
     final bloc = context.read<MoneyIncomeBloc>();
-    bloc.add(UpdateMoneyIncome(
-      id: widget.document.id,
-      date: isoDate,
-      amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.return_supplier.name,
-      cashRegisterId: selectedCashRegister!.id.toString(),
-      comment: _commentController.text.trim(),
-      supplierId: int.parse(selectedSupplier!.id.toString()),
-      approved: _isApproved,
-    ));
+
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.model?.id.toString() != _selectedSupplier!.id.toString() ||
+        widget.document.cashRegister?.id != selectedCashRegister?.id;
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
+      final bloc = context.read<MoneyIncomeBloc>();
+      bloc.add(UpdateMoneyIncome(
+        id: widget.document.id,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: OperationType.return_supplier.name,
+        supplierId: _selectedSupplier!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister?.id.toString(),
+      ));
+    }
+
+    if (approvalChanged) {
+      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      Navigator.pop(context);
+    }
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -169,6 +209,148 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     });
   }
 
+  Widget _buildSupplierWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        BlocConsumer<GetAllSupplierBloc, GetAllSupplierState>(
+          listener: (context, state) {
+            if (state is GetAllSupplierSuccess) {
+              setState(() {
+                suppliersList = state.dataSuppliers.result ?? [];
+              });
+            }
+          },
+          builder: (context, state) {
+            if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+              context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllSupplierLoading) {
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllSupplierError) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                        AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков',
+                        style: const TextStyle(color: Colors.red, fontSize: 12)
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                      },
+                      child: Text(
+                          AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
+                          style: const TextStyle(fontSize: 12)
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Если список пуст даже после успешной загрузки, показываем placeholder
+            if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              );
+            }
+
+            return CustomDropdown<SupplierData>.search(
+              items: suppliersList,
+              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+              overlayHeight: 300,
+              enabled: true,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: const Color(0xffF4F7FD),
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.name ?? item.id?.toString() ?? 'Unknown Supplier',
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                return Text(
+                  selectedItem?.name ??
+                      selectedItem?.id?.toString() ??
+                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
+                  ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+                  : null,
+              onChanged: (value) {
+                if (value != null && mounted) {
+                  setState(() {
+                    _selectedSupplier = value;
+                  });
+                  FocusScope.of(context).unfocus();
+                }
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -176,51 +358,72 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
-        listener: (context, state) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
+            listener: (context, state) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
 
-            setState(() => _isLoading = false);
+                setState(() => _isLoading = false);
 
-            if (state is MoneyIncomeUpdateSuccess) {
-              Navigator.pop(context, true);
-            } else if (state is MoneyIncomeUpdateError) {
-              _showSnackBar(state.message, false);
-            }
-          });
-        },
+                if (state is MoneyIncomeUpdateSuccess) {
+                  Navigator.pop(context, true);
+                } else if (state is MoneyIncomeUpdateError) {
+                  _showSnackBar(state.message, false);
+                }
+                if (state is MoneyIncomeToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
+                } else if (state is MoneyIncomeToggleOneApproveError) {
+                  setState(() => _isLoading = false);
+                }
+              });
+            },
+          ),
+          BlocListener<GetAllSupplierBloc, GetAllSupplierState>(
+            listener: (context, state) {
+              if (state is GetAllSupplierError && mounted) {
+                debugPrint('Supplier loading error: ${state.toString()}');
+                _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков',
+                    false
+                );
+              }
+            },
+          ),
+        ],
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 8),
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
-                      SupplierGroupWidget(
-                        selectedSupplierId: selectedSupplier?.id.toString(),
-                        onSelectSupplier: (SupplierData value) {
-                          setState(() {
-                            selectedSupplier = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
+                      _buildSupplierWidget(),
+                      const SizedBox(height: 16),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData value) {
-                          setState(() {
-                            selectedCashRegister = value;
-                          });
+                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                          try {
+                            setState(() {
+                              selectedCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting cash register: $e');
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false
+                            );
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -263,7 +466,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   }
 
   Widget _buildDateField(AppLocalizations localizations) {
-    return CustomTextFieldDate(
+    return  CustomTextFieldDate(
       controller: _dateController,
       label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
@@ -278,7 +481,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   }
 
   Widget _buildCommentField(AppLocalizations localizations) {
-    return CustomTextField(
+    return  CustomTextField(
       controller: _commentController,
       label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
       hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
@@ -298,15 +501,22 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
           }
-          if (double.tryParse(value) == null) {
+
+          final doubleValue = double.tryParse(value.trim());
+          if (doubleValue == null) {
             return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
           }
+
+          if (doubleValue <= 0) {
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+          }
+
           return null;
         }
     );
   }
 
-    Widget _buildApproveButton(AppLocalizations localizations) {
+  Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
       text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
@@ -315,7 +525,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         setState(() {
           _isApproved = !_isApproved;
         });
-      }
+      },
     );
   }
 
@@ -398,9 +608,28 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
 
   @override
   void dispose() {
-    _amountController.dispose();
     _dateController.dispose();
     _commentController.dispose();
+    _amountController.dispose();
     super.dispose();
+  }
+}
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }

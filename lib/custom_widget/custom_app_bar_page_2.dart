@@ -835,8 +835,7 @@ void navigateToOrderFilterScreen(BuildContext context) {
                   filters['date_from'] != null ||
                   filters['date_to'] != null ||
                   filters['supplier'] != null ||
-                  filters['warehouse'] != null ||
-                  filters['status'] != null ||
+                  filters['approved'] != null ||
                   filters['author'] != null ||
                   filters['isDeleted'] != null;
             });

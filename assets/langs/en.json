@@ -1303,6 +1303,11 @@
     "delete_income_confirm": "Are you sure you want to delete income?",
     "expense_type": "Expense categories",
     "income_type": "Income categories",
+    "income_category": "Income category",
+    "select_income_category": "Select income category",
+  "error_loading_income_categories": "Error loading income categories",
+  "error_selecting_income_category": "Error selecting income category",
+  "cash_registers_must_be_different": "Sender and recipient cash registers must be different",
     "enter_expense_name": "Enter expense name*",
     "enter_income_name": "Enter income name*",
     "expense_name": "Expense name",
@@ -1368,9 +1373,10 @@
     "error_selecting_lead_debug": "Error selecting lead: {error}",
     "status_deleted" : "deleted",
     "status_not_deleted" : "not deleted",
-    "supplier_payment": "Supplier payment",
-    "other_expenses": "Other expenses",
-    "send_another_cash_register": "Send to another cash register",
+  "supplier_payment": "Supplier payment",
+  "other_expenses": "Other expenses",
+  "send_another_cash_register": "Send to another cash register",
+  "status_changed_successfully_approve": "Status changed successfully!",
 
 
 

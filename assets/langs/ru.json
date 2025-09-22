@@ -1345,6 +1345,11 @@
   "delete_income_confirm": "Вы уверены, что хотите удалить доход?",
   "expense_type": "Статьи расходов",
   "income_type": "Статьи доходов",
+  "income_category": "Статья дохода",
+  "select_income_category": "Выберите статью дохода",
+  "error_loading_income_categories": "Ошибка загрузки категорий дохода",
+  "error_selecting_income_category": "Ошибка выбора категории дохода",
+  "cash_registers_must_be_different": "Касса-отправитель и касса-получатель должны быть разными",
   "enter_expense_name": "Введите название расхода*",
   "enter_income_name": "Введите название дохода*",
   "expense_name": "Название расхода",
@@ -1408,7 +1413,8 @@
   "status_not_deleted" : "не удален",
   "supplier_payment": "Оплата поставщику",
   "other_expenses": "Прочие расходы",
-  "send_another_cash_register": "Отправление на другую кассу"
+  "send_another_cash_register": "Отправление на другую кассу",
+  "status_changed_successfully_approve": "Статус успешно изменён!"
 
  
 

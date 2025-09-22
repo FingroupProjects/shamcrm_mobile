@@ -10,13 +10,13 @@ import 'package:intl/intl.dart';
 class MoneyIncomeCard extends StatelessWidget {
   final Document document;
   final Function(Document)? onUpdate;
-  final Function(int)? onDelete;
+  final VoidCallback onDelete;
 
   const MoneyIncomeCard({
     Key? key,
     required this.document,
     this.onUpdate,
-    this.onDelete,
+    required this.onDelete,
   }) : super(key: key);
 
   String _formatAmount(dynamic amount) {
@@ -50,7 +50,6 @@ class MoneyIncomeCard extends StatelessWidget {
         if (onUpdate != null) onUpdate!(document);
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFE9EDF5),
@@ -94,17 +93,17 @@ class MoneyIncomeCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (onDelete != null) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _showDeleteDialog(context),
-                        child: Image.asset(
-                          'assets/icons/delete.png',
-                          width: 24,
-                          height: 24,
-                        ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        onDelete();
+                      },
+                      child: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],
@@ -134,7 +133,7 @@ class MoneyIncomeCard extends StatelessWidget {
               ),
             ],
             if (document.operationType != null && document.operationType ==
-                OperationType.receive_another_cash_register.name) ...[
+                OperationType.send_another_cash_register.name) ...[
               const SizedBox(height: 8),
               Text(
                 localizations.translate('receiving_from_another_cash_register').replaceAll('{cashRegister}', document.cashRegister!.name ?? '') ?? 'Получение с другой кассы: ${document.cashRegister!.name}',
@@ -150,19 +149,5 @@ class MoneyIncomeCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _showDeleteDialog(BuildContext context) {
-    if (document.id != null && onDelete != null) {
-      showDialog(
-        context: context,
-        builder: (_) =>
-            BlocProvider.value(
-              value: context.read<MoneyIncomeBloc>(),
-              child: MoneyIncomeDeleteDialog(
-                  documentId: document.id!, onDelete: onDelete),
-            ),
-      );
-    }
   }
 }

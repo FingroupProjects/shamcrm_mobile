@@ -116,3 +116,39 @@ class MoneyIncomeRestoreError extends MoneyIncomeState {
 }
 
 class MoneyIncomeNavigateToAdd extends MoneyIncomeState {}
+
+class MoneyIncomeToggleOneApproveSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeToggleOneApproveSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeToggleOneApproveError extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeToggleOneApproveError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+//
+// class MoneyIncomeApproveMassSuccess extends MoneyIncomeState {
+//   final String message;
+//
+//   const MoneyIncomeApproveMassSuccess(this.message);
+//
+//   @override
+//   List<Object> get props => [message];
+// }
+//
+// class MoneyIncomeApproveMassError extends MoneyIncomeState {
+//   final String message;
+//
+//   const MoneyIncomeApproveMassError(this.message);
+//
+//   @override
+//   List<Object> get props => [message];
+// }

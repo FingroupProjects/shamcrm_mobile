@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
+import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_deletion.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -140,7 +141,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       case OperationType.client_payment:
         targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
-      case OperationType.receive_another_cash_register:
+      case OperationType.send_another_cash_register:
         targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
       case OperationType.other_incomes:
@@ -164,6 +165,22 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     if (result == true && mounted) {
       _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
     }
+  }
+
+  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
+    showDialog(
+        context: context,
+        builder: (_) => BlocProvider.value(
+          value: context.read<MoneyIncomeBloc>(),
+          child: MoneyIncomeDeleteDialog(documentId: document.id!, onDelete: (id) {
+            onDelete();
+          }),
+        ),
+      ).then((value) {
+        if (mounted) {
+          FocusScope.of(context).requestFocus(FocusNode());
+        }
+      });
   }
 
   @override
@@ -208,14 +225,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             listener: (context, state) {
               if (!mounted) return;
 
-              if (kDebugMode) {
-                final localizations = AppLocalizations.of(context)!;
-                print(localizations.translate('money_income_screen_state_changed').replaceAll('{stateType}', state.runtimeType.toString()) ?? 'Экран доходов: Состояние изменено на ${state.runtimeType}');
-                if (state is MoneyIncomeLoaded) {
-                  print(localizations.translate('money_income_screen_data_count').replaceAll('{count}', state.data.length.toString()) ?? 'Экран доходов: Количество данных в состоянии: ${state.data.length}');
-                }
-              }
-
               if (state is MoneyIncomeLoaded) {
                 setState(() {
                   _hasReachedMax = state.hasReachedMax;
@@ -236,23 +245,21 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
               } else if (state is MoneyIncomeUpdateError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+              }  else if (state is MoneyIncomeToggleOneApproveSuccess) {
+                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess:  true);
+              } else if (state is MoneyIncomeToggleOneApproveError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
               } else if (state is MoneyIncomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
-                _moneyIncomeBloc.add(FetchMoneyIncome(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search,
-                ));
               } else if (state is MoneyIncomeRestoreSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeRestoreError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
-                if (state is MoneyIncomeLoading) {
+                if (state is MoneyIncomeLoading || _isInitialLoad) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -261,7 +268,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   );
                 }
 
-                final currentData = state is MoneyIncomeLoaded ? state.data : [];
+                final List<Document> currentData = state is MoneyIncomeLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is MoneyIncomeLoaded) {
                   return Center(
@@ -281,7 +288,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   color: const Color(0xff1E2E52),
                   backgroundColor: Colors.white,
                   onRefresh: _onRefresh,
-                  child: ListView.builder(
+                  child: ListView.separated(
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -299,14 +308,53 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                               )
                             : const SizedBox.shrink();
                       }
-                      return MoneyIncomeCard(
-                        document: currentData[index],
-                        onUpdate: (document) {
+
+                      final document = currentData[index];
+
+                      return Dismissible(
+                        key: Key(document.id.toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                        ),
+                        onDismissed: (direction) {
+                          print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
+                          setState(() {
+                            currentData.removeAt(index);
+                          });
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: MoneyIncomeCard(
+                            document: document,
+                            onUpdate: (document) {
                           _navigateToEditScreen(context, document);
                         },
-                        onDelete: (documentId) {
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(documentId));
-                        },
+                        onDelete: () {
+                              debugPrint("show delete dialog for document ID: ${document.id}");
+                              showDeleteDialog(
+                                  context: context,
+                                  document: currentData[index],
+                                  onDelete: () {
+                                    _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                                  });
+                            },
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -323,7 +371,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               if (value == OperationType.client_payment.name) {
                 targetScreen = const AddMoneyIncomeFromClient();
-              } else if (value == OperationType.receive_another_cash_register.name) {
+              } else if (value == OperationType.send_another_cash_register.name) {
                 targetScreen = const AddMoneyIncomeAnotherCashRegister();
               } else if (value == OperationType.other_incomes.name) {
                 targetScreen = const AddMoneyIncomeOtherIncome();
@@ -374,7 +422,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.receive_another_cash_register.name,
+                  value: OperationType.send_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(

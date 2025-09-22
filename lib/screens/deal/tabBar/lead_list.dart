@@ -116,7 +116,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               headerBuilder: (context, selectedItem, enabled) {
                 if (state is GetAllLeadLoading) {
                   return Text(
-                    AppLocalizations.of(context)!.translate('select_leads'),
+                    AppLocalizations.of(context)!.translate('select_lead'),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -126,8 +126,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   );
                 }
                 return Text(
-                  selectedItem?.name ??
-                      AppLocalizations.of(context)!.translate('select_leads'),
+                  selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_lead'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
