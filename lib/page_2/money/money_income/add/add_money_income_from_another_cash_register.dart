@@ -66,6 +66,15 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       return;
     }
 
+    if (selectedCashRegister!.id  == selectedSenderCashRegister!.id) {
+      setState(() => _isLoading = false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('cash_registers_must_be_different') ?? 'Касса-отправитель и касса-получатель должны быть разными',
+        false,
+      );
+      return;
+    }
+
 
     final bloc = context.read<MoneyIncomeBloc>();
     bloc.add(CreateMoneyIncome(

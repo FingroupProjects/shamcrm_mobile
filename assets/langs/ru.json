@@ -1349,6 +1349,7 @@
   "select_income_category": "Выберите статью дохода",
   "error_loading_income_categories": "Ошибка загрузки категорий дохода",
   "error_selecting_income_category": "Ошибка выбора категории дохода",
+  "cash_registers_must_be_different": "Касса-отправитель и касса-получатель должны быть разными",
   "enter_expense_name": "Введите название расхода*",
   "enter_income_name": "Введите название дохода*",
   "expense_name": "Название расхода",

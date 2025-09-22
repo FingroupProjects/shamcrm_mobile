@@ -1380,6 +1380,7 @@
   "select_income_category": "Daromad kategoriyasini tanlang",
   "error_loading_income_categories": "Daromad kategoriyalarini yuklashda xatolik",
   "error_selecting_income_category": "Daromad kategoriyasini tanlashda xatolik",
+  "cash_registers_must_be_different": "Yuboruvchi va qabul qiluvchi kassalar turli bo'lishi kerak",
   "enter_expense_name": "Chiqim nomini kiriting*",
   "enter_income_name": "Tushum nomini kiriting*",
   "expense_name": "Chiqim nomi",
