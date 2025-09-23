@@ -5,7 +5,15 @@ import 'package:crm_task_manager/page_2/money/money_references/money_references_
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 
-import '../../bloc/cash_desk/cash_desk_bloc.dart';
+import '../../../bloc/author/get_all_author_bloc.dart';
+import '../../../bloc/cash_register_list/cash_register_list_bloc.dart';
+import '../../../bloc/cash_register_list/cash_register_list_event.dart';
+import '../../../bloc/income_category_list/income_category_list_bloc.dart';
+import '../../../bloc/income_category_list/income_category_list_event.dart';
+import '../../../bloc/lead_list/lead_list_bloc.dart';
+import '../../../bloc/lead_list/lead_list_event.dart';
+import '../../../bloc/supplier_list/supplier_list_bloc.dart';
+import '../../../bloc/supplier_list/supplier_list_event.dart';
 import '../../bloc/money_income/money_income_bloc.dart';
 import '../../bloc/money_outcome/money_outcome_bloc.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
@@ -78,6 +86,18 @@ class _MoneyScreenState extends State<MoneyScreen> {
       ];
 
   bool isClickAvatarIcon = false;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+      context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+      context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+      context.read<GetAllIncomeCategoryBloc>().add(GetAllIncomeCategoryEv());
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

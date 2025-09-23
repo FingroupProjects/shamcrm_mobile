@@ -280,13 +280,18 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         listeners: [
           BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
 
-              if (state is MoneyIncomeCreateSuccess && mounted) {
-                Navigator.pop(context, true);
-              } else if (state is MoneyIncomeCreateError && mounted) {
-                _showSnackBar(state.message, false);
-              }
+
+                if (state is MoneyIncomeCreateSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
+                } else if (state is MoneyIncomeCreateError) {
+                  setState(() => _isLoading = false);
+                  _showSnackBar(state.message, false);
+                }
+              });
             },
           ),
           BlocListener<GetAllLeadBloc, GetAllLeadState>(
