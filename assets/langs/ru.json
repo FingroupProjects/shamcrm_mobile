@@ -433,6 +433,8 @@
   "enter_textfield": "Заполните название",
   "select_leads": "Выберите лида",
   "select_lead": "Выберите лид",
+  "select_clients": "Выберите клиента",
+  "select_client": "Выберите клиента",
   "please_select_status_task": "Пожалуйста, выберите статус задачи",
   "error_create_task": "Ошибка при создании задачи!",
   "start_date_history": "Дата начало: ",

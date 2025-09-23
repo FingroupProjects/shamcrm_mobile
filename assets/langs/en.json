@@ -431,6 +431,8 @@
     "enter_textfield": "Fill in the name",
     "select_leads": "Select Leads",
     "select_lead": "Select Lead",
+    "select_clients": "Select Clients",
+    "select_client": "Select Client",
     "please_select_status_task": "Please select a task status",
     "error_create_task": "Error creating task!",
     "start_date_history": "Start Date: ",

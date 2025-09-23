@@ -837,6 +837,7 @@ void navigateToOrderFilterScreen(BuildContext context) {
                   filters['supplier'] != null ||
                   filters['approved'] != null ||
                   filters['author'] != null ||
+                  filters['lead_id'] != null ||
                   filters['isDeleted'] != null;
             });
             debugPrint("_isIncomeFiltering: $_isIncomeFiltering");
@@ -856,12 +857,9 @@ void navigateToOrderFilterScreen(BuildContext context) {
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
           initialSupplier: initialSupplier,
-          initialWarehouse: initialWarehouse,
           initialStatus: initialStatus,
           initialAuthor: initialAuthor,
           initialIsDeleted: initialIsDeleted,
-          initialSupplierIds: initialSupplierIds,
-          initialWarehouseIds: initialWarehouseIds,
         ),
       ),
     );
