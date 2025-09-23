@@ -335,6 +335,21 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeApproveMassError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeDisapproveMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeDisapproveMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeDeleteMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeDeleteMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeRestoreMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeRestoreMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(

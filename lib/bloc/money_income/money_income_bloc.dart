@@ -52,45 +52,48 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onMassDisapproveMoneyIncomeDocuments(MassDisapproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-    // final allApproved = await apiService.masApproveMoneyIncomeDocuments(event.documentIds);
-    //
-    // try {
-    //   if (allApproved) {
-    //     emit(MoneyIncomeApproveMassSuccess(""));
-    //   } else {
-    //     emit(MoneyIncomeApproveMassError("approve_mass_error"));
-    //   }
-    // } on Exception catch (e) {
-    //   emit(MoneyIncomeToggleOneApproveError(e.toString()));
-    // }
+    final ls = _selectedDocuments.where((e) => e.approved == true).map((e) => e.id!).toList();
+    
+    try {
+      final allDisapproved = await apiService.masDisapproveMoneyIncomeDocuments(ls);
+      if (allDisapproved) {
+        emit(MoneyIncomeDisapproveMassSuccess("Подтверждение отменено"));
+      } else {
+        emit(MoneyIncomeDisapproveMassError("Ошибка при отмене подтверждения"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeDisapproveMassError(e.toString()));
+    }
   }
 
   Future<void> _onMassDeleteMoneyIncomeDocuments(MassDeleteMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-    // final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(event.documentIds);
-    //
-    // try {
-    //   if (allDeleted) {
-    //     emit(MoneyIncomeDeleteMassSuccess(""));
-    //   } else {
-    //     emit(MoneyIncomeDeleteMassError("delete_mass_error"));
-    //   }
-    // } on Exception catch (e) {
-    //   emit(MoneyIncomeDeleteMassError(e.toString()));
-    // }
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    
+    try {
+      final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(ls);
+      if (allDeleted) {
+        emit(MoneyIncomeDeleteMassSuccess("Документы удалены"));
+      } else {
+        emit(MoneyIncomeDeleteMassError("Ошибка при удалении документов"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeDeleteMassError(e.toString()));
+    }
   }
 
   Future<void> _onMassRestoreMoneyIncomeDocuments(MassRestoreMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-    // final allRestored = await apiService.masRestoreMoneyIncomeDocuments(event.documentIds);
-    //
-    // try {
-    //   if (allRestored) {
-    //     emit(MoneyIncomeRestoreMassSuccess(""));
-    //   } else {
-    //     emit(MoneyIncomeRestoreMassError("restore_mass_error"));
-    //   }
-    // } on Exception catch (e) {
-    //   emit(MoneyIncomeRestoreMassError(e.toString()));
-    // }
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    
+    try {
+      final allRestored = await apiService.masRestoreMoneyIncomeDocuments(ls);
+      if (allRestored) {
+        emit(MoneyIncomeRestoreMassSuccess("Документы восстановлены"));
+      } else {
+        emit(MoneyIncomeRestoreMassError("Ошибка при восстановлении документов"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeRestoreMassError(e.toString()));
+    }
   }
 
   Future<void> _onToggleApproveOneMoneyIncomeDocument(

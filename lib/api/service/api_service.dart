@@ -12006,6 +12006,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  Future<bool> masDisapproveMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовой отмене подтверждения документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
+    }
+  }
+
+  Future<bool> masDeleteMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-delete');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом удалении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом удалении документов прихода: $e');
+    }
+  }
+
+  Future<bool> masRestoreMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-restore');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом восстановлении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
+    }
+  }
+
   // ============================= MONEY OUTCOME API METHODS =============================
 
   Future<void> createMoneyOutcomeDocument({required String date,

@@ -154,3 +154,57 @@ class MoneyIncomeApproveMassError extends MoneyIncomeState {
   @override
   List<Object> get props => [message];
 }
+
+class MoneyIncomeDisapproveMassSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeDisapproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeDisapproveMassError extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeDisapproveMassError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeDeleteMassSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeDeleteMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeDeleteMassError extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeDeleteMassError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeRestoreMassSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeRestoreMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeRestoreMassError extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeRestoreMassError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
