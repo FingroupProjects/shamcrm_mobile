@@ -421,6 +421,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           alignment: Alignment.centerRight,
                           child: const Icon(Icons.delete, color: Colors.white, size: 24),
                         ),
+                        confirmDismiss: (direction) async {
+                          return document.deletedAt == null;
+                        },
                         onDismissed: (direction) {
                           print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
                           setState(() {
@@ -455,7 +458,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
                                 _moneyIncomeBloc.add(SelectDocument(document));
                               } else {
-                                _navigateToEditScreen(context, document);
+                                if (document.deletedAt == null) {
+                                  _navigateToEditScreen(context, document);
+                                }
                               }
                             },
                             onDelete: () {

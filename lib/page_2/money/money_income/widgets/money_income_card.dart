@@ -106,7 +106,7 @@ class MoneyIncomeCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (!isSelectionMode) ...[const SizedBox(width: 8),
+                          if (!isSelectionMode && document.deletedAt == null) ...[const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => onDelete(),
                             child: Image.asset(
