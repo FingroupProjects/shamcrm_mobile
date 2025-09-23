@@ -421,7 +421,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!, reload: false));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),

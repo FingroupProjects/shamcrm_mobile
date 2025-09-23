@@ -29,18 +29,9 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-
-    // Предзагружаем данные если их еще нет
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadDataIfNeeded();
-    });
   }
 
-  void _preloadDataIfNeeded() {
-    // Здесь можно добавить предзагрузку данных если нужно
-  }
-
-  void _createDocument() async {
+  void _createDocument({bool approve = false}) {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedCashRegister == null) {
@@ -97,6 +88,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       senderCashRegisterId: selectedSenderCashRegister?.id,
       comment: _commentController.text.trim(),
       operationType: OperationType.send_another_cash_register.name,
+      approve: approve,
     ));
   }
 
@@ -208,6 +200,8 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
                       const SizedBox(height: 16),
+                      _buildSaveAndApproveButton(localizations),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -293,6 +287,60 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
     );
   }
 
+
+  // Новый метод для сохранения и проведения
+  void _createAndApproveDocument() {
+    _createDocument(approve: true);
+  }
+
+  // Обновленный метод для обычного сохранения
+  void _saveDocument() {
+    _createDocument(approve: false);
+  }
+
+  // Кнопка "Сохранить и провести" под полем комментариев
+  Widget _buildSaveAndApproveButton(AppLocalizations localizations) {
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _isLoading ? null : _createAndApproveDocument,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 20,
+                  color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Обновленный виджет кнопок действий (убираем кнопку "Сохранить и провести" отсюда)
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -311,9 +359,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () {
-                if (mounted) Navigator.pop(context);
-              },
+              onPressed: _isLoading ? null : () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
                 shape: RoundedRectangleBorder(
@@ -323,7 +369,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                 elevation: 0,
               ),
               child: Text(
-                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -336,7 +382,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _createDocument,
+              onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
                 shape: RoundedRectangleBorder(
@@ -355,7 +401,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                 ),
               )
                   : Text(
-                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
+                localizations.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',

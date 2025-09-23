@@ -11786,6 +11786,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    required bool approve,
   }) async {
 
     final path = await _appendQueryParams('/checking-account');
@@ -11802,6 +11803,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'approved': approve,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);

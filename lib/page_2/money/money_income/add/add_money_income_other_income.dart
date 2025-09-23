@@ -53,7 +53,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     }
   }
 
-  void _createDocument() async {
+  void _createDocument({bool approve = false}) {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedIncomeCategory == null) {
@@ -98,6 +98,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
         comment: _commentController.text.trim(),
         operationType: OperationType.other_incomes.name,
         cashRegisterId: selectedCashRegister?.id,
+        approve: approve,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -203,6 +204,8 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                         _buildAmountField(localizations),
                         const SizedBox(height: 16),
                         _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildSaveAndApproveButton(localizations),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -389,6 +392,59 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     );
   }
 
+  // Новый метод для сохранения и проведения
+  void _createAndApproveDocument() {
+    _createDocument(approve: true);
+  }
+
+  // Обновленный метод для обычного сохранения
+  void _saveDocument() {
+    _createDocument(approve: false);
+  }
+
+  // Кнопка "Сохранить и провести" под полем комментариев
+  Widget _buildSaveAndApproveButton(AppLocalizations localizations) {
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _isLoading ? null : _createAndApproveDocument,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 20,
+                  color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Обновленный виджет кнопок действий (убираем кнопку "Сохранить и провести" отсюда)
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -417,7 +473,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                 elevation: 0,
               ),
               child: Text(
-                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
+                localizations.translate('close') ?? 'Отмена',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -430,7 +486,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _createDocument,
+              onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
                 shape: RoundedRectangleBorder(
@@ -449,7 +505,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                 ),
               )
                   : Text(
-                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
+                localizations.translate('save') ?? 'Сохранить',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
