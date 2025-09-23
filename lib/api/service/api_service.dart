@@ -11832,14 +11832,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     debugPrint("Фильтры для прихода: $filters");
 
     if (filters != null) {
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('approved') && filters['approved'] != null) {
-        path += '&approved=${filters['approved']}';
-      }
-
       if (filters.containsKey('date_from') && filters['date_from'] != null) {
         final dateFrom = filters['date_from'] as DateTime;
         path += '&date_from=${dateFrom.toIso8601String()}';
@@ -11853,12 +11845,25 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (filters.containsKey('deleted') && filters['deleted'] != null) {
         path += '&deleted=${filters['deleted']}';
       }
-      if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
-        path += '&storage_id=${filters['storage_id']}';
+
+      if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+        path += '&lead_id=${filters['lead_id']}';
+      }
+
+      if (filters.containsKey('cash_register_id') && filters['cash_register_id'] != null) {
+        path += '&cash_register_id=${filters['cash_register_id']}';
       }
 
       if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
         path += '&supplier_id=${filters['supplier_id']}';
+      }
+
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
+      }
+
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
       }
     }
 
