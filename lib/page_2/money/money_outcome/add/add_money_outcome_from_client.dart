@@ -88,7 +88,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
         leadId: int.parse(selectedLead!),
         comment: _commentController.text.trim(),
         operationType: OperationType.client_return.name,
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     } catch (e) {
       setState(() => _isLoading = false);

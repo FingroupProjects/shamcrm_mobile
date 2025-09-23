@@ -63,8 +63,8 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
     bloc.add(CreateMoneyOutcome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      cashRegisterId: selectedCashRegister!.id.toString(),
-      senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
+      cashRegisterId: selectedCashRegister!.id,
+      senderCashRegisterId: selectedSenderCashRegister?.id,
       comment: _commentController.text.trim(),
       operationType: OperationType.send_another_cash_register.name,
     ));

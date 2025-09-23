@@ -162,7 +162,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         operationType: OperationType.client_payment.name,
         leadId: _selectedLead!.id,
         comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     }
 

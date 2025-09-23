@@ -140,8 +140,8 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         amount: double.parse(_amountController.text.trim()),
         operationType: OperationType.send_another_cash_register.name,
         comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister?.id.toString(),
-        senderCashRegisterId: selectedSenderCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
+        senderCashRegisterId: selectedSenderCashRegister?.id,
       ));
     }
 

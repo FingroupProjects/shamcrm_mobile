@@ -11780,8 +11780,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     String? comment,
     int? leadId,
     int? articleId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
 
@@ -11938,8 +11938,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     String? comment,
     int? leadId,
     int? articleId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
@@ -12068,8 +12068,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String movementType,
     String? comment,
     int? leadId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
 
@@ -12223,8 +12223,8 @@ Future<void> updateMoneyOutcomeDocument({
     required String movementType,
     String? comment,
     int? leadId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
     required bool approved,
   }) async {

@@ -358,7 +358,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
-                      duration: const Duration(milliseconds: 500),
+                      duration: const Duration(milliseconds: 1000),
                     ),
                   );
                 }

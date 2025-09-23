@@ -28,8 +28,8 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final int? leadId;
   final int? articleId;
   final String comment;
-  final String? cashRegisterId;
-  final String? senderCashRegisterId;
+  final int? cashRegisterId;
+  final int? senderCashRegisterId;
   final int? supplierId;
 
   UpdateMoneyIncome({
@@ -92,8 +92,8 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final int? leadId;
   final int? articleId;
   final String comment;
-  final String? cashRegisterId;
-  final String? senderCashRegisterId;
+  final int? cashRegisterId;
+  final int? senderCashRegisterId;
   final int? supplierId;
 
   CreateMoneyIncome({
