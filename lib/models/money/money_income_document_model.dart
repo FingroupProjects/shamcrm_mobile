@@ -1,7 +1,9 @@
-class MoneyIncomeDocumentModel {
+import 'package:equatable/equatable.dart';
+
+class MoneyIncomeDocumentModel extends Equatable {
   final Result? result;
 
-  MoneyIncomeDocumentModel({this.result});
+  const MoneyIncomeDocumentModel({this.result});
 
   factory MoneyIncomeDocumentModel.fromJson(Map<String, dynamic> json) {
     try {
@@ -17,13 +19,16 @@ class MoneyIncomeDocumentModel {
   Map<String, dynamic> toJson() => {
     "result": result?.toJson(),
   };
+
+  @override
+  List<Object?> get props => [result];
 }
 
-class Result {
+class Result extends Equatable {
   final List<Document>? data;
   final Pagination? pagination;
 
-  Result({this.data, this.pagination});
+  const Result({this.data, this.pagination});
 
   factory Result.fromJson(Map<String, dynamic> json) {
     try {
@@ -47,9 +52,12 @@ class Result {
     "data": data?.map((e) => e.toJson()).toList(),
     "pagination": pagination?.toJson(),
   };
+
+  @override
+  List<Object?> get props => [data, pagination];
 }
 
-class MoneyOrganization {
+class MoneyOrganization extends Equatable {
   final int? id;
   final String? name;
   final int? usersCount;
@@ -69,7 +77,7 @@ class MoneyOrganization {
   final String? telephony;
   final bool? autoResponder;
 
-  MoneyOrganization({
+  const MoneyOrganization({
     this.id,
     this.name,
     this.usersCount,
@@ -119,7 +127,6 @@ class MoneyOrganization {
     }
   }
 
-  // Helper method to safely parse strings
   static String? _parseString(dynamic value) {
     if (value == null) return null;
     if (value is String) return value;
@@ -148,9 +155,31 @@ class MoneyOrganization {
       'auto_responder': autoResponder,
     };
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    name,
+    usersCount,
+    instagram,
+    facebook,
+    tgNick,
+    whatsapp,
+    tgId,
+    hasClientBot,
+    taskBotToken,
+    osonSms,
+    last1cUpdate,
+    integration1c,
+    telegramMiniAppBot,
+    hasTelegramB2B,
+    integrationEmail,
+    telephony,
+    autoResponder,
+  ];
 }
 
-class Document {
+class Document extends Equatable {
   final int? id;
   final String? docNumber;
   final String? date;
@@ -167,7 +196,7 @@ class Document {
   final String? createdAt;
   final String? deletedAt;
 
-  Document({
+  const Document({
     this.id,
     this.docNumber,
     this.date,
@@ -240,15 +269,70 @@ class Document {
     "created_at": createdAt,
     "deleted_at": deletedAt,
   };
+
+  Document copyWith({
+    int? id,
+    String? docNumber,
+    String? date,
+    MoneyOrganization? organization,
+    CashRegister? cashRegister,
+    CashRegister? senderCashregister,
+    Article? article,
+    String? amount,
+    Model? model,
+    String? comment,
+    String? operationType,
+    Author? author,
+    bool? approved,
+    String? createdAt,
+    String? deletedAt,
+  }) {
+    return Document(
+      id: id ?? this.id,
+      docNumber: docNumber ?? this.docNumber,
+      date: date ?? this.date,
+      organization: organization ?? this.organization,
+      cashRegister: cashRegister ?? this.cashRegister,
+      senderCashregister: senderCashregister ?? this.senderCashregister,
+      article: article ?? this.article,
+      amount: amount ?? this.amount,
+      model: model ?? this.model,
+      comment: comment ?? this.comment,
+      operationType: operationType ?? this.operationType,
+      author: author ?? this.author,
+      approved: approved ?? this.approved,
+      createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    docNumber,
+    date,
+    organization,
+    cashRegister,
+    senderCashregister,
+    article,
+    amount,
+    model,
+    comment,
+    operationType,
+    author,
+    approved,
+    createdAt,
+    deletedAt,
+  ];
 }
 
-class CashRegister {
+class CashRegister extends Equatable {
   final int? id;
   final String? name;
   final String? createdAt;
   final String? updatedAt;
 
-  CashRegister({
+  const CashRegister({
     this.id,
     this.name,
     this.createdAt,
@@ -281,16 +365,19 @@ class CashRegister {
     "created_at": createdAt,
     "updated_at": updatedAt,
   };
+
+  @override
+  List<Object?> get props => [id, name, createdAt, updatedAt];
 }
 
-class Article {
+class Article extends Equatable {
   final int? id;
   final String? name;
   final String? type; // income, expense
   final String? createdAt;
   final String? updatedAt;
 
-  Article({
+  const Article({
     this.id,
     this.name,
     this.type,
@@ -326,10 +413,12 @@ class Article {
     "created_at": createdAt,
     "updated_at": updatedAt,
   };
+
+  @override
+  List<Object?> get props => [id, name, type, createdAt, updatedAt];
 }
 
-
-class Model {
+class Model extends Equatable {
   final int? id;
   final int? leadId;
   final String? name;
@@ -373,7 +462,7 @@ class Model {
   final dynamic activeScenarioExecutionId;
   final dynamic tiktokCommenterId;
 
-  Model({
+  const Model({
     this.id,
     this.leadId,
     this.name,
@@ -520,9 +609,55 @@ class Model {
     "active_scenario_execution_id": activeScenarioExecutionId,
     "tiktok_commenter_id": tiktokCommenterId,
   };
+
+  @override
+  List<Object?> get props => [
+    id,
+    leadId,
+    name,
+    sourceId,
+    facebookId,
+    facebookLogin,
+    instaId,
+    instaLogin,
+    tgNick,
+    tgId,
+    regionId,
+    birthday,
+    description,
+    leadStatusId,
+    position,
+    managerId,
+    waName,
+    waPhone,
+    address,
+    phone,
+    lead,
+    email,
+    dialogState,
+    organizationId,
+    sentTo1c,
+    createdAt,
+    updatedAt,
+    instagramPlatformIdId,
+    deletedAt,
+    authorId,
+    processingSpeed,
+    isClient,
+    messageStatus,
+    firstResponseAt,
+    shamId,
+    priceTypeId,
+    verificationCode,
+    phoneVerifiedAt,
+    bonus,
+    salesFunnelId,
+    activeScenarioExecutionId,
+    tiktokCommenterId,
+  ];
 }
 
-class Author {
+class Author extends Equatable {
   final int? id;
   final String? name;
   final String? lastname;
@@ -539,7 +674,7 @@ class Author {
   final int? isFirstLogin;
   final String? uniqueId;
 
-  Author({
+  const Author({
     this.id,
     this.name,
     this.lastname,
@@ -605,16 +740,35 @@ class Author {
     "is_first_login": isFirstLogin,
     "unique_id": uniqueId,
   };
+
+  @override
+  List<Object?> get props => [
+    id,
+    name,
+    lastname,
+    login,
+    email,
+    phone,
+    image,
+    lastSeen,
+    deletedAt,
+    telegramUserId,
+    jobTitle,
+    online,
+    fullName,
+    isFirstLogin,
+    uniqueId,
+  ];
 }
 
-class Pagination {
+class Pagination extends Equatable {
   final int? total;
   final int? count;
   final int? perPage;
   final int? currentPage;
   final int? totalPages;
 
-  Pagination({
+  const Pagination({
     this.total,
     this.count,
     this.perPage,
@@ -639,4 +793,7 @@ class Pagination {
     "current_page": currentPage,
     "total_pages": totalPages,
   };
+
+  @override
+  List<Object?> get props => [total, count, perPage, currentPage, totalPages];
 }

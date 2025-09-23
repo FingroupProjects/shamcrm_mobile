@@ -17,6 +17,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Map<String, dynamic>? _filters;
   String? _search = '';
   List<Document> _allData = [];
+  Set<Document> _selectedDocuments = {};
 
   MoneyIncomeBloc() : super(MoneyIncomeInitial()) {
     on<FetchMoneyIncome>(_onFetchMoneyIncome);
@@ -25,20 +26,72 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<DeleteMoneyIncome>(_onDeleteMoneyIncome);
     on<RestoreMoneyIncome>(_onRestoreMoneyIncome);
     on<AddMoneyIncome>(_onAddMoneyIncome);
-    // on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
+    on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
+    on<MassDisapproveMoneyIncomeDocuments>(_onMassDisapproveMoneyIncomeDocuments);
+    on<MassDeleteMoneyIncomeDocuments>(_onMassDeleteMoneyIncomeDocuments);
+    on<MassRestoreMoneyIncomeDocuments>(_onMassRestoreMoneyIncomeDocuments);
     on<ToggleApproveOneMoneyIncomeDocument>(_onToggleApproveOneMoneyIncomeDocument);
     on<RemoveLocalFromList>(_onRemoveLocalFromList);
+    on<SelectDocument>(_onSelectDocument);
+    on<UnselectAllDocuments>(_onUnselectAllDocuments);
   }
 
-  // Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-  //   final allApproved = await apiService.masApproveMoneyIncomeDocuments(event.documentIds);
-  //
-  //   if (allApproved) {
-  //     emit(MoneyIncomeApproveMassSuccess(""));
-  //   } else {
-  //     emit(MoneyIncomeApproveMassError("approve_mass_error"));
-  //   }
-  // }
+  Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == false).map((e) => e.id!).toList();
+    final allApproved = await apiService.masApproveMoneyIncomeDocuments(ls);
+
+    try {
+      if (allApproved) {
+        emit(MoneyIncomeApproveMassSuccess(""));
+      } else {
+        emit(MoneyIncomeApproveMassError("approve_mass_error"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeToggleOneApproveError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassDisapproveMoneyIncomeDocuments(MassDisapproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    // final allApproved = await apiService.masApproveMoneyIncomeDocuments(event.documentIds);
+    //
+    // try {
+    //   if (allApproved) {
+    //     emit(MoneyIncomeApproveMassSuccess(""));
+    //   } else {
+    //     emit(MoneyIncomeApproveMassError("approve_mass_error"));
+    //   }
+    // } on Exception catch (e) {
+    //   emit(MoneyIncomeToggleOneApproveError(e.toString()));
+    // }
+  }
+
+  Future<void> _onMassDeleteMoneyIncomeDocuments(MassDeleteMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    // final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(event.documentIds);
+    //
+    // try {
+    //   if (allDeleted) {
+    //     emit(MoneyIncomeDeleteMassSuccess(""));
+    //   } else {
+    //     emit(MoneyIncomeDeleteMassError("delete_mass_error"));
+    //   }
+    // } on Exception catch (e) {
+    //   emit(MoneyIncomeDeleteMassError(e.toString()));
+    // }
+  }
+
+  Future<void> _onMassRestoreMoneyIncomeDocuments(MassRestoreMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    // final allRestored = await apiService.masRestoreMoneyIncomeDocuments(event.documentIds);
+    //
+    // try {
+    //   if (allRestored) {
+    //     emit(MoneyIncomeRestoreMassSuccess(""));
+    //   } else {
+    //     emit(MoneyIncomeRestoreMassError("restore_mass_error"));
+    //   }
+    // } on Exception catch (e) {
+    //   emit(MoneyIncomeRestoreMassError(e.toString()));
+    // }
+  }
 
   Future<void> _onToggleApproveOneMoneyIncomeDocument(
       ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
@@ -94,10 +147,15 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         _currentPage++;
       }
 
+      final selectedDocuments = _allData
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
       emit(MoneyIncomeLoaded(
         data: List.from(_allData),
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
       emit(MoneyIncomeError(e.toString()));
@@ -196,4 +254,42 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       ));
     }
   }
+
+  Future<void> _onSelectDocument(SelectDocument event, Emitter<MoneyIncomeState> emit) async {
+    if (state is MoneyIncomeLoaded) {
+      final currentState = state as MoneyIncomeLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
+      emit(MoneyIncomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<MoneyIncomeState> emit) async {
+    _selectedDocuments.clear();
+
+    if (state is MoneyIncomeLoaded) {
+      final currentState = state as MoneyIncomeLoaded;
+      emit(MoneyIncomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
+    }
+  }
 }
+

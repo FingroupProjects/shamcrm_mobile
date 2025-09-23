@@ -13,8 +13,6 @@ import 'package:crm_task_manager/models/money/expense_model.dart';
 import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
-import 'package:crm_task_manager/models/money/add_outcome_model.dart';
-import 'package:crm_task_manager/models/money/outcome_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -11972,23 +11970,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  // Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
-  //   final path = await _appendQueryParams('/checking-account/mass-approve');
-  //
-  //   try {
-  //     final response = await _patchRequest(path, {
-  //       'ids': ids,
-  //     });
-  //
-  //     if (response.statusCode == 200 || response.statusCode == 201) {
-  //       return true;
-  //     } else {
-  //       throw Exception('Ошибка при массовом проведении документов прихода');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Ошибка при массовом проведении документов прихода: $e');
-  //   }
-  // }
+  Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-approve');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом проведении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом проведении документов прихода: $e');
+    }
+  }
 
   Future<bool> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
     final path = approve

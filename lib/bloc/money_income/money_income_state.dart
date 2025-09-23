@@ -15,15 +15,17 @@ class MoneyIncomeLoaded extends MoneyIncomeState {
   final List<Document> data;
   final Pagination? pagination;
   final bool hasReachedMax;
+  final List<Document>? selectedData;
 
   const MoneyIncomeLoaded({
     required this.data,
     this.pagination,
     this.hasReachedMax = false,
+    this.selectedData = const [],
   });
 
   @override
-  List<Object?> get props => [data, pagination, hasReachedMax];
+  List<Object?> get props => [data, pagination, hasReachedMax, selectedData];
 }
 
 class MoneyIncomeError extends MoneyIncomeState {
@@ -134,21 +136,21 @@ class MoneyIncomeToggleOneApproveError extends MoneyIncomeState {
   @override
   List<Object> get props => [message];
 }
-//
-// class MoneyIncomeApproveMassSuccess extends MoneyIncomeState {
-//   final String message;
-//
-//   const MoneyIncomeApproveMassSuccess(this.message);
-//
-//   @override
-//   List<Object> get props => [message];
-// }
-//
-// class MoneyIncomeApproveMassError extends MoneyIncomeState {
-//   final String message;
-//
-//   const MoneyIncomeApproveMassError(this.message);
-//
-//   @override
-//   List<Object> get props => [message];
-// }
+
+class MoneyIncomeApproveMassSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeApproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class MoneyIncomeApproveMassError extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeApproveMassError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

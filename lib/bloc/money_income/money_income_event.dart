@@ -124,23 +124,29 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
 }
 
 
-class FilterMoneyIncome extends MoneyIncomeEvent {
-  final Map<String, dynamic> filters;
-
-  FilterMoneyIncome(this.filters);
+class MassApproveMoneyIncomeDocuments extends MoneyIncomeEvent {
 
   @override
-  List<Object> get props => [filters];
+  List<Object> get props => [];
 }
-//
-// class MassApproveMoneyIncomeDocuments extends MoneyIncomeEvent {
-//   final List<int> documentIds;
-//
-//   const MassApproveMoneyIncomeDocuments(this.documentIds);
-//
-//   @override
-//   List<Object> get props => [documentIds];
-// }
+
+class MassDisapproveMoneyIncomeDocuments extends MoneyIncomeEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteMoneyIncomeDocuments extends MoneyIncomeEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreMoneyIncomeDocuments extends MoneyIncomeEvent {
+
+  @override
+  List<Object> get props => [];
+}
 
 class ToggleApproveOneMoneyIncomeDocument extends MoneyIncomeEvent {
   final int documentId;
@@ -159,4 +165,18 @@ class RemoveLocalFromList extends MoneyIncomeEvent {
 
   @override
   List<Object> get props => [documentId];
+}
+
+class SelectDocument extends MoneyIncomeEvent {
+  final Document document;
+
+  const SelectDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllDocuments extends MoneyIncomeEvent {
+  @override
+  List<Object> get props => [];
 }
