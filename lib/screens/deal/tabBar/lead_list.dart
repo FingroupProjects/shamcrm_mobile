@@ -48,15 +48,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         selectedLeadData = leadsList.firstWhere(
           (lead) => lead.id.toString() == widget.selectedLead,
         );
-        // Убираем автоматический вызов callback - это вызывает setState during build
-        // if (selectedLeadData?.managerId != null) {
-        //   widget.onSelectLead(selectedLeadData!);
-        // }
       } catch (e) {
-        // selectedLeadData = null;
+        // selectedLeadData остается null если не найден
       }
-    } else {
-      // selectedLeadData = null;
     }
   }
 
@@ -145,9 +139,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 ),
               ),
               excludeSelected: false,
-              initialItem: leadsList.contains(selectedLeadData)
-                  ? selectedLeadData
-                  : null,
+              initialItem: leadsList.contains(selectedLeadData) ? selectedLeadData : null,
               validator: (value) {
                 if (value == null) {
                   return AppLocalizations.of(context)!.translate('field_required_project');

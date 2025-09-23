@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
@@ -31,6 +32,12 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
   bool _isDropdownOpen = false;
   final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode();
+
+  // Добавляем FocusNode для полей количества и цены
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
+  final Map<int, TextEditingController> _quantityControllers = {};
+  final Map<int, TextEditingController> _priceControllers = {};
 
   final TextStyle goodsTextStyle = const TextStyle(
     fontSize: 16,
@@ -83,6 +90,153 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
         }
       });
     }
+  }
+
+  // Новый метод для создания InputDecoration с поддержкой iOS клавиатуры
+  InputDecoration _inputDecorationWithDone(String label, FocusNode focusNode) {
+    return InputDecoration(
+      labelText: label,
+      hintText: label,
+      labelStyle: const TextStyle(
+        fontFamily: 'Gilroy',
+        fontSize: 12,
+        color: Color(0xff99A4BA),
+      ),
+      hintStyle: const TextStyle(
+        fontFamily: 'Gilroy',
+        fontSize: 12,
+        color: Color(0xff99A4BA),
+      ),
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(
+          color: Color(0xff4759FF),
+          width: 1,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      filled: true,
+      fillColor: Colors.white,
+      // Добавляем суффиксную иконку для закрытия клавиатуры
+      suffixIcon: focusNode.hasFocus 
+        ? IconButton(
+            icon: const Icon(Icons.keyboard_hide, size: 20),
+            onPressed: () {
+              focusNode.unfocus();
+            },
+          )
+        : null,
+    );
+  }
+
+  // Метод для создания Toolbar над клавиатурой
+  Widget _buildInputToolbar(FocusNode focusNode) {
+    return Container(
+      height: 44,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE5E7EB),
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB), width: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          TextButton(
+            onPressed: () {
+              focusNode.unfocus();
+            },
+            child: Text(
+              AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+              style: const TextStyle(
+                color: Color(0xff4759FF),
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              focusNode.unfocus();
+            },
+            child: Text(
+              AppLocalizations.of(context)!.translate('done') ?? 'Готово',
+              style: const TextStyle(
+                color: Color(0xff4759FF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Инициализация контроллеров и FocusNode для товара
+  void _initializeGoodsControllers(int goodsId) {
+    if (!_quantityControllers.containsKey(goodsId)) {
+      _quantityControllers[goodsId] = TextEditingController();
+      _priceControllers[goodsId] = TextEditingController();
+      _quantityFocusNodes[goodsId] = FocusNode();
+      _priceFocusNodes[goodsId] = FocusNode();
+      
+      // Добавляем слушатели для автоматического скролла при фокусе
+      _quantityFocusNodes[goodsId]!.addListener(() {
+        if (_quantityFocusNodes[goodsId]!.hasFocus) {
+          _scrollToFocusedField();
+        }
+        setState(() {}); // Для обновления суффиксной иконки
+      });
+      
+      _priceFocusNodes[goodsId]!.addListener(() {
+        if (_priceFocusNodes[goodsId]!.hasFocus) {
+          _scrollToFocusedField();
+        }
+        setState(() {}); // Для обновления суффиксной иконки
+      });
+    }
+  }
+
+  // Метод для скролла к полю в фокусе
+  void _scrollToFocusedField() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  // Очистка ресурсов для товара
+  void _disposeGoodsControllers(int goodsId) {
+    _quantityControllers[goodsId]?.dispose();
+    _priceControllers[goodsId]?.dispose();
+    _quantityFocusNodes[goodsId]?.dispose();
+    _priceFocusNodes[goodsId]?.dispose();
+    
+    _quantityControllers.remove(goodsId);
+    _priceControllers.remove(goodsId);
+    _quantityFocusNodes.remove(goodsId);
+    _priceFocusNodes.remove(goodsId);
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -211,11 +365,17 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                             children: [
                                               Expanded(
                                                 child: TextFormField(
-                                                  decoration: _inputDecoration(
+                                                  controller: _quantityControllers[goods.id],
+                                                  focusNode: _quantityFocusNodes[goods.id],
+                                                  decoration: _inputDecorationWithDone(
                                                     AppLocalizations.of(context)!.translate('quantity') ??
                                                         'Количество',
+                                                    _quantityFocusNodes[goods.id]!,
                                                   ),
                                                   keyboardType: TextInputType.number,
+                                                  inputFormatters: [
+                                                    FilteringTextInputFormatter.digitsOnly,
+                                                  ],
                                                   onChanged: (value) {
                                                     final newQuantity = int.tryParse(value) ?? 0;
                                                     if (newQuantity > 0) {
@@ -227,15 +387,24 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                                       });
                                                     }
                                                   },
+                                                  onTap: () {
+                                                    _scrollToFocusedField();
+                                                  },
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: TextFormField(
-                                                  decoration: _inputDecoration(
+                                                  controller: _priceControllers[goods.id],
+                                                  focusNode: _priceFocusNodes[goods.id],
+                                                  decoration: _inputDecorationWithDone(
                                                     AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                                                    _priceFocusNodes[goods.id]!,
                                                   ),
-                                                  keyboardType: TextInputType.number,
+                                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                  inputFormatters: [
+                                                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                                  ],
                                                   onChanged: (value) {
                                                     final newPrice = double.tryParse(value) ?? 0.0;
                                                     if (newPrice >= 0) {
@@ -246,6 +415,9 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                                         _updateGoodsSelection();
                                                       });
                                                     }
+                                                  },
+                                                  onTap: () {
+                                                    _scrollToFocusedField();
                                                   },
                                                 ),
                                               ),
@@ -386,6 +558,8 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
       if (selectedGoods.contains(goods)) {
         selectedGoods.remove(goods);
         goodsDetails.remove(goods.id);
+        // Очищаем ресурсы для этого товара
+        _disposeGoodsControllers(goods.id);
       } else {
         selectedGoods.add(goods);
         goodsDetails[goods.id] = {
@@ -393,6 +567,8 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
           'price': null,
           'total': 0.0,
         };
+        // Инициализируем контроллеры для нового товара
+        _initializeGoodsControllers(goods.id);
       }
       _updateGoodsSelection();
       _updateOverlay();
@@ -461,76 +637,82 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
             return null;
           },
           builder: (FormFieldState<List<Goods>> field) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('goods') ?? 'Товары',
-                  style: goodsTextStyle.copyWith(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F7FD),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      width: 1,
-                      color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+            return GestureDetector(
+              // Добавляем возможность закрытия клавиатуры при тапе на пустое место
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.translate('goods') ?? 'Товары',
+                    style: goodsTextStyle.copyWith(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 16,
                     ),
                   ),
-                  child: CompositedTransformTarget(
-                    link: _layerLink,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!_isDropdownOpen) {
-                          _showOverlay();
-                        } else {
-                          _hideOverlay();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                selectedGoods.isEmpty
-                                    ? AppLocalizations.of(context)!.translate('select_goods') ??
-                                        'Выберите товары'
-                                    : selectedGoods.map((e) => e.name).join(', '),
-                                style: goodsTextStyle.copyWith(
-                                  fontSize: 14,
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        width: 1,
+                        color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                      ),
+                    ),
+                    child: CompositedTransformTarget(
+                      link: _layerLink,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDropdownOpen) {
+                            _showOverlay();
+                          } else {
+                            _hideOverlay();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  selectedGoods.isEmpty
+                                      ? AppLocalizations.of(context)!.translate('select_goods') ??
+                                          'Выберите товары'
+                                      : selectedGoods.map((e) => e.name).join(', '),
+                                  style: goodsTextStyle.copyWith(
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            Icon(
-                              _isDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                              color: const Color(0xff1E2E52),
-                            ),
-                          ],
+                              Icon(
+                                _isDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                color: const Color(0xff1E2E52),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                if (field.hasError)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 0),
-                    child: Text(
-                      field.errorText!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+                  if (field.hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 0),
+                      child: Text(
+                        field.errorText!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -544,6 +726,21 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     _scrollController.dispose();
     _searchFocusNode.dispose();
     _hideOverlay();
+    
+    // Очищаем все контроллеры и FocusNode
+    for (var controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    for (var controller in _priceControllers.values) {
+      controller.dispose();
+    }
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
     super.dispose();
   }
 }

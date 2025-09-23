@@ -11,11 +11,13 @@ import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+// Импортируем переиспользуемый виджет (замените путь на правильный)
 import '../operation_type.dart';
 
 class EditMoneyIncomeFromClient extends StatefulWidget {
@@ -38,7 +40,6 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
 
   LeadData? _selectedLead;
   CashRegisterData? selectedCashRegister;
-  List<LeadData> leadsList = [];
   bool _isLoading = false;
   late bool _isApproved;
 
@@ -54,10 +55,16 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   }
 
   void _preloadDataIfNeeded() {
-    // Проверяем и загружаем лиды
-    final leadState = context.read<GetAllLeadBloc>().state;
-    if (leadState is! GetAllLeadSuccess) {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    final leadBloc = context.read<GetAllLeadBloc>();
+    final leadState = leadBloc.state;
+    
+    // Проверяем кэш в блоке
+    final cachedLeads = leadBloc.getCachedLeads();
+    
+    if (cachedLeads == null && leadState is! GetAllLeadLoading) {
+      if (mounted) {
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      }
     }
   }
 
@@ -91,6 +98,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
       _selectedLead = LeadData(
         id: widget.document.model!.id!,
         name: widget.document.model!.name ?? widget.document.model!.id.toString(),
+        managerId: null,
       );
     }
 
@@ -210,148 +218,6 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
     });
   }
 
-  Widget _buildLeadWidget() {
-    return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('lead') ?? 'Сделка',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
-              listener: (context, state) {
-                if (state is GetAllLeadSuccess) {
-                  setState(() {
-                    leadsList = state.dataLead.result ?? [];
-                  });
-                }
-              },
-              builder: (context, state) {
-                if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
-                  context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                  return const DropdownLoadingState();
-                }
-
-                if (state is GetAllLeadLoading) {
-                  return const DropdownLoadingState();
-                }
-
-                if (state is GetAllLeadError) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                            AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-                            style: const TextStyle(color: Colors.red, fontSize: 12)
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                          },
-                          child: Text(
-                              AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
-                              style: const TextStyle(fontSize: 12)
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllLeadSuccess && leadsList.isEmpty) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  );
-                }
-
-                return CustomDropdown<LeadData>.search(
-                  items: leadsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-                  overlayHeight: 300,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name ?? item.id?.toString() ?? 'Unknown Lead',
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem?.name ??
-                          selectedItem?.id?.toString() ??
-                          AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                  initialItem: _selectedLead != null && leadsList.any((l) => l.id == _selectedLead!.id)
-                      ? leadsList.firstWhere((l) => l.id == _selectedLead!.id)
-                      : null,
-                  onChanged: (value) {
-                    if (value != null && mounted) {
-                      setState(() {
-                        _selectedLead = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
-                );
-              },
-            ),
-          ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -407,7 +273,17 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                       const SizedBox(height: 8),
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
-                      _buildLeadWidget(),
+                      // Используем переиспользуемый виджет LeadRadioGroupWidget
+                      LeadRadioGroupWidget(
+                        selectedLead: _selectedLead?.id.toString(),
+                        onSelectLead: (LeadData selectedLeadData) {
+                          if (mounted) {
+                            setState(() {
+                              _selectedLead = selectedLeadData;
+                            });
+                          }
+                        },
+                      ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
@@ -467,27 +343,27 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   }
 
   Widget _buildDateField(AppLocalizations localizations) {
-    return  CustomTextFieldDate(
-          controller: _dateController,
-          label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
-          withTime: true,
-          onDateSelected: (date) {
-            if (mounted) {
-              setState(() {
-                _dateController.text = date;
-              });
-            }
-          },
-        );
+    return CustomTextFieldDate(
+      controller: _dateController,
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
+      withTime: true,
+      onDateSelected: (date) {
+        if (mounted) {
+          setState(() {
+            _dateController.text = date;
+          });
+        }
+      },
+    );
   }
 
   Widget _buildCommentField(AppLocalizations localizations) {
-    return  CustomTextField(
-          controller: _commentController,
-          label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-          hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
-          maxLines: 3,
-          keyboardType: TextInputType.multiline,
+    return CustomTextField(
+      controller: _commentController,
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      maxLines: 3,
+      keyboardType: TextInputType.multiline,
     );
   }
 
@@ -496,34 +372,36 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
       inputFormatters: [
         MoneyInputFormatter(),
       ],
-            controller: _amountController,
-            label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-            hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
-            maxLines: 1,
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
-              }
+      controller: _amountController,
+      label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+      hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+      maxLines: 1,
+      keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+        }
 
-              final doubleValue = double.tryParse(value.trim());
-              if (doubleValue == null) {
-                return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
-              }
+        final doubleValue = double.tryParse(value.trim());
+        if (doubleValue == null) {
+          return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+        }
 
-              if (doubleValue <= 0) {
-                return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
-              }
+        if (doubleValue <= 0) {
+          return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+        }
 
-              return null;
-            }
+        return null;
+      }
     );
   }
 
   Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
+      text: !_isApproved 
+        ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести'
+        : AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
         setState(() {

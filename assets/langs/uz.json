@@ -1424,7 +1424,10 @@
     "deleting": "O‘chirilmoqda...",
     "edit_pricetype": "Narx turini tahrirlash",
     "edit_warehouse": "Omborni tahrirlash",
-    "save_and_approve": "Saqlash va tasdiqlash"
+    "save_and_approve": "Saqlash va tasdiqlash",
+    "add_warehouse": "Ombor qo‘shish",
+    "enter_warehouse_name": "Ombor nomini kiriting"
+  
 
 
 

@@ -2,7 +2,7 @@ class Supplier {
   final int id;
   final String name;
   final String phone;
-  final int inn;
+  final int? inn; // Changed to nullable
   final String? note;
   final String createdAt;
   final String updatedAt;
@@ -11,7 +11,7 @@ class Supplier {
     required this.id,
     required this.name,
     required this.phone,
-    required this.inn,
+    this.inn, // No longer required
     this.note,
     required this.createdAt,
     required this.updatedAt,
@@ -22,7 +22,7 @@ class Supplier {
       id: json['id'],
       name: json['name'],
       phone: json['phone'],
-      inn: json['inn'],
+      inn: json['inn'], // This will now handle null values
       note: json['note'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],

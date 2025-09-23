@@ -1415,7 +1415,9 @@
   "other_expenses": "Прочие расходы",
   "send_another_cash_register": "Отправление на другую кассу",
   "status_changed_successfully_approve": "Статус успешно изменён!",
-  "save_and_approve": "Сохранить и провести"
+  "save_and_approve": "Сохранить и провести",
+  "add_warehouse": "Добавить склад",
+  "enter_warehouse_name": "Введите название склада"
 
  
 
